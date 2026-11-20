@@ -145,7 +145,15 @@ class MockJobWrapper:
         return None
 
     def fail(
-        self, message, exception=False, tool_stdout="", tool_stderr="", exit_code=None, job_stdout=None, job_stderr=None
+        self,
+        message,
+        exception=False,
+        tool_stdout="",
+        tool_stderr="",
+        exit_code=None,
+        job_stdout=None,
+        job_stderr=None,
+        job_metrics_directory=None,
     ):
         self.fail_message = message
         self.fail_exception = exception

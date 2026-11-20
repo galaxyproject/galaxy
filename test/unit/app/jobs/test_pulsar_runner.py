@@ -2,6 +2,7 @@
 
 import logging
 import queue
+import threading
 from dataclasses import dataclass
 from types import SimpleNamespace
 from typing import (
@@ -673,3 +674,155 @@ def test_discard_previous_attempt_tolerates_nothing_to_clean():
     client = MagicMock()
     client.clean.side_effect = KeyError("543")
     discard_previous_attempt(client, SimpleNamespace(job_id=543))
+
+
+FAILED_JOB_FULL_STATUS = {
+    "job_id": "1",
+    "complete": "true",
+    "status": "failed",
+    "returncode": 137,
+    "stdout": "",
+    "stderr": "line 24: 18 Killed  env -i $(which awk)",
+    "job_stdout": "",
+    "job_stderr": "slurmstepd: error: Detected 1 oom-kill event(s) in StepId=12279237.batch",
+    "working_directory_contents": [],
+    "metadata_directory_contents": ["__instrument_core_galaxy_slots"],
+    "outputs_directory_contents": [],
+    "job_directory_contents": [],
+}
+
+
+def _staged_failure(tmp_path, monkeypatch, cleanup_job="always", stage=None):
+    staged = []
+
+    def finish_job(**kwargs):
+        staged.append(kwargs)
+        if stage:
+            stage()
+        metadata_directory = tmp_path / "metadata"
+        metadata_directory.mkdir(exist_ok=True)
+        (metadata_directory / "__instrument_core_galaxy_slots").write_text("1")
+        return []
+
+    monkeypatch.setattr(pulsar_runner, "pulsar_finish_job", finish_job)
+    runner = cast(Any, object.__new__(PulsarJobRunner))
+    runner.work_queue = queue.Queue()
+    runner.runner_state_handlers = {}
+    runner._staged_failures = set()
+    runner._staged_failures_lock = threading.Lock()
+    runner.stop_job = MagicMock()
+    runner.get_client_from_state = lambda job_state: SimpleNamespace(destination_params={})
+    runner._PulsarJobRunner__client_outputs = lambda client, job_wrapper, version: None
+    job_wrapper = MagicMock()
+    job_wrapper.job_id = 1
+    job_wrapper.working_directory = str(tmp_path)
+    job_wrapper.cleanup_job = cleanup_job
+    job_wrapper.get_state.return_value = model.Job.states.RUNNING
+    job_wrapper.get_job.return_value.finished = False
+    job_state = SimpleNamespace(
+        job_id="1", job_wrapper=job_wrapper, runner_state=None, runner_state_handled=False, stop_job=True
+    )
+    return runner, job_state, staged
+
+
+def _run_queued(runner):
+    method, arg = runner.work_queue.get_nowait()
+    method(arg)
+    assert runner.work_queue.empty()
+
+
+@pytest.mark.parametrize("cleanup_job,remote_cleanup", [("always", "always"), ("onsuccess", "never")])
+def test_failed_job_is_failed_with_its_streams_and_metrics(tmp_path, monkeypatch, cleanup_job, remote_cleanup):
+    runner, job_state, staged = _staged_failure(tmp_path, monkeypatch, cleanup_job=cleanup_job)
+    PulsarJobRunner._update_job_state_for_status(runner, job_state, "failed", full_status=FAILED_JOB_FULL_STATUS)
+    job_state.job_wrapper.fail.assert_not_called()
+    _run_queued(runner)
+    assert staged[0]["cleanup_job"] == remote_cleanup
+    assert staged[0]["job_completed_normally"] is True
+    assert (
+        staged[0]["pulsar_outputs"].metadata_directory_contents == FAILED_JOB_FULL_STATUS["metadata_directory_contents"]
+    )
+    # Pulsar already reported the job as over, so it is not killed after staging.
+    runner.stop_job.assert_not_called()
+    job_state.job_wrapper.fail.assert_called_once()
+    args, kwargs = job_state.job_wrapper.fail.call_args
+    assert args == (FAILED_REMOTE_ERROR,)
+    assert kwargs["tool_stderr"] == FAILED_JOB_FULL_STATUS["stderr"]
+    assert kwargs["job_stderr"] == FAILED_JOB_FULL_STATUS["job_stderr"]
+    assert kwargs["exit_code"] == 137
+    assert kwargs["job_metrics_directory"] == str(tmp_path / "metadata")
+
+
+def test_failed_job_keeps_the_reason_pulsar_reported(tmp_path, monkeypatch):
+    runner, job_state, _ = _staged_failure(tmp_path, monkeypatch)
+    full_status = {**FAILED_JOB_FULL_STATUS, "runner_state": JobState.runner_states.MEMORY_LIMIT_REACHED}
+    PulsarJobRunner._update_job_state_for_status(runner, job_state, "failed", full_status=full_status)
+    _run_queued(runner)
+    assert job_state.runner_state == JobState.runner_states.MEMORY_LIMIT_REACHED
+    message = RUNNER_STATE_DEFINITIONS[JobState.runner_states.MEMORY_LIMIT_REACHED].fail_message
+    assert job_state.job_wrapper.fail.call_args.args == (message,)
+
+
+def test_failed_job_is_failed_even_if_staging_fails(tmp_path, monkeypatch):
+    def stage():
+        raise OSError("Pulsar went away")
+
+    runner, job_state, _ = _staged_failure(tmp_path, monkeypatch, stage=stage)
+    PulsarJobRunner._update_job_state_for_status(runner, job_state, "failed", full_status=FAILED_JOB_FULL_STATUS)
+    _run_queued(runner)
+    args, kwargs = job_state.job_wrapper.fail.call_args
+    assert args == (FAILED_REMOTE_ERROR,)
+    assert kwargs["job_stderr"] == FAILED_JOB_FULL_STATUS["job_stderr"]
+
+
+@pytest.mark.parametrize("state", [model.Job.states.ERROR, model.Job.states.DELETING, model.Job.states.RESUBMITTED])
+def test_failed_job_finished_before_staging_is_left_alone(tmp_path, monkeypatch, state):
+    runner, job_state, staged = _staged_failure(tmp_path, monkeypatch)
+    PulsarJobRunner._update_job_state_for_status(runner, job_state, "failed", full_status=FAILED_JOB_FULL_STATUS)
+    job_state.job_wrapper.get_state.return_value = state
+    _run_queued(runner)
+    assert staged == []
+    job_state.job_wrapper.fail.assert_not_called()
+
+
+def test_failed_job_stopped_before_staging_is_finished_as_stopped(tmp_path, monkeypatch):
+    runner, job_state, staged = _staged_failure(tmp_path, monkeypatch)
+    PulsarJobRunner._update_job_state_for_status(runner, job_state, "failed", full_status=FAILED_JOB_FULL_STATUS)
+    job_state.job_wrapper.get_state.return_value = model.Job.states.STOPPED
+    method, arg = runner.work_queue.get_nowait()
+    method(arg)
+    assert staged == []
+    job_state.job_wrapper.fail.assert_not_called()
+    method, arg = runner.work_queue.get_nowait()
+    assert method == runner.finish_job
+    assert arg is job_state
+
+
+def test_repeated_failed_status_is_staged_once(tmp_path, monkeypatch):
+    runner, job_state, staged = _staged_failure(tmp_path, monkeypatch)
+    PulsarJobRunner._update_job_state_for_status(runner, job_state, "failed", full_status=FAILED_JOB_FULL_STATUS)
+    PulsarJobRunner._update_job_state_for_status(runner, job_state, "failed", full_status=FAILED_JOB_FULL_STATUS)
+    _run_queued(runner)
+    assert len(staged) == 1
+    job_state.job_wrapper.fail.assert_called_once()
+    # Once failed, the job is no longer in flight.
+    assert runner._staged_failures == set()
+
+
+def test_failed_job_without_a_job_directory_fails_without_staging(tmp_path, monkeypatch):
+    runner, job_state, staged = _staged_failure(tmp_path, monkeypatch)
+    full_status = {"job_id": "1", "complete": "true", "status": "failed", "returncode": None}
+    PulsarJobRunner._update_job_state_for_status(runner, job_state, "failed", full_status=full_status)
+    assert runner.work_queue.empty()
+    assert staged == []
+    assert job_state.job_wrapper.fail.call_args.args == (FAILED_REMOTE_ERROR,)
+
+
+def test_lost_job_fails_without_staging(tmp_path, monkeypatch):
+    runner, job_state, staged = _staged_failure(tmp_path, monkeypatch)
+    full_status = {**FAILED_JOB_FULL_STATUS, "status": "lost"}
+    PulsarJobRunner._update_job_state_for_status(runner, job_state, "lost", full_status=full_status)
+    assert runner.work_queue.empty()
+    assert staged == []
+    assert job_state.job_wrapper.fail.call_args.args == (LOST_REMOTE_ERROR,)
+    runner.stop_job.assert_called_once_with(job_state.job_wrapper)
