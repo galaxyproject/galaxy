@@ -129,7 +129,8 @@ def build_command(
         commands_builder.prepend_command(container_monitor_command)
 
     working_directory = remote_job_directory or job_wrapper.working_directory
-    commands_builder.capture_return_code(default_exit_code_file(working_directory, job_wrapper.job_id))
+    exit_code_path = default_exit_code_file(working_directory, job_wrapper.job_id)
+    commands_builder.capture_return_code(exit_code_path)
 
     if job_wrapper.is_cwl_job:
         # Minimal metadata needed by the relocate script
@@ -154,6 +155,10 @@ def build_command(
         __handle_work_dir_outputs(commands_builder, job_wrapper, runner, remote_command_params)
 
     if include_metadata and job_wrapper.requires_setting_metadata:
+        # Still in the tool working directory, which the tool stderr path is relative to.
+        __handle_work_dir_directory_outputs(
+            commands_builder, remote_command_params, f"{io_directory}/tool_stderr", exit_code_path
+        )
         commands_builder.append_command(f"cd '{working_directory}'")
         __handle_metadata(commands_builder, job_wrapper, runner, remote_command_params)
 
@@ -244,6 +249,14 @@ def __handle_work_dir_outputs(
         commands_builder.append_commands(copy_commands)
 
 
+def __handle_work_dir_directory_outputs(commands_builder, remote_command_params, tool_stderr_path, exit_code_path):
+    directory_outputs = remote_command_params.get("metadata_kwds", {}).get("work_dir_directory_outputs", [])
+    for directory_output in directory_outputs:
+        commands_builder.append_command(
+            __copy_directory_if_exists_command(directory_output, tool_stderr_path, exit_code_path)
+        )
+
+
 def __handle_metadata(
     commands_builder, job_wrapper: "MinimalJobWrapper", runner: "BaseJobRunner", remote_command_params
 ):
@@ -280,8 +293,6 @@ def __handle_metadata(
     )
     metadata_command = metadata_command.strip()
     if metadata_command:
-        directory_outputs = metadata_kwds.get("work_dir_directory_outputs", [])
-        commands_builder.append_commands(map(__copy_directory_if_exists_command, directory_outputs))
         # Place Galaxy and its dependencies in environment for metadata regardless of tool.
         if not job_wrapper.is_cwl_job:
             commands_builder.append_command(SETUP_GALAXY_FOR_METADATA)
@@ -302,12 +313,14 @@ def __copy_if_exists_command(work_dir_output):
     return f'\nif [ {test_flag} "{source_file}" -a {test_flag} "{destination}" ] ; then{delete_destination_dir} cp{recursive_flag} "{source_file}" "{destination}" ; fi'
 
 
-def __copy_directory_if_exists_command(directory_output):
+def __copy_directory_if_exists_command(directory_output, tool_stderr_path, exit_code_path):
     # Unlike __copy_if_exists_command, creates the destination: on a remote host nothing precreates it.
     source_directory, destination = directory_output
     source_directory = __unquote_glob_characters(source_directory)
     copy_command = f'mkdir -p "{destination}" && cp -r "{source_directory}/." "{destination}"'
-    return f'\nif [ -d "{source_directory}" ] ; then {copy_command} ; fi'
+    # A failed copy fails the job like a failed tool, keeping the tool's exit code if it already failed.
+    fail_job = f'{{ [ "$return_code" -ne 0 ] || return_code=1 ; echo $return_code > {exit_code_path} ; }}'
+    return f'\nif [ -d "{source_directory}" ] ; then {{ {copy_command} ; }} 2>> "{tool_stderr_path}" || {fail_job} ; fi'
 
 
 def __unquote_glob_characters(path):

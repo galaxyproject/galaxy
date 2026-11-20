@@ -44,3 +44,5 @@ tools:
   environment: pulsar_embed_outputs_to_working_directory
 - id: create_directory_index
   environment: pulsar_embed_copy_outputs
+- id: create_directory_index_unreadable
+  environment: pulsar_embed_copy_outputs
