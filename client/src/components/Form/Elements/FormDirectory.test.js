@@ -188,6 +188,15 @@ describe("DirectoryPathEditableBreadcrumb", () => {
         expect(wrapper.emitted("input")).toBeUndefined();
     });
 
+    it("builds paths without an empty folder at a file source root", async () => {
+        await mountFormDirectory("gxftp://");
+        expect(wrapper.findAll("button.regular-path-chunk").length).toBe(0);
+
+        await saveNewChunk(validPath);
+        await flushPromises();
+        await validateLatestEmittedPath(wrapper, `gxftp://${validPath}`);
+    });
+
     it("clears a value it cannot parse when mounting", async () => {
         await mountFormDirectory("not a directory uri");
 

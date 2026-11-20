@@ -138,6 +138,7 @@ export default {
                 this.pathChunks = this.url.href
                     .split(/[/\\]/)
                     .splice(2)
+                    .filter((pathChunk) => pathChunk)
                     .map((x) => ({ pathChunk: x, editable: false }));
                 return true;
             } catch (error) {
