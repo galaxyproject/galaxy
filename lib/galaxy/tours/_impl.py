@@ -9,7 +9,10 @@ import yaml
 from pydantic import TypeAdapter
 
 from galaxy.exceptions import ObjectNotFound
-from galaxy.navigation.data import load_root_component
+from galaxy.navigation.tours import (
+    get_tour_id_from_path,
+    load_tour_from_path,
+)
 from galaxy.schema.tours import TourList
 from galaxy.util import config_directories_from_setting
 from galaxy.util.path import StrPath
@@ -19,55 +22,9 @@ log = logging.getLogger(__name__)
 
 TOUR_EXTENSIONS = (".yml", ".yaml")
 
-ROOT_COMPONENT = load_root_component()
-
 
 def build_tours_registry(tour_directories: str):
     return ToursRegistryImpl(tour_directories)
-
-
-def noop_warn(str):
-    pass
-
-
-def load_tour_steps(contents_dict, warn=None, resolve_components=True):
-    warn = warn or noop_warn
-    #  Some of this can be done on the clientside.  Maybe even should?
-    title_default = contents_dict.get("title_default")
-    if "requirements" not in contents_dict:
-        contents_dict["requirements"] = []
-
-    for step in contents_dict["steps"]:
-        # Remove attributes no longer used, so they are attempted to be
-        # validated.
-        if "backdrop" in step:
-            warn(f"Deprecated and dropped property backdrop found in step {step}")
-            step.pop("backdrop")
-
-        if "component" in step and resolve_components:
-            component = step.pop("component")
-            step["element"] = ROOT_COMPONENT.resolve_component_locator(component).locator
-
-        if "intro" in step:
-            step["content"] = step.pop("intro")
-        if "position" in step:
-            step["placement"] = step.pop("position")
-        if "element" not in step:
-            step["orphan"] = True
-        if title_default and "title" not in step:
-            step["title"] = title_default
-
-
-def get_tour_id_from_path(tour_path: StrPath) -> str:
-    filename = os.path.basename(tour_path)
-    return os.path.splitext(filename)[0]
-
-
-def load_tour_from_path(tour_path: StrPath, warn=None, resolve_components=True) -> dict:
-    with open(tour_path) as f:
-        tour = yaml.safe_load(f)
-        load_tour_steps(tour, warn=warn, resolve_components=resolve_components)
-    return tour
 
 
 def is_yaml(filename: str) -> bool:

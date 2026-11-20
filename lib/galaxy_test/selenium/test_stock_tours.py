@@ -1,7 +1,7 @@
 import os
 from typing import Any
 
-from galaxy.selenium.navigates_galaxy import TourCallbackProtocol
+from galaxy.selenium.stories.tours import StoryTourCallback
 from galaxy.selenium.web_element_protocol import WebElementProtocol
 from galaxy.util import galaxy_root_path
 from .framework import (
@@ -49,9 +49,11 @@ class TestStockToursTestCase(SeleniumTestCase):
         )
 
 
-class TourCallback(TourCallbackProtocol):
+class TourCallback(StoryTourCallback):
     def __init__(self, test_case: TestStockToursTestCase):
+        super().__init__(test_case)
         self.test_case = test_case
 
     def handle_step(self, step: dict[str, Any], step_index: int, element: WebElementProtocol | None = None) -> None:
         self.test_case.assert_baseline_accessibility()
+        super().handle_step(step, step_index, element)

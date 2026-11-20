@@ -7,6 +7,7 @@ from typing import cast
 import pytest
 from selenium.common.exceptions import (
     NoSuchElementException,
+    StaleElementReferenceException,
     TimeoutException as SeleniumTimeoutException,
 )
 from selenium.webdriver.common.by import By
@@ -36,6 +37,7 @@ from galaxy.selenium.has_playwright_driver import (
     PlaywrightTimeoutException,
 )
 from galaxy.selenium.keys import Key
+from galaxy.selenium.web_element_protocol import WebElementProtocol
 from .util import (
     check_playwright_cached,
     check_selenium_cached,
@@ -1201,6 +1203,23 @@ class TestScreenshots:
         assert restored == original_border
         assert "blue" in restored.lower()
 
+    def test_highlight_element_tolerates_a_replaced_element(self, has_driver_instance, base_url):
+        """Test a re-rendered (detached) element is skipped instead of failing the caller."""
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
+        element = has_driver_instance.find_element_by_id("test-div")
+        has_driver_instance.execute_script("arguments[0].outerHTML = arguments[0].outerHTML;", element)
+
+        with has_driver_instance.highlight_element(element):
+            pass
+
+    def test_highlight_element_tolerates_replacement_while_highlighted(self, has_driver_instance, base_url):
+        """Test the restore is skipped when the element is re-rendered inside the block."""
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
+        element = has_driver_instance.find_element_by_id("test-div")
+
+        with has_driver_instance.highlight_element(element):
+            has_driver_instance.execute_script("arguments[0].outerHTML = arguments[0].outerHTML;", element)
+
 
 class TestAccessibility:
     """Tests for axe_eval accessibility testing."""
@@ -1592,3 +1611,16 @@ class TestActiveElement:
         has_driver_instance.press(Key.TAB)
 
         assert has_driver_instance.active_element().get_attribute("id") == "key-target"
+
+
+def test_stale_highlight_does_not_become_screenshot_exception_context(monkeypatch):
+    driver = TestHasDriverImpl(cast(WebDriver, object()))
+
+    def stale(*args):
+        raise StaleElementReferenceException()
+
+    monkeypatch.setattr(driver, "execute_script", stale)
+    with pytest.raises(OSError, match="screenshot failed") as raised:
+        with driver.highlight_element(cast(WebElementProtocol, object())):
+            raise OSError("screenshot failed")
+    assert raised.value.__context__ is None
