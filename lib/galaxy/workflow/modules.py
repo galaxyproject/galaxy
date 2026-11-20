@@ -3548,12 +3548,14 @@ class ToolModule(WorkflowModule):
         return effective_post_job_actions
 
     def _handle_mapped_over_post_job_actions(self, step, step_inputs, step_outputs, replacement_dict):
-        effective_post_job_actions = self._effective_post_job_actions(step)
-        for pja in effective_post_job_actions:
-            if pja.action_type in ActionBox.mapped_over_output_actions:
-                ActionBox.execute_on_mapped_over(
-                    self.trans, self.trans.sa_session, pja, step_inputs, step_outputs, replacement_dict
-                )
+        ActionBox.apply_to_mapped_over(
+            self.trans,
+            self.trans.sa_session,
+            self._effective_post_job_actions(step),
+            step_inputs,
+            step_outputs,
+            replacement_dict,
+        )
 
     def _resolve_credentials_context(self, tool: "Tool") -> CredentialsContext | None:
         """Auto-resolve the user's current credentials for a tool in workflow execution."""
@@ -3594,16 +3596,14 @@ class ToolModule(WorkflowModule):
 
         # Combine workflow and runtime post job actions into the effective post
         # job actions for this execution.
-        effective_post_job_actions = self._effective_post_job_actions(step)
-        for pja in effective_post_job_actions:
-            if pja.action_type in ActionBox.immediate_actions or isinstance(self.tool, DatabaseOperationTool):
-                ActionBox.execute(self.trans.app, self.trans.sa_session, pja, job, replacement_dict)
-            else:
-                if job.id:
-                    pjaa = model.PostJobActionAssociation(pja, job_id=job.id)
-                else:
-                    pjaa = model.PostJobActionAssociation(pja, job=job)
-                self.trans.sa_session.add(pjaa)
+        ActionBox.apply_to_job(
+            self.trans.app,
+            self.trans.sa_session,
+            self._effective_post_job_actions(step),
+            job,
+            replacement_dict,
+            execute_all_now=isinstance(self.tool, DatabaseOperationTool),
+        )
 
     def __restore_step_meta_runtime_state(self, step_runtime_state):
         if RUNTIME_POST_JOB_ACTIONS_KEY in step_runtime_state:

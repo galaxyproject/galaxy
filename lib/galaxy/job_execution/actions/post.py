@@ -585,6 +585,38 @@ class ActionBox:
         return npd
 
     @classmethod
+    def apply_to_job(
+        cls, app, sa_session, pjas, job, replacement_dict=None, execute_all_now=False, record_executed=False
+    ) -> None:
+        """Run the immediate actions of ``pjas`` on a new job, and attach the others to run when it finishes.
+
+        :param execute_all_now: run every action now, for jobs that never reach the finish step
+        :param record_executed: attach the actions run now to the job too, so the job records them;
+            the finish step skips immediate actions
+        """
+        for pja in pjas:
+            executed = pja.action_type in cls.immediate_actions or execute_all_now
+            if executed:
+                cls.execute(app, sa_session, pja, job, replacement_dict)
+            if not executed or record_executed:
+                if job.id:
+                    pjaa = PostJobActionAssociation(pja, job_id=job.id)
+                else:
+                    pjaa = PostJobActionAssociation(pja, job=job)
+                sa_session.add(pjaa)
+
+    @classmethod
+    def apply_to_mapped_over(cls, trans, sa_session, pjas, step_inputs, step_outputs, replacement_dict=None) -> None:
+        """Run the actions of ``pjas`` that apply to the implicit collections of a mapped-over run.
+
+        :param step_inputs: the inputs of the run by name, with mapped-over inputs as their collections
+        :param step_outputs: the implicit output collections by output name
+        """
+        for pja in pjas:
+            if pja.action_type in cls.mapped_over_output_actions:
+                cls.execute_on_mapped_over(trans, sa_session, pja, step_inputs, step_outputs, replacement_dict)
+
+    @classmethod
     def execute_on_mapped_over(
         cls, trans, sa_session, pja, step_inputs, step_outputs, replacement_dict=None, final_job_state=None
     ):

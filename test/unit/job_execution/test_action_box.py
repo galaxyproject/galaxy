@@ -8,7 +8,9 @@ from galaxy.job_execution.actions.post import (
     DefaultJobAction,
 )
 from galaxy.model import (
+    Dataset,
     HistoryDatasetAssociation,
+    Job,
     PostJobAction,
 )
 
@@ -76,3 +78,40 @@ def test_supported_action_still_runs(caplog):
 def test_unknown_action_is_ignored(caplog):
     _dispatch("NoSuchAction", {})
     assert _warnings(caplog) == []
+
+
+class _Session:
+    """Collects what ``apply_to_job`` adds."""
+
+    def __init__(self):
+        self.added: list = []
+
+    def add(self, obj):
+        self.added.append(obj)
+
+
+def _apply_rename_and_hide(**kwds):
+    rename = PostJobAction("RenameDatasetAction", output_name="out1", action_arguments={"newname": "renamed"})
+    hide = PostJobAction("HideDatasetAction", output_name="out1", action_arguments={})
+    job = Job()
+    hda = HistoryDatasetAssociation(name="original")
+    hda.dataset = Dataset()
+    job.add_output_dataset("out1", hda)
+    session = _Session()
+    ActionBox.apply_to_job(None, session, [rename, hide], job, **kwds)
+    attached = [pjaa.post_job_action.action_type for pjaa in session.added]
+    return hda, attached
+
+
+def test_apply_to_job_runs_immediate_actions_and_attaches_the_others():
+    hda, attached = _apply_rename_and_hide()
+
+    assert (hda.name, hda.visible) == ("renamed", True)
+    assert attached == ["HideDatasetAction"]
+
+
+def test_apply_to_job_can_also_attach_the_actions_it_runs():
+    hda, attached = _apply_rename_and_hide(record_executed=True)
+
+    assert (hda.name, hda.visible) == ("renamed", True)
+    assert attached == ["RenameDatasetAction", "HideDatasetAction"]
