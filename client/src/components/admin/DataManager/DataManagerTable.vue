@@ -2,12 +2,11 @@
     <div>
         <BBreadcrumb v-if="dataTable && !loading" id="breadcrumb" :items="breadcrumbItems" />
 
-        <Alert :message="message" :variant="status" />
-        <Alert v-if="loading" message="Waiting for data" status="info" />
-        <Alert
-            v-else-if="dataTable && !dataTable['data'].length"
-            message="There are currently no entries in this tool data table."
-            variant="primary" />
+        <GAlert v-if="message" :variant="statusVariant">{{ message }}</GAlert>
+        <GAlert v-if="loading" variant="info">Waiting for data</GAlert>
+        <GAlert v-else-if="dataTable && !dataTable['data'].length" variant="primary">
+            There are currently no entries in this tool data table.
+        </GAlert>
         <BContainer v-else-if="dataTable">
             <BRow>
                 <BCol>
@@ -47,20 +46,21 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BBreadcrumb, BCard, BCol, BContainer, BRow } from "bootstrap-vue";
 
 import { GalaxyApi } from "@/api";
+import { alertVariant } from "@/utils/alertVariant";
 
-import Alert from "@/components/Alert.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GTable from "@/components/Common/GTable.vue";
 
 export default {
     components: {
-        Alert,
         BBreadcrumb,
         BCard,
         BCol,
         BContainer,
         BRow,
         FontAwesomeIcon,
+        GAlert,
         GButton,
         GTable,
     },
@@ -80,6 +80,9 @@ export default {
         };
     },
     computed: {
+        statusVariant() {
+            return alertVariant(this.status);
+        },
         dataTableName() {
             return this.dataTable && this.dataTable.name ? this.dataTable.name : "null";
         },

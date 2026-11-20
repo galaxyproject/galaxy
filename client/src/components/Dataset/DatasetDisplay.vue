@@ -12,7 +12,6 @@ import { absPath, withPrefix } from "@/utils/redirect";
 import { errorMessageAsString } from "@/utils/simple-error";
 import { bytesToString } from "@/utils/utils";
 
-import Alert from "@/components/Alert.vue";
 import GAlert from "@/components/BaseComponents/GAlert.vue";
 import TabularChunkedView from "@/components/Dataset/Tabular/TabularChunkedView.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
@@ -136,14 +135,14 @@ watch(
     </GAlert>
     <LoadingSpan v-else-if="!previewLoaded" message="Loading dataset content" />
     <div v-else class="dataset-display d-flex flex-column h-100">
-        <Alert v-if="sanitizedMessage" :dismissible="true" variant="warning" data-description="sanitization warning">
+        <GAlert v-if="sanitizedMessage" dismissible variant="warning" data-description="sanitization warning">
             {{ sanitizedMessage }}
             <span v-if="isAdmin && sanitizedToolId">
                 <br />
                 <router-link data-description="allowlist link" to="/admin/sanitize_allow">Review Allowlist</router-link>
                 if outputs of {{ sanitizedToolId }} are trusted and should be shown as HTML.
             </span>
-        </Alert>
+        </GAlert>
         <div v-if="dataset.deleted" id="deleted-data-message" class="errormessagelarge">
             You are viewing a deleted dataset.
         </div>
