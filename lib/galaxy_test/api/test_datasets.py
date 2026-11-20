@@ -7,6 +7,7 @@ from urllib.parse import quote
 import pytest
 import requests
 
+from galaxy.model import DatasetHash
 from galaxy.model.unittest_utils.store_fixtures import (
     deferred_hda_model_store_dict,
     one_hda_model_store_dict,
@@ -1124,6 +1125,57 @@ class TestDatasetsApi(ApiTestCase):
         self.dataset_populator.compute_hash(hda["id"])
         hda_details = self.dataset_populator.get_history_dataset_details(history_id, dataset=hda)
         self.assert_hash_value(hda_details, "940cbe15c94d7e339dc15550f6bdcf4d", "MD5")
+
+    def test_compute_hash_defaults_to_configured_hash_function(self, history_id):
+        hda = self.dataset_populator.new_dataset(history_id, wait=True)
+        self.dataset_populator.compute_hash(hda["id"], hash_function=None)
+        hda_details = self.dataset_populator.get_history_dataset_details(history_id, dataset=hda)
+        self.assert_hash_value(
+            hda_details, "a17dcdfd36f47303a4824f1309d43ac14d7491ab3b8abb28782ac8e8d3b680ea", "SHA-256"
+        )
+
+    def test_compute_hash_refuses_reserved_extra_files_path(self, history_id):
+        hda = self.dataset_populator.new_dataset(history_id, wait=True)
+        response = self._put(f"datasets/{hda['id']}/hash", {"extra_files_path": DatasetHash.FINAL}, json=True)
+        self._assert_status_code_is(response, 400)
+
+    def test_compute_final_hash_on_primary_dataset(self, history_id):
+        hda = self.dataset_populator.new_dataset(history_id, wait=True)
+        # Not the configured hash_function, which the upload job may still be computing concurrently.
+        self.dataset_populator.compute_hash(hda["id"], hash_function="SHA-512", final=True)
+        hda_details = self.dataset_populator.get_history_dataset_details(history_id, dataset=hda)
+        self.assert_hash_value(
+            hda_details,
+            "04f0df590d7614f12a1e5a8943b71afb99ed499aa23f3a54650d9f3dfa73bacd35b901c8ef3159888ea6154cfcb20f88820285dd9a1e761622fdf29eb8dc1057",
+            "SHA-512",
+            extra_files_path=DatasetHash.FINAL,
+        )
+
+    def test_compute_final_hash_defaults_to_configured_hash_function(self, history_id):
+        hda = self.dataset_populator.new_dataset(history_id, wait=True)
+        self.dataset_populator.compute_hash(hda["id"], hash_function=None, final=True)
+        hda_details = self.dataset_populator.get_history_dataset_details(history_id, dataset=hda)
+        self.assert_hash_value(
+            hda_details,
+            "a17dcdfd36f47303a4824f1309d43ac14d7491ab3b8abb28782ac8e8d3b680ea",
+            "SHA-256",
+            extra_files_path=DatasetHash.FINAL,
+        )
+
+    def test_compute_final_hash_refuses_non_collision_resistant_hash_function(self, history_id):
+        hda = self.dataset_populator.new_dataset(history_id, wait=True)
+        response = self._put(f"datasets/{hda['id']}/hash", {"final": True, "hash_function": "MD5"}, json=True)
+        self._assert_status_code_is(response, 400)
+
+    def test_compute_final_hash_refuses_composite_dataset(self, history_id):
+        output = self.dataset_populator.fetch_hda(history_id, COMPOSITE_DATA_FETCH_REQUEST_1, wait=True)
+        response = self._put(f"datasets/{output['id']}/hash", {"final": True}, json=True)
+        self._assert_status_code_is(response, 400)
+
+    def test_compute_hash_refuses_final_with_extra_files_path(self, history_id):
+        hda = self.dataset_populator.new_dataset(history_id, wait=True)
+        response = self._put(f"datasets/{hda['id']}/hash", {"final": True, "extra_files_path": "Roadmaps"}, json=True)
+        self._assert_status_code_is(response, 400)
 
     def test_compute_sha1_on_composite_dataset(self, history_id):
         output = self.dataset_populator.fetch_hda(history_id, COMPOSITE_DATA_FETCH_REQUEST_1, wait=True)

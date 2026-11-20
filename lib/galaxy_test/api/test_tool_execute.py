@@ -13,15 +13,18 @@ from typing import Any
 
 import pytest
 
+from galaxy.model import DatasetHash
 from galaxy_test.base.decorators import requires_tool_id
 from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
     DatasetPopulator,
     DescribeToolExecution,
     DescribeToolInputs,
+    HasSrcDict,
     RequiredTool,
     SrcDict,
     TargetHistory,
+    wait_on,
 )
 
 
@@ -755,6 +758,36 @@ def test_map_over_data_param_with_list_of_lists(target_history: TargetHistory, r
     execute = required_tool.execute().with_inputs({"parameter": {"batch": True, "values": [hdca.src_dict]}})
     execute.assert_has_n_jobs(3).assert_creates_n_implicit_collections(1)
     execute.assert_creates_implicit_collection(0)
+
+
+def _wait_for_final_hash(dataset_populator: DatasetPopulator, target_history: TargetHistory, hda: HasSrcDict) -> None:
+    def final_hash_present():
+        details = dataset_populator.get_history_dataset_details(target_history.id, dataset_id=hda.id)
+        return any(h["extra_files_path"] == DatasetHash.FINAL for h in details["hashes"]) or None
+
+    wait_on(final_hash_present, "FINAL dataset hash presence")
+
+
+@requires_tool_id("gx_data")
+def test_job_cache_with_dataset_hash(
+    dataset_populator: DatasetPopulator, target_history: TargetHistory, required_tool: RequiredTool
+) -> None:
+    hda = target_history.with_dataset("1\t2\t3", "dataset1")
+    _ = required_tool.execute().with_inputs({"parameter": hda.src_dict}).assert_has_single_job
+    new_hda = target_history.with_dataset("1\t2\t3", "dataset1")
+    # FINAL hashes are computed asynchronously by a Celery task after the upload job finishes.
+    _wait_for_final_hash(dataset_populator, target_history, hda)
+    _wait_for_final_hash(dataset_populator, target_history, new_hda)
+    execution = required_tool.execute(use_cached_job=True).with_inputs({"parameter": new_hda.src_dict})
+    job = execution.assert_has_single_job
+    assert job.final_details["copied_from_job_id"]
+
+    # A dataset with different content (and hence a different hash) must not be matched.
+    other_hda = target_history.with_dataset("4\t5\t6", "dataset2")
+    _wait_for_final_hash(dataset_populator, target_history, other_hda)
+    other_execution = required_tool.execute(use_cached_job=True).with_inputs({"parameter": other_hda.src_dict})
+    other_job = other_execution.assert_has_single_job
+    assert not other_job.final_details["copied_from_job_id"]
 
 
 @requires_tool_id("gx_data")
