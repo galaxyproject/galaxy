@@ -19254,6 +19254,13 @@ export interface components {
             inputs?: {
                 [key: string]: unknown;
             } | null;
+            /**
+             * Output Actions
+             * @description Changes to make to the outputs the run creates, by tool output name. On a mapped-over run they apply to the collections of the outputs.
+             */
+            output_actions?: {
+                [key: string]: components["schemas"]["ToolOutputActions"];
+            };
             /** Preferred Object Store ID */
             preferred_object_store_id?: string | null;
             /**
@@ -26331,6 +26338,33 @@ export interface components {
              * @description Universal unique identifier for this dataset.
              */
             uuid: string;
+        };
+        /**
+         * ToolOutputActions
+         * @description Changes to make to an output of a tool run, applied as post job actions.
+         */
+        ToolOutputActions: {
+            /**
+             * Add Tags
+             * @description Tags to add to the output.
+             */
+            add_tags?: string[];
+            /**
+             * Hide
+             * @description Hide the output once the job has finished; the collection of a mapped-over run is hidden right away.
+             * @default false
+             */
+            hide: boolean;
+            /**
+             * Remove Tags
+             * @description Tags to remove from the output, e.g. ones it inherits from its inputs.
+             */
+            remove_tags?: string[];
+            /**
+             * Rename
+             * @description The new name of the output. ``#{input_name}`` is replaced with the name of that input.
+             */
+            rename?: string | null;
         };
         /** ToolOutputBoolean */
         ToolOutputBoolean: {

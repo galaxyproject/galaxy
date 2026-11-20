@@ -904,9 +904,11 @@ class DefaultToolAction(ToolAction):
         try:
             # Start by hiding current job outputs before taking over the old job's (implicit) outputs.
             current_job.hide_outputs(flush=False)
-            # Duplicate PJAs before remap.
+            # Duplicate the PJAs of the workflow step before remap; the changes asked for a tool run
+            # come with the rerun request.
             for pjaa in old_job.post_job_actions:
-                current_job.add_post_job_action(pjaa.post_job_action)
+                if pjaa.post_job_action.workflow_step_id is not None:
+                    current_job.add_post_job_action(pjaa.post_job_action)
             if old_job.workflow_invocation_step:
                 replacement_dict = {}
                 for parameter in old_job.workflow_invocation_step.workflow_invocation.input_parameters:

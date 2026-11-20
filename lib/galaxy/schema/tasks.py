@@ -6,6 +6,7 @@ from uuid import UUID
 
 from pydantic import Field
 
+from galaxy.schema.tool_outputs import ToolOutputActionsByName
 from galaxy.util.hash_util import HashFunctionNameEnum
 from ._common import PdfDocumentType
 from .schema import (
@@ -194,6 +195,7 @@ class QueueJobs(Model):
     rerun_remap_job_id: int | None  # link to a job to rerun & remap
     preferred_object_store_id: str | None = None
     tags: list[str] | None = None
+    output_actions: ToolOutputActionsByName = {}
     data_manager_mode: str | None = None
     send_email_notification: bool = False
     send_notification: bool = False

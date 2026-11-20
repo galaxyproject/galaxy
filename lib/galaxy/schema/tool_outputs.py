@@ -8,7 +8,10 @@ from typing import (
 from pydantic import Field
 
 from galaxy.schema.fields import DecodedDatabaseIdField
-from galaxy.schema.schema import Model
+from galaxy.schema.schema import (
+    Model,
+    TagItem,
+)
 
 
 class ToolOutputsPreviewRequest(Model):
@@ -61,3 +64,25 @@ class ToolOutputsPreview(Model):
     unsupported_reason: str | None = Field(default=None, description="Why the outputs can't be described.")
     job_count: int = Field(default=0, description="The number of jobs the run would create.")
     outputs: list[ToolOutputPreview] = Field(default_factory=list, description="The outputs the run would create.")
+
+
+class ToolOutputActions(Model):
+    """Changes to make to an output of a tool run, applied as post job actions."""
+
+    rename: str | None = Field(
+        default=None,
+        max_length=255,
+        description="The new name of the output. ``#{input_name}`` is replaced with the name of that input.",
+    )
+    add_tags: list[TagItem] = Field(default_factory=list, description="Tags to add to the output.")
+    remove_tags: list[TagItem] = Field(
+        default_factory=list, description="Tags to remove from the output, e.g. ones it inherits from its inputs."
+    )
+    hide: bool = Field(
+        default=False,
+        description="Hide the output once the job has finished; the collection of a mapped-over run is hidden "
+        "right away.",
+    )
+
+
+ToolOutputActionsByName = dict[str, ToolOutputActions]

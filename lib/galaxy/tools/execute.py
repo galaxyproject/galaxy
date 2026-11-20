@@ -23,6 +23,7 @@ from packaging.version import Version
 
 from galaxy import model
 from galaxy.exceptions import ToolInputsNotOKException
+from galaxy.job_execution.actions.post import ActionBox
 from galaxy.model import (
     RunNotificationRequest,
     ToolRequest,
@@ -549,6 +550,19 @@ class ExecutionTracker:
             tag_handler.apply_item_tags(user=user, item=hdca, tags_str=tags_str, flush=False)
         for hdca in self.implicit_collections.values():
             tag_handler.apply_item_tags(user=user, item=hdca, tags_str=tags_str, flush=False)
+
+    def apply_mapped_over_post_job_actions(self, post_job_actions: list[model.PostJobAction]) -> None:
+        """Run the post job actions that apply to the implicit collections of a mapped-over run."""
+        if not post_job_actions or not self.implicit_collections:
+            return
+        collection_info = self.collection_info
+        assert collection_info
+        # Inputs by name for #{input} in new names, with mapped-over inputs as their collections.
+        step_inputs = dict(self.example_params)
+        step_inputs.update(collection_info.collections)
+        ActionBox.apply_to_mapped_over(
+            self.trans, self.trans.sa_session, post_job_actions, step_inputs, self.implicit_collections
+        )
 
     def request_completion_notification(self, user, history) -> None:
         if not (self.trans.app.config.enable_notification_system or self.trans.app.config.smtp_server):

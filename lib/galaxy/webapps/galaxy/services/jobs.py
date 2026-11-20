@@ -51,7 +51,9 @@ from galaxy.schema.tasks import (
     QueueJobs,
     ToolSource,
 )
+from galaxy.schema.tool_outputs import ToolOutputActionsByName
 from galaxy.security.idencoding import IdEncodingHelper
+from galaxy.tools.output_actions import post_job_actions_for_outputs
 from galaxy.webapps.galaxy.services.base import (
     ServiceBase,
 )
@@ -94,6 +96,12 @@ class JobRequest(BaseModel):
     )
     preferred_object_store_id: str | None = Field(default=None, title="Preferred Object Store ID")
     tags: list[str] | None = Field(default=None, title="Tags")
+    output_actions: ToolOutputActionsByName = Field(
+        default_factory=dict,
+        title="Output Actions",
+        description="Changes to make to the outputs the run creates, by tool output name. On a mapped-over run "
+        "they apply to the collections of the outputs.",
+    )
     data_manager_mode: str | None = Field(default=None, title="Data Manager Mode")
     credentials_context: list[dict[str, Any]] | None = Field(default=None, title="Credentials Context")
 
@@ -260,6 +268,8 @@ class JobsService(ServiceBase):
         if (history_id := job_request.history_id) is not None:
             target_history = self.history_manager.get_owned(history_id, trans.user, current_history=trans.history)
         request_internal_state = validated_request_internal_state(trans, tool, job_request.inputs, job_request.strict)
+        # Rejects unknown output names before the request is queued.
+        post_job_actions_for_outputs(tool, job_request.output_actions)
         sa_session = trans.sa_session
         tool_source_model = get_or_create_tool_source(sa_session, tool)
         tool_request = ToolRequest()
@@ -284,6 +294,7 @@ class JobsService(ServiceBase):
             rerun_remap_job_id=job_request.rerun_remap_job_id,
             preferred_object_store_id=job_request.preferred_object_store_id,
             tags=job_request.tags,
+            output_actions=job_request.output_actions,
             data_manager_mode=job_request.data_manager_mode,
             send_email_notification=job_request.send_email_notification,
             send_notification=job_request.send_notification,

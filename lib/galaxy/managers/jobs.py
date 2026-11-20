@@ -2381,6 +2381,7 @@ class JobSubmitter:
                 rerun_remap_job_id=rerun_remap_job_id,
                 preferred_object_store_id=request.preferred_object_store_id,
                 credentials_context=credentials_context,
+                output_actions=request.output_actions,
             )
             if request.tags:
                 execution_tracker.apply_tags(request_context.tag_handler, request_context.user, request.tags)
