@@ -18,6 +18,7 @@ const { server, http } = useServerMock();
 setupMockConfig({});
 
 async function init(wrapper, data) {
+    await wrapper.find("#select-btn").trigger("click");
     // the file dialog modal should exist
     const filesDialogComponent = wrapper.findComponent(FilesDialog);
     expect(filesDialogComponent.exists()).toBe(true);
@@ -190,6 +191,23 @@ describe("DirectoryPathEditableBreadcrumb", () => {
         expect(restoredWrapper.find(".pathname").text()).toBe("gxfiles:");
         expect(restoredWrapper.emitted("input")).toBeUndefined();
         restoredWrapper.destroy();
+    });
+
+    it("clears a value it cannot parse when mounting", async () => {
+        const invalidWrapper = mount(FormDirectory, {
+            propsData: { value: "not a directory uri" },
+            localVue,
+            pinia: createPinia(),
+        });
+        await flushPromises();
+
+        expect(invalidWrapper.emitted("input")).toEqual([[undefined]]);
+        expect(invalidWrapper.find("#select-btn").exists()).toBe(true);
+        invalidWrapper.destroy();
+    });
+
+    it("does not load the files dialog before Select is clicked", async () => {
+        expect(wrapper.findComponent(FilesDialog).exists()).toBe(false);
     });
 
     it("should save on blur", async () => {

@@ -5,6 +5,7 @@
                 <FontAwesomeIcon :icon="faFolderOpen" /> {{ selectText }}
             </GButton>
             <FilesDialog
+                v-if="isModalShown"
                 :key="modalKey"
                 mode="directory"
                 :callback="setUrl"
@@ -94,10 +95,8 @@ export default {
             return regex.test(this.currentDirectoryName);
         },
     },
-    mounted() {
-        if (this.value) {
-            this.parseUrl(this.value);
-        } else {
+    created() {
+        if (!this.value || !this.parseUrl(this.value)) {
             this.updateURL(true);
         }
     },
@@ -127,7 +126,7 @@ export default {
             }
         },
         setUrl({ url }) {
-            if (this.parseUrl(url) && url) {
+            if (url && this.parseUrl(url)) {
                 this.updateURL();
             }
         },
