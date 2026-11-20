@@ -263,9 +263,14 @@ test_data:
     def _rows_by_type(self, summary, *step_types):
         return [j for j in summary["jobs"] if j["step_type"] in step_types]
 
-    def _row_with_output_id(self, summary, content_id):
+    def _row_with_output_id(self, summary, content_id, history_content_type=None):
+        # Encoded HDA and HDCA ids can collide, pass history_content_type to disambiguate.
         for job in summary["jobs"]:
-            if any(o["id"] == content_id for o in job["outputs"]):
+            if any(
+                o["id"] == content_id
+                and (history_content_type is None or o["history_content_type"] == history_content_type)
+                for o in job["outputs"]
+            ):
                 return job
         return None
 
