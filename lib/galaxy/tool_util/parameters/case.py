@@ -27,7 +27,10 @@ from galaxy.tool_util.parser.interface import (
     xml_data_input_to_json,
     XmlTestCollectionDefDict,
 )
-from galaxy.tool_util.parser.util import multiple_select_value_split
+from galaxy.tool_util.parser.util import (
+    COMPOSITE_DATA_RENAME_PREFIX,
+    multiple_select_value_split,
+)
 from galaxy.tool_util_models.parameters import (
     BooleanParameterModel,
     ConditionalParameterModel,
@@ -215,6 +218,8 @@ class LegacyTestInputResolver:
 
     inputs: ToolSourceTestInputs
     consumed_discriminators: FrozenSet[str] = frozenset()
+    # Off at test load, which keeps resolving conflicting exact-name duplicates as it always has.
+    reject_conflicting_duplicates: bool = False
 
     def consuming(self, discriminator_name: Optional[str]) -> "LegacyTestInputResolver":
         if discriminator_name is None:
@@ -228,9 +233,15 @@ class LegacyTestInputResolver:
         # Discriminators consumed by enclosing conditionals are excluded from the loose fallbacks
         # below, so a descendant's omitted discriminator does not re-match an ancestor's.
         exclude = self.consumed_discriminators
-        for input in self.inputs:
-            if input["name"] == flat_state_path:
-                return input
+        exact_matching_inputs = [input for input in self.inputs if input["name"] == flat_state_path]
+        if not self.reject_conflicting_duplicates:
+            exact_matching_inputs = exact_matching_inputs[:1]
+        resolved = _resolve_matching_inputs(
+            exact_matching_inputs,
+            f"Ambiguous test parameter ({flat_state_path}) specified more than once with different values",
+        )
+        if resolved is not None:
+            return resolved
         # Fallback for legacy test cases that specify conditional/section params without the
         # pipe-separated prefix (e.g. <param name="fasta"> instead of <param name="mode|fasta">).
         if "|" in flat_state_path:
@@ -313,6 +324,7 @@ def test_case_state(
     profile: str,
     validate: bool = True,
     name: Optional[str] = None,
+    reject_conflicting_duplicates: bool = False,
 ) -> TestCaseStateAndWarnings:
     warnings: List[str] = []
     inputs: ToolSourceTestInputs = test_dict["inputs"]
@@ -320,7 +332,12 @@ def test_case_state(
     state: Dict[str, Any] = {}
 
     state_representation = test_dict.get("value_state_representation", "test_case_xml")
-    context = MergeContext(LegacyTestInputResolver(inputs), profile, state_representation, warnings)
+    context = MergeContext(
+        LegacyTestInputResolver(inputs, reject_conflicting_duplicates=reject_conflicting_duplicates),
+        profile,
+        state_representation,
+        warnings,
+    )
     handled_inputs = _merge_level_into_state(tool_parameter_bundle, context, state, None)
 
     for test_input in inputs:
@@ -358,9 +375,12 @@ def _input_name_was_handled_by_legacy_fallback(input_name: str, handled_inputs: 
 def test_case_validation(
     test_dict: ToolSourceTest, tool_parameter_bundle: List[ToolParameterT], profile: str, name: Optional[str] = None
 ) -> TestCaseStateValidationResult:
-    test_case_state_and_warnings = test_case_state(test_dict, tool_parameter_bundle, profile, validate=False)
+    test_case_state_and_warnings = TestCaseStateAndWarnings(TestCaseToolState({}), [], [])
     exception: Optional[Exception] = None
     try:
+        test_case_state_and_warnings = test_case_state(
+            test_dict, tool_parameter_bundle, profile, validate=False, reject_conflicting_duplicates=True
+        )
         test_case_state_and_warnings.tool_state.validate(tool_parameter_bundle, name=name)
         for input_name in test_case_state_and_warnings.unhandled_inputs:
             raise Exception(f"Invalid parameter name found {input_name}")
@@ -388,12 +408,13 @@ def _merge_level_into_state(
     return handled_inputs
 
 
-def _inputs_as_dict(inputs: ToolSourceTestInputs) -> Dict[str, ToolSourceTestInput]:
-    as_dict: Dict[str, ToolSourceTestInput] = {}
+def _inputs_by_name(inputs: ToolSourceTestInputs) -> Dict[str, ToolSourceTestInputs]:
+    """Group test inputs by name, keeping duplicates so ``input_for`` can reject conflicts."""
+    by_name: Dict[str, ToolSourceTestInputs] = {}
     for input in inputs:
-        as_dict[input["name"]] = input
+        by_name.setdefault(input["name"], []).append(input)
 
-    return as_dict
+    return by_name
 
 
 def _merge_into_state(
@@ -432,7 +453,9 @@ def _merge_into_state(
         if input_name not in state_at_level:
             state_at_level[input_name] = repeat_state_array
 
-        repeat_instance_inputs = _repeat_inputs_to_array(state_path, tool_input.parameters, context.inputs)
+        repeat_instance_inputs = _repeat_inputs_to_array(
+            state_path, tool_input.parameters, context.inputs, context.resolver.reject_conflicting_duplicates
+        )
         if tool_input.min is not None:
             while len(repeat_instance_inputs) < tool_input.min:
                 repeat_instance_inputs.append([])
@@ -506,10 +529,13 @@ def _merge_into_state(
 
 
 def _repeat_inputs_to_array(
-    state_path: str, parameters: List[ToolParameterT], inputs: ToolSourceTestInputs
+    state_path: str,
+    parameters: List[ToolParameterT],
+    inputs: ToolSourceTestInputs,
+    reject_conflicting_duplicates: bool = False,
 ) -> List[ToolSourceTestInputs]:
-    inputs_as_dict = _inputs_as_dict(inputs)
-    repeat_instance_input_dicts = repeat_inputs_to_array(state_path, inputs_as_dict)
+    inputs_by_name = _inputs_by_name(inputs)
+    repeat_instance_input_dicts = repeat_inputs_to_array(state_path, inputs_by_name)
     if not repeat_instance_input_dicts and "|" in state_path:
         # A legacy test may name a repeat inside a conditional/section by its unqualified name.
         # Progressively strip leading conditional/section segments (longest candidate first, to
@@ -518,10 +544,18 @@ def _repeat_inputs_to_array(
         parts = state_path.split("|")
         for start in range(1, len(parts)):
             candidate_path = "|".join(parts[start:])
-            repeat_instance_input_dicts = repeat_inputs_to_array(candidate_path, inputs_as_dict)
+            repeat_instance_input_dicts = repeat_inputs_to_array(candidate_path, inputs_by_name)
             if repeat_instance_input_dicts:
                 break
-    repeat_instance_inputs = [list(instance_inputs.values()) for instance_inputs in repeat_instance_input_dicts]
+    repeat_instance_inputs = [
+        [
+            input
+            for same_name_inputs in instance_inputs.values()
+            # Without rejection a repeat instance keeps the last of same-name inputs, as before.
+            for input in (same_name_inputs if reject_conflicting_duplicates else same_name_inputs[-1:])
+        ]
+        for instance_inputs in repeat_instance_input_dicts
+    ]
     if repeat_instance_inputs:
         return repeat_instance_inputs
 
@@ -633,12 +667,37 @@ def _resolve_matching_inputs(
     first = matching_inputs[0]
     if len(matching_inputs) == 1:
         return first
-    if all(
-        input.get("value") == first.get("value") and input.get("attributes") == first.get("attributes")
-        for input in matching_inputs[1:]
-    ):
+    first_comparable = _comparable_test_input(first)
+    if all(_comparable_test_input(input) == first_comparable for input in matching_inputs[1:]):
         return first
     raise Exception(ambiguity_message)
+
+
+def _comparable_test_input(input: ToolSourceTestInput) -> Tuple[Any, Dict[str, Any]]:
+    """Value and attributes with generated composite renames dropped, including inside collections."""
+    attributes = dict(input.get("attributes") or {})
+    if "edit_attributes" in attributes:
+        attributes["edit_attributes"] = [
+            edit
+            for edit in attributes["edit_attributes"]
+            if not edit.get("value", "").startswith(COMPOSITE_DATA_RENAME_PREFIX)
+        ]
+    if "collection" in attributes:
+        attributes["collection"] = _comparable_collection(attributes["collection"])
+    return input.get("value"), attributes
+
+
+def _comparable_collection(collection: Dict[str, Any]) -> Dict[str, Any]:
+    elements = []
+    for element in collection.get("elements", []):
+        definition = element["element_definition"]
+        comparable: Any
+        if definition.get("model_class") == "TestCollectionDef":
+            comparable = _comparable_collection(definition)
+        else:
+            comparable = _comparable_test_input(definition)
+        elements.append({**element, "element_definition": comparable})
+    return {**collection, "elements": elements}
 
 
 def _path_ends_with_param(qualified_path: str, param_name: str) -> bool:
