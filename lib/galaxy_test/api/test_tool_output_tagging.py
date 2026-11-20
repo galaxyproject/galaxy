@@ -18,6 +18,10 @@ class TestToolOutputTaggingApi(ApiTestCase):
         details = self.dataset_populator.get_history_dataset_details(history_id, dataset_id=hda_id)
         assert sorted(details["tags"]) == sorted(expected)
 
+    def _assert_collection_tags(self, history_id: str, hdca_id: str, expected: List[str]):
+        details = self.dataset_populator.get_history_collection_details(history_id, content_id=hdca_id)
+        assert sorted(details["tags"]) == sorted(expected)
+
     def test_tagging_regular_tool_output(self):
         history_id = self.dataset_populator.new_history()
         hda = self.dataset_populator.new_dataset(history_id, content="content")
@@ -65,3 +69,5 @@ class TestToolOutputTaggingApi(ApiTestCase):
         assert len(outputs) == 3, resp.json()
         for out in outputs:
             self._assert_tags(history_id, out["id"], ["m1", "m2"])
+        [implicit] = resp.json()["implicit_collections"]
+        self._assert_collection_tags(history_id, implicit["id"], ["m1", "m2"])
