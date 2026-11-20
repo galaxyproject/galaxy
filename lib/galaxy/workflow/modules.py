@@ -37,7 +37,11 @@ from galaxy.exceptions import (
     ToolInputsNotReadyException,
     ToolMissingException,
 )
-from galaxy.job_execution.actions.post import ActionBox
+from galaxy.job_execution.actions.post import (
+    ActionBox,
+    step_input_references,
+    STEP_INPUT_VALUES_ARGUMENT,
+)
 from galaxy.job_execution.compute_environment import ComputeEnvironment
 from galaxy.managers.credentials import _build_user_credentials_query
 from galaxy.managers.tool_source import get_or_create_tool_source
@@ -324,6 +328,19 @@ def replace_expression_json_dataset(
     if dataset_instance is not None and dataset_instance.extension == "expression.json":
         return read_expression_json(dataset_instance, step=step)
     return replacement
+
+
+def format_step_input_reference(value: Any) -> str:
+    """Format the value of a step input referenced as ``$(inputs.name)`` in a rename."""
+    if value is None or value is NO_REPLACEMENT:
+        return ""
+    if isinstance(value, bool):
+        return "true" if value else "false"
+    if isinstance(value, (model.HistoryDatasetAssociation, model.HistoryDatasetCollectionAssociation)):
+        return value.name or ""
+    if isinstance(value, list):
+        return ",".join(format_step_input_reference(item) for item in value)
+    return str(value)
 
 
 def to_cwl(
@@ -3248,6 +3265,7 @@ class ToolModule(WorkflowModule):
         for input_dict in all_inputs:
             all_inputs_by_name[input_dict["name"]] = input_dict
         collection_info = self.plan_map_over(progress, step, all_inputs)
+        step_input_values = self._referenced_step_input_values(progress, step)
 
         param_combinations = []
         if collection_info:
@@ -3426,7 +3444,7 @@ class ToolModule(WorkflowModule):
                 max_num_jobs=max_num_jobs,
                 validate_outputs=validate_outputs,
                 job_callback=lambda job: self._handle_post_job_actions(
-                    step, job, progress.effective_replacement_dict()
+                    step, job, progress.effective_replacement_dict(), step_input_values
                 ),
                 completed_jobs=completed_jobs,
                 recorded_job_indexes=recorded_job_indexes,
@@ -3456,7 +3474,7 @@ class ToolModule(WorkflowModule):
             step_inputs.update(collection_info.collections)
 
             self._handle_mapped_over_post_job_actions(
-                step, step_inputs, step_outputs, progress.effective_replacement_dict()
+                step, step_inputs, step_outputs, progress.effective_replacement_dict(), step_input_values
             )
             if progress.when_values == [False] and not progress.subworkflow_collection_info:
                 # Step skipped entirely. We hide the output to avoid confusion.
@@ -3512,14 +3530,67 @@ class ToolModule(WorkflowModule):
             details=str({k: str(v) for k, v in step_errors.items()}),
         )
 
-    def _effective_post_job_actions(self, step):
+    def _effective_post_job_actions(self, step, step_input_values: dict[str, str] | None = None):
         effective_post_job_actions = step.post_job_actions[:]
         for key, value in self.runtime_post_job_actions.items():
             effective_post_job_actions.append(self.__to_pja(key, value, None))
+        if step_input_values:
+            effective_post_job_actions = [
+                self._resolve_rename_step_input_references(pja, step_input_values) for pja in effective_post_job_actions
+            ]
         return effective_post_job_actions
 
-    def _handle_mapped_over_post_job_actions(self, step, step_inputs, step_outputs, replacement_dict):
-        effective_post_job_actions = self._effective_post_job_actions(step)
+    def _referenced_step_input_values(self, progress: "WorkflowProgress", step: WorkflowStep) -> dict[str, str]:
+        """Resolve the step inputs that rename actions reference with ``$(inputs.name)``.
+
+        Raises ``DelayedWorkflowEvaluation`` until a referenced parameter's value is known.
+        """
+        referenced: set[str] = set()
+        for pja in self._effective_post_job_actions(step):
+            if pja.action_type == "RenameDatasetAction":
+                referenced.update(step_input_references((pja.action_arguments or {}).get("newname") or ""))
+        values: dict[str, str] = {}
+        for name in referenced:
+            replacement: Any = None
+            if connections := step.input_connections_by_name.get(name):
+                # Resolved like a connected tool parameter: wait for the value, then read it.
+                replacement = progress.replacement_for_connection(connections[0], is_data=False, optional=True)
+                replacement = replace_expression_json_dataset(replacement, step)
+            elif (step_input := step.inputs_by_name.get(name)) and step_input.default_value_set:
+                replacement = step_input.default_value
+            if isinstance(replacement, model.HistoryDatasetCollectionAssociation) and any(
+                # Skipped elements of a data collection are stored as expression.json too.
+                instance.extension == "expression.json" and not instance.is_skipped
+                for instance in replacement.collection.dataset_instances
+            ):
+                # One name for the whole step can't hold a value per element.
+                raise FailWorkflowEvaluation(
+                    why=InvocationFailureWorkflowParameterInvalid(
+                        reason=FailureReason.workflow_parameter_invalid,
+                        workflow_step_id=step.id,
+                        details=f"$(inputs.{name}) in a rename takes a single value, but a collection of values is connected to '{name}'",
+                    )
+                )
+            values[name] = format_step_input_reference(replacement)
+        return values
+
+    def _resolve_rename_step_input_references(self, pja: PostJobAction, step_input_values: dict[str, str]):
+        if pja.action_type != "RenameDatasetAction":
+            return pja
+        new_name = (pja.action_arguments or {}).get("newname") or ""
+        values = {
+            name: step_input_values[name] for name in step_input_references(new_name) if name in step_input_values
+        }
+        if not values:
+            return pja
+        # A transient copy carries the values, so the stored action keeps the reference for the next invocation.
+        action_arguments = {**pja.action_arguments, STEP_INPUT_VALUES_ARGUMENT: values}
+        return PostJobAction(pja.action_type, None, pja.output_name, action_arguments)
+
+    def _handle_mapped_over_post_job_actions(
+        self, step, step_inputs, step_outputs, replacement_dict, step_input_values: dict[str, str] | None = None
+    ):
+        effective_post_job_actions = self._effective_post_job_actions(step, step_input_values)
         for pja in effective_post_job_actions:
             if pja.action_type in ActionBox.mapped_over_output_actions:
                 ActionBox.execute_on_mapped_over(
@@ -3558,14 +3629,14 @@ class ToolModule(WorkflowModule):
                 )
         return CredentialsContext(root=list(seen.values()))
 
-    def _handle_post_job_actions(self, step, job, replacement_dict):
+    def _handle_post_job_actions(self, step, job, replacement_dict, step_input_values: dict[str, str] | None = None):
         # Create new PJA associations with the created job, to be run on completion.
         # PJA Parameter Replacement (only applies to immediate actions-- rename specifically, for now)
         # Pass along replacement dict with the execution of the PJA so we don't have to modify the object.
 
         # Combine workflow and runtime post job actions into the effective post
         # job actions for this execution.
-        effective_post_job_actions = self._effective_post_job_actions(step)
+        effective_post_job_actions = self._effective_post_job_actions(step, step_input_values)
         for pja in effective_post_job_actions:
             if pja.action_type in ActionBox.immediate_actions or isinstance(self.tool, DatabaseOperationTool):
                 ActionBox.execute(self.trans.app, self.trans.sa_session, pja, job, replacement_dict)

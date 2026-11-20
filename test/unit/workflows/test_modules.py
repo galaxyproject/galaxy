@@ -1191,3 +1191,21 @@ def test_to_decoded_json_lowers_bare_runtime_value():
     result = to_decoded_json({"foo": RuntimeValue()})
     assert result == {"foo": {"__class__": "RuntimeValue"}}
     json.dumps(result)
+
+
+@pytest.mark.parametrize(
+    "value,expected",
+    [
+        (None, ""),
+        (NO_REPLACEMENT, ""),
+        ("S1", "S1"),
+        (7, "7"),
+        (1.5, "1.5"),
+        (True, "true"),
+        (False, "false"),
+        (["a", 2, None], "a,2,"),
+        (model.HistoryDatasetAssociation(name="reads.fastq"), "reads.fastq"),
+    ],
+)
+def test_format_step_input_reference(value, expected):
+    assert modules.format_step_input_reference(value) == expected

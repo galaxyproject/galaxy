@@ -18,6 +18,21 @@ from galaxy.util.custom_logging import get_logger
 log = get_logger(__name__)
 
 RENAME_INPUT_REFERENCE_PATTERN = re.compile(r"#\{([^}]*)\}")
+# ``$(inputs.name)`` names an input of the workflow step, as in gxformat2/CWL.
+STEP_INPUT_REFERENCE_PATTERN = re.compile(r"\$\(inputs\.([A-Za-z0-9_]+)\)")
+# Both kinds of reference, resolved in one pass so a substituted value is not expanded as a #{} or
+# $(inputs.) reference. ``${...}`` workflow parameters are still replaced across the whole name afterwards.
+RENAME_REFERENCE_PATTERN = re.compile(
+    f"{RENAME_INPUT_REFERENCE_PATTERN.pattern}|{STEP_INPUT_REFERENCE_PATTERN.pattern}"
+)
+# Action argument holding the values of the step inputs a rename references. The workflow
+# scheduler sets it on a transient copy of the action, it is never stored.
+STEP_INPUT_VALUES_ARGUMENT = "step_input_values"
+
+
+def step_input_references(new_name: str) -> set[str]:
+    """Return the step input names that ``new_name`` references with ``$(inputs.name)``."""
+    return set(STEP_INPUT_REFERENCE_PATTERN.findall(new_name))
 
 
 class DefaultJobAction:
@@ -185,7 +200,12 @@ class RenameDatasetAction(DefaultJobAction):
             #  suggested additions:
             #      "replace" option so you can replace a portion of the name.
 
+            step_input_values = action.action_arguments.get(STEP_INPUT_VALUES_ARGUMENT) or {}
+
             def resolve(match: re.Match[str]) -> str:
+                if (step_input_name := match.group(2)) is not None:
+                    # Unresolved references stay as written, outside a workflow for instance.
+                    return step_input_values.get(step_input_name, match.group(0))
                 to_be_replaced = match.group(1)
                 input_file_var = to_be_replaced
                 #  Pull out the piped controls and store them for later
@@ -235,7 +255,7 @@ class RenameDatasetAction(DefaultJobAction):
 
                 return replacement
 
-            new_name = RENAME_INPUT_REFERENCE_PATTERN.sub(resolve, new_name)
+            new_name = RENAME_REFERENCE_PATTERN.sub(resolve, new_name)
 
             if replacement_dict:
                 for k, v in replacement_dict.items():
