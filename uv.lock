@@ -2934,6 +2934,7 @@ dependencies = [
 [package.optional-dependencies]
 test = [
     { name = "gcsfs" },
+    { name = "httpx" },
     { name = "pyftpdlib" },
     { name = "pytest" },
     { name = "responses" },
@@ -2946,6 +2947,7 @@ requires-dist = [
     { name = "fsspec" },
     { name = "galaxy-util", extras = ["config-template", "template"], editable = "packages/util" },
     { name = "gcsfs", marker = "extra == 'test'" },
+    { name = "httpx", marker = "extra == 'test'" },
     { name = "pkg-resources-backport" },
     { name = "pydantic", specifier = ">=2.7.4" },
     { name = "pyftpdlib", marker = "extra == 'test'" },

@@ -16,6 +16,8 @@ include src/galaxy/files/templates/examples/production_gitlab.yml
 include src/galaxy/files/templates/examples/production_aws_public_bucket.yml
 include src/galaxy/files/templates/examples/admin_secrets.yml
 include src/galaxy/files/templates/examples/production_cbioportal.yml
+include src/galaxy/files/templates/examples/production_dspace.yml
+include src/galaxy/files/templates/examples/production_dcache.yml
 include src/galaxy/files/templates/examples/production_aws_private_bucket.yml
 include src/galaxy/files/templates/examples/production_commoncrawl.yml
 include src/galaxy/files/templates/examples/dropbox_client_secrets_explicit.yml
