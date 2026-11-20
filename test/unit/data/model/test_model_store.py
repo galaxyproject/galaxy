@@ -1058,17 +1058,17 @@ def test_sessionless_import_edit_datasets():
 
 def test_import_job_with_output_copy():
     app, h, temp_directory, import_history = _setup_simple_export({"for_edit": True})
+    _edit_exported_dataset_attrs(temp_directory, lambda attrs: attrs[1]["metadata"].update(data_lines=42))
     hda = h.active_datasets[-1]
     # Simulate a copy being made of an output hda
     copy = hda.copy(new_name="output copy")
     # set extension to auto, should be changed to real extension when finalizing job
     copy.extension = "auto"
     app.add_and_commit(copy)
-    import_model_store = store.get_import_model_store_for_directory(
-        temp_directory, import_options=store.ImportOptions(allow_dataset_object_edit=True, allow_edit=True), app=app
-    )
-    import_model_store.perform_import()
+    _perform_edit_import(temp_directory, app)
     assert copy.extension == "txt"
+    # data_lines is not part of the "auto" datatype's metadata spec, it must still be copied
+    assert copy.metadata.data_lines == 42
 
 
 def test_import_existing_job_reports_state_without_applying_it():
@@ -1113,6 +1113,22 @@ def _setup_simple_export(export_kwds):
         export_store.add_dataset(d2)
 
     return app, h, temp_directory, import_history
+
+
+def _edit_exported_dataset_attrs(temp_directory, edit):
+    datasets_attrs_path = os.path.join(temp_directory, store.ATTRS_FILENAME_DATASETS)
+    with open(datasets_attrs_path) as f:
+        datasets_attrs = json.load(f)
+    edit(datasets_attrs)
+    with open(datasets_attrs_path, "w") as f:
+        json.dump(datasets_attrs, f)
+
+
+def _perform_edit_import(temp_directory, app):
+    import_model_store = store.get_import_model_store_for_directory(
+        temp_directory, import_options=store.ImportOptions(allow_dataset_object_edit=True, allow_edit=True), app=app
+    )
+    import_model_store.perform_import()
 
 
 def _assert_simple_cat_job_imported(imported_history, state="ok"):

@@ -510,9 +510,8 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                 if "id" in dataset_attrs["dataset"] and self.import_options.allow_edit:
                     dataset_instance.dataset.id = dataset_attrs["dataset"]["id"]
                     for dataset_association in dataset_instance.dataset.history_associations:
-                        if (
-                            dataset_association is not dataset_instance
-                            and dataset_association.extension == dataset_instance.extension
+                        if dataset_association is not dataset_instance and (
+                            dataset_association.extension == dataset_instance.extension
                             or dataset_association.extension == "auto"
                         ):
                             copy_dataset_instance_metadata_attributes(
@@ -3181,9 +3180,10 @@ def payload_to_source_uri(payload) -> str:
 
 
 def copy_dataset_instance_metadata_attributes(source: model.DatasetInstance, target: model.DatasetInstance) -> None:
+    # The metadata setter only keeps keys in the target's current datatype spec, so set the extension first.
+    target.extension = source.extension
     target.metadata = source.metadata
     target.blurb = source.blurb
     target.peek = source.peek
     target.info = source.info
     target.tool_version = source.tool_version
-    target.extension = source.extension
