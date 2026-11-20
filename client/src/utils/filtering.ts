@@ -585,7 +585,14 @@ export default class Filtering<T> {
             ([a], [b]) => Number(b === unspecifiedTextKey) - Number(a === unspecifiedTextKey),
         );
 
-        let newFilterText = "";
+        // without an autoFilterKey, plain words have no filter to go into, so they are kept as typed
+        let newFilterText =
+            this.autoFilterKey === undefined
+                ? sourceTokens
+                      .filter((t) => t.isRawText)
+                      .map((t) => t.value)
+                      .join(" ")
+                : "";
         entries.forEach(([key, value]) => {
             // this is a default filter, skip it if ALL default filters have default values
             const skipDefault = !backendFormatted && hasDefaults && this.defaultFilters[key] !== undefined;
