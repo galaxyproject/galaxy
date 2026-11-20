@@ -101,7 +101,8 @@ def __main__():
                             assert fields[5] in [
                                 "+",
                                 "-",
-                            ], "Invalid strand"  # strand - Defines the strand - either '+' or '-'.
+                                ".",
+                            ], "Invalid strand"  # strand - Defines the strand - either '+', '-' or '.' (no strand).
                             if len(fields) > 6:
                                 int(
                                     fields[6]
