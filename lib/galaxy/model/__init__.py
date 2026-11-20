@@ -108,6 +108,7 @@ from sqlalchemy import (
     type_coerce,
     Unicode,
     UniqueConstraint,
+    Update,
     update,
     VARCHAR,
 )
@@ -181,6 +182,10 @@ from galaxy.model.item_attrs import (
     UsesAnnotations,
 )
 from galaxy.model.orm.util import add_object_to_object_session
+from galaxy.model.pending_changes import (
+    pending_changes,
+    record_job_change,
+)
 from galaxy.model.tag_filter import build_tag_filter
 from galaxy.objectstore import (
     ObjectStoreAuth,
@@ -10372,19 +10377,12 @@ class InputToMaterialize:
     ]
 
 
-# ``session.info`` key holding the invocations changed in the session's open transaction as
-# ``{invocation_id: (owner_user_id, state)}``. The key exists only while a publisher that sends
-# these changes after commit is listening on the session (see
-# ``galaxy.managers.invocation_events``), so recording is a no-op otherwise.
-PENDING_INVOCATION_CHANGES = "galaxy.pending_invocation_changes"
-
-
 def record_invocation_change(session: Session, invocation: "WorkflowInvocation", state: str) -> None:
-    pending = session.info.get(PENDING_INVOCATION_CHANGES)
+    pending = pending_changes(session)
     if pending is None:
         return
     history = invocation.history
-    pending[invocation.id] = (history.user_id if history else None, str(state))
+    pending.invocations[invocation.id] = (history.user_id if history else None, str(state))
 
 
 class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializable):
@@ -10619,7 +10617,7 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
             .filter(~Job.state.in_(Job.finished_states))
             .with_for_update()
         )
-        sa_session.execute(update(Job).where(Job.id.in_(job_subq)).values({"state": Job.states.DELETING}))
+        self._delete_jobs(sa_session, update(Job).where(Job.id.in_(job_subq)))
 
         job_collection_subq = (
             select(Job.id)
@@ -10634,9 +10632,7 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
             .subquery()
         )
 
-        sa_session.execute(
-            update(Job).where(Job.id.in_(job_collection_subq.element)).values({"state": Job.states.DELETING})
-        )
+        self._delete_jobs(sa_session, update(Job).where(Job.id.in_(job_collection_subq.element)))
 
         for invocation in self.subworkflow_invocations:
             subworkflow_invocation = invocation.subworkflow_invocation
@@ -10645,6 +10641,18 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
                 subworkflow_invocation.add_message(InvocationCancellationUserRequest(reason="user_request"))
             sa_session.add(subworkflow_invocation)
         sa_session.commit()
+
+    @staticmethod
+    def _delete_jobs(sa_session: Session, statement: Update) -> None:
+        statement = statement.values({"state": Job.states.DELETING})
+        if pending_changes(sa_session) is None:
+            sa_session.execute(statement)
+            return
+        # The bulk UPDATE bypasses the unit of work, so it records the changed jobs itself.
+        for job_id, user_id, galaxy_session_id in sa_session.execute(
+            statement.returning(Job.id, Job.user_id, Job.session_id)
+        ):
+            record_job_change(sa_session, job_id, user_id, galaxy_session_id, Job.states.DELETING)
 
     def mark_cancelled(self):
         self.state = WorkflowInvocation.states.CANCELLED

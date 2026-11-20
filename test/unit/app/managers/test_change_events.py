@@ -1,9 +1,13 @@
 import pytest
 
 from galaxy import model
-from galaxy.managers.invocation_events import InvocationEventPublisher
+from galaxy.managers import change_events
+from galaxy.managers.change_events import ChangeEventPublisher
 from galaxy.model import mapping
-from galaxy.queue_worker import InvocationUpdate
+from galaxy.queue_worker import (
+    InvocationUpdate,
+    JobUpdate,
+)
 from galaxy.schema.invocation import InvocationCancellationUserRequest
 
 States = model.WorkflowInvocation.states
@@ -12,13 +16,20 @@ States = model.WorkflowInvocation.states
 class RecordingDispatcher:
     def __init__(self) -> None:
         self.calls: list[list[InvocationUpdate]] = []
+        self.job_calls: list[tuple[list[JobUpdate], list[int] | None, list[int] | None]] = []
 
     def invocation_update(self, updates: list[InvocationUpdate], event_id: str | None = None) -> None:
         self.calls.append(updates)
 
+    def job_update(self, updates, resync_user_ids=None, resync_session_ids=None, event_id=None) -> None:
+        self.job_calls.append((updates, resync_user_ids, resync_session_ids))
+
 
 class BrokenDispatcher:
     def invocation_update(self, updates, event_id=None):
+        raise RuntimeError("broker down")
+
+    def job_update(self, updates, resync_user_ids=None, resync_session_ids=None, event_id=None):
         raise RuntimeError("broker down")
 
 
@@ -30,7 +41,7 @@ def galaxy_model():
 @pytest.fixture
 def dispatcher(galaxy_model) -> RecordingDispatcher:
     dispatcher = RecordingDispatcher()
-    InvocationEventPublisher(dispatcher).register(galaxy_model.session)  # type: ignore[arg-type]
+    ChangeEventPublisher(dispatcher).register(galaxy_model.session)  # type: ignore[arg-type]
     return dispatcher
 
 
@@ -163,10 +174,88 @@ def test_anonymous_invocation_is_not_published(session, dispatcher):
 
 
 def test_dispatch_failure_does_not_fail_commit(galaxy_model):
-    InvocationEventPublisher(BrokenDispatcher()).register(galaxy_model.session)  # type: ignore[arg-type]
+    ChangeEventPublisher(BrokenDispatcher()).register(galaxy_model.session)  # type: ignore[arg-type]
     session = galaxy_model.session
     invocation = _invocation(session, _user(session))
     invocation.set_state(States.SCHEDULED)
     session.commit()
     session.refresh(invocation)
     assert invocation.state == States.SCHEDULED
+
+
+def _job(session, user: model.User | None = None, galaxy_session: model.GalaxySession | None = None) -> model.Job:
+    job = model.Job()
+    job.tool_id = "cat1"
+    job.user = user
+    job.galaxy_session = galaxy_session
+    job.set_state(model.Job.states.QUEUED)
+    session.add(job)
+    return job
+
+
+def test_job_state_change_is_published_only_once_committed(session, dispatcher):
+    user = _user(session)
+    job = _job(session, user)
+    session.flush()
+    assert dispatcher.job_calls == []
+    session.commit()
+    assert dispatcher.job_calls == [
+        ([{"job_id": job.id, "state": "queued", "user_id": user.id, "session_id": None}], [], [])
+    ]
+
+    dispatcher.job_calls.clear()
+    job.set_state(model.Job.states.RUNNING)
+    session.commit()
+    assert dispatcher.job_calls == [
+        ([{"job_id": job.id, "state": "running", "user_id": user.id, "session_id": None}], [], [])
+    ]
+
+
+def test_job_state_assignment_is_published_with_the_state_at_commit(session, dispatcher):
+    user = _user(session)
+    job = _job(session, user)
+    session.commit()
+    dispatcher.job_calls.clear()
+
+    # mark_deleted assigns the state without adding a JobStateHistory row.
+    job.mark_deleted()
+    session.commit()
+    assert dispatcher.job_calls == [
+        ([{"job_id": job.id, "state": "deleted", "user_id": user.id, "session_id": None}], [], [])
+    ]
+
+    dispatcher.job_calls.clear()
+    skipped = _job(session, user)
+    skipped.state = model.Job.states.SKIPPED
+    session.commit()
+    assert dispatcher.job_calls == [
+        ([{"job_id": skipped.id, "state": "skipped", "user_id": user.id, "session_id": None}], [], [])
+    ]
+
+
+def test_anonymous_job_is_routed_to_its_session(session, dispatcher):
+    galaxy_session = model.GalaxySession()
+    session.add(galaxy_session)
+    session.commit()
+    job = _job(session, galaxy_session=galaxy_session)
+    session.commit()
+    assert dispatcher.job_calls == [
+        ([{"job_id": job.id, "state": "queued", "user_id": None, "session_id": galaxy_session.id}], [], [])
+    ]
+
+
+def test_too_many_job_changes_for_one_recipient_become_a_resync(session, dispatcher, monkeypatch):
+    monkeypatch.setattr(change_events, "MAX_JOBS_PER_EVENT", 2)
+    busy_user = _user(session)
+    other_user = _user(session, email="other@example.org")
+    for _ in range(3):
+        _job(session, busy_user)
+    other_job = _job(session, other_user)
+    session.commit()
+    assert dispatcher.job_calls == [
+        (
+            [{"job_id": other_job.id, "state": "queued", "user_id": other_user.id, "session_id": None}],
+            [busy_user.id],
+            [],
+        )
+    ]

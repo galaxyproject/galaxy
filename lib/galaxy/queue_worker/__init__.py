@@ -102,6 +102,29 @@ class InvocationUpdatePayload(TypedDict, total=False):
     event_id: str | None
 
 
+class JobUpdate(TypedDict):
+    """A committed job state change, routed to the job's user or, for anonymous jobs, its session."""
+
+    job_id: int
+    state: str
+    user_id: int | None
+    session_id: int | None
+
+
+class JobUpdatePayload(TypedDict, total=False):
+    """Wire contract for the ``job_update`` control-task kwargs.
+
+    ``job_id`` values are unencoded; the consuming worker encodes them. Recipients listed in
+    ``resync_user_ids`` / ``resync_session_ids`` had too many changes for one event and get a
+    resync event instead.
+    """
+
+    updates: list[JobUpdate]
+    resync_user_ids: list[int]
+    resync_session_ids: list[int]
+    event_id: str | None
+
+
 class HistoryViewerSubscriptionPayload(TypedDict, total=False):
     """Wire contract for the (un)subscribe_history_viewer control-task kwargs.
 
@@ -614,6 +637,37 @@ def invocation_update(app: "MinimalManagerApp", **kwargs) -> None:
         sse_manager.push_to_user(user_id, event)
 
 
+def job_update(app: "MinimalManagerApp", **kwargs) -> None:
+    """Push ``job_update`` SSE events to the users and sessions connected to this worker.
+
+    The event data is ``{"jobs": [{"id": <encoded id>, "state": <state>}, ...]}``, or
+    ``{"resync": true}`` for a recipient whose changes did not fit one event.
+    """
+    payload = cast(JobUpdatePayload, kwargs)
+    sse_manager = app[SSEConnectionManager]
+    encode = app.security.encode_id
+    event_id = payload.get("event_id")
+    jobs_by_user: dict[int, list[dict[str, str]]] = {}
+    jobs_by_session: dict[int, list[dict[str, str]]] = {}
+    for update in payload["updates"]:
+        job = {"id": encode(update["job_id"]), "state": update["state"]}
+        if update["user_id"] is not None:
+            jobs_by_user.setdefault(int(update["user_id"]), []).append(job)
+        elif update["session_id"] is not None:
+            jobs_by_session.setdefault(int(update["session_id"]), []).append(job)
+    resync = SSEEvent(event="job_update", data=json.dumps({"resync": True}), id=event_id)
+    for user_id, jobs in jobs_by_user.items():
+        sse_manager.push_to_user(user_id, SSEEvent(event="job_update", data=json.dumps({"jobs": jobs}), id=event_id))
+    for user_id in payload.get("resync_user_ids", []):
+        sse_manager.push_to_user(int(user_id), resync)
+    for galaxy_session_id, jobs in jobs_by_session.items():
+        sse_manager.push_to_session(
+            galaxy_session_id, SSEEvent(event="job_update", data=json.dumps({"jobs": jobs}), id=event_id)
+        )
+    for galaxy_session_id in payload.get("resync_session_ids", []):
+        sse_manager.push_to_session(int(galaxy_session_id), resync)
+
+
 control_message_to_task = {
     "create_panel_section": create_panel_section,
     "reload_tool": reload_tool,
@@ -634,6 +688,7 @@ control_message_to_task = {
     "history_update": history_update,
     "entry_point_update": entry_point_update,
     "invocation_update": invocation_update,
+    "job_update": job_update,
     "subscribe_history_viewer": subscribe_history_viewer,
     "unsubscribe_history_viewer": unsubscribe_history_viewer,
     "reload_tool_source_cache": reload_tool_source_cache,

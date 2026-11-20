@@ -24,6 +24,7 @@ from galaxy.queue_worker import (
     ControlTask,
     GalaxyQueueWorker,
     InvocationUpdate,
+    JobUpdate,
 )
 from galaxy.queues import (
     all_control_queues_for_declare,
@@ -218,3 +219,18 @@ class SSEEventDispatcher:
                 "event_id": event_id or make_event_id(),
             },
         )
+
+    def job_update(
+        self,
+        updates: list[JobUpdate],
+        resync_user_ids: list[int] | None = None,
+        resync_session_ids: list[int] | None = None,
+        event_id: str | None = None,
+    ) -> None:
+        """Fan out committed job state changes to the jobs' users and anonymous sessions."""
+        kwargs: dict[str, Any] = {"updates": updates, "event_id": event_id or make_event_id()}
+        if resync_user_ids:
+            kwargs["resync_user_ids"] = resync_user_ids
+        if resync_session_ids:
+            kwargs["resync_session_ids"] = resync_session_ids
+        self._send("job_update", kwargs)
