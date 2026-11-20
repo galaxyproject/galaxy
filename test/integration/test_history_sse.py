@@ -64,8 +64,9 @@ class TestHistorySSEIntegration(IntegrationTestCase):
         _, user_b_api_key = self._setup_user_get_key(user_b["email"])
         user_b_populator = self._populator_for_user(user_b_api_key)
 
-        # User B creates a history that A will watch as a viewer.
+        # User B creates a history that A will watch as a viewer; viewers need access to it.
         user_b_history_id = user_b_populator.new_history(name="User B History")
+        user_b_populator.make_public(user_b_history_id)
 
         api_key = self.galaxy_interactor.api_key
         assert api_key is not None

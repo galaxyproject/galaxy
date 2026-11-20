@@ -9,12 +9,21 @@ skipped; the stream still delivers other push events.
 
 from collections.abc import AsyncIterator
 
-from galaxy.managers.context import ProvidesUserContext
+from galaxy.exceptions import (
+    MalformedId,
+    ObjectNotFound,
+)
+from galaxy.managers.context import (
+    ProvidesHistoryContext,
+    ProvidesUserContext,
+)
+from galaxy.managers.histories import HistoryManager
 from galaxy.managers.sse import (
     IsDisconnected,
     SSEConnectionManager,
 )
 from galaxy.managers.sse_dispatch import SSEEventDispatcher
+from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.webapps.galaxy.services.base import ServiceBase
 from galaxy.webapps.galaxy.services.notifications import NotificationService
 
@@ -25,7 +34,11 @@ class EventsService(ServiceBase):
         sse_manager: SSEConnectionManager,
         notifications: NotificationService,
         sse_dispatcher: SSEEventDispatcher,
+        history_manager: HistoryManager,
+        security: IdEncodingHelper,
     ) -> None:
+        super().__init__(security)
+        self.history_manager = history_manager
         self.sse_manager = sse_manager
         self.notifications = notifications
         self.sse_dispatcher = sse_dispatcher
@@ -47,17 +60,24 @@ class EventsService(ServiceBase):
         catch_up = self.notifications.build_status_catchup(user_context, last_event_id)
         return self.sse_manager.stream(is_disconnected, user_id, catch_up=catch_up, galaxy_session_id=session_id)
 
-    def subscribe_history_viewer(self, user_context: ProvidesUserContext, history_ids: list[str]) -> None:
-        """Register the requesting user/session as a viewer for each history.
+    def subscribe_history_viewer(self, trans: ProvidesHistoryContext, history_ids: list[str]) -> None:
+        """Register the requesting user/session as a viewer for each history it can access.
 
-        No authorization check on the dispatch path: SSE events only carry
-        history IDs, and the client follows up with a REST GET that runs the
-        normal access-controlled fetch — leaking a "history changed at T" ping
-        is acceptable. Broadcasts via Kombu so every webapp worker tracks the
-        subscription regardless of which one fielded this request.
+        Viewers receive the ids and states of a history's invocations and jobs, so histories the
+        requester cannot access (or ids that do not resolve) are skipped, like requests that have
+        no route back. Broadcasts via Kombu so every webapp worker tracks the subscription
+        regardless of which one fielded this request.
         """
         for history_id in history_ids:
-            self._dispatch_subscription(user_context, history_id, subscribe=True)
+            if self._is_accessible_history(trans, history_id):
+                self._dispatch_subscription(trans, history_id, subscribe=True)
+
+    def _is_accessible_history(self, trans: ProvidesHistoryContext, history_id: str) -> bool:
+        try:
+            history = self.history_manager.by_id(self.decode_id(history_id))
+        except (MalformedId, ObjectNotFound):
+            return False
+        return self.history_manager.is_accessible(history, trans.user, current_history=trans.history)
 
     def unsubscribe_history_viewer(self, user_context: ProvidesUserContext, history_ids: list[str]) -> None:
         for history_id in history_ids:
