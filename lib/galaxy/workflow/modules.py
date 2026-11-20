@@ -661,22 +661,11 @@ class WorkflowModule:
                 if not progress.subworkflow_structure and history_query.direct_match(data):
                     continue
 
-                subcollection_type_description = history_query.can_map_over(data) or None
+                map_over_type = history_query.map_over_type(data)
+                subcollection_type_description = (
+                    dataset_collection_type_descriptions.for_collection_type(map_over_type) if map_over_type else None
+                )
                 if subcollection_type_description:
-                    # Translate paired_or_unpaired to concrete mapping type for
-                    # flat collections. Mirrors logic in basic.py:2675-2679 that
-                    # the API tool execution path uses.
-                    _sub_ct = subcollection_type_description.collection_type
-                    _hdca_ct = data.collection.collection_type
-                    if _sub_ct == "paired_or_unpaired" and not _hdca_ct.endswith("paired_or_unpaired"):
-                        if _hdca_ct.endswith("paired"):
-                            subcollection_type_description = dataset_collection_type_descriptions.for_collection_type(
-                                "paired"
-                            )
-                        else:
-                            subcollection_type_description = dataset_collection_type_descriptions.for_collection_type(
-                                "single_datasets"
-                            )
                     subcollection_type_list = subcollection_type_description.collection_type.split(":")
                     for collection_type in reversed(subcollection_type_list):
                         if type_list:

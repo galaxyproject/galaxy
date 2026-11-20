@@ -574,11 +574,15 @@
 - example:
     label: MAPPING_LIST_LIST_OVER_PAIRED_OR_UNPAIRED
     tests:
+        tool_runtime:
+            api_test: "test_tool_execute.py::test_map_over_paired_or_unpaired_with_list_of_lists"
         workflow_editor: "accepts list:list -> paired_or_unpaired connection"
 
 - example:
     label: MAPPING_LIST_LIST_OVER_LIST_PAIRED_OR_UNPAIRED
     tests:
+        tool_runtime:
+            api_test: "test_tool_execute.py::test_map_over_list_paired_or_unpaired_with_list_of_lists"
         workflow_editor: "accepts list:list -> list:paired_or_unpaired connection"
 
 - doc: |

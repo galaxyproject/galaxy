@@ -96,6 +96,36 @@ def test_query_can_match_list_of_lists_to_list_or_paired():
     assert q.direct_match(list_of_lists) is False
 
 
+def test_query_map_over_type_of_list_of_paireds_over_paired_or_unpaired():
+    q = query.HistoryQuery.from_collection_types(["paired_or_unpaired"], TYPE_DESCRIPTION_FACTORY)
+    assert q.map_over_type(example_list_of_paired_datasets()) == "paired"
+    assert q.map_over_type(example_list_of_lists()) == "single_datasets"
+
+
+def test_query_map_over_type_of_list_of_lists_over_list_paired_or_unpaired():
+    q = query.HistoryQuery.from_collection_types(["list:paired_or_unpaired"], TYPE_DESCRIPTION_FACTORY)
+    assert q.map_over_type(example_list_of_lists()) == "list"
+
+
+def test_query_map_over_type_none_without_map_over():
+    q = query.HistoryQuery.from_collection_types(["list:list"], TYPE_DESCRIPTION_FACTORY)
+    assert q.map_over_type(example_list_of_lists()) is None
+
+
+def test_query_cannot_map_list_of_lists_over_sample_sheet():
+    list_of_lists = example_list_of_lists()
+    q = query.HistoryQuery.from_collection_types(
+        ["sample_sheet", "sample_sheet:paired_or_unpaired"], TYPE_DESCRIPTION_FACTORY
+    )
+    assert not q.can_map_over(list_of_lists)
+
+
+def test_query_maps_list_of_lists_over_list_not_sample_sheet():
+    list_of_lists = example_list_of_lists()
+    q = query.HistoryQuery.from_collection_types(["sample_sheet", "list"], TYPE_DESCRIPTION_FACTORY)
+    assert q.can_map_over(list_of_lists).collection_type == "list"
+
+
 def test_query_always_direct_match_if_no_collection_type_on_input_specified():
     list_of_lists = example_list_of_lists()
     q = query.HistoryQuery.from_collection_types([], TYPE_DESCRIPTION_FACTORY)
