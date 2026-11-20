@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { useResizeObserver } from "@vueuse/core";
-import type { ColDef, IHeaderParams, ValueGetterParams } from "ag-grid-community";
+import type { ColDef, GridReadyEvent, IHeaderParams, ValueGetterParams } from "ag-grid-community";
 import { computed, ref, watch } from "vue";
 
 import { useAgGrid } from "@/composables/useAgGrid";
@@ -9,10 +9,13 @@ interface Props {
     data: string[][];
     colHeaders: string[];
     height?: string;
+    /** Indexes of the columns to mark, e.g. the ones a hovered column definition uses. */
+    highlightedColumns?: number[];
 }
 
 const props = withDefaults(defineProps<Props>(), {
     height: "500px",
+    highlightedColumns: () => [],
 });
 
 const agGrid = ref<HTMLDivElement | null>(null);
@@ -33,11 +36,19 @@ const style = computed(() => {
     return { width: "100%", height: props.height };
 });
 
+// The class rules read the prop when the grid evaluates them, so a highlight change
+// only refreshes classes instead of rebuilding (and re-sizing) the columns.
+function isHighlighted(index: number) {
+    return props.highlightedColumns.includes(index);
+}
+
 const agColumnHeaders = computed(() => {
     return props.colHeaders.map((header: string, index: number) => {
         return {
             headerName: header,
             headerComponent: CustomHeader,
+            headerClass: () => (isHighlighted(index) ? "rule-highlight" : ""),
+            cellClassRules: { "rule-highlight": () => isHighlighted(index) },
             valueGetter: (params: ValueGetterParams) => {
                 return params.data[index];
             },
@@ -91,6 +102,20 @@ function resize() {
 const { gridApi, AgGridVue, onGridReady, resizeOnNextTick, theme } = useAgGrid(resize);
 
 watch(() => props.colHeaders, resizeOnNextTick);
+
+function refreshHighlight() {
+    gridApi.value?.refreshCells({ force: true });
+    gridApi.value?.refreshHeader();
+}
+
+// The grid draws its rows before it fires gridReady, so a highlight change in between
+// only reaches them through this refresh.
+function onReady(params: GridReadyEvent) {
+    onGridReady(params);
+    refreshHighlight();
+}
+
+watch(() => props.highlightedColumns, refreshHighlight);
 </script>
 
 <template>
@@ -106,7 +131,7 @@ watch(() => props.colHeaders, resizeOnNextTick);
             :row-height="20"
             :header-height="30"
             :cell-selection="true"
-            @gridReady="onGridReady" />
+            @gridReady="onReady" />
     </div>
 </template>
 

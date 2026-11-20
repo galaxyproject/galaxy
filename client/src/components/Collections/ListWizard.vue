@@ -281,7 +281,6 @@ function onRuleState(newRuleState: boolean) {
             <div v-else-if="wizard.isCurrent('rules')">
                 <RuleCollectionBuilder
                     ref="collectionCreator"
-                    grid-implementation="ag"
                     import-type="collections"
                     elements-type="datasets"
                     :initial-elements="selectedItems || []"
