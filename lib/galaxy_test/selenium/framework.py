@@ -675,6 +675,16 @@ class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin, Use
         text = modal_element.text
         assert expected_text in text, f"Failed to find expected text [{expected_text}] in modal text [{text}]"
 
+    def assert_rule_builder_source(
+        self,
+        source: dict[str, Any],
+        expected_rules: list,
+        expected_mapping: list[tuple[str, list[int]]],
+    ) -> None:
+        """Check rule builder source JSON: full ``rules`` list and ordered ``(type, columns)`` of ``mapping``."""
+        assert source["rules"] == expected_rules, source
+        assert [(m["type"], m["columns"]) for m in source["mapping"]] == expected_mapping, source
+
     def ensure_visualization_available(self, hid, visualization_name):
         """Skip or fail a test if visualization for file doesn't appear.
 

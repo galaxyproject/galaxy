@@ -1,3 +1,4 @@
+import json
 import os
 
 import pytest
@@ -263,6 +264,31 @@ PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
         self.rule_builder_set_mapping("url", "E")
         self.rule_builder_set_collection_name("PRJDB3920")
         self.screenshot("rules_example_3_14_paired_identifier_set")
+        source = self.rule_builder_show_and_get_source_as_json()
+        expected_rules = [
+            {"type": "add_filter_count", "count": 1, "which": "first", "invert": False},
+            {
+                "type": "add_column_regex",
+                "target_column": 3,
+                "expression": "(.*);(.*)",
+                "allow_unmatched": False,
+                "group_count": 2,
+                "replacement": None,
+            },
+            {"type": "remove_columns", "target_columns": [3]},
+            {"type": "split_columns", "target_columns_0": [3], "target_columns_1": [4]},
+            {
+                "type": "add_column_regex",
+                "target_column": 3,
+                "expression": r".*_(\d).fastq.gz",
+                "allow_unmatched": False,
+                "group_count": 1,
+                "replacement": None,
+            },
+            {"type": "swap_columns", "target_column_0": 3, "target_column_1": 4},
+        ]
+        expected_mapping = [("list_identifiers", [2]), ("paired_identifier", [3]), ("url", [4])]
+        self.assert_rule_builder_source(source, expected_rules, expected_mapping)
 
     @selenium_test
     @pytest.mark.gtn_screenshot
@@ -292,6 +318,21 @@ PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
 
         source = self.rule_builder_show_and_get_source(screenshot_name="rules_example_4_8_source")
         self.write_screenshot_directory_file("rules_example_4_8_text", source)
+        expected_rules = [
+            {"type": "add_filter_count", "count": 1, "which": "first", "invert": False},
+            {"type": "remove_columns", "target_columns": [1, 2, 4, 5, 6]},
+            {"type": "sort", "target_column": 0, "numeric": False},
+            {
+                "type": "add_column_regex",
+                "target_column": 0,
+                "expression": ".*",
+                "allow_unmatched": False,
+                "replacement": "http://www.uniprot.org/uniprot/\\0.fasta",
+                "group_count": None,
+            },
+        ]
+        expected_mapping = [("info", [1]), ("list_identifiers", [0]), ("url", [2])]
+        self.assert_rule_builder_source(json.loads(source), expected_rules, expected_mapping)
 
     @selenium_test
     @pytest.mark.gtn_screenshot
