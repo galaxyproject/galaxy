@@ -51,7 +51,9 @@ export const useVisualizationStore = defineStore("visualizationStore", () => {
     const loadedVariants = ref(emptyVariantRecord<boolean>(() => false));
     /** Total number of visualizations matching the last unfiltered fetch. */
     const totalMatchesByVariant = ref(emptyVariantRecord<number>(() => 0));
-    const isLoading = ref(false);
+    // a count, not a flag: overlapping fetches with different keys each settle on their own
+    const pendingFetches = ref(0);
+    const isLoading = computed(() => pendingFetches.value > 0);
     const loadError = ref<string | undefined>(undefined);
     /** In-flight requests, keyed by variant and query, to avoid duplicate fetches. */
     const fetchPromises = new Map<string, Promise<VisualizationSummary[]>>();
@@ -95,7 +97,7 @@ export const useVisualizationStore = defineStore("visualizationStore", () => {
         }
 
         const promise = (async () => {
-            isLoading.value = true;
+            pendingFetches.value++;
             loadError.value = undefined;
             try {
                 const { data, totalMatches } = await loadVisualizations({
@@ -117,7 +119,7 @@ export const useVisualizationStore = defineStore("visualizationStore", () => {
                 loadError.value = errorMessageAsString(error);
                 return [];
             } finally {
-                isLoading.value = false;
+                pendingFetches.value--;
                 fetchPromises.delete(key);
             }
         })();

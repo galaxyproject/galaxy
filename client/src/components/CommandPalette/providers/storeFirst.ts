@@ -56,8 +56,8 @@ export async function ensureListHydrated(list: StoreFirstList): Promise<void> {
 }
 
 /**
- * Rows of `list` matching `query`; the backend is asked only for a long enough query the incomplete cache cannot
- * fill, and its loose matches are ranked locally too. `cacheOnly` never requests, not even to hydrate.
+ * Rows of `list` matching `query`; the backend is asked for any long enough query while the cache is incomplete,
+ * and its loose matches are ranked locally too. `cacheOnly` never requests, not even to hydrate.
  */
 export async function storeFirstItems(
     list: StoreFirstList,
@@ -70,13 +70,8 @@ export async function storeFirstItems(
     }
     const local = rankPaletteItems(list.cachedItems(), query);
     const search = list.searchItems;
-    if (
-        options.cacheOnly ||
-        !search ||
-        query.length < PALETTE_LIMITS.minBackendQuery ||
-        list.isComplete() ||
-        local.length >= limit
-    ) {
+    // a full page of loose cached matches can still hide an exact match the cache lacks
+    if (options.cacheOnly || !search || query.length < PALETTE_LIMITS.minBackendQuery || list.isComplete()) {
         return local.slice(0, limit);
     }
     const found = await searchQuietly(() => search(query));
@@ -124,7 +119,7 @@ export async function rootListItems(
     if (own && !options.localOnly) {
         await hydrateOnce(own);
     }
-    const ownItems = own ? await storeFirstItems(own, query, PALETTE_LIMITS.rootOwn, { cacheOnly: true }) : [];
+    const ownItems = own ? await storeFirstItems(own, query, PALETTE_LIMITS.section, { cacheOnly: true }) : [];
     const merged = dedupePaletteItemsByEntity([ownItems, ...(await listed)].flat());
     return rankPaletteItems(merged, query).slice(0, PALETTE_LIMITS.section);
 }
