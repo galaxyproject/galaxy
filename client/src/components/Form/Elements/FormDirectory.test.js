@@ -195,7 +195,7 @@ describe("DirectoryPathEditableBreadcrumb", () => {
         expect(wrapper.find("#select-btn").exists()).toBe(true);
     });
 
-    it("does not load the files dialog before Select is clicked", async () => {
+    it("does not load the files dialog before Select is clicked", () => {
         expect(wrapper.findComponent(FilesDialog).exists()).toBe(false);
     });
 

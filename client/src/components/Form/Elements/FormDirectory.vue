@@ -95,6 +95,7 @@ export default {
         },
     },
     created() {
+        // show the saved directory, or clear a missing or unparseable one
         if (!this.value || !this.parseUrl(this.value)) {
             this.updateURL(true);
         }
