@@ -69,6 +69,7 @@ from galaxy.model.index_filter_util import (
     text_column_filter,
 )
 from galaxy.model.scoped_session import galaxy_scoped_session
+from galaxy.schema.fetch_data import encode_fetch_request_ids
 from galaxy.schema.schema import (
     JobIndexQueryPayload,
     JobIndexSortByEnum,
@@ -1425,9 +1426,19 @@ class JobSearch:
             return stmt
 
 
+def encode_job_params(security: IdEncodingHelper, job: Job, job_dict: dict) -> dict:
+    """Encode the database ids the parameters of a job's element view hold decoded."""
+    params = job_dict.get("params", {})
+    if job.tool_id == "__DATA_FETCH__" and "request_json" in params:
+        # Parameter values are stored as JSON, and the request is itself a JSON string.
+        request = json.loads(json.loads(params["request_json"]))
+        params["request_json"] = json.dumps(json.dumps(encode_fetch_request_ids(request, security.encode_id)))
+    return job_dict
+
+
 def view_show_job(trans, job: Job, full: bool) -> dict:
     is_admin = trans.user_is_admin
-    job_dict = job.to_dict("element", system_details=is_admin)
+    job_dict = encode_job_params(trans.security, job, job.to_dict("element", system_details=is_admin))
     if trans.app.config.expose_dataset_path and "command_line" not in job_dict:
         job_dict["command_line"] = job.command_line
     if full:
@@ -1873,6 +1884,12 @@ def summarize_job_parameters(trans: ProvidesUserContext, job: Job) -> dict[str, 
         parameters = inputs_recursive(tool.inputs, params_objects, depth=1, upgrade_messages=upgrade_messages)
     else:
         has_parameter_errors = True
+
+    if job.tool_id == "__DATA_FETCH__":
+        for parameter in parameters:
+            if parameter["text"] == "request_json" and isinstance(parameter.get("value"), str):
+                request = encode_fetch_request_ids(json.loads(parameter["value"]), trans.security.encode_id)
+                parameter["value"] = json.dumps(request)
 
     return {
         "parameters": parameters,
