@@ -41,15 +41,6 @@ vi.mock("../../packages/ui/src/directives/sanitizeHtml");
 vi.mock("@/composables/hashedUserId");
 vi.mock("@/composables/userLocalStorage");
 
-// Mock handsontable to avoid core-js dependency issues
-vi.mock("handsontable", () => ({
-    default: class Handsontable {},
-}));
-vi.mock("@handsontable/vue", () => ({
-    default: {},
-    HotTable: {},
-}));
-
 // Mock KaTeX to avoid quirks mode warning (it checks document.compatMode at module load)
 vi.mock("katex", () => ({
     default: {

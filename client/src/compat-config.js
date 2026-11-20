@@ -9,8 +9,8 @@ import { configureCompat } from "vue";
 // way in both.
 //
 // Galaxy code runs with Vue 3 semantics. The Vue 2 libraries (bootstrap-vue,
-// vue-json-pretty 1.x, @handsontable/vue 2.x) are put back on MODE 2 for their
-// own components by legacy-libraries.js. Most of what's left on here is what
+// vue-json-pretty 1.x) are put back on MODE 2 for their own components by
+// legacy-libraries.js. Most of what's left on here is what
 // those libraries need where compat doesn't look at their component: global
 // APIs (no component at all), plus COMPONENT_FUNCTIONAL and
 // INSTANCE_EVENT_EMITTER, which compat checks on the Galaxy component around
