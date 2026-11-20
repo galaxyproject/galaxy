@@ -176,6 +176,22 @@ describe("DirectoryPathEditableBreadcrumb", () => {
         await init(wrapper, testingDataWithSpecialChars);
     });
 
+    it("shows the directory it is mounted with, without changing the value", async () => {
+        const value = "gxfiles://directory/sub directory/with%percent";
+        const restoredWrapper = mount(FormDirectory, { propsData: { value }, localVue, pinia: createPinia() });
+        await flushPromises();
+
+        const pathChunks = restoredWrapper.findAll("li.breadcrumb-item button.regular-path-chunk");
+        expect(pathChunks.wrappers.map((chunk) => chunk.text())).toEqual([
+            "directory",
+            "sub directory",
+            "with%percent",
+        ]);
+        expect(restoredWrapper.find(".pathname").text()).toBe("gxfiles:");
+        expect(restoredWrapper.emitted("input")).toBeUndefined();
+        restoredWrapper.destroy();
+    });
+
     it("should save on blur", async () => {
         await init(wrapper, testingData);
         // enter a new path chunk

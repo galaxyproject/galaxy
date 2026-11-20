@@ -95,7 +95,11 @@ export default {
         },
     },
     mounted() {
-        this.updateURL(true);
+        if (this.value) {
+            this.parseUrl(this.value);
+        } else {
+            this.updateURL(true);
+        }
     },
     methods: {
         removePath(index) {
@@ -123,6 +127,12 @@ export default {
             }
         },
         setUrl({ url }) {
+            if (this.parseUrl(url) && url) {
+                this.updateURL();
+            }
+        },
+        /** Shows the given directory URI as breadcrumb, returns whether it could be parsed */
+        parseUrl(url) {
             try {
                 this.url = new URL(encodeURI(url));
                 // split path and keep only valid entries
@@ -130,12 +140,10 @@ export default {
                     .split(/[/\\]/)
                     .splice(2)
                     .map((x) => ({ pathChunk: x, editable: false }));
-
-                if (url) {
-                    this.updateURL();
-                }
+                return true;
             } catch (error) {
                 Toast.error(errorMessageAsString(error), "Invalid directory path");
+                return false;
             }
         },
         addPath({ key }) {
