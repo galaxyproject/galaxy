@@ -158,7 +158,7 @@ interface Props {
      */
     dimWhenUnselected?: boolean;
 
-    /** Tooltip text for select checkbox
+    /** Tooltip text and accessible name for the select checkbox; defaults to "Select <title>"
      * @default ""
      */
     selectTitle?: string;
@@ -397,7 +397,16 @@ function measureTitle() {
     titleClamped.value = !!props.titleNLines && !!link && link.scrollHeight > link.clientHeight + 1;
 }
 
-const selectLabel = computed(() => props.selectTitle || localize("Select for bulk actions"));
+/**
+ * Accessible name and tooltip of the select checkbox: the select title if given, else one naming this card
+ */
+const selectLabel = computed(() => {
+    if (props.selectTitle) {
+        return props.selectTitle;
+    }
+    const cardTitle = typeof props.title === "object" ? props.title.label : localize(props.title);
+    return cardTitle ? `${localize("Select")} ${cardTitle}` : localize("Select for bulk actions");
+});
 
 const hasExtraActions = computed(() => props.extraActions?.some((ea) => ea.visible ?? true) ?? false);
 
