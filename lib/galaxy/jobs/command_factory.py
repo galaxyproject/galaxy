@@ -111,7 +111,8 @@ def build_command(
 
     # Galaxy writes I/O files to outputs, Pulsar uses metadata. metadata seems like
     # it should be preferred - at least if the directory exists.
-    io_directory = "../metadata" if for_pulsar else "../outputs"
+    io_directory_name = "metadata" if for_pulsar else "outputs"
+    io_directory = f"../{io_directory_name}"
     commands_builder.capture_stdout_stderr(
         f"{io_directory}/tool_stdout", f"{io_directory}/tool_stderr", stream_stdout_stderr=stream_stdout_stderr
     )
@@ -155,10 +156,9 @@ def build_command(
         __handle_work_dir_outputs(commands_builder, job_wrapper, runner, remote_command_params)
 
     if include_metadata and job_wrapper.requires_setting_metadata:
-        # Still in the tool working directory, which the tool stderr path is relative to.
-        __handle_work_dir_directory_outputs(
-            commands_builder, remote_command_params, f"{io_directory}/tool_stderr", exit_code_path
-        )
+        # Absolute, as a tool command not run in a new shell may have changed the current directory.
+        tool_stderr_path = join(working_directory, io_directory_name, "tool_stderr")
+        __handle_work_dir_directory_outputs(commands_builder, remote_command_params, tool_stderr_path, exit_code_path)
         commands_builder.append_command(f"cd '{working_directory}'")
         __handle_metadata(commands_builder, job_wrapper, runner, remote_command_params)
 
@@ -314,13 +314,15 @@ def __copy_if_exists_command(work_dir_output):
 
 
 def __copy_directory_if_exists_command(directory_output, tool_stderr_path, exit_code_path):
-    # Unlike __copy_if_exists_command, creates the destination: on a remote host nothing precreates it.
-    source_directory, destination = directory_output
+    source_directory, destination, precreated = directory_output
     source_directory = __unquote_glob_characters(source_directory)
+    # Like __copy_if_exists_command, skips a precreated destination that is gone because the output was purged
+    # during the job. Other destinations, e.g. on a remote host, are created.
+    test = f'[ -d "{source_directory}" -a -d "{destination}" ]' if precreated else f'[ -d "{source_directory}" ]'
     copy_command = f'mkdir -p "{destination}" && cp -r "{source_directory}/." "{destination}"'
     # A failed copy fails the job like a failed tool, keeping the tool's exit code if it already failed.
-    fail_job = f'{{ [ "$return_code" -ne 0 ] || return_code=1 ; echo $return_code > {exit_code_path} ; }}'
-    return f'\nif [ -d "{source_directory}" ] ; then {{ {copy_command} ; }} 2>> "{tool_stderr_path}" || {fail_job} ; fi'
+    fail_job = f'{{ [ "$return_code" -ne 0 ] || return_code=1 ; echo $return_code > "{exit_code_path}" ; }}'
+    return f'\nif {test} ; then {{ {copy_command} ; }} 2>> "{tool_stderr_path}" || {fail_job} ; fi'
 
 
 def __unquote_glob_characters(path):
