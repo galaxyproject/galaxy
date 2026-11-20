@@ -52,6 +52,11 @@ export const useUndoRedoStore = defineScopedStore("undoRedoStore", () => {
 
     function undo() {
         flushLazyAction();
+
+        if (undoActionStack.value.at(-1)?.isPending) {
+            return;
+        }
+
         const action = undoActionStack.value.pop();
 
         if (action !== undefined) {
@@ -61,6 +66,10 @@ export const useUndoRedoStore = defineScopedStore("undoRedoStore", () => {
     }
 
     function redo() {
+        if (redoActionStack.value.at(-1)?.isPending) {
+            return;
+        }
+
         const action = redoActionStack.value.pop();
 
         if (action !== undefined) {
@@ -181,7 +190,8 @@ export const useUndoRedoStore = defineScopedStore("undoRedoStore", () => {
             throw new ActionOutOfBoundsError(action, "undo");
         }
 
-        while (nextRedoAction.value !== action) {
+        // stop at a pending action, which undo leaves in place
+        while (nextRedoAction.value !== action && !undoActionStack.value.at(-1)?.isPending) {
             undo();
         }
     }
@@ -194,7 +204,8 @@ export const useUndoRedoStore = defineScopedStore("undoRedoStore", () => {
             throw new ActionOutOfBoundsError(action, "redo");
         }
 
-        while (nextUndoAction.value !== action) {
+        // stop at a pending action, which redo leaves in place
+        while (nextUndoAction.value !== action && !redoActionStack.value.at(-1)?.isPending) {
             redo();
         }
     }

@@ -122,4 +122,15 @@ describe("workflowSearchStore", () => {
             spy.mockRestore();
         });
     });
+
+    describe("findOutputPosition", () => {
+        it("returns bounds for a rendered output and undefined for an unknown one", () => {
+            const step = useWorkflowStepStore(WORKFLOW_ID).addStep(toolStep);
+            setupDom(step.id);
+            const searchStore = useWorkflowSearchStore(WORKFLOW_ID);
+
+            expect(searchStore.findOutputPosition(step.id, "html_file")).toBeDefined();
+            expect(searchStore.findOutputPosition(step.id, "missing")).toBeUndefined();
+        });
+    });
 });

@@ -1,13 +1,16 @@
+import { until } from "@vueuse/core";
 import { createPinia, setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { toRaw } from "vue";
 
+import { getModule } from "@/components/Workflow/Editor/modules/services";
 import { LazyUndoRedoAction, type UndoRedoAction, useUndoRedoStore } from "@/stores/undoRedoStore";
 import { useConnectionStore } from "@/stores/workflowConnectionStore";
 import { useWorkflowCommentStore } from "@/stores/workflowEditorCommentStore";
 import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
 import { useWorkflowStepStore } from "@/stores/workflowStepStore";
 
+import type { PartialWorkflow } from "../modules/extractSubworkflow";
 import { fromSimple, type Workflow } from "../modules/model";
 import {
     AddCommentAction,
@@ -36,10 +39,18 @@ import {
     CopyIntoWorkflowAction,
     DeleteSelectionAction,
     DuplicateSelectionAction,
+    ExtractSubworkflowAction,
     LazyMoveMultipleAction,
     LazySetValueAction,
     RemoveFromSelectionAction,
 } from "./workflowActions";
+
+vi.mock("@/components/Workflow/services", () => ({
+    Services: class {
+        createWorkflow = vi.fn(async () => ({ name: "Sub", latest_workflow_id: "sub-id" }));
+    },
+}));
+vi.mock("@/components/Workflow/Editor/modules/services", () => ({ getModule: vi.fn() }));
 
 const workflowId = "mock-workflow";
 
@@ -231,6 +242,106 @@ describe("Workflow Undo Redo Actions", () => {
             setupSelected();
             const action = new DeleteSelectionAction(workflowId);
             testUndoRedo(action);
+        });
+
+        it("DeleteSelectionAction keeps step labels across repeated delete and undo", () => {
+            const step = { ...mockToolStep(stepStore.getStepIndex + 1), label: "my_label" };
+            stepStore.addStep(step);
+
+            for (let attempt = 0; attempt < 2; attempt++) {
+                stateStore.setStepMultiSelected(step.id, true);
+                undoRedoStore.applyAction(new DeleteSelectionAction(workflowId));
+                undoRedoStore.undo();
+                expect(stepStore.steps[step.id]?.label).toBe("my_label");
+            }
+        });
+
+        describe("ExtractSubworkflowAction", () => {
+            const partialWorkflow = (): PartialWorkflow => ({
+                comments: [],
+                steps: {},
+                name: "Sub",
+                id: workflowId,
+                annotation: "",
+            });
+
+            async function applyExtract() {
+                const action = new ExtractSubworkflowAction(partialWorkflow(), [], []);
+                undoRedoStore.applyAction(action);
+                await until(() => action.asyncOperationDone.value).toBe(true);
+                return action;
+            }
+
+            beforeEach(() => {
+                addStep();
+                addStep();
+                // the highest id, so the subworkflow step reuses it once the selection is deleted
+                stateStore.setStepMultiSelected(2, true);
+            });
+
+            it("undoes and redoes when the subworkflow reuses a deleted step's id", async () => {
+                vi.mocked(getModule).mockResolvedValue({ tool_state: {}, inputs: [], outputs: [], config_form: {} });
+                const before = getWorkflowSnapshot(workflow);
+
+                await applyExtract();
+                expect(stepStore.steps[2]?.type).toBe("subworkflow");
+                const after = getWorkflowSnapshot(workflow);
+
+                undoRedoStore.undo();
+                expect(getWorkflowSnapshot(workflow)).toEqual(before);
+                undoRedoStore.redo();
+                expect(getWorkflowSnapshot(workflow)).toEqual(after);
+            });
+
+            it("ignores undo while the move is still running", async () => {
+                let finishModule: (value: unknown) => void = () => {};
+                vi.mocked(getModule).mockReturnValue(new Promise((resolve) => (finishModule = resolve)) as never);
+                const before = getWorkflowSnapshot(workflow);
+
+                const action = new ExtractSubworkflowAction(partialWorkflow(), [], []);
+                undoRedoStore.applyAction(action);
+                await until(() => stepStore.steps[2]?.type === "subworkflow").toBe(true);
+                const duringMove = getWorkflowSnapshot(workflow);
+
+                undoRedoStore.undo();
+                expect(getWorkflowSnapshot(workflow)).toEqual(duringMove);
+
+                finishModule({ tool_state: {}, inputs: [], outputs: [], config_form: {} });
+                await until(() => action.asyncOperationDone.value).toBe(true);
+                undoRedoStore.undo();
+                expect(getWorkflowSnapshot(workflow)).toEqual(before);
+            });
+
+            it("stops rolling back at a move that is still running", async () => {
+                undoRedoStore.applyAction(
+                    new AddToSelectionAction(commentStore, stateStore, { comments: [], steps: [2] }),
+                );
+                // the store keeps actions as reactive proxies, so take the entry the history panel would pass
+                const earlierAction = undoRedoStore.undoActionStack.at(-1);
+                expect(earlierAction).toBeDefined();
+
+                vi.mocked(getModule).mockReturnValue(new Promise(() => {}) as never);
+                undoRedoStore.applyAction(new ExtractSubworkflowAction(partialWorkflow(), [], []));
+                await until(() => stepStore.steps[2]?.type === "subworkflow").toBe(true);
+                const duringMove = getWorkflowSnapshot(workflow);
+
+                undoRedoStore.rollBackTo(earlierAction as UndoRedoAction);
+
+                expect(getWorkflowSnapshot(workflow)).toEqual(duringMove);
+            });
+
+            it("rolls back, records the error and ignores undo/redo when it fails", async () => {
+                vi.mocked(getModule).mockRejectedValue(new Error("module failed"));
+                const before = getWorkflowSnapshot(workflow);
+
+                const action = await applyExtract();
+
+                expect(action.asyncOperationError?.message).toBe("module failed");
+                expect(getWorkflowSnapshot(workflow)).toEqual(before);
+                undoRedoStore.undo();
+                undoRedoStore.redo();
+                expect(getWorkflowSnapshot(workflow)).toEqual(before);
+            });
         });
     });
 
