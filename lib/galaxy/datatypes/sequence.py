@@ -140,12 +140,22 @@ class Sequence(data.Text):
 
     @staticmethod
     def get_sequences_per_file(total_sequences: int, split_params: dict) -> list:
+        """
+        >>> Sequence.get_sequences_per_file(10, dict(split_mode="number_of_parts", split_size=4))
+        [3, 3, 2, 2]
+        >>> Sequence.get_sequences_per_file(2, dict(split_mode="number_of_parts", split_size=4))
+        [1, 1]
+        >>> Sequence.get_sequences_per_file(10, dict(split_mode="to_size", split_size=4))
+        [4, 4, 2]
+        """
+        total_sequences = int(total_sequences)
         if split_params["split_mode"] == "number_of_parts":
             # legacy basic mode - split into a specified number of parts
             parts = int(split_params["split_size"])
-            sequences_per_file = [total_sequences / parts for i in range(parts)]
-            for i in range(total_sequences % parts):
-                sequences_per_file[i] += 1
+            base, rem = divmod(total_sequences, parts)
+            sequences_per_file = [base + 1 if i < rem else base for i in range(parts)]
+            # with fewer sequences than parts, don't create empty parts
+            sequences_per_file = [n for n in sequences_per_file if n > 0] or [0]
         elif split_params["split_mode"] == "to_size":
             # loop through the sections and calculate the number of sequences
             chunk_size = int(split_params["split_size"])
@@ -167,7 +177,7 @@ class Sequence(data.Text):
         else:
             with compression_utils.get_fileobj(input_datasets[0].get_file_name()) as in_file:
                 total_sequences = sum(1 for line in in_file)
-            total_sequences /= 4
+            total_sequences //= 4
 
         sequences_per_file = cls.get_sequences_per_file(total_sequences, split_params)
         return cls.write_split_files(input_datasets, None, subdir_generator_function, sequences_per_file)
