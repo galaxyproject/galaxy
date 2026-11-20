@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BBadge, BPagination } from "bootstrap-vue";
+import { BBadge } from "bootstrap-vue";
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 
 import {
@@ -17,6 +17,7 @@ import { getIneligibleReasonDescription, toTrackedStorageRun } from "@/utils/sto
 import { bytesToString } from "@/utils/utils";
 
 import GAlert from "@/components/BaseComponents/GAlert.vue";
+import GPagination from "@/components/BaseComponents/GPagination.vue";
 import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
 import DatasetPopoverLink from "@/components/Common/DatasetPopoverLink.vue";
 import FilterMenu from "@/components/Common/FilterMenu.vue";
@@ -294,12 +295,12 @@ onBeforeUnmount(() => {
                 </GTable>
 
                 <div v-if="itemsTotalMatches > perPage" class="d-flex justify-content-end mt-2">
-                    <BPagination
-                        :value="currentPage"
+                    <GPagination
+                        :model-value="currentPage"
                         :total-rows="itemsTotalMatches"
                         :per-page="perPage"
                         align="right"
-                        size="sm"
+                        size="small"
                         first-number
                         last-number
                         @change="onPageChange" />
