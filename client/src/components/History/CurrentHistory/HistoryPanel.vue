@@ -70,7 +70,7 @@ const operationError = ref(null);
 const querySelectionBreak = ref(false);
 
 const { currentFilterText, currentHistoryId, pinnedHistories, storedHistories } = storeToRefs(useHistoryStore());
-const { lastCheckedTime, totalMatchesCount, isWatching } = storeToRefs(useHistoryItemsStore());
+const { lastCheckedTime, isWatching } = storeToRefs(useHistoryItemsStore());
 
 const historyStore = useHistoryStore();
 const historyItemsStore = useHistoryItemsStore();
@@ -78,6 +78,7 @@ const { currentUser } = storeToRefs(useUserStore());
 
 const historyIdComputed = computed(() => props.history.id);
 const { showDropZone, onDragEnter, onDragLeave, onDragOver, onDrop } = useHistoryDragDrop(historyIdComputed);
+const totalMatchesCount = computed(() => historyItemsStore.getTotalMatchesCount(props.history.id));
 
 const currentUserOwnsHistory = computed(() => {
     return userOwnsHistory(currentUser.value, props.history);
