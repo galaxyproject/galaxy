@@ -53,12 +53,12 @@ from . import data
 log = logging.getLogger(__name__)
 
 
-@build_sniff_from_prefix
 def _toc_count(value: str | int) -> int:
     """Parse an FQTOC sequence count, which older converters wrote as a float string (e.g. "10.0")."""
     return int(float(value))
 
 
+@build_sniff_from_prefix
 class SequenceSplitLocations(data.Text):
     """
     Class storing information about a sequence file composed of multiple gzip files concatenated as
@@ -246,23 +246,23 @@ class Sequence(data.Text):
         toc_file: Any,
         start_sequence: int,
         sequence_count: int,
-        is_compressed: bool = True,
+        is_compressed: bool,
     ) -> list:
         """
         Uses a Table of Contents dict, parsed from an FQTOC file, to come up with a set of
         shell commands that will extract the parts necessary
         >>> three_sections=[dict(start=0, end=74, sequences=10), dict(start=74, end=148, sequences=10), dict(start=148, end=148+76, sequences=10)]
-        >>> Sequence.get_split_commands_with_toc('./input.gz', './output.gz', dict(sections=three_sections), start_sequence=0, sequence_count=10)
+        >>> Sequence.get_split_commands_with_toc('./input.gz', './output.gz', dict(sections=three_sections), start_sequence=0, sequence_count=10, is_compressed=True)
         ['dd bs=1 skip=0 count=74 if=./input.gz 2> /dev/null >> ./output.gz']
-        >>> Sequence.get_split_commands_with_toc('./input.gz', './output.gz', dict(sections=three_sections), start_sequence=1, sequence_count=5)
+        >>> Sequence.get_split_commands_with_toc('./input.gz', './output.gz', dict(sections=three_sections), start_sequence=1, sequence_count=5, is_compressed=True)
         ['(dd bs=1 skip=0 count=74 if=./input.gz 2> /dev/null )| zcat | ( tail -n +5 2> /dev/null) | head -20 | gzip -c >> ./output.gz']
-        >>> Sequence.get_split_commands_with_toc('./input.gz', './output.gz', dict(sections=three_sections), start_sequence=0, sequence_count=20)
+        >>> Sequence.get_split_commands_with_toc('./input.gz', './output.gz', dict(sections=three_sections), start_sequence=0, sequence_count=20, is_compressed=True)
         ['dd bs=1 skip=0 count=148 if=./input.gz 2> /dev/null >> ./output.gz']
-        >>> Sequence.get_split_commands_with_toc('./input.gz', './output.gz', dict(sections=three_sections), start_sequence=5, sequence_count=10)
+        >>> Sequence.get_split_commands_with_toc('./input.gz', './output.gz', dict(sections=three_sections), start_sequence=5, sequence_count=10, is_compressed=True)
         ['(dd bs=1 skip=0 count=74 if=./input.gz 2> /dev/null )| zcat | ( tail -n +21 2> /dev/null) | head -20 | gzip -c >> ./output.gz', '(dd bs=1 skip=74 count=74 if=./input.gz 2> /dev/null )| zcat | ( tail -n +1 2> /dev/null) | head -20 | gzip -c >> ./output.gz']
-        >>> Sequence.get_split_commands_with_toc('./input.gz', './output.gz', dict(sections=three_sections), start_sequence=10, sequence_count=10)
+        >>> Sequence.get_split_commands_with_toc('./input.gz', './output.gz', dict(sections=three_sections), start_sequence=10, sequence_count=10, is_compressed=True)
         ['dd bs=1 skip=74 count=74 if=./input.gz 2> /dev/null >> ./output.gz']
-        >>> Sequence.get_split_commands_with_toc('./input.gz', './output.gz', dict(sections=three_sections), start_sequence=5, sequence_count=20)
+        >>> Sequence.get_split_commands_with_toc('./input.gz', './output.gz', dict(sections=three_sections), start_sequence=5, sequence_count=20, is_compressed=True)
         ['(dd bs=1 skip=0 count=74 if=./input.gz 2> /dev/null )| zcat | ( tail -n +21 2> /dev/null) | head -20 | gzip -c >> ./output.gz', 'dd bs=1 skip=74 count=74 if=./input.gz 2> /dev/null >> ./output.gz', '(dd bs=1 skip=148 count=76 if=./input.gz 2> /dev/null )| zcat | ( tail -n +1 2> /dev/null) | head -20 | gzip -c >> ./output.gz']
         >>> Sequence.get_split_commands_with_toc('./input.fastq', './output.fastq', dict(sections=three_sections), start_sequence=1, sequence_count=5, is_compressed=False)
         ['(dd bs=1 skip=0 count=74 if=./input.fastq 2> /dev/null )| ( tail -n +5 2> /dev/null) | head -20 >> ./output.fastq']

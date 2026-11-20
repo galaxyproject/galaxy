@@ -9,7 +9,9 @@ from galaxy.datatypes.sequence import (
     Fasta,
     FastqSanger,
     FastqSolexa,
+    SequenceSplitLocations,
 )
+from galaxy.datatypes.sniff import get_test_fname
 from galaxy.util import galaxy_directory
 from galaxy.util.bunch import Bunch
 from .util import (
@@ -114,3 +116,10 @@ def test_fastq_split_with_fqtoc(tmp_path, legacy_float_count, parts):
     output = _split_and_extract(tmp_path, _SplitDataset(str(input_file), sequences=10, fqtoc=toc), parts)
     assert len(output) == parts
     assert "".join(output) == "".join(READS)
+
+
+def test_fqtoc_sniffer(tmp_path):
+    fqtoc = tmp_path / "test.fqtoc"
+    fqtoc.write_text(json.dumps({"sections": [{"start": "0", "end": "40", "sequences": "10"}]}))
+    assert SequenceSplitLocations().sniff(str(fqtoc))
+    assert not SequenceSplitLocations().sniff(get_test_fname("1.fastqsanger"))
