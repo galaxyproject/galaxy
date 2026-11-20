@@ -24,6 +24,7 @@ import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 
 import { isRegisteredUser } from "@/api";
+import { useFilterTextValidation } from "@/composables/filterTextValidation";
 import { Toast } from "@/composables/toast";
 import { useToolStore } from "@/stores/toolStore";
 import { useUserStore } from "@/stores/userStore";
@@ -109,18 +110,10 @@ const noItems = computed(() => !isBusy.value && filteredUserToolsGroups.value.le
 const noResults = computed(
     () => !isBusy.value && filteredUserToolsGroups.value.length === 0 && Boolean(filterText.value),
 );
-/** Raw filter values extracted from filter text */
-const rawFilters = computed(() =>
-    Object.fromEntries(credentialsFilterClass.getFiltersForText(filterText.value, true, false)),
+const { invalidFilters, hasInvalidFilters, validatedFilterText } = useFilterTextValidation(
+    credentialsFilterClass,
+    filterText,
 );
-/** Valid filters from the filter text */
-const validFilters = computed(() => credentialsFilterClass.getValidFilters(rawFilters.value, true).validFilters);
-/** Invalid filters from the filter text */
-const invalidFilters = computed(() => credentialsFilterClass.getValidFilters(rawFilters.value, true).invalidFilters);
-/** True if filter text is surrounded by quotes */
-const isSurroundedByQuotes = computed(() => /^["'].*["']$/.test(filterText.value));
-/** True if there are invalid filters in the query */
-const hasInvalidFilters = computed(() => !isSurroundedByQuotes.value && Object.keys(invalidFilters.value).length > 0);
 
 /**
  * Checks if a group matches specific filter criteria
@@ -176,22 +169,6 @@ function matchesGeneralSearch(
     const { groupName, serviceName, toolName } = values;
 
     return groupName.includes(searchTerm) || serviceName.includes(searchTerm) || toolName.includes(searchTerm);
-}
-
-/**
- * Returns validated filter text by removing quotes or invalid filters
- * @returns {string} Cleaned filter text
- */
-function validatedFilterText(): string {
-    if (isSurroundedByQuotes.value) {
-        // the `filterText` is surrounded by quotes, remove them
-        return filterText.value.slice(1, -1);
-    } else if (Object.keys(rawFilters.value).length === 0) {
-        // there are no filters derived from the `filterText`
-        return filterText.value;
-    }
-    // there are valid filters derived from the `filterText`
-    return credentialsFilterClass.getFilterText(validFilters.value, true, filterText.value);
 }
 
 /**

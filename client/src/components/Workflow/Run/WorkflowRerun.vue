@@ -27,16 +27,23 @@ watch(
     async (rerunData) => {
         if (rerunData && !ready.value) {
             // switch to the history with the original workflow inputs first, then render `WorkflowRun`
-            try {
-                await historyStore.setCurrentHistory(rerunData.history_id);
-                // The store can skip the switch if another history switch is in progress.
-                if (historyStore.currentHistoryId !== rerunData.history_id) {
-                    Toast.error("Unable to switch to the history with the original workflow inputs.");
+            const previousHistoryId = historyStore.currentHistoryId;
+            // a queued history change can still land after this check, so only skip when none is pending
+            if (historyStore.changingCurrentHistory || previousHistoryId !== rerunData.history_id) {
+                try {
+                    await historyStore.setCurrentHistory(rerunData.history_id);
+                    // The store can skip the switch if another history switch is in progress.
+                    if (historyStore.currentHistoryId !== rerunData.history_id) {
+                        Toast.error("Unable to switch to the history with the original workflow inputs.");
+                    } else if (previousHistoryId && previousHistoryId !== rerunData.history_id) {
+                        // no toast when the current history was still loading or already the original
+                        Toast.success("Switched to the history with the original workflow inputs.");
+                    }
+                } catch (e) {
+                    Toast.error(
+                        `Unable to switch to the history with the original workflow inputs. ${errorMessageAsString(e)}`,
+                    );
                 }
-            } catch (e) {
-                Toast.error(
-                    `Unable to switch to the history with the original workflow inputs. ${errorMessageAsString(e)}`,
-                );
             }
             ready.value = true;
         }
