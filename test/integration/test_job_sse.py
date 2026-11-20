@@ -126,9 +126,8 @@ class TestJobSSEIntegration(IntegrationTestCase):
                     "job to be deleted",
                     DEFAULT_WAIT_TIMEOUT,
                 )
-                listener.wait_for_event_where("job_update", lambda e: bool(_states_for([e], job_id)))
+                # The invocation's scheduler marks running jobs deleting with a bulk UPDATE. Events for
+                # the job's earlier states can still arrive first, so wait for this one specifically.
+                listener.wait_for_event_where("job_update", lambda e: "deleting" in _states_for([e], job_id))
             finally:
                 listener.stop()
-
-        # The invocation's scheduler marks running jobs deleting with a bulk UPDATE.
-        assert _states_for(listener.get_events("job_update"), job_id)[0] == "deleting"
