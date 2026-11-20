@@ -241,11 +241,10 @@ function createFakeHistory(overrides = {}) {
 **Suppressing Warnings**: Use helpers to suppress known console warnings:
 
 ```typescript
-import { suppressBootstrapVueWarnings, suppressLucideVue2Deprecation } from "@tests/vitest/helpers";
+import { suppressBootstrapVueWarnings } from "@tests/vitest/helpers";
 
 beforeEach(() => {
     suppressBootstrapVueWarnings();
-    suppressLucideVue2Deprecation();
 });
 ```
 

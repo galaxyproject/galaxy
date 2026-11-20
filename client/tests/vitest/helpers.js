@@ -106,19 +106,6 @@ export function suppressErrorForCustomIcons() {
     });
 }
 
-export function suppressLucideVue2Deprecation() {
-    const originalWarn = console.warn;
-    vi.spyOn(console, "warn").mockImplementation((msg) => {
-        if (String(msg).includes("[Lucide Vue] This package will be deprecated")) {
-            return;
-        }
-        if (String(msg).includes("[Vue warn]")) {
-            return;
-        }
-        originalWarn(msg);
-    });
-}
-
 export function suppressExpectedErrorMessages(expectedMessages = []) {
     const originalError = console.error;
     vi.spyOn(console, "error").mockImplementation((msg) => {
