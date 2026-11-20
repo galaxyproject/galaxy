@@ -9,7 +9,7 @@ available on every (HPC-) system. Conda on the other hand can be installed by Ga
 entirely in user-space. Nevertheless, Docker and containers in general have some unique features and
 there are many use-cases in the Galaxy community that make containerized tools very appealing.
 
-Since 2014 Galaxy supports running tools in Docker containers via a special `container annotation`_ inside of the 
+Since 2014 Galaxy supports running tools in Docker containers via a special `container annotation`_ inside of the
 requirement field.
 
 .. code-block:: xml
@@ -25,7 +25,7 @@ requirement field.
 This approach has shown two limitations that slowed down the adoption by tool developers.
 First, every tool needs to be annotated with a container name (as shown above) and this container needs
 to be created beforehand, usually manually. The second reason is that Galaxy tools should be deployable everywhere,
-regardless of the underlying system, meaning that if Docker is not available, Galaxy should use Conda packages instead. 
+regardless of the underlying system, meaning that if Docker is not available, Galaxy should use Conda packages instead.
 This puts an additional burden on tool developers who need to take care of two dependency resolvers. This setup can cause
 different tool results depending on the resolver, because both the Conda package and the Docker container are
 usually not created out of the same recipe and maybe were compiled in a different way, use different sources etc.
@@ -416,6 +416,19 @@ Execution:
 
 ``--use-mamba``
   Use Mamba instead of Conda for package installation.
+
+``--conda-override-cuda``
+  Pretend a CUDA driver of the given version is present while solving the
+  environment (exports ``CONDA_OVERRIDE_CUDA`` in the build container), so
+  cuda-enabled package variants are selected. A high sentinel like ``99``
+  lets the solver pick the best available CUDA build. The resulting image
+  still runs on CPU-only hosts but is considerably larger. The override does
+  not affect the computed image name, so the option is refused for
+  multi-package builds or targets without a pinned conda build unless
+  ``--name-override`` or a non-numeric ``--image-build`` such as ``cuda`` is
+  given. A numeric ``--image-build`` does not disambiguate: ``0`` reproduces
+  the CPU tag and any other integer sorts newer than it, so the CUDA image
+  would shadow the CPU one in tag resolution.
 
 ``--oauth-token``
   Token for communicating with the quay.io API.
