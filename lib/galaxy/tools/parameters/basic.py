@@ -1466,9 +1466,29 @@ class ColumnListParameter(SelectToolParameter):
             value = self.default_value or "1"
             return [value] if self.multiple else value
         value = self._labels_to_columns(value, trans, other_values)
+        self._require_column_numbers(value, trans, other_values)
         return super().from_json(value, trans, other_values)
 
     _column_label = re.compile(r"c([0-9]+): ")
+
+    @staticmethod
+    def _is_column_number(value):
+        return value.isascii() and value.isdigit()
+
+    def _require_column_numbers(self, value, trans, other_values):
+        """
+        Reject values that are not column numbers when the referenced dataset has no
+        columns to check them against, e.g. while it is empty, deferred or not yet created.
+        """
+        if trans.workflow_building_mode or self.data_ref not in other_values:
+            return
+        invalid = [v for v in util.listify(value) if isinstance(v, str) and not self._is_column_number(v)]
+        if invalid and self.is_file_empty(trans, other_values):
+            raise ParameterValueError(
+                f"invalid columns ({','.join(invalid)!r}), only column numbers are accepted while the columns of the dataset are unknown",
+                self.name,
+                value,
+            )
 
     def _labels_to_columns(self, value, trans, other_values):
         """
@@ -1593,7 +1613,7 @@ class ColumnListParameter(SelectToolParameter):
             value = util.listify(value, do_strip=True)
             if not set(value).issubset(set(legal_values)) and self.is_file_empty(trans, other_values):
                 # The columns of the referenced dataset are unknown, so any column number is accepted.
-                legal_values.extend(v for v in value if isinstance(v, str) and v.isascii() and v.isdigit())
+                legal_values.extend(v for v in value if isinstance(v, str) and self._is_column_number(v))
 
         return set(legal_values)
 

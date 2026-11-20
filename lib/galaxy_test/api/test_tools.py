@@ -1767,6 +1767,18 @@ class TestToolsApi(ApiTestCase, TestsTools):
             self._assert_status_code_is(response, 200)
 
     @skip_without_tool("column_param")
+    def test_column_legal_values_deferred_dataset(self, history_id):
+        deferred = self.dataset_populator.create_deferred_hda(
+            history_id, "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/2.tabular", ext="tabular"
+        )
+        input1 = dataset_to_param(deferred)
+        response = self._run("column_param", history_id, {"input1": input1, "col": "1", "col_names": "B;id"})
+        self._assert_status_code_is(response, 400)
+        assert list(response.json()["param_errors"]) == ["col_names"]
+        response = self._run("column_param", history_id, {"input1": input1, "col": "1", "col_names": "2"})
+        self._assert_status_code_is(response, 200)
+
+    @skip_without_tool("column_param")
     def test_column_label_resolved_for_empty_dataset(self, history_id):
         input1 = self._empty_tabular_dataset_param(history_id)
         response = self._run("column_param", history_id, {"input1": input1, "col": "1", "col_names": "c2: $(id)"})
