@@ -6,6 +6,7 @@ from object creation lets callers ask what a run would create.
 """
 
 from collections.abc import (
+    Iterable,
     Iterator,
     Mapping,
 )
@@ -13,6 +14,7 @@ from dataclasses import dataclass
 from typing import (
     Any,
     cast,
+    Literal,
     TYPE_CHECKING,
 )
 
@@ -21,6 +23,17 @@ from packaging.version import Version
 from galaxy.job_execution.output_format import (
     get_ext_or_implicit_ext,
     resolve_format_source,
+)
+from galaxy.model.dataset_collections.structure import Tree
+from galaxy.tool_util.parser.output_actions import (
+    FormatToolOutputAction,
+    ToolOutputActionConditional,
+    ToolOutputActionGroup,
+)
+from galaxy.tool_util.parser.output_collection_def import DEFAULT_DATASET_COLLECTOR_DESCRIPTION
+from galaxy.tool_util.parser.output_objects import (
+    tool_output_is_collection,
+    ToolExpressionOutput,
 )
 from galaxy.tools.execution_helpers import (
     filter_output,
@@ -35,10 +48,7 @@ if TYPE_CHECKING:
         History,
         HistoryDatasetCollectionAssociation,
     )
-    from galaxy.model.dataset_collections.structure import (
-        Tree,
-        UninitializedTree,
-    )
+    from galaxy.model.dataset_collections.structure import UninitializedTree
     from galaxy.tool_util.parser.output_objects import (
         ToolOutput,
         ToolOutputBase,
@@ -160,11 +170,17 @@ class OutputPlanner:
         job_params: Any = None,
         execution_cache: ToolExecutionCache | None = None,
         mapping_over: bool = False,
+        input_collection_parameters: Mapping[str, "BaseDataToolParameter"] | None = None,
+        unconverted_inputs: Iterable[str] = (),
     ):
         """
         :param incoming: populated tool state, read by output filters
         :param params: wrapped parameters, the context of ``change_format`` and output labels
         :param mapping_over: whether this job is one of a mapped-over run, whose datasets are hidden
+        :param input_collection_parameters: the collection input parameters by name, to resolve the
+            ``type_source`` of output collections
+        :param unconverted_inputs: inputs left in a datatype a run would convert them from; formats
+            that follow them are not known
         """
         self.trans = trans
         self.tool = tool
@@ -179,6 +195,8 @@ class OutputPlanner:
         self.job_params = job_params
         self.execution_cache = execution_cache
         self.mapping_over = mapping_over
+        self.input_collection_parameters = input_collection_parameters or {}
+        self.unconverted_inputs = frozenset(unconverted_inputs)
 
     def included_outputs(self) -> Iterator[tuple[str, "ToolOutputBase"]]:
         """Yield the tool outputs that the output filters keep, in tool order."""
@@ -214,6 +232,170 @@ class OutputPlanner:
 
     def hidden(self, output: "ToolOutputBase") -> bool:
         return bool(output.hidden) or self.mapping_over
+
+    def planned_outputs(self) -> list["PlannedOutput"]:
+        """Describe the outputs of this job as a run would create them."""
+        planned = []
+        for name, output in self.included_outputs():
+            if tool_output_is_collection(output):
+                planned.append(self._planned_collection(name, output))
+            elif isinstance(output, ToolExpressionOutput):
+                planned.append(PlannedOutput(name, self._label(output), "parameter", hidden=self.hidden(output)))
+            else:
+                output = cast("ToolOutput", output)
+                planned.append(
+                    PlannedOutput(
+                        name,
+                        self._label(output),
+                        "data",
+                        format=self.known_format(output),
+                        format_source=output.format_source,
+                        hidden=self.hidden(output),
+                        dynamic=_discovers_datasets(output),
+                    )
+                )
+        return planned
+
+    def known_format(self, output: "ToolOutput") -> str | None:
+        """Return the format a run gives a dataset output, or None if only the job decides it."""
+        if output.actions and _actions_can_change_format(output.actions):
+            return None
+        follows_unconverted = (
+            output.format_source is not None and _input_name(output.format_source) in self._unconverted_names
+        ) or (output.format == "input" and self.unconverted_inputs)
+        if follows_unconverted:
+            return None
+        ext = self.format(output)
+        return None if ext in RUNTIME_FORMATS else ext
+
+    @property
+    def _unconverted_names(self) -> set[str]:
+        # format_source names an input without its section or conditional prefix
+        return {name.rsplit("|", 1)[-1] for name in self.unconverted_inputs} | set(self.unconverted_inputs)
+
+    def _planned_collection(self, name: str, output: "ToolOutputCollection") -> "PlannedOutput":
+        try:
+            collection_type: str | None = output_collection_type(
+                self.trans, output, self.input_collections, self.input_collection_parameters
+            )
+        except Exception:
+            collection_type = None
+        element_count = None
+        part_formats: set[str | None] = set()
+        if not output.dynamic_structure:
+            parts = output.known_outputs(
+                self.input_collections, self.trans.app.dataset_collection_manager.type_registry
+            )
+            element_count = len({(part.parent_ids or [part.element_identifier])[0] for part in parts})
+            part_formats = {self.known_format(part.output_def) for part in parts}
+        return PlannedOutput(
+            name,
+            self._label(output),
+            "collection",
+            format=part_formats.pop() if len(part_formats) == 1 else None,
+            collection_type=collection_type,
+            element_count=element_count,
+            hidden=self.hidden(output),
+            dynamic=output.dynamic_structure,
+        )
+
+    def _label(self, output: "ToolOutputBase") -> str | None:
+        try:
+            return self.name(output)
+        except Exception:
+            # A label template can read inputs a partly filled form does not have yet.
+            return None
+
+
+# Formats a run replaces once the job has produced the dataset; "input" is what format="input"
+# gives on tools with profile 16.04 or later.
+RUNTIME_FORMATS = {"auto", "_sniff_", "input"}
+
+
+def _discovers_datasets(output: "ToolOutput") -> bool:
+    # Every data output gets the legacy collector of primary_<id>_ files; only declared ones count.
+    return any(
+        description is not DEFAULT_DATASET_COLLECTOR_DESCRIPTION
+        for description in output.dataset_collector_descriptions
+    )
+
+
+def _input_name(format_source: str) -> str:
+    # format_source can point into a collection input, e.g. "input1[0]" or "input1['forward']"
+    return format_source.split("[", 1)[0]
+
+
+def _actions_can_change_format(group: "ToolOutputActionGroup") -> bool:
+    for action in group.actions:
+        if isinstance(action, FormatToolOutputAction):
+            return True
+        if isinstance(action, ToolOutputActionConditional) and any(
+            _actions_can_change_format(case) for case in action.cases
+        ):
+            return True
+    return False
+
+
+@dataclass(frozen=True)
+class PlannedOutput:
+    """An output that a tool run would create, as described before it runs.
+
+    ``format``, ``collection_type`` and ``element_count`` are None when only the job decides them.
+    """
+
+    name: str
+    label: str | None
+    output_type: Literal["data", "collection", "parameter"]
+    format: str | None = None
+    format_source: str | None = None
+    collection_type: str | None = None
+    element_count: int | None = None
+    hidden: bool = False
+    dynamic: bool = False
+    mapped_over: bool = False
+
+
+@dataclass(frozen=True)
+class PlannedRun:
+    """The jobs and outputs a tool request would create."""
+
+    job_count: int
+    outputs: list[PlannedOutput]
+
+
+def planned_implicit_outputs(
+    plans: Mapping[str, "ImplicitOutputPlan"], job_planner: OutputPlanner | None
+) -> list[PlannedOutput]:
+    """Describe the output collections of a mapped-over run.
+
+    :param job_planner: the planner of the run's first job, which decides the formats of the
+        datasets each collection gathers; None if the run has no jobs
+    """
+    planned = []
+    for name, plan in plans.items():
+        output = plan.output
+        structure = plan.structure
+        format = None
+        if (
+            job_planner is not None
+            and not tool_output_is_collection(output)
+            and not isinstance(output, ToolExpressionOutput)
+        ):
+            format = job_planner.known_format(cast("ToolOutput", output))
+        planned.append(
+            PlannedOutput(
+                name,
+                plan.name,
+                "collection",
+                format=format,
+                format_source=getattr(output, "format_source", None),
+                collection_type=structure.collection_type_description.collection_type,
+                element_count=len(structure.children) if isinstance(structure, Tree) else None,
+                dynamic=tool_output_is_collection(output) and output.dynamic_structure,
+                mapped_over=True,
+            )
+        )
+    return planned
 
 
 def output_collection_type(

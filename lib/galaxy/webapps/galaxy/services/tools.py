@@ -2,6 +2,7 @@ import logging
 import os
 import shutil
 import tempfile
+from dataclasses import asdict
 from json import dumps
 from typing import (
     Any,
@@ -52,9 +53,15 @@ from galaxy.schema.fetch_data import (
     UrlDataElement,
 )
 from galaxy.schema.schema import CreateToolLandingRequestPayload
+from galaxy.schema.tool_outputs import (
+    ToolOutputPreview,
+    ToolOutputsPreview,
+    ToolOutputsPreviewRequest,
+)
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.tool_util.parameters import (
     decode,
+    dereference,
     RelaxedRequestToolState,
     RequestInternalToolState,
     RequestToolState,
@@ -84,6 +91,7 @@ from galaxy.util.path import safe_contains
 from galaxy.util.tool_version import remove_version_from_guid
 from galaxy.webapps.galaxy.services._fetch_util import validate_and_normalize_targets
 from galaxy.webapps.galaxy.services.base import ServiceBase
+from galaxy.work.context import proxy_work_context_for_history
 
 if TYPE_CHECKING:
     from galaxy.webapps.base.webapp import GalaxyWebTransaction
@@ -161,6 +169,14 @@ def validated_request_internal_state(
     request_internal_state.validate(parameter_bundle, f"{tool.id} (request internal model)")
     validate_matched_batch_lengths(tool, request_internal_state)
     return request_internal_state
+
+
+class _InputFromUrl(Exception):
+    """Raised when dereferencing a request state that fetches an input from a URL."""
+
+
+def _refuse_url_input(data_request: Any) -> Any:
+    raise _InputFromUrl()
 
 
 def file_landing_payload_to_fetch_targets(data_landing_payload: CreateFileLandingPayload):
@@ -264,6 +280,39 @@ class ToolsService(ServiceBase):
         self.config = config
         self.toolbox_search = toolbox_search
         self.history_manager = history_manager
+
+    def preview_outputs(self, trans: ProvidesHistoryContext, payload: ToolOutputsPreviewRequest) -> ToolOutputsPreview:
+        """Describe the outputs a tool request would create, without creating anything."""
+        tool = validate_tool_for_running(
+            trans, ToolRunReference(payload.tool_id, payload.tool_uuid, payload.tool_version)
+        )
+        if not tool.can_preview_outputs:
+            return ToolOutputsPreview(
+                supported=False, unsupported_reason="The outputs of this tool can't be described before it runs."
+            )
+        history = trans.history
+        if payload.history_id is not None:
+            history = self.history_manager.get_owned(payload.history_id, trans.user, current_history=trans.history)
+        request_internal_state = validated_request_internal_state(trans, tool, payload.inputs, payload.strict)
+        assert tool.parameters is not None
+        try:
+            tool_state = dereference(
+                request_internal_state,
+                ToolParameterBundleModel(parameters=tool.parameters),
+                _refuse_url_input,
+                _refuse_url_input,
+            )
+        except _InputFromUrl:
+            return ToolOutputsPreview(
+                supported=False, unsupported_reason="Outputs of runs that fetch inputs from URLs can't be described."
+            )
+        request_context = proxy_work_context_for_history(trans, history=history)
+        planned = tool.preview_outputs(request_context, request_internal_state.input_state, tool_state)
+        return ToolOutputsPreview(
+            supported=True,
+            job_count=planned.job_count,
+            outputs=[ToolOutputPreview(**asdict(output)) for output in planned.outputs],
+        )
 
     def curated_tool_tags_by_id(self, trans: ProvidesUserContext) -> dict[str, list[str]]:
         """Return {tool_id: [tag, ...]} for currently-loaded tools that carry curated tags.

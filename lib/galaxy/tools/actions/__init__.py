@@ -183,11 +183,15 @@ class DefaultToolAction(ToolAction):
         current_user_roles=None,
         dataset_collection_elements=None,
         collection_info=None,
+        unconverted_inputs: set[str] | None = None,
     ):
         """
         Collect any dataset inputs from incoming. Returns a mapping from
         parameter name to Dataset instance for each tool parameter that is
         of the DataToolParameter type.
+
+        :param unconverted_inputs: if given, inputs needing a datatype conversion that does not
+            exist yet are left unconverted and their names are added to it, so nothing is created
         """
         if current_user_roles is None:
             current_user_roles = trans.get_current_user_roles()
@@ -213,6 +217,8 @@ class DefaultToolAction(ToolAction):
                     element_identifier = getattr(data, "element_identifier", None)
                     if converted_dataset:
                         data = converted_dataset
+                    elif unconverted_inputs is not None:
+                        unconverted_inputs.add(prefixed_name)
                     else:
                         data = data.get_converted_dataset(
                             trans,
@@ -250,6 +256,14 @@ class DefaultToolAction(ToolAction):
                             record_permission(action.action, model.cached_id(role))
                 return data
 
+            def converted_or_convertible(data, conversion_datatypes) -> bool:
+                if data.datatype.matches_any(conversion_datatypes):
+                    return True
+                # Left unconverted on purpose; a run converts it if a converter exists.
+                return unconverted_inputs is not None and bool(
+                    data.find_conversion_destination(conversion_datatypes)[1]
+                )
+
             if isinstance(input, DataToolParameter):
                 if isinstance(value, list):
                     # If there are multiple inputs with the same name, they
@@ -267,7 +281,7 @@ class DefaultToolAction(ToolAction):
                         conversions = []
                         for conversion_name, conversion_extensions, conversion_datatypes in input.conversions:
                             new_data = process_dataset(input_datasets[prefixed_name + str(i + 1)], conversion_datatypes)
-                            if not new_data or new_data.datatype.matches_any(conversion_datatypes):
+                            if not new_data or converted_or_convertible(new_data, conversion_datatypes):
                                 input_datasets[prefixed_name[: -len(input.name)] + conversion_name + str(i + 1)] = (
                                     new_data
                                 )
@@ -300,7 +314,7 @@ class DefaultToolAction(ToolAction):
                     conversions = []
                     for conversion_name, conversion_extensions, conversion_datatypes in input.conversions:
                         new_data = process_dataset(input_datasets[prefixed_name], conversion_datatypes)
-                        if not new_data or new_data.datatype.matches_any(conversion_datatypes):
+                        if not new_data or converted_or_convertible(new_data, conversion_datatypes):
                             input_datasets[prefix + conversion_name] = new_data
                             conversions.append((conversion_name, new_data))
                         else:
@@ -370,6 +384,8 @@ class DefaultToolAction(ToolAction):
                         if not datatype.matches_any(input.formats):
                             conversion_required = True
                             break
+                if conversion_required and unconverted_inputs is not None:
+                    unconverted_inputs.add(prefixed_name)
                 processed_dataset_dict: dict[DatasetInstance, DatasetInstance] = {}
                 for i, v in enumerate(collection.dataset_instances):
                     processed_dataset = None
@@ -381,7 +397,7 @@ class DefaultToolAction(ToolAction):
                     input_datasets.set_legacy_alias(
                         new_key=prefixed_name + str(i + 1), old_key=prefix + input.name + str(i + 1)
                     )
-                if conversion_required:
+                if conversion_required and unconverted_inputs is None:
                     collection_type_description = (
                         trans.app.dataset_collection_manager.collection_type_descriptions.for_collection_type(
                             collection.collection_type
@@ -557,6 +573,7 @@ class DefaultToolAction(ToolAction):
             job_params=job_params,
             mapping_over=dataset_collection_elements is not None,
             copy_library_datasets=not completed_job,
+            input_collection_parameters=input_collection_parameters,
         )
         on_text = planner.on_text
         input_collections = planner.input_collections
@@ -961,11 +978,17 @@ class DefaultToolAction(ToolAction):
         job_params=None,
         mapping_over: bool = False,
         copy_library_datasets: bool = True,
+        input_collection_parameters: dict[str, BaseDataToolParameter] | None = None,
+        unconverted_inputs: Iterable[str] = (),
+        resolve_chrom_info: bool = True,
     ) -> OutputPlanner:
         """Prepare ``incoming`` and the inputs for output decisions and return the planner.
 
         Adds ``dbkey``, ``__input_ext``, ``chromInfo`` and element identifiers to ``incoming``,
         which output filters and labels read.
+
+        :param resolve_chrom_info: whether to find the chromosome lengths of the input build, which
+            converts the fasta of a custom build when its lengths are missing
         """
         # Build name for output datasets based on tool name and input names
         on_text = self._get_on_text(inp_data, inp_dataset_collections)
@@ -990,9 +1013,11 @@ class DefaultToolAction(ToolAction):
         input_ext = input_ext_for(tool, inp_data)
 
         # Collect chromInfo dataset and add as parameters to incoming
-        chrom_info, db_dataset = execution_cache.get_chrom_info(tool.id, input_dbkey)
-        if db_dataset:
-            inp_data.update({CHROM_INFO: db_dataset})
+        chrom_info = None
+        if resolve_chrom_info:
+            chrom_info, db_dataset = execution_cache.get_chrom_info(tool.id, input_dbkey)
+            if db_dataset:
+                inp_data.update({CHROM_INFO: db_dataset})
         incoming[CHROM_INFO] = chrom_info
 
         # Add the dbkey to the incoming parameters
@@ -1014,6 +1039,50 @@ class DefaultToolAction(ToolAction):
             job_params=job_params,
             execution_cache=execution_cache,
             mapping_over=mapping_over,
+            input_collection_parameters=input_collection_parameters,
+            unconverted_inputs=unconverted_inputs,
+        )
+
+    def preview_output_planner(
+        self,
+        trans: ProvidesHistoryContext,
+        tool: "Tool",
+        incoming: ToolStateJobInstancePopulatedT,
+        history: History,
+        collection_info: MatchingCollections | None = None,
+    ) -> OutputPlanner:
+        """Return the output planner for a job with ``incoming`` without creating anything.
+
+        Input access is checked as for a run. Inputs that would need a new datatype conversion
+        stay unconverted; the planner names them in ``unconverted_inputs``. ``chromInfo`` is not
+        resolved.
+        """
+        self._check_access(tool, trans)
+        execution_cache = ToolExecutionCache(trans)
+        inp_dataset_collections, input_collection_parameters = self.collect_input_dataset_collections(tool, incoming)
+        unconverted_inputs: set[str] = set()
+        inp_data, _ = self._collect_input_datasets(
+            tool,
+            incoming,
+            trans,
+            history,
+            current_user_roles=execution_cache.current_user_roles,
+            collection_info=collection_info,
+            unconverted_inputs=unconverted_inputs,
+        )
+        return self._output_planner(
+            trans,
+            tool,
+            incoming,
+            history,
+            inp_data,
+            inp_dataset_collections,
+            execution_cache,
+            mapping_over=collection_info is not None,
+            copy_library_datasets=False,
+            input_collection_parameters=input_collection_parameters,
+            unconverted_inputs=unconverted_inputs,
+            resolve_chrom_info=False,
         )
 
     def _wrapped_params(

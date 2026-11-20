@@ -19,6 +19,7 @@ from contextlib import (
     contextmanager,
     nullcontext,
 )
+from copy import deepcopy
 from datetime import datetime
 from itertools import chain
 from typing import (
@@ -190,6 +191,10 @@ from galaxy.tools.job_parameters import (
     EXPORT_TO_URI,
     TEMPLATE_JOB_PARAMETERS,
 )
+from galaxy.tools.output_planning import (
+    planned_implicit_outputs,
+    PlannedRun,
+)
 from galaxy.tools.parameters import (
     check_param,
     fill_dynamic_defaults,
@@ -300,6 +305,7 @@ from .execute import (
     ExecutionSlice,
     JobCallbackT,
     MappingParameters,
+    ToolExecutionTracker,
 )
 
 if TYPE_CHECKING:
@@ -2461,6 +2467,57 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
             credentials_context=credentials_context,
             collection_info=collection_info,
         )
+
+    @property
+    def can_preview_outputs(self) -> bool:
+        """Whether ``preview_outputs`` can describe this tool's outputs before it runs.
+
+        Model operations create their outputs while executing, data source tools translate their
+        inputs from another site, and tools without typed parameters can't take tool requests.
+        """
+        return (
+            isinstance(self.tool_action, DefaultToolAction)
+            and not isinstance(self.tool_action, ModelOperationToolAction)
+            and self.input_translator is None
+            and self.parameters is not None
+        )
+
+    def preview_outputs(
+        self,
+        request_context: WorkRequestContext,
+        request_template: ToolRequestT,
+        tool_state: RequestInternalDereferencedToolState,
+    ) -> PlannedRun:
+        """Describe the jobs and outputs a tool request would create, without creating anything.
+
+        :param request_template: the decoded request state, as ``handle_input_async`` gets it from
+            the stored tool request
+        :param tool_state: the dereferenced request state
+        """
+        assert self.can_preview_outputs
+        tool_action = cast(DefaultToolAction, self.tool_action)
+        all_params, all_errors, collection_info, job_tool_states = self.expand_incoming_async(
+            request_context, tool_state, None
+        )
+        self.handle_incoming_errors(all_errors)
+        history = request_context.history
+        implicit_plans = None
+        if collection_info is not None:
+            # Planned before the first job's planner adds to its params, as a run precreates them.
+            mapping_params = MappingParameters(request_template, all_params, tool_state, job_tool_states)
+            tracker = ToolExecutionTracker(request_context, self, mapping_params, collection_info)
+            implicit_plans = tracker.plan_implicit_outputs(history, deepcopy(request_template))
+        job_planner = None
+        if all_params:
+            job_planner = tool_action.preview_output_planner(
+                request_context, self, all_params[0], history, collection_info=collection_info
+            )
+        if implicit_plans is not None:
+            outputs = planned_implicit_outputs(implicit_plans, job_planner)
+        else:
+            assert job_planner
+            outputs = job_planner.planned_outputs()
+        return PlannedRun(job_count=len(all_params), outputs=outputs)
 
     def handle_input(
         self,

@@ -58,6 +58,10 @@ from galaxy.schema.schema import (
     ToolLandingRequest,
     ToolRequestDetailedModel,
 )
+from galaxy.schema.tool_outputs import (
+    ToolOutputsPreview,
+    ToolOutputsPreviewRequest,
+)
 from galaxy.tool_util.parameters import (
     LandingRequestToolState,
     RequestToolState,
@@ -220,6 +224,18 @@ class FetchTools:
         files: list[StarletteUploadFile] = Depends(get_files),
     ):
         return self.service.create_fetch(trans, payload, files)
+
+    @router.post(
+        "/api/tools/outputs_preview",
+        operation_id="tools__outputs_preview",
+        summary="Describe the outputs a tool request would create, without running the tool",
+    )
+    def outputs_preview(
+        self,
+        payload: ToolOutputsPreviewRequest = Body(...),
+        trans: ProvidesHistoryContext = DependsOnTrans,
+    ) -> ToolOutputsPreview:
+        return self.service.preview_outputs(trans, payload)
 
     @router.get(
         "/api/tools/fetch/workbook",

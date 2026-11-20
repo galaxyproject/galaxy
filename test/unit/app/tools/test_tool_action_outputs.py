@@ -1,5 +1,7 @@
-"""Which outputs ``DefaultToolAction.execute`` creates for a tool state, and their name, format,
-visibility and collection structure. Uses the tools in ``test/functional/tools``."""
+"""Which outputs a tool state gives, and their name, format, visibility and collection structure.
+
+Pins what ``DefaultToolAction.execute`` creates, and what the output planner describes without
+creating anything. Uses the tools in ``test/functional/tools``."""
 
 from typing import (
     Any,
@@ -15,6 +17,7 @@ from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.objectstore import BaseObjectStore
 from galaxy.tool_util.unittest_utils import functional_test_tool_path
 from galaxy.tools.actions import DefaultToolAction
+from galaxy.tools.output_planning import PlannedOutput
 from galaxy.util.unittest import TestCase
 from .test_actions import (
     MockObjectStore,
@@ -31,7 +34,7 @@ OUTPUT_FILTER_DEFAULTS = {
 REPEAT_MATCHING_FILTER = [{"cond": {"select": "a", "inner_cond": {"inner_select": "2", "text": "x"}}}]
 
 
-class TestToolActionOutputs(TestCase, tools_support.UsesTools):
+class ToolOutputsTestCase(TestCase, tools_support.UsesTools):
     def setUp(self):
         self.setup_app()
         self.app.object_store = cast(BaseObjectStore, MockObjectStore())
@@ -40,6 +43,59 @@ class TestToolActionOutputs(TestCase, tools_support.UsesTools):
         self.trans = MockTrans(self.app, self.history)
         self.app.model.context.add(self.history)
         self.app.model.context.commit()
+
+    def _execute(self, tool_file: str, incoming: dict[str, Any]):
+        tool = self._init_tool_for_path(functional_test_tool_path(tool_file))
+        job, out_data, *_ = DefaultToolAction().execute(
+            tool=tool,
+            trans=cast(ProvidesHistoryContext, self.trans),
+            history=self.history,
+            incoming=incoming,
+        )
+        return job, out_data
+
+    def _planned(self, tool_file: str, incoming: dict[str, Any]) -> list[PlannedOutput]:
+        tool = self._init_tool_for_path(functional_test_tool_path(tool_file))
+        tool_action = cast(DefaultToolAction, tool.tool_action)
+        planner = tool_action.preview_output_planner(
+            cast(ProvidesHistoryContext, self.trans), tool, incoming, self.history
+        )
+        return planner.planned_outputs()
+
+    def _collections(self, job: model.Job) -> dict[str, model.HistoryDatasetCollectionAssociation]:
+        return {assoc.name: assoc.dataset_collection_instance for assoc in job.output_dataset_collection_instances}
+
+    def _elements(self, hdca: model.HistoryDatasetCollectionAssociation) -> dict[str, tuple[str, bool]]:
+        elements = {}
+        for element in hdca.collection.elements:
+            assert element.element_identifier and element.hda
+            elements[element.element_identifier] = (element.hda.extension, element.hda.visible)
+        return elements
+
+    def _dataset(self, extension: str) -> model.HistoryDatasetAssociation:
+        hda = model.HistoryDatasetAssociation(extension=extension)
+        hda.dataset = model.Dataset()
+        hda.dataset.state = "ok"
+        self.history.add_dataset(hda)
+        self.app.model.context.commit()
+        return hda
+
+    def _pair(self) -> model.HistoryDatasetCollectionAssociation:
+        collection = model.DatasetCollection(collection_type="paired")
+        for index, (identifier, extension) in enumerate([("forward", "txt"), ("reverse", "fasta")]):
+            model.DatasetCollectionElement(
+                collection=collection,
+                element=self._dataset(extension),
+                element_identifier=identifier,
+                element_index=index,
+            )
+        hdca = model.HistoryDatasetCollectionAssociation(collection=collection, name="input pair")
+        self.history.add_dataset_collection(hdca)
+        self.app.model.context.commit()
+        return hdca
+
+
+class TestToolActionOutputs(ToolOutputsTestCase):
 
     @pytest.mark.parametrize(
         "state, expected_datasets, expected_collections",
@@ -132,44 +188,82 @@ class TestToolActionOutputs(TestCase, tools_support.UsesTools):
             "new",
         )
 
-    def _execute(self, tool_file: str, incoming: dict[str, Any]):
-        tool = self._init_tool_for_path(functional_test_tool_path(tool_file))
-        job, out_data, *_ = DefaultToolAction().execute(
-            tool=tool,
-            trans=cast(ProvidesHistoryContext, self.trans),
-            history=self.history,
-            incoming=incoming,
-        )
-        return job, out_data
 
-    def _collections(self, job: model.Job) -> dict[str, model.HistoryDatasetCollectionAssociation]:
-        return {assoc.name: assoc.dataset_collection_instance for assoc in job.output_dataset_collection_instances}
+class TestPreviewOutputPlanner(ToolOutputsTestCase):
+    def test_describes_outputs_without_creating_anything(self):
+        incoming = {
+            "input_data_1": self._dataset("fasta"),
+            "input_data_2": self._dataset("tabular"),
+            "input_text": "bar",
+        }
+        rows_before = self._row_counts()
 
-    def _elements(self, hdca: model.HistoryDatasetCollectionAssociation) -> dict[str, tuple[str, bool]]:
-        elements = {}
-        for element in hdca.collection.elements:
-            assert element.element_identifier and element.hda
-            elements[element.element_identifier] = (element.hda.extension, element.hda.visible)
-        return elements
+        planned = self._planned("output_format.xml", incoming)
 
-    def _dataset(self, extension: str) -> model.HistoryDatasetAssociation:
-        hda = model.HistoryDatasetAssociation(extension=extension)
-        hda.dataset = model.Dataset()
-        hda.dataset.state = "ok"
-        self.history.add_dataset(hda)
-        self.app.model.context.commit()
-        return hda
+        label = "output_format on dataset 1 and 2"
+        assert planned == [
+            PlannedOutput("direct_output", label, "data", format="txt"),
+            PlannedOutput("input_based_output", label, "data", format="fasta"),
+            PlannedOutput("format_source_1_output", label, "data", format="fasta", format_source="input_data_1"),
+            PlannedOutput("format_source_2_output", label, "data", format="tabular", format_source="input_data_2"),
+            PlannedOutput("change_format_output", label, "data", format="fastqillumina"),
+        ]
+        assert self._row_counts() == rows_before
 
-    def _pair(self) -> model.HistoryDatasetCollectionAssociation:
-        collection = model.DatasetCollection(collection_type="paired")
-        for index, (identifier, extension) in enumerate([("forward", "txt"), ("reverse", "fasta")]):
-            model.DatasetCollectionElement(
-                collection=collection,
-                element=self._dataset(extension),
-                element_identifier=identifier,
-                element_index=index,
-            )
-        hdca = model.HistoryDatasetCollectionAssociation(collection=collection, name="input pair")
-        self.history.add_dataset_collection(hdca)
-        self.app.model.context.commit()
-        return hdca
+    def test_format_input_since_profile_16_04_is_left_to_the_job(self):
+        planned = self._planned("output_format_input.xml", {"input": self._dataset("tabular")})
+
+        assert planned == [PlannedOutput("output", "output_format_input on dataset 1", "data", format=None)]
+
+    def test_format_changed_by_actions_is_left_to_the_job(self):
+        incoming = {
+            "input_cond": {"__current_case__": 1, "dispatch": "do", "input": self._dataset("tabular")},
+            "asection": {"abool": True},
+        }
+
+        planned = self._planned("output_action_change_format.xml", incoming)
+
+        assert planned == [PlannedOutput("out1", "output_action_change_format on dataset 1", "data", format=None)]
+
+    def test_hidden_output_that_discovers_datasets(self):
+        planned = self._planned("discover_metadata_files.xml", {"input_bam": self._dataset("bam")})
+
+        assert planned == [
+            PlannedOutput("bam_output", "discovered bam", "data", format="txt", hidden=True, dynamic=True)
+        ]
+
+    def test_static_collection_with_mixed_formats(self):
+        planned = self._planned("collection_creates_pair.xml", {"input1": self._dataset("tabular")})
+
+        assert planned == [
+            PlannedOutput("paired_output", "Split Pair", "collection", collection_type="paired", element_count=2)
+        ]
+
+    def test_structured_like_collection(self):
+        planned = self._planned("collection_paired_structured_like.xml", {"input1": self._pair()})
+
+        # inherit_format gives the elements txt and fasta, so the collection has no single format
+        assert planned == [
+            PlannedOutput("list_output", "Duplicate List", "collection", collection_type="paired", element_count=2)
+        ]
+
+    def test_type_source_collection_discovers_its_elements(self):
+        incoming = {"header": self._dataset("tabular"), "input_collect": self._pair()}
+
+        planned = self._planned("collection_type_source.xml", incoming)
+
+        assert planned == [
+            PlannedOutput("list_output", "Duplicate List", "collection", collection_type="paired", dynamic=True)
+        ]
+
+    def test_expression_output(self):
+        planned = self._planned("expression_forty_two.xml", {})
+
+        assert planned == [PlannedOutput("out1", "expression_forty_two", "parameter")]
+
+    def _row_counts(self) -> dict[str, int]:
+        session = self.app.model.context
+        return {
+            model_class.__name__: session.query(model_class).count()
+            for model_class in (model.Job, model.HistoryDatasetAssociation, model.HistoryDatasetCollectionAssociation)
+        }
