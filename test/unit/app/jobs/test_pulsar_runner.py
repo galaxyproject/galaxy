@@ -1,12 +1,15 @@
 """Unit tests for Pulsar job runner utility methods and client construction."""
 
+import logging
 import queue
+import threading
 from dataclasses import dataclass
 from types import SimpleNamespace
 from typing import (
     Any,
     cast,
 )
+from unittest.mock import MagicMock
 
 import pytest
 from packaging.version import Version
@@ -40,13 +43,19 @@ from galaxy.exceptions import (
 from galaxy.job_metrics.instrumenters.pulsar import PulsarPlugin
 from galaxy.jobs.runners import (
     AsynchronousJobState,
+    JobState,
     pulsar as pulsar_runner,
 )
 from galaxy.jobs.runners.pulsar import (  # type: ignore[attr-defined]
     build_client_manager,
     effective_dependency_resolution,
+    FAILED_REMOTE_ERROR,
+    LOST_REMOTE_ERROR,
+    PulsarFinishJobResult,
     PulsarJobRunner,
 )
+from galaxy.jobs.runners.runner_state_definitions import RUNNER_STATE_DEFINITIONS
+from galaxy.tool_util.output_checker import DETECTED_JOB_STATE
 
 
 @dataclass
@@ -408,7 +417,7 @@ def test_rejected_job_fails_without_resubmission():
         job_id=1,
         tool=SimpleNamespace(id="cat", version="1.0", requires_galaxy_python_environment=False),
         prepare=reject,
-        get_job=lambda: None,
+        get_job=lambda: SimpleNamespace(resubmission_count=0),
         fail=lambda message, **kwargs: failures.append(message),
     )
 
@@ -439,3 +448,381 @@ def test_dependency_resolution_skipped_for_containers(destination_params, contai
 def test_unknown_dependency_resolution_rejected(container):
     with pytest.raises(Exception, match="Unknown dependency_resolution value encountered conda"):
         effective_dependency_resolution({"dependency_resolution": "conda"}, container)
+
+
+def _failing_job_state():
+    job_state = MagicMock(spec=["job_id", "job_wrapper", "runner_state", "job_destination", "runner_state_handled"])
+    job_state.runner_state = None
+    job_state.runner_state_handled = False
+    job_state.job_wrapper.get_state.return_value = model.Job.states.RUNNING
+    job_state.job_wrapper.get_job.return_value.finished = False
+    return job_state
+
+
+def _update(job_state, pulsar_status, full_status=None):
+    runner = MagicMock()
+    PulsarJobRunner._update_job_state_for_status(runner, job_state, pulsar_status, full_status=full_status)
+    return runner
+
+
+def _fail_message(runner):
+    return runner.fail_job.call_args.kwargs["message"]
+
+
+@pytest.mark.parametrize("full_status", [None, {"status": "failed"}])
+def test_failure_without_runner_state_keeps_generic_message(full_status):
+    job_state = _failing_job_state()
+    runner = _update(job_state, "failed", full_status)
+    assert job_state.runner_state is None
+    assert _fail_message(runner) == FAILED_REMOTE_ERROR
+
+
+@pytest.mark.parametrize(
+    "runner_state",
+    [
+        JobState.runner_states.MEMORY_LIMIT_REACHED,
+        JobState.runner_states.WALLTIME_REACHED,
+        JobState.runner_states.NODE_FAILURE,
+        JobState.runner_states.PREEMPTED,
+        JobState.runner_states.CANCELLED,
+    ],
+)
+def test_failure_with_runner_state_is_classified(runner_state):
+    job_state = _failing_job_state()
+    full_status = {"status": "failed", "runner_state": runner_state}
+    runner = _update(job_state, "failed", full_status)
+    assert job_state.runner_state == runner_state
+    assert _fail_message(runner) == RUNNER_STATE_DEFINITIONS[runner_state].fail_message
+    assert runner.fail_job.call_args.kwargs["full_status"] == full_status
+
+
+def test_reason_without_definition_is_kept_for_resubmit_conditions():
+    job_state = _failing_job_state()
+    runner = _update(job_state, "failed", {"status": "failed", "runner_state": "from_the_future"})
+    assert job_state.runner_state == "from_the_future"
+    assert _fail_message(runner) == FAILED_REMOTE_ERROR
+
+
+def test_malformed_runner_state_is_logged_and_ignored(caplog):
+    job_state = _failing_job_state()
+    with caplog.at_level(logging.WARNING):
+        runner = _update(job_state, "failed", {"status": "failed", "runner_state": "not a reason; DROP"})
+    assert job_state.runner_state is None
+    assert _fail_message(runner) == FAILED_REMOTE_ERROR
+    assert "malformed runner state" in caplog.text
+
+
+def test_runner_state_message_is_preferred_over_the_definition():
+    job_state = _failing_job_state()
+    full_status = {
+        "status": "failed",
+        "runner_state": JobState.runner_states.MEMORY_LIMIT_REACHED,
+        "runner_state_message": "Held by the pool for exceeding request_memory",
+    }
+    runner = _update(job_state, "failed", full_status)
+    assert job_state.runner_state == JobState.runner_states.MEMORY_LIMIT_REACHED
+    assert _fail_message(runner) == "Held by the pool for exceeding request_memory"
+
+
+def test_runner_state_message_without_a_reason_is_shown():
+    job_state = _failing_job_state()
+    runner = _update(
+        job_state, "failed", {"status": "failed", "runner_state_message": "Slurm reported: RaisedSignal:9"}
+    )
+    assert job_state.runner_state is None
+    assert _fail_message(runner) == "Slurm reported: RaisedSignal:9"
+
+
+def test_lost_job_ignores_runner_state():
+    job_state = _failing_job_state()
+    runner = _update(job_state, "lost", {"status": "lost", "runner_state": JobState.runner_states.MEMORY_LIMIT_REACHED})
+    assert job_state.runner_state is None
+    assert _fail_message(runner) == LOST_REMOTE_ERROR
+
+
+def _polling_runner(client):
+    runner = MagicMock()
+    runner.get_client_from_state.return_value = client
+    return runner
+
+
+def test_polling_passes_full_status_for_failed_jobs():
+    full_status = {"status": "failed", "runner_state": JobState.runner_states.MEMORY_LIMIT_REACHED}
+    client = MagicMock()
+    client.get_status.return_value = "failed"
+    client.full_status.return_value = full_status
+    runner = _polling_runner(client)
+    job_state = _failing_job_state()
+    PulsarJobRunner.check_watched_item_state(runner, job_state)
+    runner._update_job_state_for_status.assert_called_once_with(job_state, "failed", full_status=full_status)
+
+
+def test_polling_still_fails_job_when_full_status_unavailable():
+    client = MagicMock()
+    client.get_status.return_value = "failed"
+    client.full_status.side_effect = OSError("gone away")
+    runner = _polling_runner(client)
+    job_state = _failing_job_state()
+    PulsarJobRunner.check_watched_item_state(runner, job_state)
+    runner._update_job_state_for_status.assert_called_once_with(job_state, "failed", full_status=None)
+
+
+def test_polling_does_not_fetch_full_status_of_running_jobs():
+    client = MagicMock()
+    client.get_status.return_value = "running"
+    PulsarJobRunner.check_watched_item_state(_polling_runner(client), _failing_job_state())
+    client.full_status.assert_not_called()
+
+
+def _tool_failure_runner(job_state, handled):
+    runner = MagicMock()
+
+    def handle(_, state):
+        state.runner_state_handled = handled
+
+    runner._handle_runner_state.side_effect = handle
+    return runner
+
+
+RESULT = PulsarFinishJobResult(
+    tool_stdout="o",
+    tool_stderr="e",
+    exit_code=42,
+    job_stdout="",
+    job_stderr="",
+    remote_metadata_directory=None,
+    job_metrics_directory="",
+)
+resubmitted_for_tool_failure = PulsarJobRunner._resubmitted_for_tool_failure
+
+
+@pytest.mark.parametrize(
+    "detected_state,expected_runner_state",
+    [
+        (DETECTED_JOB_STATE.OUT_OF_MEMORY_ERROR, JobState.runner_states.MEMORY_LIMIT_REACHED),
+        (DETECTED_JOB_STATE.GENERIC_ERROR, JobState.runner_states.TOOL_DETECT_ERROR),
+    ],
+)
+def test_tool_detected_failures_reach_resubmission(detected_state, expected_runner_state):
+    job_state = _failing_job_state()
+    job_state.job_destination.resubmit = [{"condition": "memory_limit_reached"}]
+    job_state.job_wrapper.check_tool_output.return_value = detected_state
+    runner = _tool_failure_runner(job_state, handled=True)
+    assert resubmitted_for_tool_failure(runner, job_state, RESULT) is True
+    assert job_state.runner_state == expected_runner_state
+    runner._handle_runner_state.assert_called_once_with("failure", job_state)
+
+
+def test_unhandled_tool_failure_finishes_normally():
+    job_state = _failing_job_state()
+    job_state.job_destination.resubmit = [{"condition": "memory_limit_reached"}]
+    job_state.job_wrapper.check_tool_output.return_value = DETECTED_JOB_STATE.GENERIC_ERROR
+    runner = _tool_failure_runner(job_state, handled=False)
+    assert resubmitted_for_tool_failure(runner, job_state, RESULT) is False
+
+
+def test_successful_tool_is_not_resubmitted():
+    job_state = _failing_job_state()
+    job_state.job_destination.resubmit = [{"condition": "any_failure"}]
+    job_state.job_wrapper.check_tool_output.return_value = DETECTED_JOB_STATE.OK
+    runner = _tool_failure_runner(job_state, handled=True)
+    assert resubmitted_for_tool_failure(runner, job_state, RESULT) is False
+    runner._handle_runner_state.assert_not_called()
+
+
+def test_destination_without_resubmit_skips_output_check():
+    job_state = _failing_job_state()
+    job_state.job_destination.resubmit = []
+    runner = _tool_failure_runner(job_state, handled=True)
+    assert resubmitted_for_tool_failure(runner, job_state, RESULT) is False
+    job_state.job_wrapper.check_tool_output.assert_not_called()
+
+
+def test_job_already_finished_is_not_resubmitted():
+    job_state = _failing_job_state()
+    job_state.job_destination.resubmit = [{"condition": "any_failure"}]
+    job_state.job_wrapper.get_job.return_value.finished = True
+    runner = _tool_failure_runner(job_state, handled=True)
+    assert resubmitted_for_tool_failure(runner, job_state, RESULT) is False
+
+
+def test_client_from_wrapper_reports_resubmission_count():
+    runner = _runner()
+    job = SimpleNamespace(user=None, resubmission_count=2)
+    job_wrapper = SimpleNamespace(
+        job_id=543,
+        get_job=lambda: job,
+        job_destination=SimpleNamespace(params={"url": "http://pulsar.example"}, env=[]),
+    )
+    runner.get_client_from_wrapper(job_wrapper)
+    destination_params, _kwargs = runner.client_manager.calls[0]
+    assert destination_params["resubmission_count"] == 2
+    # The destination itself stays untouched, it is persisted and reused.
+    assert "resubmission_count" not in job_wrapper.job_destination.params
+
+
+discard_previous_attempt = PulsarJobRunner._PulsarJobRunner__discard_previous_attempt  # type: ignore[attr-defined]
+
+
+def test_discard_previous_attempt_cleans_the_remote_job():
+    client = MagicMock()
+    discard_previous_attempt(client, SimpleNamespace(job_id=543))
+    client.clean.assert_called_once_with()
+
+
+def test_discard_previous_attempt_tolerates_nothing_to_clean():
+    client = MagicMock()
+    client.clean.side_effect = KeyError("543")
+    discard_previous_attempt(client, SimpleNamespace(job_id=543))
+
+
+FAILED_JOB_FULL_STATUS = {
+    "job_id": "1",
+    "complete": "true",
+    "status": "failed",
+    "returncode": 137,
+    "stdout": "",
+    "stderr": "line 24: 18 Killed  env -i $(which awk)",
+    "job_stdout": "",
+    "job_stderr": "slurmstepd: error: Detected 1 oom-kill event(s) in StepId=12279237.batch",
+    "working_directory_contents": [],
+    "metadata_directory_contents": ["__instrument_core_galaxy_slots"],
+    "outputs_directory_contents": [],
+    "job_directory_contents": [],
+}
+
+
+def _staged_failure(tmp_path, monkeypatch, cleanup_job="always", stage=None):
+    staged = []
+
+    def finish_job(**kwargs):
+        staged.append(kwargs)
+        if stage:
+            stage()
+        metadata_directory = tmp_path / "metadata"
+        metadata_directory.mkdir(exist_ok=True)
+        (metadata_directory / "__instrument_core_galaxy_slots").write_text("1")
+        return []
+
+    monkeypatch.setattr(pulsar_runner, "pulsar_finish_job", finish_job)
+    runner = cast(Any, object.__new__(PulsarJobRunner))
+    runner.work_queue = queue.Queue()
+    runner.runner_state_handlers = {}
+    runner._staged_failures = set()
+    runner._staged_failures_lock = threading.Lock()
+    runner.stop_job = MagicMock()
+    runner.get_client_from_state = lambda job_state: SimpleNamespace(destination_params={})
+    runner._PulsarJobRunner__client_outputs = lambda client, job_wrapper, version: None
+    job_wrapper = MagicMock()
+    job_wrapper.job_id = 1
+    job_wrapper.working_directory = str(tmp_path)
+    job_wrapper.cleanup_job = cleanup_job
+    job_wrapper.get_state.return_value = model.Job.states.RUNNING
+    job_wrapper.get_job.return_value.finished = False
+    job_state = SimpleNamespace(
+        job_id="1", job_wrapper=job_wrapper, runner_state=None, runner_state_handled=False, stop_job=True
+    )
+    return runner, job_state, staged
+
+
+def _run_queued(runner):
+    method, arg = runner.work_queue.get_nowait()
+    method(arg)
+    assert runner.work_queue.empty()
+
+
+@pytest.mark.parametrize("cleanup_job,remote_cleanup", [("always", "always"), ("onsuccess", "never")])
+def test_failed_job_is_failed_with_its_streams_and_metrics(tmp_path, monkeypatch, cleanup_job, remote_cleanup):
+    runner, job_state, staged = _staged_failure(tmp_path, monkeypatch, cleanup_job=cleanup_job)
+    PulsarJobRunner._update_job_state_for_status(runner, job_state, "failed", full_status=FAILED_JOB_FULL_STATUS)
+    job_state.job_wrapper.fail.assert_not_called()
+    _run_queued(runner)
+    assert staged[0]["cleanup_job"] == remote_cleanup
+    assert staged[0]["job_completed_normally"] is True
+    assert (
+        staged[0]["pulsar_outputs"].metadata_directory_contents == FAILED_JOB_FULL_STATUS["metadata_directory_contents"]
+    )
+    # Pulsar already reported the job as over, so it is not killed after staging.
+    runner.stop_job.assert_not_called()
+    job_state.job_wrapper.fail.assert_called_once()
+    args, kwargs = job_state.job_wrapper.fail.call_args
+    assert args == (FAILED_REMOTE_ERROR,)
+    assert kwargs["tool_stderr"] == FAILED_JOB_FULL_STATUS["stderr"]
+    assert kwargs["job_stderr"] == FAILED_JOB_FULL_STATUS["job_stderr"]
+    assert kwargs["exit_code"] == 137
+    assert kwargs["job_metrics_directory"] == str(tmp_path / "metadata")
+
+
+def test_failed_job_keeps_the_reason_pulsar_reported(tmp_path, monkeypatch):
+    runner, job_state, _ = _staged_failure(tmp_path, monkeypatch)
+    full_status = {**FAILED_JOB_FULL_STATUS, "runner_state": JobState.runner_states.MEMORY_LIMIT_REACHED}
+    PulsarJobRunner._update_job_state_for_status(runner, job_state, "failed", full_status=full_status)
+    _run_queued(runner)
+    assert job_state.runner_state == JobState.runner_states.MEMORY_LIMIT_REACHED
+    message = RUNNER_STATE_DEFINITIONS[JobState.runner_states.MEMORY_LIMIT_REACHED].fail_message
+    assert job_state.job_wrapper.fail.call_args.args == (message,)
+
+
+def test_failed_job_is_failed_even_if_staging_fails(tmp_path, monkeypatch):
+    def stage():
+        raise OSError("Pulsar went away")
+
+    runner, job_state, _ = _staged_failure(tmp_path, monkeypatch, stage=stage)
+    PulsarJobRunner._update_job_state_for_status(runner, job_state, "failed", full_status=FAILED_JOB_FULL_STATUS)
+    _run_queued(runner)
+    args, kwargs = job_state.job_wrapper.fail.call_args
+    assert args == (FAILED_REMOTE_ERROR,)
+    assert kwargs["job_stderr"] == FAILED_JOB_FULL_STATUS["job_stderr"]
+
+
+@pytest.mark.parametrize("state", [model.Job.states.ERROR, model.Job.states.DELETING, model.Job.states.RESUBMITTED])
+def test_failed_job_finished_before_staging_is_left_alone(tmp_path, monkeypatch, state):
+    runner, job_state, staged = _staged_failure(tmp_path, monkeypatch)
+    PulsarJobRunner._update_job_state_for_status(runner, job_state, "failed", full_status=FAILED_JOB_FULL_STATUS)
+    job_state.job_wrapper.get_state.return_value = state
+    _run_queued(runner)
+    assert staged == []
+    job_state.job_wrapper.fail.assert_not_called()
+
+
+def test_failed_job_stopped_before_staging_is_finished_as_stopped(tmp_path, monkeypatch):
+    runner, job_state, staged = _staged_failure(tmp_path, monkeypatch)
+    PulsarJobRunner._update_job_state_for_status(runner, job_state, "failed", full_status=FAILED_JOB_FULL_STATUS)
+    job_state.job_wrapper.get_state.return_value = model.Job.states.STOPPED
+    method, arg = runner.work_queue.get_nowait()
+    method(arg)
+    assert staged == []
+    job_state.job_wrapper.fail.assert_not_called()
+    method, arg = runner.work_queue.get_nowait()
+    assert method == runner.finish_job
+    assert arg is job_state
+
+
+def test_repeated_failed_status_is_staged_once(tmp_path, monkeypatch):
+    runner, job_state, staged = _staged_failure(tmp_path, monkeypatch)
+    PulsarJobRunner._update_job_state_for_status(runner, job_state, "failed", full_status=FAILED_JOB_FULL_STATUS)
+    PulsarJobRunner._update_job_state_for_status(runner, job_state, "failed", full_status=FAILED_JOB_FULL_STATUS)
+    _run_queued(runner)
+    assert len(staged) == 1
+    job_state.job_wrapper.fail.assert_called_once()
+    # Once failed, the job is no longer in flight.
+    assert runner._staged_failures == set()
+
+
+def test_failed_job_without_a_job_directory_fails_without_staging(tmp_path, monkeypatch):
+    runner, job_state, staged = _staged_failure(tmp_path, monkeypatch)
+    full_status = {"job_id": "1", "complete": "true", "status": "failed", "returncode": None}
+    PulsarJobRunner._update_job_state_for_status(runner, job_state, "failed", full_status=full_status)
+    assert runner.work_queue.empty()
+    assert staged == []
+    assert job_state.job_wrapper.fail.call_args.args == (FAILED_REMOTE_ERROR,)
+
+
+def test_lost_job_fails_without_staging(tmp_path, monkeypatch):
+    runner, job_state, staged = _staged_failure(tmp_path, monkeypatch)
+    full_status = {**FAILED_JOB_FULL_STATUS, "status": "lost"}
+    PulsarJobRunner._update_job_state_for_status(runner, job_state, "lost", full_status=full_status)
+    assert runner.work_queue.empty()
+    assert staged == []
+    assert job_state.job_wrapper.fail.call_args.args == (LOST_REMOTE_ERROR,)
+    runner.stop_job.assert_called_once_with(job_state.job_wrapper)
