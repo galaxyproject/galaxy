@@ -6,6 +6,10 @@ from unittest import mock
 import pytest
 
 from galaxy.managers.chat import ChatManager
+from galaxy.model import (
+    ChatExchange,
+    ChatExchangeMessage,
+)
 
 
 def _make_trans(user_id=1):
@@ -150,9 +154,9 @@ class TestGetUserChatHistoryExcludesPage:
 
 
 class TestGetRoutingHistory:
-    """get_routing_history returns the pydantic-ai history plus whether the last turn asked a
-    clarifying question -- both from one fetch. The router uses the flag to re-include that turn
-    when routing an otherwise-elliptical answer ("the second one")."""
+    """get_routing_history returns the pydantic-ai history plus how many turns at its end were
+    clarifying questions -- both from one fetch. The router uses the count to keep the turn
+    those clarifications followed in its routing window."""
 
     @staticmethod
     def _exchange_with(*messages):
@@ -165,60 +169,74 @@ class TestGetRoutingHistory:
         with mock.patch.object(mgr, "get_exchange_by_id", return_value=exchange):
             return mgr.get_routing_history(trans, 1)
 
-    def test_true_when_last_response_is_clarification(self):
+    def test_one_when_last_response_is_clarification(self):
         mgr = ChatManager()
         trans = _make_trans()
         exchange = self._exchange_with(
             {"query": "help me", "response": "Tool or tutorial?", "agent_response": {"agent_type": "clarification"}},
         )
-        history, responding = self._routing_history(mgr, trans, exchange)
-        assert responding is True
+        history, clarification_turns = self._routing_history(mgr, trans, exchange)
+        assert clarification_turns == 1
         # The turn is reconstructed for routing context (user query + assistant response).
         assert len(history) == 2
 
-    def test_false_for_normal_last_message(self):
+    def test_zero_for_normal_last_message(self):
         mgr = ChatManager()
         trans = _make_trans()
         exchange = self._exchange_with(
             {"query": "align reads", "response": "Use BWA", "agent_response": {"agent_type": "tool_recommendation"}},
         )
-        _, responding = self._routing_history(mgr, trans, exchange)
-        assert responding is False
+        _, clarification_turns = self._routing_history(mgr, trans, exchange)
+        assert clarification_turns == 0
 
-    def test_only_the_last_message_counts(self):
+    def test_an_earlier_clarification_does_not_count(self):
         mgr = ChatManager()
         trans = _make_trans()
-        # Earlier clarification, last is normal -> False
+        # Earlier clarification, last is normal -> 0
         stale = self._exchange_with(
             {"agent_response": {"agent_type": "clarification"}},
             {"agent_response": {"agent_type": "router"}},
         )
-        assert self._routing_history(mgr, trans, stale)[1] is False
-        # Earlier normal, last is clarification -> True
+        assert self._routing_history(mgr, trans, stale)[1] == 0
+        # Earlier normal, last is clarification -> 1
         fresh = self._exchange_with(
             {"agent_response": {"agent_type": "router"}},
             {"agent_response": {"agent_type": "clarification"}},
         )
-        assert self._routing_history(mgr, trans, fresh)[1] is True
+        assert self._routing_history(mgr, trans, fresh)[1] == 1
+
+    def test_counts_the_trailing_run_of_clarifications(self):
+        """A user can answer several clarifying questions in a row without satisfying the
+        router; the router needs to know how far back the last substantive turn is."""
+        mgr = ChatManager()
+        trans = _make_trans()
+        exchange = self._exchange_with(
+            {"query": "q1", "response": "a1", "agent_response": {"agent_type": "clarification"}},
+            {"query": "q2", "response": "a2", "agent_response": {"agent_type": "history"}},
+            {"query": "q3", "response": "a3", "agent_response": {"agent_type": "clarification"}},
+            {"query": "q4", "response": "a4", "agent_response": {"agent_type": "clarification"}},
+            {"query": "q5", "response": "a5", "agent_response": {"agent_type": "clarification"}},
+        )
+        assert self._routing_history(mgr, trans, exchange)[1] == 3
 
     def test_empty_when_no_exchange(self):
         mgr = ChatManager()
         trans = _make_trans()
         with mock.patch.object(mgr, "get_exchange_by_id", return_value=None):
-            assert mgr.get_routing_history(trans, 999) == ([], False)
+            assert mgr.get_routing_history(trans, 999) == ([], 0)
 
     def test_empty_for_no_messages(self):
         mgr = ChatManager()
         trans = _make_trans()
         with mock.patch.object(mgr, "get_exchange_by_id", return_value=_FakeChatExchange()):
-            assert mgr.get_routing_history(trans, 1) == ([], False)
+            assert mgr.get_routing_history(trans, 1) == ([], 0)
 
     def test_not_clarification_for_malformed_json(self):
         mgr = ChatManager()
         trans = _make_trans()
         exchange = self._exchange_with("not valid json{{{")
-        _, responding = self._routing_history(mgr, trans, exchange)
-        assert responding is False
+        _, clarification_turns = self._routing_history(mgr, trans, exchange)
+        assert clarification_turns == 0
 
 
 class TestResolvePageFromInterfaceContext:
@@ -332,3 +350,14 @@ class TestGetExchangeMessagesAttribution:
             }
         )
         assert self._assistant_turn(message)["agent_type"] == "gtn_training"
+
+
+def test_exchange_messages_load_in_insertion_order():
+    """Routing reads "the last turn" off ``exchange.messages``; without an ORDER BY the database
+    may hand the rows back in any order (a feedback update on the first message can move it)."""
+    order_by = ChatExchange.messages.property.order_by
+    assert order_by, "ChatExchange.messages has no order_by"
+    # Accept a bare column or asc(column); both order by id ascending.
+    columns = [getattr(clause, "element", clause) for clause in order_by]
+    assert columns == [ChatExchangeMessage.__table__.c.id]
+    assert "DESC" not in " ".join(str(clause) for clause in order_by)
