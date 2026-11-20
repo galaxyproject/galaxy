@@ -535,7 +535,6 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                     "blurb",
                     "peek",
                     "designation",
-                    "visible",
                     "metadata",
                     "tool_version",
                     "validated_state",
@@ -551,6 +550,10 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                         setattr(dataset_instance, attribute, value)
 
                 handle_dataset_object_edit(dataset_instance, dataset_attrs)
+                # Keep the server's visibility, which may have changed while the job ran (e.g. hidden when
+                # building a collection). The job only unhides outputs that failed.
+                if dataset_attrs.get("visible") and dataset_instance.state == dataset_instance.states.ERROR:
+                    dataset_instance.visible = True
             else:
                 metadata_deferred = dataset_attrs.get("metadata_deferred", False)
                 metadata = dataset_attrs.get("metadata")

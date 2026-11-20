@@ -1071,6 +1071,27 @@ def test_import_job_with_output_copy():
     assert copy.metadata.data_lines == 42
 
 
+def test_import_job_output_keeps_visibility_set_while_job_ran():
+    app, h, temp_directory, import_history = _setup_simple_export({"for_edit": True})
+    hda = h.active_datasets[-1]
+    # e.g. hidden by building a collection from it while the job was running
+    hda.visible = False
+    app.commit()
+    _perform_edit_import(temp_directory, app)
+    assert hda.visible is False
+
+
+def test_import_errored_job_output_is_unhidden():
+    app, h, temp_directory, import_history = _setup_simple_export({"for_edit": True})
+    _edit_exported_dataset_attrs(temp_directory, lambda attrs: attrs[1]["dataset"].update(state="error"))
+    hda = h.active_datasets[-1]
+    hda.visible = False
+    app.commit()
+    _perform_edit_import(temp_directory, app)
+    assert hda.state == "error"
+    assert hda.visible is True
+
+
 def test_import_existing_job_reports_state_without_applying_it():
     app, h, temp_directory, import_history = _setup_simple_export({"for_edit": True})
     job = h.active_datasets[-1].creating_job
