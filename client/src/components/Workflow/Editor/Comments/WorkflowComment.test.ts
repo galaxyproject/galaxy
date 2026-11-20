@@ -80,8 +80,10 @@ describe("WorkflowComment", () => {
                 scale: 1,
                 rootOffset: {},
             },
-            provide: {
-                transform: mockTransform,
+            global: {
+                provide: {
+                    transform: mockTransform,
+                },
             },
         });
 
@@ -124,8 +126,10 @@ describe("WorkflowComment", () => {
                 scale: 1,
                 rootOffset: {},
             },
-            provide: {
-                transform: mockTransform,
+            global: {
+                provide: {
+                    transform: mockTransform,
+                },
             },
         });
 
@@ -150,8 +154,10 @@ describe("WorkflowComment", () => {
                 scale: 1,
                 rootOffset: {},
             },
-            provide: {
-                transform: mockTransform,
+            global: {
+                provide: {
+                    transform: mockTransform,
+                },
             },
         });
 
@@ -180,8 +186,10 @@ describe("WorkflowComment", () => {
                 scale: 1,
                 rootOffset: {},
             },
-            provide: {
-                transform: mockTransform,
+            global: {
+                provide: {
+                    transform: mockTransform,
+                },
             },
         });
 
@@ -197,7 +205,7 @@ describe("WorkflowComment", () => {
             vi.mocked(sanitizeHtml).mockImplementation((html) => `<span class="sanitized">${html}</span>`);
             return mount(WorkflowComment as any, {
                 propsData: { comment: { ...comment, type, data }, scale: 1, rootOffset: {} },
-                provide: { transform: mockTransform },
+                global: { provide: { transform: mockTransform } },
             });
         }
 

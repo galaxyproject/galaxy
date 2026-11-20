@@ -82,12 +82,6 @@ describe("ContentItem", () => {
                 DatasetDetails: true,
                 vueTagsInput: false,
             },
-            provide: {
-                store: {
-                    dispatch: vi.fn,
-                    getters: {},
-                },
-            },
             pinia: createTestingPinia({ createSpy: vi.fn, stubActions: false }),
             router,
         });
