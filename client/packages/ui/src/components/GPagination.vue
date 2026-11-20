@@ -253,6 +253,8 @@ watch(
 </template>
 
 <style scoped lang="scss">
+@use "../styles/focus-ring" as *;
+
 // Zero specificity, so a margin utility class on the component wins
 :where(.g-pagination) {
     margin-bottom: var(--spacing-4);
@@ -321,13 +323,10 @@ watch(
         outline: none;
     }
 
-    // Page-background gap keeps the ring clear of the filled current page; outline survives forced colors.
     &:focus-visible {
         position: relative;
         z-index: 1;
-        outline: 2px solid var(--color-blue-600);
-        outline-offset: 2px;
-        box-shadow: 0 0 0 2px var(--background-color);
+        @include focus-ring;
     }
 
     &:disabled {
