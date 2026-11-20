@@ -53,7 +53,15 @@ from galaxy.schema.fetch_data import (
 )
 from galaxy.schema.schema import CreateToolLandingRequestPayload
 from galaxy.security.idencoding import IdEncodingHelper
-from galaxy.tool_util.parameters import ToolParameterT
+from galaxy.tool_util.parameters import (
+    decode,
+    RelaxedRequestToolState,
+    RequestInternalToolState,
+    RequestToolState,
+    strictify,
+    ToolParameterBundleModel,
+    ToolParameterT,
+)
 from galaxy.tool_util.parameters.data_inputs import ToolDataInput
 from galaxy.tool_util.toolbox.base import (
     MaterializationReasonName,
@@ -70,6 +78,7 @@ from galaxy.tools import Tool
 from galaxy.tools._types import InputFormatT
 from galaxy.tools.cached_toolbox import CachedToolBox
 from galaxy.tools.job_parameters import DATA_MANAGER_MODE
+from galaxy.tools.parameters.meta import validate_matched_batch_lengths
 from galaxy.tools.search import ToolBoxSearch
 from galaxy.util.path import safe_contains
 from galaxy.util.tool_version import remove_version_from_guid
@@ -130,6 +139,28 @@ def validate_tool_for_running(trans: ProvidesHistoryContext, tool_ref: ToolRunRe
     if not tool.allow_user_access(trans.user):
         raise exceptions.ItemAccessibilityException("Tool not accessible.")
     return tool
+
+
+def validated_request_internal_state(
+    trans: ProvidesUserContext, tool: Tool, inputs: dict[str, Any] | None, strict: bool
+) -> RequestInternalToolState:
+    """Validate the state of a tool request against the tool's parameters and decode its IDs."""
+    if tool.parameters is None:
+        raise exceptions.RequestParameterInvalidException(f"Tool {tool.id} has no parameters defined")
+    parameter_bundle = ToolParameterBundleModel(parameters=tool.parameters)
+    if not strict:
+        relaxed_request_state = RelaxedRequestToolState(inputs or {})
+        relaxed_request_state.validate(parameter_bundle, f"{tool.id} (relaxed request model)")
+        request_state = strictify(relaxed_request_state, parameter_bundle, yaml_origin=tool.yaml_origin)
+    else:
+        request_state = RequestToolState(inputs or {})
+    request_state.validate(parameter_bundle, f"{tool.id} (request model)")
+    request_internal_state = decode(request_state, parameter_bundle, trans.security.decode_id)
+    # request_internal records absent inputs as absent; static defaults (incl. url_default
+    # data inputs) are filled later, at dereference/job_internal time (see fill_static_defaults).
+    request_internal_state.validate(parameter_bundle, f"{tool.id} (request internal model)")
+    validate_matched_batch_lengths(tool, request_internal_state)
+    return request_internal_state
 
 
 def file_landing_payload_to_fetch_targets(data_landing_payload: CreateFileLandingPayload):

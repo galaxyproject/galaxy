@@ -40,7 +40,6 @@ from galaxy.model import (
 from galaxy.model.dataset_collections.adapters import CollectionAdapter
 from galaxy.model.dataset_collections.builder import CollectionBuilder
 from galaxy.model.dataset_collections.matching import MatchingCollections
-from galaxy.model.none_like import NoneDataset
 from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.objectstore import ObjectStorePopulator
 from galaxy.schema.credentials import CredentialsContext
@@ -547,35 +546,21 @@ class DefaultToolAction(ToolAction):
             all_permissions,
         ) = self._collect_inputs(tool, trans, incoming, history, current_user_roles, collection_info)
         assert history  # tell type system we've set history and it is no longer optional
-        # Build name for output datasets based on tool name and input names
-        on_text = self._get_on_text(inp_data, inp_dataset_collections)
-
-        input_dbkey = incoming.get(DBKEY, "?")
-        for name, data in reversed(list(inp_data.items())):
-            if not data:
-                data = NoneDataset(datatypes_registry=app.datatypes_registry)
-                continue
-
-            # Convert LDDA to an HDA.
-            if isinstance(data, LibraryDatasetDatasetAssociation) and not completed_job:
-                data = data.to_history_dataset_association(None)
-                inp_data[name] = data
-
-            if data.dbkey not in [None, "?"]:
-                input_dbkey = data.dbkey
-
-            identifier = getattr(data, "element_identifier", None)
-            if identifier is not None:
-                incoming[element_identifier_parameter(name)] = identifier
-
-        input_ext = input_ext_for(tool, inp_data)
-
-        # Collect chromInfo dataset and add as parameters to incoming
-        chrom_info, db_dataset = execution_cache.get_chrom_info(tool.id, input_dbkey)
-
-        if db_dataset:
-            inp_data.update({CHROM_INFO: db_dataset})
-        incoming[CHROM_INFO] = chrom_info
+        planner = self._output_planner(
+            trans,
+            tool,
+            incoming,
+            history,
+            inp_data,
+            inp_dataset_collections,
+            execution_cache,
+            job_params=job_params,
+            mapping_over=dataset_collection_elements is not None,
+            copy_library_datasets=not completed_job,
+        )
+        on_text = planner.on_text
+        input_collections = planner.input_collections
+        input_dbkey = incoming[DBKEY]
 
         if not completed_job:
             # Determine output dataset permission/roles list
@@ -593,14 +578,7 @@ class DefaultToolAction(ToolAction):
                 # No valid inputs, we will use history defaults
                 output_permissions = default_history_permissions
 
-        # Add the dbkey to the incoming parameters
-        incoming[DBKEY] = input_dbkey
-        incoming["__input_ext"] = input_ext
-        # wrapped params are used by change_format action and by output.label; only perform this wrapping once, as needed
-        wrapped_params = self._wrapped_params(trans, tool, incoming, inp_data)
-
         out_data: dict[str, DatasetInstance] = {}
-        input_collections = inp_dataset_collections.map_values(lambda pairs: pairs[0][0])
         output_collections = OutputCollections(
             trans,
             history,
@@ -611,26 +589,10 @@ class DefaultToolAction(ToolAction):
             dataset_collection_elements=dataset_collection_elements,
             on_text=on_text,
             incoming=incoming,
-            params=wrapped_params.params,
+            params=planner.params,
             job_params=job_params,
             tags=preserved_tags,
             hdca_tags=preserved_hdca_tags,
-        )
-
-        planner = OutputPlanner(
-            trans,
-            tool,
-            self,
-            incoming,
-            wrapped_params.params,
-            inp_data,
-            input_collections,
-            input_ext,
-            on_text,
-            history=history,
-            job_params=job_params,
-            execution_cache=execution_cache,
-            mapping_over=dataset_collection_elements is not None,
         )
         async_tool = tool.tool_type == "data_source_async"
 
@@ -709,7 +671,7 @@ class DefaultToolAction(ToolAction):
             if output.actions:
                 # Apply pre-job tool-output-dataset actions; e.g. setting metadata, changing format
                 output_action_params: dict[str, Any] = dict(out_data)
-                output_action_params.update(wrapped_params.params)
+                output_action_params.update(planner.params)
                 output_action_params["__python_template_version__"] = tool.python_template_version
                 output.actions.apply_action(data, output_action_params)
             # Flush all datasets at once.
@@ -986,6 +948,73 @@ class DefaultToolAction(ToolAction):
         jtid.dataset = out_data[jtod.name]
         jtid.dataset.hid = jtod.dataset.hid
         log.info(f"Job {job_to_remap.id} input HDA {jtod.dataset.id} remapped to new HDA {jtid.dataset.id}")
+
+    def _output_planner(
+        self,
+        trans: ProvidesHistoryContext,
+        tool: "Tool",
+        incoming: ToolStateJobInstancePopulatedT,
+        history: History,
+        inp_data: LegacyUnprefixedDict,
+        inp_dataset_collections: LegacyUnprefixedDict,
+        execution_cache: ToolExecutionCache,
+        job_params=None,
+        mapping_over: bool = False,
+        copy_library_datasets: bool = True,
+    ) -> OutputPlanner:
+        """Prepare ``incoming`` and the inputs for output decisions and return the planner.
+
+        Adds ``dbkey``, ``__input_ext``, ``chromInfo`` and element identifiers to ``incoming``,
+        which output filters and labels read.
+        """
+        # Build name for output datasets based on tool name and input names
+        on_text = self._get_on_text(inp_data, inp_dataset_collections)
+
+        input_dbkey = incoming.get(DBKEY, "?")
+        for name, data in reversed(list(inp_data.items())):
+            if not data:
+                continue
+
+            # Convert LDDA to an HDA.
+            if isinstance(data, LibraryDatasetDatasetAssociation) and copy_library_datasets:
+                data = data.to_history_dataset_association(None)
+                inp_data[name] = data
+
+            if data.dbkey not in [None, "?"]:
+                input_dbkey = data.dbkey
+
+            identifier = getattr(data, "element_identifier", None)
+            if identifier is not None:
+                incoming[element_identifier_parameter(name)] = identifier
+
+        input_ext = input_ext_for(tool, inp_data)
+
+        # Collect chromInfo dataset and add as parameters to incoming
+        chrom_info, db_dataset = execution_cache.get_chrom_info(tool.id, input_dbkey)
+        if db_dataset:
+            inp_data.update({CHROM_INFO: db_dataset})
+        incoming[CHROM_INFO] = chrom_info
+
+        # Add the dbkey to the incoming parameters
+        incoming[DBKEY] = input_dbkey
+        incoming["__input_ext"] = input_ext
+        # wrapped params are used by change_format action and by output.label; only perform this wrapping once, as needed
+        wrapped_params = self._wrapped_params(trans, tool, incoming, inp_data)
+        return OutputPlanner(
+            trans,
+            tool,
+            self,
+            incoming,
+            wrapped_params.params,
+            inp_data,
+            inp_dataset_collections.map_values(lambda pairs: pairs[0][0]),
+            input_ext,
+            on_text,
+            history=history,
+            job_params=job_params,
+            execution_cache=execution_cache,
+            mapping_over=mapping_over,
+        )
 
     def _wrapped_params(
         self,
