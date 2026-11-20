@@ -104,7 +104,7 @@ const { gridApi, AgGridVue, onGridReady, resizeOnNextTick, theme } = useAgGrid(r
 watch(() => props.colHeaders, resizeOnNextTick);
 
 function refreshHighlight() {
-    gridApi.value?.refreshCells({ force: true });
+    gridApi.value?.refreshCells();
     gridApi.value?.refreshHeader();
 }
 

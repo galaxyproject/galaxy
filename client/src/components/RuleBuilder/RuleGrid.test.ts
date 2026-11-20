@@ -37,18 +37,21 @@ describe("RuleGrid", () => {
     });
 
     it("moves the highlight when the highlighted columns change", async () => {
-        const wrapper = await mountRuleGrid([1]);
+        const wrapper = await mountRuleGrid([]);
+        // The first change may land before the grid is ready; once it shows, the grid is.
+        await wrapper.setProps({ highlightedColumns: [1] });
+        await vi.waitFor(() => expect(highlightedText(wrapper, ".ag-header-cell")).toEqual(["B"]));
 
         await wrapper.setProps({ highlightedColumns: [0] });
 
-        // The grid may still be getting ready; it applies the change once it is.
         await vi.waitFor(() => expect(highlightedText(wrapper, ".ag-header-cell")).toEqual(["A"]));
         expect(highlightedText(wrapper, ".ag-cell")).toEqual(["1", "2"]);
     });
 
     it("removes the highlight when the highlighted columns are cleared", async () => {
-        const wrapper = await mountRuleGrid([1]);
-        expect(highlightedText(wrapper, ".ag-cell")).toEqual(["a.bed", "b.bed"]);
+        const wrapper = await mountRuleGrid([]);
+        await wrapper.setProps({ highlightedColumns: [1] });
+        await vi.waitFor(() => expect(highlightedText(wrapper, ".ag-cell")).toEqual(["a.bed", "b.bed"]));
 
         await wrapper.setProps({ highlightedColumns: [] });
 

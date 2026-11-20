@@ -395,8 +395,8 @@
                                     :col-headers="colHeaders"
                                     @remove="removeMapping(index)"
                                     @edit="displayRuleType = 'mapping'"
-                                    @mouseover="highlightColumns(map.columns)"
-                                    @mouseout="clearHighlightedColumns" />
+                                    @mouseenter="highlightColumns(map.columns)"
+                                    @mouseleave="clearHighlightedColumns" />
                                 <div v-if="mapping.length == 0">
                                     One or more column definitions must be specified. These are required to specify how
                                     to build collections and datasets from rows and columns of the table.
@@ -1252,6 +1252,10 @@ export default {
         },
     },
     watch: {
+        // Editing a definition hides the list, so the hovered row never gets its mouseleave.
+        displayRuleType: function () {
+            this.clearHighlightedColumns();
+        },
         addColumnRegexType: function (val) {
             if (val == "groups") {
                 this.addColumnRegexGroupCount = 1;
@@ -1439,6 +1443,8 @@ export default {
         },
         removeMapping(index) {
             this.mapping.splice(index, 1);
+            // The removed row never gets its mouseleave.
+            this.clearHighlightedColumns();
         },
         refreshAndWait(response) {
             this.startWatchingHistory();

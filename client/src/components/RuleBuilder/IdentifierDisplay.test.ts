@@ -5,17 +5,17 @@ import IdentifierDisplay from "./IdentifierDisplay.vue";
 
 describe("IdentifierDisplay", () => {
     // The rule builder highlights a mapping's columns while the pointer is over it.
-    it("passes mouseover and mouseout on to the parent", async () => {
-        const onMouseover = vi.fn();
-        const onMouseout = vi.fn();
+    it("passes mouseenter and mouseleave on to the parent", async () => {
+        const onMouseenter = vi.fn();
+        const onMouseleave = vi.fn();
         const wrapper = mount(IdentifierDisplay as object, {
-            props: { type: "list_identifiers", columns: [0], colHeaders: ["A"], onMouseover, onMouseout },
+            props: { type: "list_identifiers", columns: [0], colHeaders: ["A"], onMouseenter, onMouseleave },
         });
 
-        await wrapper.find("li").trigger("mouseover");
-        await wrapper.find("li").trigger("mouseout");
+        await wrapper.find("li").trigger("mouseenter");
+        await wrapper.find("li").trigger("mouseleave");
 
-        expect(onMouseover).toHaveBeenCalledTimes(1);
-        expect(onMouseout).toHaveBeenCalledTimes(1);
+        expect(onMouseenter).toHaveBeenCalledTimes(1);
+        expect(onMouseleave).toHaveBeenCalledTimes(1);
     });
 });
