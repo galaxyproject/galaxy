@@ -153,4 +153,22 @@ describe("ToolForm", () => {
         expect(toastError).toHaveBeenCalledWith("Rate limit exceeded", "Updating parameters failed");
         expect(wrapper.vm.disabled).toBe(false);
     });
+
+    it("keeps a map-over option loaded on a later page", async () => {
+        const nested = { id: "hdca9", hid: 9, name: "nested", src: "hdca" };
+        const nestedMapped = { ...nested, map_over_type: "list" };
+        const collectionInput = (hdca) => ({ name: "f1", type: "data_collection", options: { hdca } });
+        server.use(
+            http.untyped.post("/api/tools/tool_id/build", () => {
+                return HttpResponse.json({ inputs: [collectionInput([nested, nestedMapped])] });
+            }),
+        );
+        await flushPromises();
+        wrapper.vm.formConfig.inputs = [collectionInput([nested])];
+
+        wrapper.vm.onLoadMore({ name: "f1", src: "hdca", offset: 1, limit: 1 });
+        await flushPromises();
+
+        expect(wrapper.vm.formConfig.inputs[0].options.hdca).toEqual([nested, nestedMapped]);
+    });
 });
