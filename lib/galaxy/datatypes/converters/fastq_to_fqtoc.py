@@ -38,7 +38,7 @@ def main():
 
         chunk_end = in_file.tell()
         out_file.write(
-            f'{{"start":"{chunk_begin}","end":"{chunk_end}","sequences":"{current_line % lines_per_chunk / 4}"}}'
+            f'{{"start":"{chunk_begin}","end":"{chunk_end}","sequences":"{current_line % lines_per_chunk // 4}"}}'
         )
         out_file.write("]}\n")
 
