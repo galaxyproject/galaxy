@@ -3,7 +3,8 @@ import { getLocalVue } from "@tests/vitest/helpers";
 import { shallowMount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { reactive } from "vue";
 
 import invocationData from "../Workflow/test/json/invocation.json";
 
@@ -30,8 +31,8 @@ const selectors = {
     cancelButton: "[data-description='cancel invocation button']",
 };
 
-/** Invocation data to be expected in the store */
-const invocationById = {
+/** Invocation data to be expected in the store; reactive, so a test can have the server mark one completed */
+const invocationById: Record<string, any> = reactive({
     [invocationData.id]: invocationData,
     "not-fetched-invocation": null,
     "retrying-invocation": null,
@@ -56,7 +57,16 @@ const invocationById = {
         ...invocationData,
         id: "terminal-error-jobs",
     },
-};
+    "finishing-jobs": {
+        ...invocationData,
+        id: "finishing-jobs",
+    },
+    "scheduling-invocation": {
+        ...invocationData,
+        id: "scheduling-invocation",
+        state: "ready",
+    },
+});
 
 // Jobs summary constants
 const invocationDataJobsSummary = {
@@ -64,7 +74,12 @@ const invocationDataJobsSummary = {
     states: {},
     populated_state: "ok",
 };
-const invocationJobsSummaryById = {
+/** A jobs summary with a running job, which a test can then finish */
+function runningJobsSummary() {
+    return { ...invocationDataJobsSummary, states: { running: 1 } };
+}
+// reactive, so a test can finish an invocation's jobs while it's shown
+const invocationJobsSummaryById: Record<string, any> = reactive({
     [invocationData.id]: invocationDataJobsSummary,
     "not-fetched-invocation": null,
     "retrying-invocation": null,
@@ -93,7 +108,9 @@ const invocationJobsSummaryById = {
             error: 1,
         },
     },
-};
+    "finishing-jobs": runningJobsSummary(),
+    "scheduling-invocation": runningJobsSummary(),
+});
 
 // Mock functions that we'll export for assertions
 const mockFetchInvocationById = vi.fn().mockImplementation((fetchParams) => {
@@ -153,6 +170,12 @@ vi.mock("@/stores/workflowStore", async () => {
     };
 });
 
+/** Wrappers mounted by the current test, unmounted after it so their polling can't react to later tests' fixtures */
+const mountedWrappers: VueWrapper[] = [];
+afterEach(() => {
+    mountedWrappers.splice(0).forEach((wrapper) => wrapper.unmount());
+});
+
 /** Mount the WorkflowInvocationState component with the given invocation ID
  * @param invocationId The invocation ID to be passed as a prop
  * @param shallow Whether to use shallowMount or mount
@@ -174,6 +197,7 @@ async function mountWorkflowInvocationState(invocationId: string, isFullPage = f
             stubs: renderNavigation ? { BNav: false, BNavItem: false } : {},
         },
     });
+    mountedWrappers.push(wrapper);
     await flushPromises();
     return wrapper;
 }
@@ -184,6 +208,14 @@ describe("WorkflowInvocationState check invocation and job terminal states", () 
         mockFetchInvocationJobsSummaryForId.mockClear();
     });
 
+    afterEach(() => {
+        vi.useRealTimers();
+        invocationJobsSummaryById["finishing-jobs"] = runningJobsSummary();
+        invocationById["finishing-jobs"].state = "scheduled";
+        invocationJobsSummaryById["scheduling-invocation"] = runningJobsSummary();
+        invocationById["scheduling-invocation"].state = "ready";
+    });
+
     it("determines that invocation and job states are terminal with terminal invocation", async () => {
         const wrapper = await mountWorkflowInvocationState(invocationData.id, true, true);
         expect(isInvocationAndJobTerminal(wrapper)).toBe(true);
@@ -191,6 +223,88 @@ describe("WorkflowInvocationState check invocation and job terminal states", () 
         // Invocation is fetched once and the jobs summary isn't fetched at all for terminal invocations
         assertInvocationFetched(1);
         assertJobsSummaryFetched(0);
+    });
+
+    it("checks a scheduled invocation a few times after seeing its jobs finish, for the server marking it completed", async () => {
+        vi.useFakeTimers();
+        await mountWorkflowInvocationState("finishing-jobs");
+        invocationJobsSummaryById["finishing-jobs"].states = { ok: 1 };
+        await vi.runAllTimersAsync();
+
+        // the first fetch, then 4 checks, after which it stays scheduled and polling stops
+        assertInvocationFetched(5);
+    });
+
+    it("stops checking once the server marks the invocation completed", async () => {
+        vi.useFakeTimers();
+        await mountWorkflowInvocationState("finishing-jobs");
+        mockFetchInvocationById.mockImplementationOnce(() => {
+            invocationById["finishing-jobs"].state = "completed";
+        });
+        invocationJobsSummaryById["finishing-jobs"].states = { ok: 1 };
+        await vi.runAllTimersAsync();
+
+        // the first fetch, then the check that sees it completed
+        assertInvocationFetched(2);
+    });
+
+    it("checks once the invocation is scheduled, even if its jobs finished while it was still scheduling", async () => {
+        vi.useFakeTimers();
+        await mountWorkflowInvocationState("scheduling-invocation");
+        invocationJobsSummaryById["scheduling-invocation"].states = { ok: 1 };
+        // the jobs finish while it is scheduling; the step poll at 6s then sees it scheduled
+        mockFetchInvocationById
+            .mockImplementationOnce(() => {})
+            .mockImplementationOnce(() => {
+                invocationById["scheduling-invocation"].state = "scheduled";
+            });
+        await vi.runAllTimersAsync();
+
+        // the first fetch, the step polls at 0s, 3s and 6s, then 4 checks
+        assertInvocationFetched(8);
+    });
+
+    it("keeps polling jobs while the invocation is still scheduling, even if they're all done so far", async () => {
+        vi.useFakeTimers();
+        invocationJobsSummaryById["scheduling-invocation"].states = { ok: 1 };
+        await mountWorkflowInvocationState("scheduling-invocation");
+        await vi.advanceTimersByTimeAsync(6000);
+
+        assertJobsSummaryFetched(3);
+    });
+
+    it("doesn't poll jobs again after unmounting during a job poll's fetch", async () => {
+        vi.useFakeTimers();
+        const wrapper = await mountWorkflowInvocationState("non-terminal-jobs");
+        let finishFetch = () => {};
+        mockFetchInvocationJobsSummaryForId.mockImplementationOnce(
+            () => new Promise<void>((resolve) => (finishFetch = resolve)),
+        );
+        await vi.advanceTimersByTimeAsync(3000);
+        wrapper.unmount();
+        finishFetch();
+        await vi.advanceTimersByTimeAsync(9000);
+
+        // the job polls at 0s and 3s, and none after unmounting
+        assertJobsSummaryFetched(2);
+    });
+
+    it("doesn't carry over having seen the previous invocation running when switching to another", async () => {
+        vi.useFakeTimers();
+        const wrapper = await mountWorkflowInvocationState("finishing-jobs");
+        await wrapper.setProps({ invocationId: invocationData.id });
+        await vi.runAllTimersAsync();
+
+        // the first fetch of each invocation, with no checks for the one that had already finished
+        assertInvocationFetched(2);
+    });
+
+    it("doesn't check an invocation whose jobs had already finished, which may never be marked completed", async () => {
+        vi.useFakeTimers();
+        await mountWorkflowInvocationState(invocationData.id);
+        await vi.runAllTimersAsync();
+
+        assertInvocationFetched(1);
     });
 
     it("determines that invocation and job states are not terminal with no fetched invocation", async () => {
@@ -212,9 +326,9 @@ describe("WorkflowInvocationState check invocation and job terminal states", () 
         const wrapper = await mountWorkflowInvocationState("non-terminal-id", true, true);
         expect(isInvocationAndJobTerminal(wrapper)).toBe(false);
 
-        // Only the invocation is fetched for non-terminal invocations; once for the initial fetch and then for the polling
+        // The invocation is fetched once initially and then polled; the jobs summary is polled while scheduling can add jobs
         assertInvocationFetched(2);
-        assertJobsSummaryFetched(0);
+        assertJobsSummaryFetched(1);
     });
 
     it("determines that job states are not terminal with non-terminal jobs but scheduled invocation", async () => {
