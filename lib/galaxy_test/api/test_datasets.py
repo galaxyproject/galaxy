@@ -1,3 +1,5 @@
+import os
+import tempfile
 import textwrap
 import zipfile
 from io import BytesIO
@@ -7,6 +9,7 @@ from urllib.parse import quote
 import pytest
 import requests
 
+from galaxy import model
 from galaxy.model.unittest_utils.store_fixtures import (
     deferred_hda_model_store_dict,
     one_hda_model_store_dict,
@@ -1020,6 +1023,37 @@ class TestDatasetsApi(ApiTestCase):
             )
             assert purged_dataset["purged"]
             assert dataset["file_size"] == purged_dataset["file_size"]
+
+    def test_purge_purges_metadata_files(self):
+        with self.dataset_populator.test_history() as history_id:
+            dataset = self.dataset_populator.new_dataset(history_id=history_id, content="ABC", wait=True)
+            app = self.driver_or_skip_test_if_remote().app
+            assert app is not None
+            session = app.model.session
+            hda = session.get(model.HistoryDatasetAssociation, app.security.decode_id(dataset["id"]))
+            assert hda is not None
+            metadata_file = model.MetadataFile(dataset=hda, name="bai")
+            session.add(metadata_file)
+            session.commit()
+            metadata_file_id = metadata_file.id
+            with tempfile.NamedTemporaryFile() as source:
+                source.write(b"BAI\x01")
+                source.flush()
+                metadata_file.update_from_file(source.name)
+            path = metadata_file.get_file_name()
+            session.commit()
+            assert os.path.exists(path)
+
+            self.dataset_populator.delete_dataset(
+                history_id=history_id, content_id=dataset["id"], purge=True, wait_for_purge=True
+            )
+
+            session.rollback()
+            purged_metadata_file = session.get(model.MetadataFile, metadata_file_id)
+            assert purged_metadata_file is not None
+            assert purged_metadata_file.deleted is True
+            assert purged_metadata_file.purged is True
+            assert not os.path.exists(path)
 
     def test_delete_batch(self):
         num_datasets = 4
