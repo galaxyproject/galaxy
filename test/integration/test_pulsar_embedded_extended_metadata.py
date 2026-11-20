@@ -33,5 +33,6 @@ test_tools = integration_util.integration_tool_runner(
         "from_work_dir_glob",
         "gx_group_tag",
         "output_format",
+        "create_directory_index",
     ]
 )

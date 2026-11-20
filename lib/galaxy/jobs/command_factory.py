@@ -280,6 +280,8 @@ def __handle_metadata(
     )
     metadata_command = metadata_command.strip()
     if metadata_command:
+        directory_outputs = metadata_kwds.get("work_dir_directory_outputs", [])
+        commands_builder.append_commands(map(__copy_directory_if_exists_command, directory_outputs))
         # Place Galaxy and its dependencies in environment for metadata regardless of tool.
         if not job_wrapper.is_cwl_job:
             commands_builder.append_command(SETUP_GALAXY_FOR_METADATA)
@@ -292,13 +294,25 @@ def __copy_if_exists_command(work_dir_output):
     test_flag = "-d" if is_directory else "-f"
     recursive_flag = " -r" if is_directory else ""
     delete_destination_dir = f" rmdir {destination}; " if is_directory else ""
-    if "?" in source_file or "*" in source_file:
-        source_file = source_file.replace("*", '"*"').replace("?", '"?"')
+    source_file = __unquote_glob_characters(source_file)
     # Check if source and destination exist.
     # Users can purge outputs before the job completes,
     # in that case we don't want to copy the output to a purged path.
     # Static, non work_dir_output files are handled in job_finish code.
     return f'\nif [ {test_flag} "{source_file}" -a {test_flag} "{destination}" ] ; then{delete_destination_dir} cp{recursive_flag} "{source_file}" "{destination}" ; fi'
+
+
+def __copy_directory_if_exists_command(directory_output):
+    # Unlike __copy_if_exists_command, creates the destination: on a remote host nothing precreates it.
+    source_directory, destination = directory_output
+    source_directory = __unquote_glob_characters(source_directory)
+    copy_command = f'mkdir -p "{destination}" && cp -r "{source_directory}/." "{destination}"'
+    return f'\nif [ -d "{source_directory}" ] ; then {copy_command} ; fi'
+
+
+def __unquote_glob_characters(path):
+    # Keeps glob characters of a from_work_dir path out of the double quotes around it, so the shell expands them.
+    return path.replace("*", '"*"').replace("?", '"?"')
 
 
 class CommandsBuilder:
