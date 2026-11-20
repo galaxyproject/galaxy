@@ -170,8 +170,8 @@ function buildFormInputs() {
             const rerunStateIndex = !step.step_label ? new String(step.step_index) : stepLabel;
 
             const stepType = step.step_type;
-            const help = step.annotation;
             const longFormInput = step.inputs[0];
+            const help = [step.annotation, longFormInput?.help].filter(Boolean).join("\n\n");
             const stepAsInput = Object.assign({}, longFormInput, {
                 name: stepName,
                 help: help,

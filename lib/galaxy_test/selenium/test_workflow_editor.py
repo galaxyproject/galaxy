@@ -333,6 +333,35 @@ class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows, UsesWorkflowAssertions
         self.screenshot("workflow_editor_data_input_deleted")
 
     @selenium_test
+    def test_data_input_default_location(self):
+        name = self._get_random_name()
+        workflow_id = self.workflow_populator.upload_yaml_workflow(
+            """class: GalaxyWorkflow
+inputs:
+  input1: data
+steps: []
+""",
+            name=name,
+        )
+        self.workflow_editor_open_with_name(name)
+        editor = self.components.workflow_editor
+        editor.node._(label="input1").title.wait_for_and_click()
+        location = "https://example.org/reference.tsv"
+        editor.default_location_input.wait_for_and_clear_and_send_keys(location)
+        self.save_after_node_form_changes()
+
+        workflow = self.workflow_populator.download_workflow(workflow_id, style="editor")
+        assert workflow["steps"]["0"]["in"]["input"]["default"] == {"class": "File", "location": location}
+
+        self.workflow_editor_open_with_name(name)
+        editor.node._(label="input1").title.wait_for_and_click()
+        assert editor.default_location_input.wait_for_value() == location
+        editor.default_location_input.wait_for_visible().clear()
+        self.save_after_node_form_changes()
+        workflow = self.workflow_populator.download_workflow(workflow_id, style="editor")
+        assert not workflow["steps"]["0"].get("in")
+
+    @selenium_test
     def test_collection_input(self):
         editor = self.components.workflow_editor
 

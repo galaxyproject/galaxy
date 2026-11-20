@@ -25,6 +25,7 @@ from galaxy_test.base.workflow_fixtures import (
     WORKFLOW_WITH_CUSTOM_REPORT_1,
     WORKFLOW_WITH_CUSTOM_REPORT_1_TEST_DATA,
     WORKFLOW_WITH_DATA_TAG_FILTER,
+    WORKFLOW_WITH_DEFAULT_FILE_DATASET_INPUT,
     WORKFLOW_WITH_DYNAMIC_OUTPUT_COLLECTION,
     WORKFLOW_WITH_IMAGES_IN_REPORT,
     WORKFLOW_WITH_IMAGES_IN_REPORT_TEST_DATA,
@@ -120,6 +121,38 @@ class TestWorkflowRun(SeleniumTestCase, UsesHistoryItemAssertions, RunsWorkflows
         self.workflow_run_wait_for_ok(hid=2, expand=True)
         self.assert_item_summary_includes(2, "2 sequences")
         self.screenshot("workflow_run_simple_complete")
+
+    @selenium_test
+    @managed_history
+    def test_dataset_default_location(self):
+        history_id = self.current_history_id()
+        self.dataset_populator.fetch_hdas(
+            history_id, [{"src": "pasted", "paste_content": "alternative", "name": "Alternative metadata"}]
+        )
+        location = self.test_http_server.get_url(
+            remote_url="https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bed",
+            file_path="test-data/1.bed",
+        )
+        self.home()
+        self.workflow_run_open_workflow(WORKFLOW_WITH_DEFAULT_FILE_DATASET_INPUT.format(location=location))
+        self.workflow_run_ensure_expanded()
+        workflow_run = self.components.workflow_run
+        status = workflow_run.default_file_status
+        assert "Using default file" in status.wait_for_visible().text
+        assert location in status.wait_for_visible().text
+        selection = workflow_run.input_data_div(label="default_file_input").wait_for_visible()
+        self.select_set_value(selection, "Alternative metadata")
+        assert "Using selected dataset" in status.wait_for_visible().text
+        self.select_set_value(selection, "Use default file")
+        assert "Using default file" in status.wait_for_visible().text
+
+        self.wait_for_xpath('//button[contains(., "Simple Form")]').click()
+        assert "Using default file" in status.wait_for_visible().text
+        assert location in status.wait_for_visible().text
+        self.screenshot("workflow_run_default_file_location")
+        self.workflow_run_submit()
+        self.workflow_run_wait_for_ok(hid=3)
+        assert "chr1" in self.dataset_populator.get_history_dataset_content(history_id)
 
     @selenium_test
     def test_workflow_run_pagination_legacy_form(self):

@@ -71,6 +71,7 @@ const props = withDefaults(
         loading?: boolean;
         multiple?: boolean;
         optional?: boolean;
+        defaultLocation?: string;
         options: Record<string, Array<DataOption>>;
         pinned?: Record<string, Array<DataOption>>;
         optionsMeta?: Record<string, OptionsMetaEntry>;
@@ -91,6 +92,7 @@ const props = withDefaults(
         loading: false,
         multiple: false,
         optional: false,
+        defaultLocation: undefined,
         modelValue: undefined,
         extensions: () => [],
         type: "data",
@@ -315,7 +317,7 @@ const formattedOptions = computed(() => {
         // Add optional entry
         if (!currentVariant.value?.multiple && props.optional) {
             result.unshift({
-                label: "Nothing selected",
+                label: props.defaultLocation ? "Use default file" : "Nothing selected",
                 value: null,
             });
         }
@@ -1255,6 +1257,11 @@ const noOptionsWarningMessage = computed(() => {
                 @uploaded-data="handleUploadedDataOptions" />
         </div>
 
+        <div v-if="defaultLocation" class="default-file-location mt-2" role="status" aria-live="polite">
+            <strong>{{ currentValue?.length ? "Using selected dataset" : "Using default file" }}</strong>
+            <div class="text-muted"><span v-if="currentValue?.length">Default file: </span>{{ defaultLocation }}</div>
+        </div>
+
         <div v-if="restrictsExtensions || showSelectionPreference" class="d-flex align-items-center flex-gapx-1 mt-1">
             <FormDataExtensions
                 v-if="restrictsExtensions"
@@ -1322,6 +1329,12 @@ const noOptionsWarningMessage = computed(() => {
 
 <style scoped lang="scss">
 .form-data {
+    .default-file-location {
+        border-left: 3px solid var(--brand-primary, #2c6087);
+        padding-left: 0.75rem;
+        overflow-wrap: anywhere;
+    }
+
     .checkbox {
         grid-column: span 2;
     }

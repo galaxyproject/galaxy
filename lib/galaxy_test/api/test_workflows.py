@@ -9230,6 +9230,36 @@ data_input:
             assert dataset_details["file_ext"] == "txt"
             assert "chr1" in dataset_details["peek"]
 
+    def test_default_file_location_editor_round_trip_and_run(self, test_http_server):
+        location = _default_file_location(test_http_server)
+        workflow_id = self._upload_yaml_workflow(WORKFLOW_WITH_DEFAULT_FILE_DATASET_INPUT.format(location=location))
+        editor = self._download_workflow(workflow_id, style="editor")
+        input_step = next(step for step in editor["steps"].values() if step["type"] == "data_input")
+        assert input_step["in"]["input"]["default"]["location"] == location
+        # Exercise the same update made by the editor and preserve an optional input.
+        input_step["in"]["input"]["default"] = {"class": "File", "location": location}
+        input_step["tool_state"]["optional"] = "true"
+        self._assert_status_code_is(self._update_workflow(workflow_id, editor), 200)
+        reopened = self._download_workflow(workflow_id, style="editor")
+        reopened_input = next(step for step in reopened["steps"].values() if step["type"] == "data_input")
+        assert reopened_input["in"]["input"]["default"] == {"class": "File", "location": location}
+        with self.dataset_populator.test_history() as history_id:
+            self.dataset_populator.new_dataset(history_id, content="alternative input", file_type="txt", wait=True)
+            run_model = self._download_workflow(workflow_id, style="run", history_id=history_id)
+            run_input = next(step for step in run_model["steps"] if step["step_type"] == "data_input")
+            assert run_input["inputs"][0]["optional"] is True
+            assert run_input["inputs"][0]["value"] is None
+            assert run_input["inputs"][0]["default_location"] == location
+            self.workflow_populator.invoke_workflow_and_wait(workflow_id, history_id=history_id, inputs={})
+            content = self.dataset_populator.get_history_dataset_content(history_id)
+            assert "chr1" in content
+
+        del reopened_input["in"]["input"]
+        self._assert_status_code_is(self._update_workflow(workflow_id, reopened), 200)
+        cleared = self._download_workflow(workflow_id, style="editor")
+        cleared_input = next(step for step in cleared["steps"].values() if step["type"] == "data_input")
+        assert not cleared_input.get("in")
+
     def test_run_with_default_file_dataset_input_and_explicit_input(self, test_http_server):
         with self.dataset_populator.test_history() as history_id:
             run_response = self._run_workflow(

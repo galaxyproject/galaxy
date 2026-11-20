@@ -1214,6 +1214,7 @@ workflow_run:
     run_error: '[data-description="workflow run error"]'
     input_div: "[step-label='${label}']"
     input_data_div: "[step-label='${label}'] .multiselect"
+    default_file_status: '.default-file-location'
     # TODO: put step labels in the DOM ideally
     subworkflow_step_icon: ".portlet-title-icon.fa-sitemap"
     run_workflow: "#run-workflow"
@@ -1361,6 +1362,7 @@ workflow_editor:
       type: xpath
       selector: >
         //div[@id='form-element-__annotation']//textarea
+    default_location_input: '#__default_location'
     collection_type_select: '#form-element-collection_type'
     collection_type_select_toggle: '#form-element-collection_type .multiselect__select'
     # excludes the 0.4s fade-in, which Playwright counts as visible
