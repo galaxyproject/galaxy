@@ -133,7 +133,7 @@ def setup_for_reference_data(
         table = app.tool_data_tables.get(table_name)
         if table is None:
             raise ValueError(f"Data table {table_name} is not configured")
-        if not trusted and not table.user_accessible:
+        if not table.readable_by(trusted=trusted):
             raise ValueError(f"Data table {table_name} is not available to user-defined tools")
         entry = next((row for row in table.get_named_fields_list() if row.get("value") == value), None)
         if entry is None:
