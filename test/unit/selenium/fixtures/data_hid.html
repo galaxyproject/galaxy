@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Data hid selection</title>
+  </head>
+  <body>
+    <span data-description="galaxy tool version">1.0</span>
+    <div class="ui-form-element" id="form-element-input1">
+      <button title="Dataset collection" id="collection">Collection</button>
+      <div class="multiselect">
+        <span class="multiselect__single"></span>
+        <div class="multiselect__select">Open</div>
+        <input class="multiselect__input" />
+        <div class="multiselect__content-wrapper"><ul></ul></div>
+      </div>
+    </div>
+    <script>
+      const input = document.querySelector("input");
+      const dropdown = document.querySelector(".multiselect__content-wrapper");
+      const list = document.querySelector("ul");
+      const selected = document.querySelector(".multiselect__single");
+      const choose = (text) => {
+        selected.textContent = text;
+        dropdown.style.display = "none";
+        input.value = "";
+      };
+      const build = () => {
+        // A page has at most 50 options; the old hid is fetched only for an all-digit server search.
+        const names = Array.from(
+          { length: 50 },
+          (_, i) => `${62 - i}: newer.txt`,
+        );
+        names.push("3: older.txt");
+        list.replaceChildren();
+        names.forEach((name) => {
+          const li = document.createElement("li");
+          li.setAttribute("role", "option");
+          li.innerHTML = `<span class="multiselect__option"><span>${name}</span></span>`;
+          li.addEventListener("click", () => choose(name));
+          list.append(li);
+        });
+      };
+      const render = () => {
+        [...list.children].forEach((li) => {
+          const oldHid = li.textContent.startsWith("3: ");
+          li.style.display =
+            li.textContent.includes(input.value) &&
+            (!oldHid || /^\d+$/.test(input.value))
+              ? ""
+              : "none";
+        });
+      };
+      build();
+      document.querySelector(".multiselect__select").onclick = () => {
+        dropdown.style.display = "";
+        render();
+      };
+      input.oninput = () => setTimeout(render, 100);
+      input.onkeydown = (e) => {
+        if (
+          e.key === "Enter" &&
+          [...list.children].find((li) => li.style.display !== "none")
+        )
+          choose(
+            [...list.children].find((li) => li.style.display !== "none")
+              .textContent,
+          );
+        if (e.key === "Escape") dropdown.style.display = "none";
+      };
+      document.querySelector("#collection").onclick = (e) => {
+        e.currentTarget.className = window.pressedClass || "g-pressed";
+        // v-g-tooltip suppresses the native title while hovering.
+        e.currentTarget.title = "";
+      };
+      render();
+    </script>
+  </body>
+</html>
