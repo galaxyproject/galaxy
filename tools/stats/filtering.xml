@@ -1,4 +1,4 @@
-<tool id="Filter1" name="Filter" version="1.1.1" profile="24.2">
+<tool id="Filter1" name="Filter" version="1.1.2" profile="24.2">
   <description>data on any column using simple expressions</description>
   <edam_operations>
     <edam_operation>operation_0335</edam_operation>
@@ -65,6 +65,15 @@
       <param name="cond" value="c2=='100%'"/>
       <param name="header_lines" value="0"/>
       <output name="out_file1" file="filter1_test6.bed"/>
+    </test>
+    <!-- test failure for a column the input does not have -->
+    <test expect_exit_code="1" expect_failure="true">
+      <param name="input" value="1.tabular"/>
+      <param name="cond" value="c9>1"/>
+      <param name="header_lines" value="0"/>
+      <assert_stderr>
+        <has_text text="Column c9 does not exist: the input has 3 columns"/>
+      </assert_stderr>
     </test>
   </tests>
   <help>
