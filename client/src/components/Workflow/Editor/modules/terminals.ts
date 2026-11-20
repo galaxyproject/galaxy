@@ -645,6 +645,18 @@ export class InputCollectionTerminal extends BaseInputTerminal {
     _effectiveCollectionTypes() {
         return this.collectionTypes.map((t) => this.localMapOver.append(t));
     }
+    _producesAcceptableDatatypeAndOptionalness(other: BaseOutputTerminal) {
+        // Mapping creates a collection even if individual jobs are skipped or
+        // omit an optional output. A collection input can consume those null
+        // elements (for example, Filter null elements). If this input maps over
+        // every dimension created by the producer, however, it receives an
+        // optional element rather than the enclosing collection.
+        const inputMapOver = this._effectiveMapOver(this._otherCollectionType(other));
+        if (other.mapOver.rank > inputMapOver.rank) {
+            return this._producesAcceptableDatatype(other);
+        }
+        return super._producesAcceptableDatatypeAndOptionalness(other);
+    }
     attachable(other: BaseOutputTerminal) {
         const otherCollectionType = this._otherCollectionType(other);
         if (otherCollectionType.isCollection) {
