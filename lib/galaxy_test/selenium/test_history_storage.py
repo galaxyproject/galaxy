@@ -32,10 +32,20 @@ class TestHistoryStorage(SeleniumTestCase, UsesUploadActivity):
 
     @selenium_test
     def test_recalculate_disk_usage_from_storage_dashboard(self):
-        self.storage_dashboard_recalculate_disk_usage()
-        # Celery-less test servers show this for 30s; with Celery it can clear at once.
-        self.components.storage_dashboard.recalculating.wait_for_visible()
-        self.screenshot("storage_dashboard_recalculating_disk_usage")
+        storage_dashboard = self.components.storage_dashboard
+        self.navigate_to_storage_dashboard()
+        usage_before = storage_dashboard.disk_usage_summary.wait_for_text()
+        # Only a size change of the current history refreshes the user, so this keeps the shown usage stale.
+        history_id = self.dataset_populator.new_history()
+        self.dataset_populator.new_dataset(history_id, content="moocow\n", wait=True)
+        storage_dashboard.refresh_disk_usage.wait_for_and_click()
+        # The Celery task can finish before the first status poll, so the refreshing alert may only flash.
+        # The dashboard reloads the user once the task is done, so wait for the new usage instead.
+        self._wait_on(
+            lambda: storage_dashboard.disk_usage_summary.wait_for_text() != usage_before,
+            "storage dashboard to show the recalculated disk usage",
+        )
+        self.screenshot("storage_dashboard_recalculated_disk_usage")
 
     def _upload_named_paste_content(self, data: dict[str, str]) -> None:
         uploader = self.upload_context("paste-content")
