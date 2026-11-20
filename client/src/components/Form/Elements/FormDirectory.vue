@@ -12,7 +12,7 @@
                 :require-writable="true" />
         </div>
         <b-breadcrumb v-if="url" class="mb-0">
-            <b-breadcrumb-item title="Select another folder" class="align-items-center" @click="reset">
+            <b-breadcrumb-item title="Select another folder" class="d-flex align-items-center" @click="reset">
                 <GButton class="pathname" color="blue">
                     <FontAwesomeIcon :icon="faFolderOpen" /> {{ url.protocol }}
                 </GButton>
@@ -20,12 +20,12 @@
             <b-breadcrumb-item
                 v-for="({ pathChunk, editable }, index) in pathChunks"
                 :key="index"
-                class="existent-url-path align-items-center">
+                class="existent-url-path d-flex align-items-center">
                 <GButton class="regular-path-chunk" :disabled="!editable" @click="removePath(index)">
                     {{ decodeURIComponent(pathChunk) }}
                 </GButton>
             </b-breadcrumb-item>
-            <b-breadcrumb-item class="directory-input-field align-items-center">
+            <b-breadcrumb-item class="directory-input-field d-flex align-items-center">
                 <b-input
                     id="path-input-breadcrumb"
                     v-model="currentDirectoryName"
@@ -185,7 +185,11 @@ export default {
 .breadcrumb-item::before {
     font-size: 1.5rem;
 }
-.directory-input-field a {
+.directory-input-field {
+    flex: 1 1 10rem;
+}
+.directory-input-field ::v-deep a {
+    flex: 1 1 auto;
     text-decoration: none;
 }
 </style>
