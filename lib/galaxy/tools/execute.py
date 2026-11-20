@@ -45,6 +45,7 @@ from galaxy.tools.execution_helpers import (
     ToolExecutionCache,
 )
 from galaxy.tools.job_parameters import DATA_MANAGER_MODE
+from galaxy.tools.output_planning import ImplicitOutputPlan
 from galaxy.tools.parameters import visit_input_values
 from galaxy.tools.parameters.workflow_utils import (
     is_runtime_value,
@@ -703,7 +704,8 @@ class ExecutionTracker:
         # params = param_combinations[0] if param_combinations else mapping_params.param_template
         self.precreate_output_collections(history, params, tool_request)
 
-    def precreate_output_collections(self, history, params, tool_request: ToolRequest | None):
+    def plan_implicit_outputs(self, history, params) -> dict[str, ImplicitOutputPlan]:
+        """Name and structure of the output collections this mapped-over run creates, by output name."""
         # params is just one sample tool param execution with parallelized
         # collection replaced with a specific dataset. Need to replace this
         # with the collection and wrap everything up so can evaluate output
@@ -712,11 +714,6 @@ class ExecutionTracker:
         assert collection_info
         trans = self.trans
         params.update(collection_info.collections)  # Replace datasets with source collections for labelling outputs.
-
-        collection_instances = {}
-        implicit_inputs = self.implicit_inputs
-
-        implicit_collection_jobs = model.ImplicitCollectionJobs()
 
         # trying to guess these filters at the collection levell is tricky because
         # the filter condition could vary from element to element. Just do best we
@@ -744,16 +741,29 @@ class ExecutionTracker:
                 no_replacement_value=NO_REPLACEMENT,
             )
 
+        plans = {}
         for output_name, output in self.tool.outputs.items():
             if filter_output(self.tool, output, example_params):
                 continue
-            output_collection_name = self.output_name(trans, history, params, output, incoming=label_state)
-            effective_structure = self._mapped_output_structure(trans, output)
+            plans[output_name] = ImplicitOutputPlan(
+                output=output,
+                name=self.output_name(trans, history, params, output, incoming=label_state),
+                structure=self._mapped_output_structure(trans, output),
+            )
+        return plans
+
+    def precreate_output_collections(self, history, params, tool_request: ToolRequest | None):
+        trans = self.trans
+        plans = self.plan_implicit_outputs(history, params)
+        collection_instances = {}
+        implicit_inputs = self.implicit_inputs
+        implicit_collection_jobs = model.ImplicitCollectionJobs()
+        for output_name, plan in plans.items():
             collection_instance = trans.app.dataset_collection_manager.precreate_dataset_collection_instance(
                 trans=trans,
                 parent=history,
-                name=output_collection_name,
-                structure=effective_structure,
+                name=plan.name,
+                structure=plan.structure,
                 implicit_inputs=implicit_inputs,
                 implicit_output_name=output_name,
                 completed_collection=self.completed_jobs,

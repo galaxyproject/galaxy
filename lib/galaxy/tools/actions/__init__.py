@@ -5,7 +5,6 @@ from abc import abstractmethod
 from collections.abc import (
     Iterable,
     Mapping,
-    MutableMapping,
 )
 from typing import (
     Any,
@@ -14,7 +13,6 @@ from typing import (
     TYPE_CHECKING,
 )
 
-from packaging.version import Version
 from pydantic import BaseModel
 
 from galaxy import model
@@ -24,10 +22,6 @@ from galaxy.exceptions import (
     RequestParameterInvalidException,
 )
 from galaxy.job_execution.actions.post import ActionBox
-from galaxy.job_execution.output_format import (
-    get_ext_or_implicit_ext,
-    resolve_format_source,
-)
 from galaxy.managers.context import (
     ProvidesHistoryContext,
     ProvidesUserContext,
@@ -62,7 +56,6 @@ from galaxy.tools.execute import (
     JobCallbackT,
 )
 from galaxy.tools.execution_helpers import (
-    filter_output,
     on_text_for_dataset_and_collections,
     ToolExecutionCache,
 )
@@ -71,6 +64,11 @@ from galaxy.tools.job_parameters import (
     DBKEY,
     element_identifier_parameter,
     is_element_identifier_parameter,
+)
+from galaxy.tools.output_planning import (
+    input_ext_for,
+    output_collection_type,
+    OutputPlanner,
 )
 from galaxy.tools.parameters import update_dataset_ids
 from galaxy.tools.parameters.basic import (
@@ -85,7 +83,6 @@ from galaxy.tools.parameters.wrapped import (
     WrappedParameters,
 )
 from galaxy.util import ExecutionTimer
-from galaxy.util.template import fill_template
 from galaxy.workflow.scheduling_dependencies import (
     input_readiness_dependencies,
     ToolInputsNotReadyWithDependencies,
@@ -96,7 +93,6 @@ if TYPE_CHECKING:
         DatasetCollection,
         DatasetInstance,
     )
-    from galaxy.tool_util.parser.output_objects import ToolOutput
     from galaxy.tools import Tool
     from galaxy.webapps.base.webapp import GalaxyWebTransaction
 
@@ -554,10 +550,6 @@ class DefaultToolAction(ToolAction):
         # Build name for output datasets based on tool name and input names
         on_text = self._get_on_text(inp_data, inp_dataset_collections)
 
-        # format='input" previously would give you a random extension from
-        # the input extensions, now it should just give "input" as the output
-        # format.
-        input_ext = "data" if Version(str(tool.profile)) < Version("16.04") else "input"
         input_dbkey = incoming.get(DBKEY, "?")
         for name, data in reversed(list(inp_data.items())):
             if not data:
@@ -569,15 +561,14 @@ class DefaultToolAction(ToolAction):
                 data = data.to_history_dataset_association(None)
                 inp_data[name] = data
 
-            if Version(str(tool.profile)) < Version("16.04"):
-                input_ext = data.ext
-
             if data.dbkey not in [None, "?"]:
                 input_dbkey = data.dbkey
 
             identifier = getattr(data, "element_identifier", None)
             if identifier is not None:
                 incoming[element_identifier_parameter(name)] = identifier
+
+        input_ext = input_ext_for(tool, inp_data)
 
         # Collect chromInfo dataset and add as parameters to incoming
         chrom_info, db_dataset = execution_cache.get_chrom_info(tool.id, input_dbkey)
@@ -626,6 +617,21 @@ class DefaultToolAction(ToolAction):
             hdca_tags=preserved_hdca_tags,
         )
 
+        planner = OutputPlanner(
+            trans,
+            tool,
+            self,
+            incoming,
+            wrapped_params.params,
+            inp_data,
+            input_collections,
+            input_ext,
+            on_text,
+            history=history,
+            job_params=job_params,
+            execution_cache=execution_cache,
+            mapping_over=dataset_collection_elements is not None,
+        )
         async_tool = tool.tool_type == "data_source_async"
 
         def handle_output(name, output, hidden=None):
@@ -637,15 +643,7 @@ class DefaultToolAction(ToolAction):
                 assert data is not None
                 out_data[name] = data
             else:
-                ext = determine_output_format(
-                    output,
-                    wrapped_params.params,
-                    inp_data,
-                    input_collections,
-                    input_ext,
-                    python_template_version=tool.python_template_version,
-                    execution_cache=execution_cache,
-                )
+                ext = planner.format(output)
                 create_datasets = True
                 dataset = None
 
@@ -667,9 +665,7 @@ class DefaultToolAction(ToolAction):
                     if from_work_dir is not None:
                         data.dataset.created_from_basename = os.path.basename(from_work_dir)
                 if hidden is None:
-                    hidden = output.hidden
-                if not hidden and dataset_collection_elements is not None:  # Mapping over a collection - hide datasets
-                    hidden = True
+                    hidden = planner.hidden(output)
                 if hidden:
                     data.visible = False
                 if dataset_collection_elements is not None and name in dataset_collection_elements:
@@ -707,9 +703,7 @@ class DefaultToolAction(ToolAction):
             else:
                 data.blurb = "queued"
             # Set output label
-            data.name = self.get_output_name(
-                output, data, tool, on_text, trans, incoming, history, wrapped_params.params, job_params
-            )
+            data.name = planner.name(output, data)
             # Store output
             out_data[name] = data
             if output.actions:
@@ -723,86 +717,85 @@ class DefaultToolAction(ToolAction):
 
         child_dataset_names: set[str] = set()
 
-        for name, output in tool.outputs.items():
-            if not filter_output(tool, output, incoming):
-                handle_output_timer = ExecutionTimer()
-                if tool_output_is_collection(output):  # Only XML tools include collections in tool.outputs
-                    if completed_job and dataset_collection_elements and name in dataset_collection_elements:
-                        # Output collection is mapped over and has already been copied from original job
-                        continue
-                    collections_manager = app.dataset_collection_manager
-                    element_identifiers: list[dict[str, str | list[dict[str, str | list[Any]]]]] = []
-                    # mypy doesn't yet support recursive type definitions
-                    known_outputs = output.known_outputs(input_collections, collections_manager.type_registry)
-                    # Just to echo TODO elsewhere - this should be restructured to allow
-                    # nested collections.
-                    for output_part_def in known_outputs:
-                        # Add elements to top-level collection, unless nested...
-                        current_element_identifiers = element_identifiers
-                        current_collection_type = output.structure.collection_type
-                        assert current_collection_type
+        for name, output in planner.included_outputs():
+            handle_output_timer = ExecutionTimer()
+            if tool_output_is_collection(output):  # Only XML tools include collections in tool.outputs
+                if completed_job and dataset_collection_elements and name in dataset_collection_elements:
+                    # Output collection is mapped over and has already been copied from original job
+                    continue
+                collections_manager = app.dataset_collection_manager
+                element_identifiers: list[dict[str, str | list[dict[str, str | list[Any]]]]] = []
+                # mypy doesn't yet support recursive type definitions
+                known_outputs = output.known_outputs(input_collections, collections_manager.type_registry)
+                # Just to echo TODO elsewhere - this should be restructured to allow
+                # nested collections.
+                for output_part_def in known_outputs:
+                    # Add elements to top-level collection, unless nested...
+                    current_element_identifiers = element_identifiers
+                    current_collection_type = output.structure.collection_type
+                    assert current_collection_type
 
-                        for parent_id in output_part_def.parent_ids or []:
-                            # Get subcollection type
-                            # TODO: replace following line with formal abstractions for doing this.
-                            current_collection_type = current_collection_type.partition(":")[2]
-                            name_to_index = {
-                                value["name"]: index for (index, value) in enumerate(current_element_identifiers)
-                            }
-                            if parent_id not in name_to_index:
-                                if parent_id not in current_element_identifiers:
-                                    index = len(current_element_identifiers)
-                                    current_element_identifiers.append(
-                                        dict(
-                                            name=parent_id,
-                                            collection_type=current_collection_type,
-                                            src="new_collection",
-                                            element_identifiers=[],
-                                        )
+                    for parent_id in output_part_def.parent_ids or []:
+                        # Get subcollection type
+                        # TODO: replace following line with formal abstractions for doing this.
+                        current_collection_type = current_collection_type.partition(":")[2]
+                        name_to_index = {
+                            value["name"]: index for (index, value) in enumerate(current_element_identifiers)
+                        }
+                        if parent_id not in name_to_index:
+                            if parent_id not in current_element_identifiers:
+                                index = len(current_element_identifiers)
+                                current_element_identifiers.append(
+                                    dict(
+                                        name=parent_id,
+                                        collection_type=current_collection_type,
+                                        src="new_collection",
+                                        element_identifiers=[],
                                     )
-                                else:
-                                    index = name_to_index[parent_id]
-                            current_element_identifiers = cast(
-                                list[
-                                    dict[
-                                        str,
-                                        str | list[dict[str, str | list[Any]]],
-                                    ]
-                                ],
-                                current_element_identifiers[index]["element_identifiers"],
-                            )
-
-                        effective_output_name = output_part_def.effective_output_name
-                        child_dataset_names.add(effective_output_name)
-                        element = handle_output(effective_output_name, output_part_def.output_def, hidden=True)
-                        history.stage_addition(element)
-                        # TODO: this shouldn't exist in the top-level of the history at all
-                        # but for now we are still working around that by hiding the contents
-                        # there.
-                        # Following hack causes dataset to no be added to history...
-                        trans.sa_session.add(element)
-                        current_element_identifiers.append(
-                            {
-                                "__object__": element,
-                                "name": output_part_def.element_identifier,
-                            }
+                                )
+                            else:
+                                index = name_to_index[parent_id]
+                        current_element_identifiers = cast(
+                            list[
+                                dict[
+                                    str,
+                                    str | list[dict[str, str | list[Any]]],
+                                ]
+                            ],
+                            current_element_identifiers[index]["element_identifiers"],
                         )
 
-                    if output.dynamic_structure:
-                        assert not element_identifiers  # known_outputs must have been empty
-                        element_kwds = dict(elements=collections_manager.ELEMENTS_UNINITIALIZED)
-                    else:
-                        element_kwds = dict(
-                            element_identifiers=element_identifiers,
-                            fields=output.structure.fields,
-                        )
-                    output_collections.create_collection(
-                        output=output, name=name, completed_job=completed_job, **element_kwds
+                    effective_output_name = output_part_def.effective_output_name
+                    child_dataset_names.add(effective_output_name)
+                    element = handle_output(effective_output_name, output_part_def.output_def, hidden=True)
+                    history.stage_addition(element)
+                    # TODO: this shouldn't exist in the top-level of the history at all
+                    # but for now we are still working around that by hiding the contents
+                    # there.
+                    # Following hack causes dataset to no be added to history...
+                    trans.sa_session.add(element)
+                    current_element_identifiers.append(
+                        {
+                            "__object__": element,
+                            "name": output_part_def.element_identifier,
+                        }
                     )
-                    log.info(f"Handled collection output named {name} for tool {tool.id} {handle_output_timer}")
+
+                if output.dynamic_structure:
+                    assert not element_identifiers  # known_outputs must have been empty
+                    element_kwds = dict(elements=collections_manager.ELEMENTS_UNINITIALIZED)
                 else:
-                    handle_output(name, output)
-                    log.info(f"Handled output named {name} for tool {tool.id} {handle_output_timer}")
+                    element_kwds = dict(
+                        element_identifiers=element_identifiers,
+                        fields=output.structure.fields,
+                    )
+                output_collections.create_collection(
+                    output=output, name=name, completed_job=completed_job, **element_kwds
+                )
+                log.info(f"Handled collection output named {name} for tool {tool.id} {handle_output_timer}")
+            else:
+                handle_output(name, output)
+                log.info(f"Handled output named {name} for tool {tool.id} {handle_output_timer}")
 
         add_datasets_timer = tool.app.execution_timer_factory.get_timer(
             "internals.galaxy.tools.actions.add_datasets",
@@ -1241,25 +1234,9 @@ class OutputCollections:
     ):
         input_collections = self.input_collections
         collections_manager = self.trans.app.dataset_collection_manager
-        collection_type = collection_type or output.structure.collection_type
-        if collection_type is None:
-            collection_type_source = output.structure.collection_type_source
-            if collection_type_source is None:
-                # TODO: Not a new problem, but this should be determined
-                # sooner.
-                raise Exception("Could not determine collection type to create.")
-            data_param = self.input_collection_parameters.get(collection_type_source)
-            if data_param is None:
-                raise Exception(
-                    f"Output collection '{output.name}' has type_source '{collection_type_source}', which does not name a collection input."
-                )
-            collection_type_description = data_param._history_query(self.trans).can_map_over(
-                input_collections[collection_type_source]
-            )
-            if collection_type_description:
-                collection_type = collection_type_description.collection_type
-            else:
-                collection_type = input_collections[collection_type_source].collection.collection_type
+        collection_type = collection_type or output_collection_type(
+            self.trans, output, input_collections, self.input_collection_parameters
+        )
 
         if "elements" in element_kwds:
 
@@ -1316,73 +1293,3 @@ class OutputCollections:
             # of the hdca.
             self.history.stage_addition(hdca)
             self.out_collection_instances[name] = hdca
-
-
-def determine_output_format(
-    output: "ToolOutput",
-    parameter_context,
-    input_datasets,
-    input_dataset_collections: MutableMapping[str, model.HistoryDatasetCollectionAssociation],
-    random_input_ext,
-    python_template_version="3",
-    execution_cache=None,
-):
-    """Determines the output format for a dataset based on an abstract
-    description of the output (galaxy.tool_util.parser.ToolOutput), the parameter
-    wrappers, a map of the input datasets (name => HDA), and the last input
-    extensions in the tool form.
-
-    TODO: Make the input extension used deterministic instead of random.
-    """
-    # the type should match the input
-    ext = output.format
-    if ext == "input":
-        if input_datasets and random_input_ext in {"data", "auto"}:
-            # Probably dealing with an implicitly converted dataset
-            try:
-                first_input_dataset = next(iter(input_datasets.values()))
-                random_input_ext = get_ext_or_implicit_ext(first_input_dataset)
-            except Exception:
-                pass
-        ext = random_input_ext
-    if (format_source := output.format_source) is not None:
-        ext = resolve_format_source(format_source, input_datasets, input_dataset_collections, ext, execution_cache)
-
-    # process change_format tags
-    if output.change_format:
-        for change_format_model in output.change_format:
-            input_check = change_format_model.get("input")
-            if input_check is not None:
-                try:
-                    if (
-                        fill_template(
-                            input_check, context=parameter_context, python_template_version=python_template_version
-                        )
-                        == change_format_model["value"]
-                    ):
-                        if change_format_model["format"]:
-                            return change_format_model["format"]
-                except Exception:
-                    # bad tag input value; possibly referencing a param within a different conditional when block or other nonexistent grouping construct
-                    continue
-            else:
-                input_dataset_check = change_format_model.get("input_dataset")
-                if input_dataset_check is not None:
-                    dataset = input_datasets.get(input_dataset_check)
-                    # At this point check is a HistoryDatasetAssociation object.
-                    check_format = change_format_model["format"] or ext
-                    check_value = change_format_model["value"]
-                    check_attribute = change_format_model["check_attribute"]
-                    if dataset is not None and check_value is not None and check_attribute is not None:
-                        # See if the attribute to be checked belongs to the HistoryDatasetAssociation object.
-                        if hasattr(dataset, check_attribute):
-                            if str(getattr(dataset, check_attribute)) == str(check_value):
-                                return check_format
-                        # See if the attribute to be checked belongs to the metadata associated with the
-                        # HistoryDatasetAssociation object.
-                        if dataset.metadata is not None:
-                            metadata_value = dataset.metadata.get(check_attribute)
-                            if metadata_value is not None:
-                                if str(metadata_value) == str(check_value):
-                                    return check_format
-    return ext
