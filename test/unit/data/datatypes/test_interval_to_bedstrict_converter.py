@@ -8,12 +8,6 @@ from galaxy.util import galaxy_directory
 
 CONVERTER = os.path.join(galaxy_directory(), "lib/galaxy/datatypes/converters/interval_to_bedstrict_converter.py")
 
-BED12 = (
-    "chr1\t100\t500\tgeneA\t0\t.\t150\t450\t0\t2\t100,100,\t0,300,\n"
-    "chr1\t600\t900\tgeneB\t0\t-\t650\t850\t0\t1\t300,\t0,\n"
-)
-
-
 def convert(tmp_path, content, extension, force_num_columns=None):
     input_file = tmp_path / f"input.{extension}"
     input_file.write_text(content)
@@ -27,7 +21,11 @@ def convert(tmp_path, content, extension, force_num_columns=None):
 
 @pytest.mark.parametrize("extension,force_num_columns", [("bed", None), ("bed12", 12)])
 def test_unstranded_bed12_keeps_strand_and_blocks(tmp_path, extension, force_num_columns):
-    assert convert(tmp_path, BED12, extension, force_num_columns) == BED12
+    bed12 = (
+        "chr1\t100\t500\tgeneA\t0\t.\t150\t450\t0\t2\t100,100,\t0,300,\n"
+        "chr1\t600\t900\tgeneB\t0\t-\t650\t850\t0\t1\t300,\t0,\n"
+    )
+    assert convert(tmp_path, bed12, extension, force_num_columns) == bed12
 
 
 def test_unstranded_bed6(tmp_path):
