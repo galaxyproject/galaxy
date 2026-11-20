@@ -490,31 +490,66 @@ class BasePopulator(metaclass=ABCMeta):
         function: Callable[[], T | None],
         desc: str,
         timeout: timeout_type,
+        history_id: Callable[[], str] | None = None,
     ) -> T:
         """Wait for ``function`` to return a value, re-running it on matching SSE events.
 
         With SSE updates enabled on the server, ``function`` re-runs only when an ``event_type``
         event matching ``predicate`` arrives, so a missing event fails the wait. Events go to the
-        owner of the changed object, which must be the current user. Otherwise this polls.
+        owner of the changed object's history; for the history ``history_id`` returns, the current
+        user subscribes as a viewer for the wait when someone else owns it. Otherwise this polls.
         """
         listener = self._sse_listener()
         if listener is None:
             return wait_on(function, desc, timeout=timeout)
+        viewed_history_id = None
         try:
+            if history_id is not None:
+                viewed_history_id = self._subscribe_to_history_owned_by_others(history_id())
             return wait_on_events(listener, event_type, predicate, function, desc, timeout)
         finally:
+            if viewed_history_id is not None:
+                self._delete("events/history-subscriptions", {"history_ids": [viewed_history_id]}, json=True)
             listener.stop()
 
+    def _subscribe_to_history_owned_by_others(self, history_id: str) -> str | None:
+        """Subscribe as a viewer of ``history_id`` unless the current user owns it; return it if subscribed.
+
+        The subscription reaches the server's workers through the same control queue as the events,
+        ahead of the events for any change committed after this returns.
+        """
+        if self._get(f"histories/{history_id}", {"keys": "user_id"}).json()["user_id"] == self._current_user_id():
+            return None
+        response = self._post("events/history-subscriptions", {"history_ids": [history_id]}, json=True)
+        api_asserts.assert_status_code_is(response, 204)
+        return history_id
+
+    def _current_user_id(self) -> str:
+        response = self._get("users/current")
+        response.raise_for_status()
+        return response.json()["id"]
+
     def wait_on_job_update(
-        self, job_id: str | None, function: Callable[[], T | None], desc: str, timeout: timeout_type
+        self,
+        job_id: str | None,
+        function: Callable[[], T | None],
+        desc: str,
+        timeout: timeout_type,
+        history_id: str | None = None,
     ) -> T:
-        """Re-run ``function`` on ``job_update`` events for ``job_id``, or for any job if it is ``None``."""
+        """Re-run ``function`` on ``job_update`` events for ``job_id``, or for any job in ``history_id``."""
 
         def matches(event: dict) -> bool:
             data = json.loads(event["data"])
             return "resync" in data or job_id is None or any(job["id"] == job_id for job in data["jobs"])
 
-        return self.wait_on_sse("job_update", matches, function, desc, timeout)
+        def job_history_id() -> str:
+            if job_id is None:
+                assert history_id is not None
+                return history_id
+            return self._get(f"jobs/{job_id}").json()["history_id"]
+
+        return self.wait_on_sse("job_update", matches, function, desc, timeout, history_id=job_history_id)
 
     def wait_on_history_update(
         self, history_id: str, function: Callable[[], T | None], desc: str, timeout: timeout_type
@@ -525,6 +560,7 @@ class BasePopulator(metaclass=ABCMeta):
             function,
             desc,
             timeout,
+            history_id=lambda: history_id,
         )
 
     def _get_to_tempfile(self, route, suffix=None, **kwd) -> str:
@@ -860,8 +896,8 @@ class BaseDatasetPopulator(BasePopulator):
                 return None
 
         try:
-            # Job events do not name the history, so any change to the user's jobs re-checks it.
-            self.wait_on_job_update(None, has_active_jobs, "active jobs", timeout)
+            # Job events do not name the history, so any change to a job the user sees re-checks it.
+            self.wait_on_job_update(None, has_active_jobs, "active jobs", timeout, history_id=history_id)
         except TimeoutAssertionError as e:
             jobs = self.history_jobs(history_id)
             message = f"Failed waiting on active jobs to complete, current jobs are [{jobs}]. {e}"
@@ -2946,6 +2982,7 @@ class BaseWorkflowPopulator(BasePopulator):
             function,
             desc,
             timeout,
+            history_id=lambda: self.get_invocation(invocation_id)["history_id"],
         )
 
     def workflow_invocations(self, workflow_id: str, include_nested_invocations=True) -> list[dict[str, Any]]:

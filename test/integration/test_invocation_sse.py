@@ -270,3 +270,23 @@ class TestInvocationSSEViewersIntegration(BaseInvocationSSEIntegrationTestCase):
         assert not any(
             private_history_id in json.loads(e["data"])["history_ids"] for e in outsider.get_events("history_update")
         )
+
+    def test_populator_waits_follow_histories_owned_by_others(self):
+        viewer_api_key = self._new_user_api_key()
+        viewer_interactor = self._get_interactor(api_key=viewer_api_key)
+        viewer_dataset_populator = DatasetPopulator(viewer_interactor)
+        viewer_workflow_populator = WorkflowPopulator(viewer_interactor)
+        published_history_id = self.dataset_populator.new_history()
+        self.dataset_populator.make_public(published_history_id)
+
+        summary = self.workflow_populator.run_workflow(
+            WORKFLOW_ONE_STEP,
+            test_data={"test_input": "hello world"},
+            history_id=published_history_id,
+            wait=False,
+        )
+        # The viewer's waits subscribe to the owner's history; without that no event wakes them.
+        assert viewer_dataset_populator.wait_for_history(published_history_id) == "ok"
+        viewer_workflow_populator.wait_for_invocation_and_completion(summary.invocation_id)
+        (job,) = viewer_dataset_populator.invocation_jobs(summary.invocation_id)
+        assert viewer_dataset_populator.wait_for_job(job["id"]) == "ok"
