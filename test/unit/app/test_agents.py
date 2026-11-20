@@ -16,6 +16,11 @@ and emits comparison reports.
     export GALAXY_TEST_AI_API_KEY="your-api-key"
     export GALAXY_TEST_AI_MODEL="llama-4-scout"
     export GALAXY_TEST_AI_API_BASE_URL="http://localhost:4000/v1/"
+    export GALAXY_TEST_EMBEDDING_API_KEY="your-embedding-api-key"
+    export GALAXY_TEST_EMBEDDING_API_BASE_URL="http://localhost:4000/v1/"
+    export GALAXY_TEST_EMBEDDING_MODEL="BAAI/bge-large-en-v1.5"
+    export GALAXY_TEST_VECTOR_DATABASE_PATH="gtn/chroma_db_composite/"
+    export GALAXY_TEST_GTN_DATABASE_PATH="gtn/gtn_search.db"
     export GALAXY_TEST_ENABLE_LIVE_LLM=1
 """
 
@@ -2061,6 +2066,15 @@ class TestAgentUnitLiveLLM:
         self.mock_config.ai_api_key = os.environ.get("GALAXY_TEST_AI_API_KEY", "test-key")
         self.mock_config.ai_model = os.environ.get("GALAXY_TEST_AI_MODEL", "llama-4-scout")
         self.mock_config.ai_api_base_url = os.environ.get("GALAXY_TEST_AI_API_BASE_URL", "http://localhost:4000/v1/")
+        self.mock_config.gtn_database_path = os.environ.get("GALAXY_TEST_GTN_DATABASE_PATH", "gtn/gtn_search.db")
+        self.mock_config.vector_database_path = os.environ.get(
+            "GALAXY_TEST_VECTOR_DATABASE_PATH", "gtn/chroma_db_composite"
+        )
+        self.mock_config.embedding_api_key = os.environ.get("GALAXY_TEST_EMBEDDING_API_KEY", "embedding-test-key")
+        self.mock_config.embedding_api_base_url = os.environ.get(
+            "GALAXY_TEST_EMBEDDING_API_BASE_URL", "http://localhost:4000/v1/"
+        )
+        self.mock_config.embedding_model = os.environ.get("GALAXY_TEST_EMBEDDING_MODEL", "BAAI/bge-large-en-v1.5")
 
         self.mock_user = mock.Mock()
         self.mock_user.id = 1
@@ -2077,6 +2091,39 @@ class TestAgentUnitLiveLLM:
             get_agent=agent_registry.get_agent,
             job_manager=None,
         )
+
+    @pytest.mark.asyncio
+    async def test_search_gtn_tutorial_vectors_live(self):
+        agent = GTNTrainingAgent(self.deps)
+
+        response = await agent.process("how can I perform RNA-seq analysis in Galaxy?")
+
+        assert response.agent_type == "gtn_training"
+        assert response.metadata["tutorial_count"] > 0
+        assert "Relevant Tutorials" in response.content
+        assert "RNA" in response.content
+
+    @pytest.mark.asyncio
+    async def test_search_gtn_workflow_vectors_live(self):
+        agent = GTNTrainingAgent(self.deps)
+
+        response = await agent.process("how can I perform single-cell analysis in Galaxy?")
+
+        assert response.agent_type == "gtn_training"
+        assert response.metadata["workflow_count"] > 0
+        assert "Relevant Workflows" in response.content
+        assert "single-cell" in response.content.lower()
+
+    @pytest.mark.asyncio
+    async def test_search_gtn_faq_vectors_live(self):
+        agent = GTNTrainingAgent(self.deps)
+
+        response = await agent.process("How do I archive a history in Galaxy?")
+
+        assert response.agent_type == "gtn_training"
+        assert response.metadata["faq_count"] > 0
+        assert "Relevant FAQs" in response.content
+        assert "archive" in response.content.lower()
 
     @pytest.mark.asyncio
     async def test_router_agent_responses_live(self):
