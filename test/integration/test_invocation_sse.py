@@ -162,7 +162,9 @@ class TestInvocationSSEIntegration(BaseInvocationSSEIntegrationTestCase):
                 listener.stop()
 
         assert state == "cancelled"
-        assert _states_for(listener.get_events("invocation_update"), invocation_id) == ["cancelling", "cancelled"]
+        states = _states_for(listener.get_events("invocation_update"), invocation_id)
+        # Events for the earlier transitions to new and ready can arrive after the listener started.
+        assert states[states.index("cancelling") :] == ["cancelling", "cancelled"], states
 
 
 class TestInvocationSSEStepChangesIntegration(BaseInvocationSSEIntegrationTestCase):
