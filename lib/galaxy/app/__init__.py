@@ -64,6 +64,7 @@ from galaxy.managers.hdas import HDAManager
 from galaxy.managers.histories import HistoryManager
 from galaxy.managers.history_audit_monitor import HistoryAuditMonitor
 from galaxy.managers.interactivetool import InteractiveToolManager
+from galaxy.managers.invocation_events import InvocationEventPublisher
 from galaxy.managers.jobs import JobSearch
 from galaxy.managers.landing import LandingRequestManager
 from galaxy.managers.libraries import LibraryManager
@@ -853,6 +854,8 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
                 statsd_client=self.execution_timer_factory.galaxy_statsd_client,
             ),
         )
+        if self.config.enable_sse_updates:
+            InvocationEventPublisher(self[SSEEventDispatcher]).register(self.model.session)
         self.notification_manager = self._register_singleton(NotificationManager)
         self.interactivetool_manager = InteractiveToolManager(self)
 

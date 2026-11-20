@@ -10372,6 +10372,21 @@ class InputToMaterialize:
     ]
 
 
+# ``session.info`` key holding the invocations changed in the session's open transaction as
+# ``{invocation_id: (owner_user_id, state)}``. The key exists only while a publisher that sends
+# these changes after commit is listening on the session (see
+# ``galaxy.managers.invocation_events``), so recording is a no-op otherwise.
+PENDING_INVOCATION_CHANGES = "galaxy.pending_invocation_changes"
+
+
+def record_invocation_change(session: Session, invocation: "WorkflowInvocation", state: str) -> None:
+    pending = session.info.get(PENDING_INVOCATION_CHANGES)
+    if pending is None:
+        return
+    history = invocation.history
+    pending[invocation.id] = (history.user_id if history else None, str(state))
+
+
 class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializable):
     __tablename__ = "workflow_invocation"
 
@@ -10568,14 +10583,21 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
             # parent's subworkflow step runs the child's invoker again, and a child whose completion
             # was already recorded must stay completed for the parent to complete.
             final_states = (*priority_states, WorkflowInvocation.states.COMPLETED)
-            session.execute(
-                update(WorkflowInvocation)
-                .where(
-                    WorkflowInvocation.id == self.id,
-                    or_(~WorkflowInvocation.state.in_(final_states), WorkflowInvocation.state.is_(None)),
-                )
-                .values(state=state)
+            previous_state = self.state
+            result = cast(
+                CursorResult,
+                session.execute(
+                    update(WorkflowInvocation)
+                    .where(
+                        WorkflowInvocation.id == self.id,
+                        or_(~WorkflowInvocation.state.in_(final_states), WorkflowInvocation.state.is_(None)),
+                    )
+                    .values(state=state)
+                ),
             )
+            # The bulk UPDATE bypasses the unit of work, so flush listeners never see this change.
+            if result.rowcount and previous_state != state:
+                record_invocation_change(session, self, state)
         else:
             # Not bound to a session, or setting cancelling/cancelled
             self.state = state

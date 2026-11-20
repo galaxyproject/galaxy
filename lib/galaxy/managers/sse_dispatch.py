@@ -23,6 +23,7 @@ from galaxy.managers.sse import make_event_id
 from galaxy.queue_worker import (
     ControlTask,
     GalaxyQueueWorker,
+    InvocationUpdate,
 )
 from galaxy.queues import (
     all_control_queues_for_declare,
@@ -200,6 +201,20 @@ class SSEEventDispatcher:
             "entry_point_update",
             {
                 "user_id": user_id,
+                "event_id": event_id or make_event_id(),
+            },
+        )
+
+    def invocation_update(self, updates: list[InvocationUpdate], event_id: str | None = None) -> None:
+        """Fan out committed workflow invocation changes to their owners.
+
+        All changes from one transaction travel in a single control task, so a parent
+        invocation and the subworkflow invocations scheduled with it cost one message.
+        """
+        self._send(
+            "invocation_update",
+            {
+                "updates": updates,
                 "event_id": event_id or make_event_id(),
             },
         )

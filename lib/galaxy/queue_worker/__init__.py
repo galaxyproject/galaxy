@@ -84,6 +84,24 @@ class EntryPointUpdatePayload(TypedDict, total=False):
     event_id: str | None
 
 
+class InvocationUpdate(TypedDict):
+    """A committed change to a workflow invocation's state, steps or messages, routed to its owner."""
+
+    user_id: int
+    invocation_id: int
+    state: str
+
+
+class InvocationUpdatePayload(TypedDict, total=False):
+    """Wire contract for the ``invocation_update`` control-task kwargs.
+
+    ``invocation_id`` values are unencoded; the consuming worker encodes them.
+    """
+
+    updates: list[InvocationUpdate]
+    event_id: str | None
+
+
 class HistoryViewerSubscriptionPayload(TypedDict, total=False):
     """Wire contract for the (un)subscribe_history_viewer control-task kwargs.
 
@@ -575,6 +593,27 @@ def entry_point_update(app: "MinimalManagerApp", **kwargs) -> None:
     sse_manager.push_to_user(int(payload["user_id"]), event)
 
 
+def invocation_update(app: "MinimalManagerApp", **kwargs) -> None:
+    """Push one ``invocation_update`` SSE event per owning user connected to this worker.
+
+    The event data is ``{"invocations": [{"id": <encoded id>, "state": <state>}, ...]}``. An entry
+    means the invocation's state, steps or messages changed; ``state`` is its current state.
+    """
+    payload = cast(InvocationUpdatePayload, kwargs)
+    sse_manager = app[SSEConnectionManager]
+    encode = app.security.encode_id
+    invocations_by_user: dict[int, list[dict[str, str]]] = {}
+    for update in payload["updates"]:
+        invocations_by_user.setdefault(int(update["user_id"]), []).append(
+            {"id": encode(update["invocation_id"]), "state": update["state"]}
+        )
+    for user_id, invocations in invocations_by_user.items():
+        event = SSEEvent(
+            event="invocation_update", data=json.dumps({"invocations": invocations}), id=payload.get("event_id")
+        )
+        sse_manager.push_to_user(user_id, event)
+
+
 control_message_to_task = {
     "create_panel_section": create_panel_section,
     "reload_tool": reload_tool,
@@ -594,6 +633,7 @@ control_message_to_task = {
     "notify_broadcast": notify_broadcast,
     "history_update": history_update,
     "entry_point_update": entry_point_update,
+    "invocation_update": invocation_update,
     "subscribe_history_viewer": subscribe_history_viewer,
     "unsubscribe_history_viewer": unsubscribe_history_viewer,
     "reload_tool_source_cache": reload_tool_source_cache,

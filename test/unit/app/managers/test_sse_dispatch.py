@@ -23,6 +23,7 @@ from unittest.mock import MagicMock
 import pytest
 
 from galaxy.managers.sse_dispatch import SSEEventDispatcher
+from galaxy.queue_worker import InvocationUpdate
 from galaxy.queues import WEBAPP_CONTROL_ROUTING_KEY
 
 
@@ -234,3 +235,12 @@ def test_dispatcher_no_statsd_means_no_instrumentation(application_stack, queue_
     assert len(fake_control_task.instances) == 1
     assert len(fake_control_task.instances[0].sent) == 1
     assert fake_control_task.instances[0].sent[0].payload["task"] == "notify_broadcast"
+
+
+def test_dispatcher_sends_invocation_update_control_task(application_stack, queue_worker):
+    dispatcher = _dispatcher_with_fakes(queue_worker, application_stack, statsd=None)
+    updates = [InvocationUpdate(user_id=1, invocation_id=2, state="scheduled")]
+    dispatcher.invocation_update(updates, event_id="e1")
+
+    (task,) = FakeControlTask.instances[0].sent
+    assert task.payload == {"task": "invocation_update", "kwargs": {"updates": updates, "event_id": "e1"}}
