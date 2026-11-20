@@ -1,10 +1,14 @@
-"""Integration tests for ``invocation_update`` SSE events on workflow invocation state changes."""
+"""Integration tests for ``invocation_update`` SSE events on workflow invocation changes.
+
+The populator waits re-check invocations only when an ``invocation_update`` event for them
+arrives once the server has SSE updates enabled, so every wait here also asserts that the
+event was sent.
+"""
 
 import json
 from urllib.parse import urljoin
 from uuid import uuid4
 
-from galaxy.util.wait import wait_on
 from galaxy_test.base.populators import (
     DatasetPopulator,
     WorkflowPopulator,
@@ -31,6 +35,25 @@ steps:
       input1: the_pause
 """
 
+WORKFLOW_THREE_INDEPENDENT_STEPS = """
+class: GalaxyWorkflow
+inputs:
+  test_input: data
+steps:
+  first_cat:
+    tool_id: cat1
+    in:
+      input1: test_input
+  second_cat:
+    tool_id: cat1
+    in:
+      input1: test_input
+  third_cat:
+    tool_id: cat1
+    in:
+      input1: test_input
+"""
+
 
 def _states_for(events: list[dict], invocation_id: str) -> list[str]:
     return [
@@ -41,7 +64,7 @@ def _states_for(events: list[dict], invocation_id: str) -> list[str]:
     ]
 
 
-class TestInvocationSSEIntegration(IntegrationTestCase):
+class BaseInvocationSSEIntegrationTestCase(IntegrationTestCase):
     dataset_populator: DatasetPopulator
     workflow_populator: WorkflowPopulator
     framework_tool_and_types = True
@@ -56,18 +79,23 @@ class TestInvocationSSEIntegration(IntegrationTestCase):
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
         self.workflow_populator = WorkflowPopulator(self.galaxy_interactor)
 
-    def _listener(self, api_key: str) -> SSELineListener:
+    def _listener(self, api_key: str | None = None) -> SSELineListener:
+        api_key = api_key or self.galaxy_interactor.api_key
+        assert api_key is not None
         listener = SSELineListener(urljoin(self.url, "api/events/stream"), api_key)
         listener.start()
         return listener
 
-    def test_owner_receives_scheduled_and_completed_for_invocation_and_subworkflow(self):
-        api_key = self.galaxy_interactor.api_key
-        assert api_key is not None
+    def _invocation_state(self, invocation_id: str) -> str:
+        return self.workflow_populator.get_invocation(invocation_id)["state"]
+
+
+class TestInvocationSSEIntegration(BaseInvocationSSEIntegrationTestCase):
+    def test_owner_receives_lifecycle_of_invocation_and_subworkflow(self):
         other_user = self._setup_user(f"{uuid4()}@galaxy.test")
         _, other_api_key = self._setup_user_get_key(other_user["email"])
 
-        owner_listener = self._listener(api_key)
+        owner_listener = self._listener()
         other_listener = self._listener(other_api_key)
         try:
             with self.dataset_populator.test_history() as history_id:
@@ -85,24 +113,23 @@ class TestInvocationSSEIntegration(IntegrationTestCase):
                     for step in invocation["steps"]
                     if step["subworkflow_invocation_id"]
                 )
-                events = owner_listener.wait_for_event_where(
-                    "invocation_update", lambda e: "completed" in _states_for([e], invocation_id)
-                )
+                self.workflow_populator.wait_for_invocation_and_completion(subworkflow_invocation_id)
         finally:
             owner_listener.stop()
             other_listener.stop()
 
+        events = owner_listener.get_events("invocation_update")
         states = _states_for(events, invocation_id)
+        assert states[0] == "new", states
         assert "scheduled" in states, states
         assert states.index("scheduled") < states.index("completed"), states
+        assert states[-1] == "completed", states
         subworkflow_states = _states_for(events, subworkflow_invocation_id)
         assert "scheduled" in subworkflow_states, subworkflow_states
-        assert "completed" in subworkflow_states, subworkflow_states
+        assert subworkflow_states[-1] == "completed", subworkflow_states
         assert other_listener.get_events("invocation_update") == []
 
     def test_owner_receives_cancelling_and_cancelled(self):
-        api_key = self.galaxy_interactor.api_key
-        assert api_key is not None
         with self.dataset_populator.test_history() as history_id:
             summary = self.workflow_populator.run_workflow(
                 WORKFLOW_WITH_PAUSE,
@@ -112,19 +139,45 @@ class TestInvocationSSEIntegration(IntegrationTestCase):
             )
             invocation_id = summary.invocation_id
             # The step after the pause stays delayed, which keeps the invocation ready.
-            wait_on(
-                lambda: self.workflow_populator.get_invocation(invocation_id)["state"] == "ready" or None,
+            self.workflow_populator.wait_on_invocation(
+                invocation_id,
+                lambda: self._invocation_state(invocation_id) == "ready" or None,
                 "invocation to be ready",
-                timeout=DEFAULT_WAIT_TIMEOUT,
+                DEFAULT_WAIT_TIMEOUT,
             )
-            listener = self._listener(api_key)
+            listener = self._listener()
             try:
                 self.workflow_populator.cancel_invocation(invocation_id)
-                events = listener.wait_for_event_where(
-                    "invocation_update", lambda e: "cancelled" in _states_for([e], invocation_id)
-                )
+                state = self.workflow_populator.wait_for_invocation(None, invocation_id, assert_ok=False)
             finally:
                 listener.stop()
 
-        # A late event for the earlier transition to ready may precede these.
-        assert _states_for(events, invocation_id)[-2:] == ["cancelling", "cancelled"]
+        assert state == "cancelled"
+        assert _states_for(listener.get_events("invocation_update"), invocation_id) == ["cancelling", "cancelled"]
+
+
+class TestInvocationSSEStepChangesIntegration(BaseInvocationSSEIntegrationTestCase):
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
+        config["maximum_workflow_jobs_per_scheduling_iteration"] = 1
+
+    def test_scheduling_a_step_of_a_ready_invocation_sends_an_event(self):
+        listener = self._listener()
+        try:
+            with self.dataset_populator.test_history() as history_id:
+                summary = self.workflow_populator.run_workflow(
+                    WORKFLOW_THREE_INDEPENDENT_STEPS,
+                    test_data={"test_input": "hello world"},
+                    history_id=history_id,
+                    wait=False,
+                )
+                invocation_id = summary.invocation_id
+                self.workflow_populator.wait_for_invocation_and_completion(invocation_id)
+        finally:
+            listener.stop()
+
+        # One job per scheduling iteration: the first iteration makes the invocation ready, and the
+        # next schedules another step while it stays ready.
+        states = _states_for(listener.get_events("invocation_update"), invocation_id)
+        assert states.count("ready") >= 2, states

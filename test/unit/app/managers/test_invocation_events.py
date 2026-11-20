@@ -1,20 +1,10 @@
-import json
-
 import pytest
 
 from galaxy import model
 from galaxy.managers.invocation_events import InvocationEventPublisher
-from galaxy.managers.sse import (
-    SSEConnectionManager,
-    SSEEvent,
-)
 from galaxy.model import mapping
-from galaxy.queue_worker import (
-    invocation_update,
-    InvocationUpdate,
-)
+from galaxy.queue_worker import InvocationUpdate
 from galaxy.schema.invocation import InvocationCancellationUserRequest
-from galaxy.security.idencoding import IdEncodingHelper
 
 States = model.WorkflowInvocation.states
 
@@ -71,12 +61,6 @@ def _invocation(
     return invocation
 
 
-def test_new_invocation_is_published_after_commit(session, dispatcher):
-    user = _user(session)
-    invocation = _invocation(session, user, state=States.NEW)
-    assert dispatcher.calls == [[{"user_id": user.id, "invocation_id": invocation.id, "state": "new"}]]
-
-
 def test_set_state_is_published_only_once_committed(session, dispatcher):
     user = _user(session)
     invocation = _invocation(session, user)
@@ -86,16 +70,6 @@ def test_set_state_is_published_only_once_committed(session, dispatcher):
     assert dispatcher.calls == []
     session.commit()
     assert dispatcher.calls == [[{"user_id": user.id, "invocation_id": invocation.id, "state": "scheduled"}]]
-
-
-def test_attribute_assignment_is_published(session, dispatcher):
-    user = _user(session)
-    invocation = _invocation(session, user, state=States.SCHEDULED)
-    dispatcher.calls.clear()
-
-    invocation.state = States.COMPLETED
-    session.commit()
-    assert dispatcher.calls == [[{"user_id": user.id, "invocation_id": invocation.id, "state": "completed"}]]
 
 
 def test_rolled_back_change_is_not_published(session, dispatcher):
@@ -117,7 +91,7 @@ def test_unchanged_state_is_not_published(session, dispatcher):
     completed = _invocation(session, user, state=States.COMPLETED)
     dispatcher.calls.clear()
 
-    # Stays ready on every scheduling iteration that leaves steps delayed.
+    # Stays ready on every scheduling iteration that schedules nothing new.
     invocation.set_state(States.READY)
     # set_state never reverts a completed invocation.
     completed.set_state(States.SCHEDULED)
@@ -171,32 +145,14 @@ def test_rolled_back_savepoint_is_not_published(session, dispatcher):
     assert dispatcher.calls == [[{"user_id": user.id, "invocation_id": published.id, "state": "scheduled"}]]
 
 
-def test_step_and_message_changes_are_published_with_the_current_state(session, dispatcher):
+def test_message_is_published_with_the_current_state(session, dispatcher):
     user = _user(session)
     invocation = _invocation(session, user)
-    workflow_step = model.WorkflowStep()
-    workflow_step.order_index = 0
-    workflow_step.workflow = invocation.workflow
-    session.add(workflow_step)
-    session.commit()
     dispatcher.calls.clear()
-
-    step = model.WorkflowInvocationStep()
-    step.workflow_invocation = invocation
-    step.workflow_step = workflow_step
-    step.state = "new"
-    session.add(step)
-    session.commit()
-    expected = [[{"user_id": user.id, "invocation_id": invocation.id, "state": "ready"}]]
-    assert dispatcher.calls == expected
-
-    step.state = "scheduled"
-    session.commit()
-    assert dispatcher.calls == expected * 2
 
     invocation.add_message(InvocationCancellationUserRequest(reason="user_request"))
     session.commit()
-    assert dispatcher.calls == expected * 3
+    assert dispatcher.calls == [[{"user_id": user.id, "invocation_id": invocation.id, "state": "ready"}]]
 
 
 def test_anonymous_invocation_is_not_published(session, dispatcher):
@@ -214,51 +170,3 @@ def test_dispatch_failure_does_not_fail_commit(galaxy_model):
     session.commit()
     session.refresh(invocation)
     assert invocation.state == States.SCHEDULED
-
-
-class RecordingSSEManager:
-    def __init__(self) -> None:
-        self.pushed: list[tuple[int, SSEEvent]] = []
-
-    def push_to_user(self, user_id: int, event: SSEEvent) -> None:
-        self.pushed.append((user_id, event))
-
-
-class FakeApp:
-    def __init__(self) -> None:
-        self.sse_manager = RecordingSSEManager()
-        self.security = IdEncodingHelper(id_secret="1234567890abcdef")
-
-    def __getitem__(self, key):
-        assert key is SSEConnectionManager
-        return self.sse_manager
-
-
-def test_invocation_update_task_pushes_one_event_per_owner():
-    app = FakeApp()
-    invocation_update(
-        app,  # type: ignore[arg-type]
-        updates=[
-            {"user_id": 1, "invocation_id": 10, "state": "scheduled"},
-            {"user_id": 2, "invocation_id": 20, "state": "cancelled"},
-            {"user_id": 1, "invocation_id": 11, "state": "scheduled"},
-        ],
-        event_id="e1",
-    )
-
-    encode = app.security.encode_id
-    pushed = {user_id: (event.event, event.id, json.loads(event.data)) for user_id, event in app.sse_manager.pushed}
-    assert len(app.sse_manager.pushed) == 2
-    assert pushed == {
-        1: (
-            "invocation_update",
-            "e1",
-            {
-                "invocations": [
-                    {"id": encode(10), "state": "scheduled"},
-                    {"id": encode(11), "state": "scheduled"},
-                ]
-            },
-        ),
-        2: ("invocation_update", "e1", {"invocations": [{"id": encode(20), "state": "cancelled"}]}),
-    }
