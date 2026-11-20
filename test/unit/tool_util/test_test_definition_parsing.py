@@ -131,6 +131,12 @@ class TestTestParsing(TestCase):
         test_dicts = self._parse_tests()
         self._verify_each(test_dicts[0].to_dict(), COLLECTION_TYPE_SOURCE_EXPECTATIONS)
 
+    def test_conditional_defaults_to_selected_option(self):
+        self._init_tool_for_path(functional_test_tool_path("parameters/gx_conditional_select_selected.xml"))
+        test_dict = self._parse_tests()[1].to_dict()
+        assert test_dict["error"] is False, test_dict.get("exception")
+        assert test_dict["inputs"] == {"conditional_parameter|boolean_parameter": [True]}
+
     def test_unqualified_access_disabled_in_24_2(self):
         self._init_tool_for_path(functional_test_tool_path("deprecated/simple_constructs_24_2.xml"))
         test_dicts = self._parse_tests()
