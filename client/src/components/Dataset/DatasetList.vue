@@ -11,6 +11,7 @@ import { updateTags } from "@/api/tags";
 import type { RowIcon } from "@/components/Common/GTable.types";
 import { STATES } from "@/components/History/Content/model/states";
 import { useConfirmDialog } from "@/composables/confirmDialog";
+import { useSerialTagSaves } from "@/composables/serialTagSaves";
 import { Toast } from "@/composables/toast";
 import { useHistoryStore } from "@/stores/historyStore";
 import localize from "@/utils/localization";
@@ -76,6 +77,8 @@ const visibleColumns = ref<string[]>(["name", "tags", "history_id", "extension",
 const bulkDeleteOrRestoreLoading = ref(false);
 const bulkCopyLoading = ref(false);
 const showBulkCopyModal = ref(false);
+// one tag save queue per dataset, so an older tag list never lands after a newer one
+const tagSaves = new Map<string, ReturnType<typeof useSerialTagSaves>["saveTags"]>();
 
 const { datasetTableActions } = useDatasetTableActions(() => load(true));
 const historyStore = useHistoryStore();
@@ -126,22 +129,34 @@ async function load(showOverlay = false) {
     }
 }
 
-async function onTags(tags: string[], index: number) {
-    const item = rows.value[index];
-
-    if (item) {
-        item.tags = tags;
+function tagSavesFor(item: HistoryItemSummary) {
+    const { history_content_type: contentType, id } = item;
+    // an HDA and an HDCA can share an id
+    const key = `${contentType}-${id}`;
+    let saveTags = tagSaves.get(key);
+    if (!saveTags) {
+        saveTags = useSerialTagSaves({
+            // looked up by id: a list load during the saves replaces the rows
+            setTags: (tags) => {
+                const row = rows.value.find((entry) => entry.history_content_type === contentType && entry.id === id);
+                if (row) {
+                    row.tags = tags;
+                }
+            },
+            onFailed: () => load(true),
+        }).saveTags;
+        tagSaves.set(key, saveTags);
     }
+    return saveTags;
+}
 
-    try {
-        const itemClass =
-            item?.history_content_type === "dataset"
-                ? "HistoryDatasetAssociation"
-                : "HistoryDatasetCollectionAssociation";
-        await updateTags(item?.id as string, itemClass, tags);
-    } catch (e: any) {
-        Toast.error(`Failed to update tags: ${e}`);
-    }
+function onTags(tags: string[], item: HistoryItemSummary) {
+    const itemClass =
+        item.history_content_type === "dataset" ? "HistoryDatasetAssociation" : "HistoryDatasetCollectionAssociation";
+    tagSavesFor(item)(tags, async () => {
+        await updateTags(item.id, itemClass, tags);
+        return tags;
+    });
 }
 
 function onQuery(q: string) {
@@ -386,7 +401,7 @@ onMounted(() => {
                     <StatelessTags
                         :model-value="row.item.tags"
                         :disabled="row.item.deleted"
-                        @update:model-value="(tags: string[]) => onTags(tags, row.index)" />
+                        @update:model-value="(tags: string[]) => onTags(tags, row.item)" />
                 </template>
 
                 <template v-slot:cell(update_time)="data">

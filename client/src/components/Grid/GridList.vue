@@ -6,6 +6,7 @@ import { BCard, BPagination } from "bootstrap-vue";
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 
+import { useSerialTagSaves } from "@/composables/serialTagSaves";
 import localize from "@/utils/localization";
 
 import type {
@@ -71,6 +72,9 @@ const props = withDefaults(defineProps<Props>(), {
 
 // contains the current grid data provided by the corresponding api endpoint
 const gridData = ref();
+
+// one tag save queue per row id, so an older tag list of a row never lands after a newer one
+const tagSaves = new Map<unknown, ReturnType<typeof useSerialTagSaves>["saveTags"]>();
 
 // message references
 const errorMessage = ref("");
@@ -335,9 +339,28 @@ function onSort(sortKey: string) {
  */
 function onTagInput(data: RowData, tags: Array<string>, tagsHandler?: FieldHandler) {
     if (tagsHandler) {
-        tagsHandler({ ...data, tags: tags });
-        data.tags = tags;
+        tagSavesFor(data)(tags, async () => {
+            await tagsHandler({ ...data, tags: tags });
+            return tags;
+        });
     }
+}
+
+function tagSavesFor(data: RowData) {
+    let saveTags = tagSaves.get(data.id);
+    if (!saveTags) {
+        const id = data.id;
+        saveTags = useSerialTagSaves({
+            // looked up by id: a grid load during the saves replaces the row objects
+            setTags: (tags) => {
+                const row = (gridData.value as RowData[] | undefined)?.find((entry) => entry.id === id) ?? data;
+                row.tags = tags;
+            },
+            onFailed: () => getGridData(),
+        }).saveTags;
+        tagSaves.set(id, saveTags);
+    }
+    return saveTags;
 }
 function onFilter(filter?: string) {
     if (filter) {

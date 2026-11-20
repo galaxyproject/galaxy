@@ -13,6 +13,7 @@ import Filtering, { equals } from "@/utils/filtering";
 import type { GridConfig, RowData } from "./configs/types";
 
 import MountTarget from "./GridList.vue";
+import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 
 vi.useFakeTimers();
 
@@ -315,6 +316,31 @@ describe("GridList", () => {
         await flushPromises();
 
         expect(wrapper.find("[data-description='grid cell 0-0']").text()).toBe("fast-row");
+    });
+
+    it("saves the tag edits of a row one after another", async () => {
+        const testGrid = createTestGrid();
+        const saves = [deferred<void>(), deferred<void>()];
+        const tagsHandler = vi.fn((_row: RowData) => saves[tagsHandler.mock.calls.length - 1]!.promise);
+        testGrid.fields.push({ key: "tags", title: "tags", type: "tags", handler: tagsHandler });
+        const wrapper = createTarget({ gridConfig: testGrid, limit: 1 });
+        await flushPromises();
+
+        const tags = wrapper.findComponent(StatelessTags);
+        tags.vm.$emit("update:modelValue", ["first"]);
+        tags.vm.$emit("update:modelValue", ["first", "second"]);
+        await flushPromises();
+        expect(tagsHandler).toHaveBeenCalledTimes(1);
+        expect(tagsHandler.mock.calls[0]![0].tags).toEqual(["first"]);
+        expect(tags.props("modelValue")).toEqual(["first", "second"]);
+
+        saves[0]!.resolve();
+        await flushPromises();
+        expect(tagsHandler).toHaveBeenCalledTimes(2);
+        expect(tagsHandler.mock.calls[1]![0].tags).toEqual(["first", "second"]);
+        saves[1]!.resolve();
+        await flushPromises();
+        expect(tags.props("modelValue")).toEqual(["first", "second"]);
     });
 
     it("pagination", async () => {
