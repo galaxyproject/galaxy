@@ -69,16 +69,23 @@ test_data:
         assert dataset["peek"] == "Binary bam alignments file"
         assert len(dataset["meta_files"]) == 1
 
-    def test_copy_of_running_output_gets_metadata_and_hidden_source_stays_hidden(self, history_id):
+    def test_changes_to_running_outputs_are_kept(self, history_id):
         run = self.dataset_populator.run_tool("all_output_types", {"sleep_param": 5}, history_id)
-        output = next(o for o in run["outputs"] if o["output_name"] == "output_tool_supplied_metadata")
-        # Copy and hide once the job's outputs were exported for metadata, while the copy's datatype is still "auto"
+        outputs = {o["output_name"]: o for o in run["outputs"]}
+        output = outputs["output_tool_supplied_metadata"]
+        static_output = outputs["static_output"]
+        # Change outputs once the job exported them for metadata, while the copy's datatype is still "auto"
         job_state = wait_on_state(
             lambda: self.dataset_populator.get_job_details(run["jobs"][0]["id"]),
             skip_states=["new", "queued"],
             timeout=15,
         )
         assert job_state == "running"
+        self.dataset_populator.update_dataset(
+            static_output["id"], {"name": "renamed while running", "misc_info": "my note"}
+        )
+        # This output's name is set by the tool in galaxy.json
+        self.dataset_populator.update_dataset(output["id"], {"name": "renamed while running"})
         payload = {
             "type": "dataset_collection",
             "collection_type": "list",
@@ -95,6 +102,10 @@ test_data:
         assert element["metadata_data_lines"] == 1
         source = self.dataset_populator.get_history_dataset_details(history_id, content_id=output["id"])
         assert source["visible"] is False
+        assert source["name"] == "my dynamic name"
+        static = self.dataset_populator.get_history_dataset_details(history_id, content_id=static_output["id"])
+        assert static["name"] == "renamed while running"
+        assert static["misc_info"] == "my note"
 
 
 class TestExtendedMetadataStrategyMetadataFileIntegrationTestCase(TestDirectoryStrategyMetadataFileIntegrationTestCase):

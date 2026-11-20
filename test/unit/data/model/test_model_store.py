@@ -1092,6 +1092,43 @@ def test_import_errored_job_output_is_unhidden():
     assert hda.visible is True
 
 
+@pytest.mark.parametrize(
+    "info_from_job, expected_info",
+    [
+        pytest.param("", "my note", id="no_stdout"),
+        # the job appends its stdout to the info it got at job setup
+        pytest.param("\nhello from stdout", "my note\nhello from stdout", id="stdout_appended"),
+    ],
+)
+def test_import_job_output_keeps_name_and_info_edited_while_job_ran(info_from_job, expected_info):
+    app, h, temp_directory, import_history = _setup_simple_export({"for_edit": True})
+    attrs_at_job_setup = store.load_datasets_attrs_by_id(temp_directory)
+    _edit_exported_dataset_attrs(temp_directory, lambda attrs: attrs[1].update(info=info_from_job))
+    hda = h.active_datasets[-1]
+    hda.name = "renamed while running"
+    hda.info = "my note"
+    app.commit()
+    _perform_edit_import(temp_directory, app, attrs_at_job_setup)
+    assert hda.name == "renamed while running"
+    assert hda.info == expected_info
+
+
+def test_import_job_output_takes_name_and_info_set_by_job():
+    app, h, temp_directory, import_history = _setup_simple_export({"for_edit": True})
+    attrs_at_job_setup = store.load_datasets_attrs_by_id(temp_directory)
+    # e.g. provided by the tool in galaxy.json
+    _edit_exported_dataset_attrs(
+        temp_directory, lambda attrs: attrs[1].update(name="my dynamic name", info="my dynamic info")
+    )
+    hda = h.active_datasets[-1]
+    hda.name = "renamed while running"
+    hda.info = "my note"
+    app.commit()
+    _perform_edit_import(temp_directory, app, attrs_at_job_setup)
+    assert hda.name == "my dynamic name"
+    assert hda.info == "my dynamic info"
+
+
 def test_import_existing_job_reports_state_without_applying_it():
     app, h, temp_directory, import_history = _setup_simple_export({"for_edit": True})
     job = h.active_datasets[-1].creating_job
@@ -1145,9 +1182,14 @@ def _edit_exported_dataset_attrs(temp_directory, edit):
         json.dump(datasets_attrs, f)
 
 
-def _perform_edit_import(temp_directory, app):
+def _perform_edit_import(temp_directory, app, datasets_attrs_at_job_setup=None):
+    import_options = store.ImportOptions(
+        allow_dataset_object_edit=True,
+        allow_edit=True,
+        datasets_attrs_at_job_setup=datasets_attrs_at_job_setup,
+    )
     import_model_store = store.get_import_model_store_for_directory(
-        temp_directory, import_options=store.ImportOptions(allow_dataset_object_edit=True, allow_edit=True), app=app
+        temp_directory, import_options=import_options, app=app
     )
     import_model_store.perform_import()
 
