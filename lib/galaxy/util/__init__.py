@@ -1927,12 +1927,30 @@ def check_github_api_response_rate_limit(response):
         raise Exception(message)
 
 
-def download_to_file(url, dest_file_path, timeout=30, chunk_size=2**20):
-    """Download a URL to a file in chunks."""
-    with requests.get(url, timeout=timeout, stream=True) as r, open(dest_file_path, "wb") as f:
-        for chunk in r.iter_content(chunk_size):
-            if chunk:
-                f.write(chunk)
+def download_to_file(url, dest_file_path, timeout=30, chunk_size=2**20, max_retries=5, backoff_factor=2):
+    """Download a URL to a file in chunks.
+
+    Connection errors, timeouts and 429/5xx responses are retried with exponential backoff.
+    If the final response is an HTTP error, ``requests.HTTPError`` is raised and
+    ``dest_file_path`` is not written.
+    """
+    retries = Retry(
+        total=max_retries,
+        backoff_factor=backoff_factor,
+        status_forcelist=[429, 500, 502, 503, 504],
+        # return the last response so raise_for_status() reports its status
+        raise_on_status=False,
+    )
+    with requests.Session() as s:
+        adapter = HTTPAdapter(max_retries=retries)
+        s.mount("http://", adapter)
+        s.mount("https://", adapter)
+        with s.get(url, timeout=timeout, stream=True) as r:
+            r.raise_for_status()
+            with open(dest_file_path, "wb") as f:
+                for chunk in r.iter_content(chunk_size):
+                    if chunk:
+                        f.write(chunk)
 
 
 def _stream_to_writer(
