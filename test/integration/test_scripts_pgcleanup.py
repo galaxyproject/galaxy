@@ -105,6 +105,9 @@ class TestScriptsPgCleanupIntegration(RunsCachedBamJob, BaseScriptsIntegrationTe
 
         email = "pgcleanup-gdpr@example.org"
         user = self._setup_user(email)
+        db_user = self._db_get(model.User, user["id"])
+        db_user.preferences["extra_user_preferences"] = '{"section|field": "personal value"}'
+        self._app.model.session.commit()
         delete_response = self._delete(f"users/{user['id']}", admin=True)
         assert delete_response.status_code == 200
         self._pgcleanup_check_output(["--older-than", "0", "--sequence", "purge_deleted_users_gdpr"])
@@ -112,6 +115,7 @@ class TestScriptsPgCleanupIntegration(RunsCachedBamJob, BaseScriptsIntegrationTe
         assert purged_user.purged
         assert purged_user.email != email and "@" not in purged_user.email
         assert purged_user.username != user["username"]
+        assert "extra_user_preferences" not in purged_user.preferences
 
     def test_purge_old_hdas(self):
         self._skip_unless_postgres()

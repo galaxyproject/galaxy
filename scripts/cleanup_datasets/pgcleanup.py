@@ -730,6 +730,8 @@ class PurgeDeletedUsersGDPR(PurgesHDAs, RemovesMetadataFiles, Action):
       this step (private roles created before 24.2 are named after the user's email).
     - Delete all OIDC user authnz tokens (external identity associations) whose user_ids are purged
       in this step.
+    - Delete the extra user preferences of all users purged in this step. Values kept in the vault
+      are not removed; purging the user through the API does that.
     """
 
     _action_sql = """
@@ -788,6 +790,13 @@ class PurgeDeletedUsersGDPR(PurgesHDAs, RemovesMetadataFiles, Action):
                     WHERE oidc_user_authnz_tokens.user_id = purged_user_ids.id
                 RETURNING oidc_user_authnz_tokens.user_id AS user_id,
                           oidc_user_authnz_tokens.id AS id),
+             deleted_extra_preference_ids
+          AS (DELETE FROM user_preference
+                    USING purged_user_ids
+                    WHERE user_preference.user_id = purged_user_ids.id
+                          AND user_preference.name = 'extra_user_preferences'
+                RETURNING user_preference.user_id AS user_id,
+                          user_preference.id AS id),
              user_events
           AS (INSERT INTO cleanup_event_user_association
                           (create_time, cleanup_event_id, user_id)
@@ -832,7 +841,8 @@ class PurgeDeletedUsersGDPR(PurgesHDAs, RemovesMetadataFiles, Action):
              deleted_uga_ids.id AS deleted_uga_id,
              deleted_ura_ids.id AS deleted_ura_id,
              deleted_ua_ids.id AS deleted_ua_id,
-             deleted_oidc_ids.id AS deleted_oidc_id
+             deleted_oidc_ids.id AS deleted_oidc_id,
+             deleted_extra_preference_ids.id AS deleted_extra_preference_id
         FROM purged_user_ids
              LEFT OUTER JOIN purged_history_ids
                              ON purged_user_ids.id = purged_history_ids.user_id
@@ -850,6 +860,8 @@ class PurgeDeletedUsersGDPR(PurgesHDAs, RemovesMetadataFiles, Action):
                              ON purged_user_ids.id = deleted_ua_ids.user_id
              LEFT OUTER JOIN deleted_oidc_ids
                              ON purged_user_ids.id = deleted_oidc_ids.user_id
+             LEFT OUTER JOIN deleted_extra_preference_ids
+                             ON purged_user_ids.id = deleted_extra_preference_ids.user_id
     ORDER BY purged_user_ids.id
     """
     causals = (
@@ -861,6 +873,7 @@ class PurgeDeletedUsersGDPR(PurgesHDAs, RemovesMetadataFiles, Action):
         ("purged_user_id", "deleted_ura_id"),
         ("purged_user_id", "deleted_ua_id"),
         ("purged_user_id", "deleted_oidc_id"),
+        ("purged_user_id", "deleted_extra_preference_id"),
     )
 
     @classmethod
