@@ -2204,15 +2204,16 @@ class MinimalJobWrapper(HasResourceParameters):
         job_context = ExpressionContext(dict(stdout=tool_stdout, stderr=tool_stderr))
         if extended_metadata:
             try:
+                metadata_directory = os.path.join(self.working_directory, "metadata")
                 import_options = store.ImportOptions(
                     allow_dataset_object_edit=True,
                     allow_edit=True,
                     datasets_attrs_at_job_setup=store.load_datasets_attrs_by_id(
-                        os.path.join(self.working_directory, "metadata", "outputs_new")
+                        os.path.join(metadata_directory, "outputs_new")
                     ),
                 )
                 import_model_store = store.get_import_model_store_for_directory(
-                    os.path.join(self.working_directory, "metadata", "outputs_populated"),
+                    os.path.join(metadata_directory, "outputs_populated"),
                     app=self.app,
                     import_options=import_options,
                     user=job.user,

@@ -3209,19 +3209,21 @@ def load_datasets_attrs_by_id(directory: str) -> DatasetsAttrsById:
         return {}
     with open(datasets_attrs_path) as f:
         datasets_attrs = load(f)
-    return {(attrs["model_class"], attrs["id"]): attrs for attrs in datasets_attrs if "id" in attrs}
+    return {(attrs["model_class"], attrs["id"]): attrs for attrs in datasets_attrs}
 
 
 def _keep_edits_made_while_job_ran(current: Any, at_job_setup: Any, from_job: Any, keep_appended_text: bool) -> Any:
     """Return the value of an output attribute the job reports, keeping edits made while the job ran.
 
-    The current value is kept if the job didn't change the value it got at job setup. With
-    ``keep_appended_text``, lines the job appended (e.g. stdout added to ``info``) are appended to the current value.
+    The current value is kept if the job didn't change the value it got at job setup (``None`` and ``""`` count
+    as the same). With ``keep_appended_text``, lines the job appended to it are appended to the current value;
+    this matches how the job side adds stdout to ``info`` (``f"{info.rstrip()}\n{stdout}"``).
     """
-    if from_job == at_job_setup or not (from_job or at_job_setup):
+    at_job_setup = at_job_setup or ""
+    if (from_job or "") == at_job_setup:
         return current
-    if keep_appended_text and isinstance(from_job, str):
-        setup_text = (at_job_setup or "").rstrip()
+    if keep_appended_text and from_job:
+        setup_text = at_job_setup.rstrip()
         if from_job.startswith(f"{setup_text}\n"):
             return f"{(current or '').rstrip()}{from_job[len(setup_text):]}"
     return from_job
