@@ -772,12 +772,21 @@ class BaseJobRunner:
             # full_status currently only passed in pulsar runner,
             # but might be useful for other runners in the future.
             full_status = full_status or {}
-            tool_stdout = full_status.get("stdout")
-            tool_stderr = full_status.get("stderr")
             fail_message = getattr(job_state, "fail_message", message)
             job_state.job_wrapper.fail(
-                fail_message, tool_stdout=tool_stdout, tool_stderr=tool_stderr, exception=exception
+                fail_message,
+                tool_stdout=full_status.get("stdout"),
+                tool_stderr=full_status.get("stderr"),
+                exit_code=full_status.get("returncode"),
+                job_stdout=full_status.get("job_stdout"),
+                job_stderr=full_status.get("job_stderr"),
+                exception=exception,
+                job_metrics_directory=self._fail_job_metrics_directory(job_state.job_wrapper),
             )
+
+    def _fail_job_metrics_directory(self, job_wrapper: "MinimalJobWrapper") -> str | None:
+        """Where a failed job's metrics are collected from, ``None`` for the job's working directory."""
+        return None
 
     def mark_as_resubmitted(self, job_state: "JobState", info: str | None = None):
         job_state.job_wrapper.mark_as_resubmitted(info=info)
