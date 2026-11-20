@@ -489,6 +489,30 @@ describe("useJobStore eviction", () => {
         expect(store.getCachedJob("displayed")).toBeNull();
     });
 
+    it("evicts the oldest job added via updateJob once the cache is over cap", () => {
+        const store = useJobStore();
+        for (let i = 0; i < MAX_CACHED_JOBS + 1; i++) {
+            store.updateJob(`job-${i}`, buildJob(`job-${i}`, "ok"));
+        }
+
+        expect(store.getCachedJob("job-0")).toBeNull();
+        expect(store.getCachedJob(`job-${MAX_CACHED_JOBS}`)?.state).toBe("ok");
+    });
+
+    it("does not let an older list snapshot overwrite a newer fetched state", async () => {
+        server.use(
+            http.get("/api/jobs/{job_id}", ({ response }) => {
+                return response(200).json({ ...buildJob("job1", "ok"), update_time: "2024-01-01T00:05:00" });
+            }),
+        );
+        const store = useJobStore();
+        await store.fetchJob({ id: "job1", full: false });
+
+        store.updateJob("job1", { ...buildJob("job1", "running"), update_time: "2024-01-01T00:01:00" });
+
+        expect(store.getCachedJob("job1")?.state).toBe("ok");
+    });
+
     it("never evicts a job that is still actively being polled", async () => {
         let runningJobCallCount = 0;
         server.use(
