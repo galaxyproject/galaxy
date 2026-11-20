@@ -35,6 +35,20 @@ describe("SelectionDialog.vue", () => {
         expect(wrapper.findComponent(DataDialogSearch).exists()).toBeTruthy();
     });
 
+    it.each([
+        { modalShow: true, expectedOpen: true },
+        { modalShow: false, expectedOpen: false },
+    ])("dialog open is $expectedOpen when mounted with modalShow $modalShow", async ({ modalShow, expectedOpen }) => {
+        const dialogWrapper = mount(SelectionDialog, {
+            propsData: { ...mockOptions, modalShow },
+            localVue,
+            attachTo: document.body,
+        });
+        await localVue.nextTick();
+        expect(dialogWrapper.find("dialog").element.open).toBe(expectedOpen);
+        dialogWrapper.destroy();
+    });
+
     it("hideModal called on click cancel", async () => {
         expect(wrapper.emitted().onCancel).toBeFalsy();
         wrapper.find("[data-description='selection dialog cancel']").trigger("click");
