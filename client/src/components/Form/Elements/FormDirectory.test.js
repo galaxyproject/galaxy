@@ -70,6 +70,12 @@ describe("DirectoryPathEditableBreadcrumb", () => {
         return input;
     };
 
+    async function mountFormDirectory(value) {
+        wrapper?.destroy();
+        wrapper = mount(FormDirectory, { propsData: { value }, localVue, pinia: createPinia() });
+        await flushPromises();
+    }
+
     beforeEach(async () => {
         spyOnUrlSet = vi.spyOn(FormDirectory.methods, "setUrl");
         spyOnAddPath = vi.spyOn(FormDirectory.methods, "addPath");
@@ -81,16 +87,7 @@ describe("DirectoryPathEditableBreadcrumb", () => {
             }),
         );
 
-        const pinia = createPinia();
-
-        wrapper = mount(FormDirectory, {
-            propsData: {
-                value: null,
-            },
-            localVue: localVue,
-            pinia,
-        });
-        await flushPromises();
+        await mountFormDirectory(null);
     });
     afterEach(async () => {
         if (wrapper) {
@@ -179,31 +176,23 @@ describe("DirectoryPathEditableBreadcrumb", () => {
 
     it("shows the directory it is mounted with, without changing the value", async () => {
         const value = "gxfiles://directory/sub directory/with%percent";
-        const restoredWrapper = mount(FormDirectory, { propsData: { value }, localVue, pinia: createPinia() });
-        await flushPromises();
+        await mountFormDirectory(value);
 
-        const pathChunks = restoredWrapper.findAll("li.breadcrumb-item button.regular-path-chunk");
+        const pathChunks = wrapper.findAll("li.breadcrumb-item button.regular-path-chunk");
         expect(pathChunks.wrappers.map((chunk) => chunk.text())).toEqual([
             "directory",
             "sub directory",
             "with%percent",
         ]);
-        expect(restoredWrapper.find(".pathname").text()).toBe("gxfiles:");
-        expect(restoredWrapper.emitted("input")).toBeUndefined();
-        restoredWrapper.destroy();
+        expect(wrapper.find(".pathname").text()).toBe("gxfiles:");
+        expect(wrapper.emitted("input")).toBeUndefined();
     });
 
     it("clears a value it cannot parse when mounting", async () => {
-        const invalidWrapper = mount(FormDirectory, {
-            propsData: { value: "not a directory uri" },
-            localVue,
-            pinia: createPinia(),
-        });
-        await flushPromises();
+        await mountFormDirectory("not a directory uri");
 
-        expect(invalidWrapper.emitted("input")).toEqual([[undefined]]);
-        expect(invalidWrapper.find("#select-btn").exists()).toBe(true);
-        invalidWrapper.destroy();
+        expect(wrapper.emitted("input")).toEqual([[undefined]]);
+        expect(wrapper.find("#select-btn").exists()).toBe(true);
     });
 
     it("does not load the files dialog before Select is clicked", async () => {

@@ -9,8 +9,7 @@
                 :key="modalKey"
                 mode="directory"
                 :callback="setUrl"
-                :require-writable="true"
-                :is-open="isModalShown" />
+                :require-writable="true" />
         </div>
         <b-breadcrumb v-if="url" class="mb-0">
             <b-breadcrumb-item title="Select another folder" class="align-items-center" @click="reset">

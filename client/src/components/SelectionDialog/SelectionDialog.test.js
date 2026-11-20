@@ -35,17 +35,14 @@ describe("SelectionDialog.vue", () => {
         expect(wrapper.findComponent(DataDialogSearch).exists()).toBeTruthy();
     });
 
-    it.each([
-        { modalShow: true, expectedOpen: true },
-        { modalShow: false, expectedOpen: false },
-    ])("dialog open is $expectedOpen when mounted with modalShow $modalShow", async ({ modalShow, expectedOpen }) => {
+    it.each([true, false])("dialog open matches modalShow %s on mount", async (modalShow) => {
         const dialogWrapper = mount(SelectionDialog, {
             propsData: { ...mockOptions, modalShow },
             localVue,
             attachTo: document.body,
         });
         await localVue.nextTick();
-        expect(dialogWrapper.find("dialog").element.open).toBe(expectedOpen);
+        expect(dialogWrapper.find("dialog").element.open).toBe(modalShow);
         dialogWrapper.destroy();
     });
 
