@@ -3,6 +3,7 @@ import { getLocalVue } from "@tests/vitest/helpers";
 import { shallowMount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { describe, expect, it, vi } from "vitest";
+import { createMemoryHistory, createRouter } from "vue-router";
 
 import invocationData from "../Workflow/test/json/invocation.json";
 
@@ -80,5 +81,37 @@ describe("WorkflowInvocationOverview.vue for a valid/invalid workflow", () => {
         expect(wrapper.find("[data-description='workflow invocation graph']").exists()).toBeFalsy();
         const alert = wrapper.find(selectors.gAlertStub);
         expect(alert.text()).toContain(alertMessages.nonExistent);
+    });
+});
+
+describe("WorkflowInvocationOverview subworkflow error links", () => {
+    it.each([
+        [3, { step_index: "3" }],
+        [undefined, {}],
+    ])("opens the subworkflow invocation with step %s selected", async (stepId, query) => {
+        const router = createRouter({
+            history: createMemoryHistory(),
+            routes: [{ path: "/:path(.*)", component: {} }],
+        });
+        const wrapper = shallowMount(WorkflowInvocationOverview, {
+            propsData: {
+                invocation: invocationData,
+                invocationAndJobTerminal: true,
+                invocationSchedulingTerminal: true,
+                stepsJobsSummary: [],
+                jobStatesSummary: {},
+                invocationMessages: [{ reason: "subworkflow_failed" }],
+            },
+            global: localVue,
+            pinia: createTestingPinia({ createSpy: vi.fn }),
+            router,
+        });
+        await flushPromises();
+        wrapper
+            .findComponent({ name: "WorkflowInvocationError" })
+            .vm.$emit("view-subworkflow-invocation", "subworkflow-invocation", stepId);
+        await flushPromises();
+        expect(router.currentRoute.value.path).toBe("/workflows/invocations/subworkflow-invocation");
+        expect(router.currentRoute.value.query).toEqual(query);
     });
 });

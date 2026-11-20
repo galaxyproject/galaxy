@@ -120,6 +120,9 @@ class TestWorkflowRun(SeleniumTestCase, UsesHistoryItemAssertions, RunsWorkflows
         self.workflow_run_wait_for_ok(hid=2, expand=True)
         self.assert_item_summary_includes(2, "2 sequences")
         self.screenshot("workflow_run_simple_complete")
+        # The success flag leaves the URL so shared links omit it, without tearing down the (fading) banner.
+        assert "success" not in self.current_url
+        self.components._.messages.donelarge.wait_for_present()
 
     @selenium_test
     def test_workflow_run_pagination_legacy_form(self):
