@@ -48,6 +48,8 @@ def read_mock_emails(directory: Union[str, Path]) -> List[Dict[str, Any]]:
 P = ParamSpec("P")
 T = TypeVar("T")
 
+SKIP_FLAKEY_TESTS_ON_ERROR = os.environ.get("GALAXY_TEST_SKIP_FLAKEY_TESTS_ON_ERROR", None)
+
 
 def _failure_texts(exception: Exception) -> List[str]:
     texts = [str(exception)]
@@ -172,6 +174,9 @@ def transient_failure(issue: int, potentially_fixed: bool = False) -> Callable[[
             and the test failure comment will require the PR reviewer to report
             potential failures on the tracking issue and remove potentially_fixed.
 
+    Like ``@flakey``, the test is skipped instead of failing when
+    ``GALAXY_TEST_SKIP_FLAKEY_TESTS_ON_ERROR`` is set (``run_tests.sh --skip_flakey_fails``).
+
     Example:
         @transient_failure(issue=12345)
         def test_flaky_selenium(self):
@@ -185,6 +190,8 @@ def transient_failure(issue: int, potentially_fixed: bool = False) -> Callable[[
             try:
                 return func(*args, **kwargs)
             except Exception as e:
+                if SKIP_FLAKEY_TESTS_ON_ERROR and not isinstance(e, SkipTest):
+                    raise SkipTest(f"Skipping known transient failure [Issue #{issue}]") from e
                 if potentially_fixed:
                     current_datetime = datetime.now().isoformat()
                     report_this = (
