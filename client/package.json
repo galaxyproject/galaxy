@@ -20,7 +20,6 @@
     "not kaios > 0"
   ],
   "resolutions": {
-    "chokidar": "3.5.3",
     "vue": "2.7.16",
     "vue-loader": "15.11.1"
   },
