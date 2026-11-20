@@ -44,7 +44,9 @@ describe("InteractiveToolsPanel component", () => {
         (filterLatestToolVersions as ReturnType<typeof vi.fn>).mockImplementation((tools) => tools);
     });
 
-    const mountComponent = async (toolsList: Partial<Tool>[] = mockTools) => {
+    // The panel body is a slot of ActivityPanel, which the plain stub does not
+    // render. Tests that look at the tool list ask for a stub that does.
+    const mountComponent = async (toolsList: Partial<Tool>[] = mockTools, renderPanelBody = false) => {
         const pinia = createTestingPinia({
             createSpy: vi.fn,
             stubActions: false,
@@ -66,7 +68,7 @@ describe("InteractiveToolsPanel component", () => {
             global: localVue,
             pinia,
             stubs: {
-                ActivityPanel: true,
+                ActivityPanel: renderPanelBody ? { template: '<div><slot name="header" /><slot /></div>' } : true,
                 DelayedInput: true,
                 FontAwesomeIcon: true,
                 UtcDate: true,
@@ -132,6 +134,22 @@ describe("InteractiveToolsPanel component", () => {
         await mountComponent([]);
 
         expect(filterLatestToolVersions).toHaveBeenCalledWith([]);
+    });
+
+    it("keeps the slashes of a Tool Shed tool ID unencoded in the icon URL", async () => {
+        const shedTool = {
+            id: "toolshed.example.org/repos/an owner/a_repo/interactive_tool_example/1.0",
+            version: "1.0",
+            name: "Example",
+            model_class: "InteractiveTool",
+            icon: "example.png",
+        };
+
+        const wrapper = await mountComponent([shedTool], true);
+
+        expect(wrapper.find(".tool-icon img").attributes("src")).toBe(
+            "/api/tools/toolshed.example.org/repos/an%20owner/a_repo/interactive_tool_example/1.0/icon",
+        );
     });
 
     it("should display active interactive tools at the top", async () => {
