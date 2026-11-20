@@ -109,6 +109,8 @@ class ConfiguredDriver:
         remote_port: str = DEFAULT_SELENIUM_REMOTE_PORT,
         headless: bool = False,
         backend_type: Literal["selenium", "playwright"] = DEFAULT_BACKEND_TYPE,
+        video_dir: str | None = None,
+        slow_mo: float | None = None,
     ):
         """
         Initialize a configured driver with the specified backend.
@@ -121,6 +123,8 @@ class ConfiguredDriver:
             remote_port: Remote Selenium Grid port
             headless: Whether to run browser in headless mode
             backend_type: Which backend to use ("selenium" or "playwright")
+            video_dir: Record a video of each page into this directory (Playwright only)
+            slow_mo: Slow every browser operation down by this many milliseconds (Playwright only)
 
         Raises:
             Exception: If Playwright backend is requested with remote=True
@@ -134,11 +138,15 @@ class ConfiguredDriver:
             remote_port=remote_port,
             headless=headless,
             backend_type=backend_type,
+            video_dir=video_dir,
+            slow_mo=slow_mo,
         )
 
         # Validate Playwright limitations
         if backend_type == "playwright" and remote:
             raise Exception(PLAYWRIGHT_REMOTE_UNSUPPORTED_MESSAGE)
+        if backend_type != "playwright" and (video_dir or slow_mo):
+            raise Exception("Recording video and slowing down actions require the Playwright backend.")
 
         if backend_type == "selenium":
             # Create Selenium driver
@@ -162,6 +170,8 @@ class ConfiguredDriver:
             resources = get_playwright_driver(
                 browser=browser,
                 headless=headless,
+                video_dir=video_dir,
+                slow_mo=slow_mo,
             )
             self.driver_impl = cast(HasDriverProtocol, _PlaywrightDriverImpl(resources, timeout_handler))
 
@@ -259,13 +269,20 @@ def get_playwright_browser_type(browser: str = DEFAULT_BROWSER) -> PlaywrightBro
         )
 
 
-def get_playwright_driver(browser: str = DEFAULT_BROWSER, headless: bool = False) -> PlaywrightResources:
+def get_playwright_driver(
+    browser: str = DEFAULT_BROWSER,
+    headless: bool = False,
+    video_dir: str | None = None,
+    slow_mo: float | None = None,
+) -> PlaywrightResources:
     """
     Create Playwright browser resources.
 
     Args:
         browser: Browser name to launch (CHROME, FIREFOX, auto, etc.)
         headless: Whether to run in headless mode
+        video_dir: Record a video of the page into this directory; it is written when the browser closes
+        slow_mo: Slow every browser operation down by this many milliseconds, so a recording can be followed
 
     Returns:
         PlaywrightResources containing playwright, browser, and page instances
@@ -288,10 +305,18 @@ def get_playwright_driver(browser: str = DEFAULT_BROWSER, headless: bool = False
         browser_type = playwright.chromium
 
     # Launch browser with headless setting
-    browser_instance = browser_type.launch(headless=headless)
+    browser_instance = browser_type.launch(headless=headless, slow_mo=slow_mo)
 
     # Create page with viewport size matching Selenium's window size
-    page = browser_instance.new_page(viewport={"width": DEFAULT_WINDOW_WIDTH, "height": DEFAULT_WINDOW_HEIGHT})
+    width, height = DEFAULT_WINDOW_WIDTH, DEFAULT_WINDOW_HEIGHT
+    if video_dir:
+        page = browser_instance.new_page(
+            viewport={"width": width, "height": height},
+            record_video_dir=video_dir,
+            record_video_size={"width": width, "height": height},
+        )
+    else:
+        page = browser_instance.new_page(viewport={"width": width, "height": height})
 
     return PlaywrightResources(
         playwright=playwright,

@@ -1376,7 +1376,11 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
 
     def close(self) -> None:
         """Cleanup the current browser tab/page."""
-        self._playwright_resources.browser.close()
+        try:
+            # A recorded video is only written out when the page's context closes.
+            self._playwright_resources.page.context.close()
+        finally:
+            self._playwright_resources.browser.close()
 
     def quit(self) -> None:
         """
