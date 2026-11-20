@@ -9,11 +9,19 @@ thread instead of silently swallowing them.
 
 import queue
 import threading
+import time
 from collections.abc import Callable
+from typing import TypeVar
 
 import requests
 
-from galaxy.util.wait import wait_on
+from galaxy.util.wait import (
+    timeout_type,
+    TimeoutAssertionError,
+    wait_on,
+)
+
+T = TypeVar("T")
 
 CONNECT_TIMEOUT = 15
 DEFAULT_WAIT_TIMEOUT = 15
@@ -115,6 +123,11 @@ class SSELineListener:
 
         return wait_on(_check, f"SSE {event_type} matching predicate", timeout=timeout)
 
+    def matching_event_count(self, event_type: str, predicate: Callable[[dict], bool]) -> int:
+        """Return how many ``event_type`` events matching ``predicate`` have arrived so far."""
+        self._raise_if_errored()
+        return sum(1 for event in self.get_events(event_type) if predicate(event))
+
     def get_events(self, event_type: str | None = None) -> list[dict]:
         """Return all collected events so far, optionally filtered by type."""
         all_events = parse_sse_events("".join(self._collected))
@@ -152,3 +165,35 @@ class SSELineListener:
             self._errors.put(exc)
             # Ensure start() doesn't hang forever on connection failure.
             self._ready.set()
+
+
+def wait_on_events(
+    listener: SSELineListener,
+    event_type: str,
+    predicate: Callable[[dict], bool],
+    function: Callable[[], T | None],
+    desc: str,
+    timeout: timeout_type,
+) -> T:
+    """Like ``wait_on``, but re-runs ``function`` only when a matching event arrives instead of polling.
+
+    ``function`` runs once up front, so ``listener`` must be started before the call: a change
+    committed after that first run then always produces an event the listener sees. A missing
+    event makes the wait time out, which is how tests using this exercise the event's producer.
+    """
+    deadline = time.monotonic() + timeout
+    while True:
+        seen = listener.matching_event_count(event_type, predicate)
+        result = function()
+        if result is not None:
+            return result
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise TimeoutAssertionError(
+                f"Timed out after {timeout} seconds waiting on {desc} (woken by SSE {event_type} events)."
+            )
+        wait_on(
+            lambda: True if listener.matching_event_count(event_type, predicate) > seen else None,  # noqa: B023
+            f"SSE {event_type} event while waiting on {desc}",
+            timeout=remaining,
+        )

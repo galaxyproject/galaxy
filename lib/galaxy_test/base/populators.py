@@ -56,7 +56,10 @@ from collections.abc import (
     Callable,
     Generator,
 )
-from functools import wraps
+from functools import (
+    partial,
+    wraps,
+)
 from io import StringIO
 from operator import itemgetter
 from typing import (
@@ -65,6 +68,7 @@ from typing import (
     Literal,
     NamedTuple,
     Self,
+    TypeVar,
     Union,
 )
 from uuid import UUID
@@ -135,6 +139,15 @@ from .api import (
 )
 from .api_util import random_name
 from .env import REQUIRE_ALL_NEEDED_TOOLS
+from .sse import (
+    SSELineListener,
+    wait_on_events,
+)
+
+T = TypeVar("T")
+
+# The stream sends a keepalive every 30 seconds; a longer read timeout keeps idle waits connected.
+SSE_WAIT_READ_TIMEOUT = 60
 
 FILE_URL = "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/4.bed"
 FILE_MD5 = "37b59762b59fff860460522d271bc111"
@@ -465,6 +478,10 @@ class BasePopulator(metaclass=ABCMeta):
     @abstractmethod
     def _delete(self, route, data=None, headers=None, admin=False, json: bool = False) -> Response:
         """DELETE against target Galaxy instance on specified route."""
+
+    def _sse_listener(self) -> SSELineListener | None:
+        """A started listener on the server's event stream for the current user, or ``None`` to poll."""
+        return None
 
     def _get_to_tempfile(self, route, suffix=None, **kwd) -> str:
         """Perform a _get and store the result in a tempfile."""
@@ -2490,6 +2507,23 @@ class BaseDatasetPopulator(BasePopulator):
 
 class GalaxyInteractorHttpMixin:
     galaxy_interactor: ApiTestInteractor
+    _sse_updates_enabled: bool | None = None
+
+    def _sse_listener(self) -> SSELineListener | None:
+        if self._sse_updates_enabled is None:
+            response = self._get("configuration")
+            response.raise_for_status()
+            # Servers that predate SSE updates do not report the option.
+            self._sse_updates_enabled = bool(response.json().get("enable_sse_updates"))
+        api_key = self.galaxy_interactor.api_key
+        # Events are routed to users; anonymous waits poll.
+        if not self._sse_updates_enabled or api_key is None:
+            return None
+        listener = SSELineListener(
+            f"{self.galaxy_interactor.api_url}/events/stream", api_key, timeout=SSE_WAIT_READ_TIMEOUT
+        )
+        listener.start()
+        return listener
 
     @property
     def _api_key(self):
@@ -2845,7 +2879,37 @@ class BaseWorkflowPopulator(BasePopulator):
         def workflow_state():
             return self._get(url)
 
-        return wait_on_state(workflow_state, desc="workflow invocation state", timeout=timeout, assert_ok=assert_ok)
+        return wait_on_state(
+            workflow_state,
+            desc="workflow invocation state",
+            timeout=timeout,
+            assert_ok=assert_ok,
+            wait=partial(self.wait_on_invocation, invocation_id),
+        )
+
+    def wait_on_invocation(
+        self, invocation_id: str, function: Callable[[], T | None], desc: str, timeout: timeout_type
+    ) -> T:
+        """Wait for ``function`` to return a value, re-running it on the invocation's changes.
+
+        With SSE updates enabled on the server the waiter re-runs ``function`` only when an
+        ``invocation_update`` event for the invocation arrives, so a missing event fails the wait.
+        Events go to the owner of the invocation's history, which must be the current user.
+        """
+        listener = self._sse_listener()
+        if listener is None:
+            return wait_on(function, desc, timeout=timeout)
+        try:
+            return wait_on_events(
+                listener,
+                "invocation_update",
+                lambda event: any(item["id"] == invocation_id for item in json.loads(event["data"])["invocations"]),
+                function,
+                desc,
+                timeout,
+            )
+        finally:
+            listener.stop()
 
     def workflow_invocations(self, workflow_id: str, include_nested_invocations=True) -> list[dict[str, Any]]:
         response = self._get(f"workflows/{workflow_id}/invocations")
@@ -3495,8 +3559,7 @@ steps: []
                 raise AssertionError(f"Invocation reached terminal state: {invocation['state']}")
             return None
 
-        invocation = wait_on(check_completed, "invocation to reach completed state", timeout=timeout)
-        return invocation
+        return self.wait_on_invocation(invocation_id, check_completed, "invocation to reach completed state", timeout)
 
     def index(
         self,
@@ -4658,6 +4721,7 @@ def wait_on_state(
     ok_states=None,
     assert_ok: bool = False,
     timeout: timeout_type = DEFAULT_TIMEOUT,
+    wait: Callable[[Callable[[], str | None], str, timeout_type], str] = tool_util_wait_on,
 ) -> str:
     def get_state():
         response = state_func()
@@ -4691,7 +4755,7 @@ def wait_on_state(
     # Remove ok_states from skip_states, so we can wait for a state to becoming running
     skip_states = [s for s in skip_states if s not in ok_states]
     try:
-        return wait_on(get_state, desc=desc, timeout=timeout)
+        return wait(get_state, desc, timeout)
     except TimeoutAssertionError as e:
         response = state_func()
         raise TimeoutAssertionError(f"{e} Current response containing state [{response.json()}].")
