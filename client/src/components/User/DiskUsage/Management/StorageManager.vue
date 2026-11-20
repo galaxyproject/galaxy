@@ -52,7 +52,7 @@ async function onConfirmCleanupSelected(selectedItems: CleanableItem[]) {
         cleanupResult.value = await currentOperation.value.cleanupItems(selectedItems);
         if (cleanupResult.value.hasUpdatedResults) {
             refreshOperationId.value = currentOperation.value.id.toString();
-            userStore.refreshStorageUsageInBackground();
+            userStore.refreshStorageUsageUnlessLive();
         }
     }
 }
