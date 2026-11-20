@@ -28,6 +28,7 @@
   <tool file="help_features_markdown.xml" />
   <tool file="select_from_url.xml" />
   <tool file="multi_select.xml" />
+  <tool file="select_comma_value.xml" />
   <tool file="multi_output.xml" />
   <tool file="multi_output_configured.xml" />
   <tool file="multi_output_assign_primary.xml" />
