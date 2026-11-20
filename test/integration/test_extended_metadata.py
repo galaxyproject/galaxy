@@ -427,11 +427,17 @@ class TestExtendedMetadataSecurityIntegration(integration_util.IntegrationTestCa
         self, history_id: str, tool_id: str | None, inputs: dict[str, Any], tamper: Callable[[str], None], **kwds
     ) -> dict[str, Any]:
         """Run a job whose ``outputs_populated`` is rewritten by ``tamper`` and check that Galaxy refuses it."""
+        contents_before = {content["id"] for content in self.dataset_populator.get_history_contents(history_id)}
         with _tamper_outputs_populated(tamper) as tampered:
             response = self.dataset_populator.run_tool_raw(tool_id, inputs, history_id, **kwds).json()
             job_id = response["jobs"][0]["id"]
             self.dataset_populator.wait_for_job(job_id, assert_ok=False)
         assert len(tampered) == 1
+        # Nothing the refused import created before the refusal is kept.
+        new_contents = {content["id"] for content in self.dataset_populator.get_history_contents(history_id)}
+        assert new_contents - contents_before == {
+            output["id"] for output in response["outputs"] + response["output_collections"]
+        }
         assert self.dataset_populator.get_job_details(job_id).json()["state"] == "error"
         for output in response["outputs"]:
             output = self.dataset_populator.get_history_dataset_details(
@@ -484,7 +490,8 @@ class TestExtendedMetadataSecurityIntegration(integration_util.IntegrationTestCa
             _rewrite_attrs(archive_dir, store.ATTRS_FILENAME_JOBS, rewrite)
 
         with self.dataset_populator.test_history() as history_id:
-            self._run_tampered_cat(history_id, tamper)
+            # multi_output discovers a dataset, which the import creates before it refuses the job edit.
+            self._run_tampered_job(history_id, "multi_output", {"input": 7}, tamper)
 
         with self._different_user():
             job = self.dataset_populator.get_job_details(victim_job_id, full=True).json()

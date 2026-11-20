@@ -2419,6 +2419,9 @@ class MinimalJobWrapper(HasResourceParameters):
 
         job_context = ExpressionContext(dict(stdout=tool_stdout, stderr=tool_stderr))
         if extended_metadata:
+            # Commit the tool's streams and messages first, so that a refused or failed import can roll back
+            # everything it imported.
+            self.sa_session.commit()
             try:
                 # The job writes this model store, so it may only edit the job's own outputs. User-defined tools
                 # can't link their outputs to server files or move them to another object store either.
@@ -2463,10 +2466,12 @@ class MinimalJobWrapper(HasResourceParameters):
                 if object_import_tracker.job_states_by_id.get(job.id) == job.states.ERROR:
                     final_job_state = job.states.ERROR
             except store.FileTracebackException as e:
+                self.sa_session.rollback()
                 job.traceback = e.traceback
                 log.exception(f"Problem generating command line for Job {job.id}.\n{job.traceback}")
                 return fail(str(e), exception=e)
             except Exception as e:
+                self.sa_session.rollback()
                 log.exception(f"problem importing job outputs. stdout [{job.stdout}] stderr [{job.stderr}]")
                 return fail(str(e), exception=e)
         else:
