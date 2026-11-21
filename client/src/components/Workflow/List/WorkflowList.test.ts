@@ -162,4 +162,22 @@ describe("WorkflowList", () => {
         expect((wrapper.find("#workflow-list-filter input").element as HTMLInputElement).value).toBe("");
         await flushPromises();
     });
+
+    it("keeps typed words when a filter is added, in the search box and in the search sent", async () => {
+        mockedLoadWorkflows.mockResolvedValue({ data: generateRandomWorkflowList(FAKE_USERNAME, 2), totalMatches: 2 });
+        const wrapper = await mountWorkflowList();
+        const filterInput = () => wrapper.find("#workflow-list-filter input").element as HTMLInputElement;
+
+        vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+        await wrapper.find("#workflow-list-filter input").setValue("rna");
+        vi.advanceTimersByTime(1000);
+        vi.useRealTimers();
+        await flushPromises();
+
+        await wrapper.find("#show-deleted").trigger("click");
+        await flushPromises();
+
+        expect(filterInput().value).toBe("rna is:deleted");
+        expect(mockedLoadWorkflows).toHaveBeenLastCalledWith(expect.objectContaining({ filterText: "rna is:deleted" }));
+    });
 });
