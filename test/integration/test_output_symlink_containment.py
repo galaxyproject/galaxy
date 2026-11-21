@@ -66,6 +66,20 @@ class BaseOutputsToWorkingDirectorySymlinkContainmentIntegrationTestCase(
         outputs = self._run("named_inside", assert_ok=True)
         assert outputs["output"] == "inside job directory\n"
 
+    def test_failed_job_does_not_move_named_output_linking_outside_job_directory(self):
+        # The tool time limit makes the runner call fail() while the tool is still running.
+        with self.dataset_populator.test_history() as history_id:
+            response = self.dataset_populator.run_tool(
+                "output_symlink_containment_timeout", inputs={}, history_id=history_id
+            )
+            job_id = response["jobs"][0]["id"]
+            self.dataset_populator.wait_for_job(job_id, assert_ok=False)
+            assert self.dataset_populator.get_job_details(job_id).json()["state"] == "error"
+            content = self.dataset_populator.get_history_dataset_content(
+                history_id, dataset_id=response["outputs"][0]["id"], assert_ok=False
+            )
+            assert SENTINEL not in content
+
 
 class TestOutputSymlinkContainmentIntegration(BaseOutputSymlinkContainmentIntegrationTestCase):
     pass
