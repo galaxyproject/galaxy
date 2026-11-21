@@ -3,6 +3,7 @@
 import os
 import uuid
 
+from galaxy import model
 from galaxy.jobs.runners.pulsar import (
     active_job_index_entries,
     migrate_embedded_pulsar_persistence,
@@ -100,10 +101,14 @@ class TestEmbeddedPulsarPersistenceDirectory(integration_util.IntegrationTestCas
         finished = self._touch(source, "_default_-postprocessing-jobs", self._decode(finished_job_id))
         unknown = self._touch(source, "_default_-active-jobs", "999999999")
         uuid_id = self._touch(source, "_default_-active-jobs", uuid.uuid4().hex)
+        uuid_job_external_id = self._create_job(model.Job.states.RUNNING, server_name, uuid.uuid4().hex)
+        uuid_job = self._touch(source, "_default_-active-jobs", uuid_job_external_id)
         moved_to = os.path.join(source, server_name, "_default_-active-jobs", self._decode(running_job_id))
+        uuid_job_moved_to = os.path.join(source, server_name, "_default_-active-jobs", uuid_job_external_id)
         expected = sorted(
             [
                 PersistenceEntryMigration(running, moved_to),
+                PersistenceEntryMigration(uuid_job, uuid_job_moved_to),
                 PersistenceEntryMigration(finished, None, "job is ok"),
                 PersistenceEntryMigration(unknown, None, "no Galaxy job with this id"),
                 PersistenceEntryMigration(uuid_id, None, "no Galaxy job with this id"),
@@ -117,6 +122,7 @@ class TestEmbeddedPulsarPersistenceDirectory(integration_util.IntegrationTestCas
         assert not os.path.exists(moved_to)
         assert migrate_embedded_pulsar_persistence(session, source, target) == expected
         assert os.path.exists(moved_to)
+        assert os.path.exists(uuid_job_moved_to)
         assert not os.path.exists(running)
         assert active_job_index_entries(source) == sorted([finished, unknown, uuid_id])
 
@@ -126,6 +132,17 @@ class TestEmbeddedPulsarPersistenceDirectory(integration_util.IntegrationTestCas
         return self.dataset_populator.run_tool("galaxy_json_sleep", {"sleep_time": sleep_time}, history_id)["jobs"][0][
             "id"
         ]
+
+    def _create_job(self, state: str, handler: str | None, external_id: str | None = None) -> str:
+        job = model.Job()
+        job.tool_id = "galaxy_json_sleep"
+        job.state = state
+        job.handler = handler
+        job.job_runner_external_id = external_id
+        session = self._app.model.session
+        session.add(job)
+        session.commit()
+        return external_id or str(job.id)
 
     def _decode(self, job_id: str) -> str:
         return str(self._app.security.decode_id(job_id))

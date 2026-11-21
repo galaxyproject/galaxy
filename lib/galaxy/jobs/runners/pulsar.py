@@ -301,6 +301,14 @@ class PersistenceEntryMigration:
     reason: str | None = None
 
 
+def _job_for_pulsar_job_id(session: scoped_session, pulsar_job_id: str) -> model.Job | None:
+    """Galaxy job for a Pulsar job id assigned with ``assign_ids`` ``galaxy`` (the default) or ``uuid``."""
+    if pulsar_job_id.isdigit():
+        return session.get(model.Job, int(pulsar_job_id))
+    stmt = select(model.Job).filter(model.Job.job_runner_external_id == pulsar_job_id).limit(1)
+    return session.execute(stmt).scalar_one_or_none()
+
+
 def migrate_embedded_pulsar_persistence(
     session: scoped_session, source: str, target: str, dry_run: bool = False
 ) -> list[PersistenceEntryMigration]:
@@ -314,7 +322,7 @@ def migrate_embedded_pulsar_persistence(
     migrations = []
     for entry in active_job_index_entries(source):
         job_id = os.path.basename(entry)
-        job = session.get(model.Job, int(job_id)) if job_id.isdigit() else None
+        job = _job_for_pulsar_job_id(session, job_id)
         if job is None:
             migrations.append(PersistenceEntryMigration(entry, None, "no Galaxy job with this id"))
         elif not job.handler:
