@@ -67,6 +67,7 @@ from galaxy.tools.parameters import (
     wrapped_json,
 )
 from galaxy.tools.parameters.basic import (
+    ColumnListParameter,
     DataCollectionToolParameter,
     DataToolParameter,
     SelectToolParameter,
@@ -428,6 +429,9 @@ class ToolEvaluator:
         def validate_inputs(input, value, context, **kwargs):
             value = input.from_json(value, request_context, context)
             input.validate(value, request_context)
+            if isinstance(input, ColumnListParameter):
+                # A column selected by its option label is evaluated as the column number.
+                return value
 
         visit_input_values(self.tool.inputs, incoming, validate_inputs)
 
