@@ -18,7 +18,16 @@ execution:
       rewrite_parameters: true
       default_file_action: copy
       remote_metadata: true
+    pulsar_embed_remote_copy:
+      runner: pulsar_embed
+      rewrite_parameters: true
+      default_file_action: remote_copy
+      remote_metadata: true
 
 tools:
+- id: command_reads_input_size
+  environment: pulsar_embed_remote_copy
+- id: command_reads_configfile
+  environment: pulsar_embed_remote_copy
 - class: local
   environment: local

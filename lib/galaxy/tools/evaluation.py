@@ -803,6 +803,7 @@ class ToolEvaluator:
         global_tool_logs(self._build_command_line, config_file, "Building Command Line", self.tool)
         global_tool_logs(self._build_version_command, config_file, "Building Version Command Line", self.tool)
         global_tool_logs(self._build_environment_variables, config_file, "Building Environment Variables", self.tool)
+        self._rewrite_evaluated_paths()
         return (
             self.command_line,
             self.version_command_line,
@@ -1062,10 +1063,41 @@ class ToolEvaluator:
         remote) path.
         """
         self.extra_filenames.append(local_config_path)
-        self.compute_environment.stage_config_file(local_config_path)
         config_basename = os.path.basename(local_config_path)
         compute_config_path: str = self._join_for_compute(self.compute_environment.config_directory(), config_basename)
-        return compute_config_path
+        return self.compute_environment.config_file_path(local_config_path, compute_config_path)
+
+    def _rewrite_evaluated_paths(self) -> None:
+        """Replace Galaxy-side paths templates saw with their compute paths.
+
+        See ``ComputeEnvironment.evaluated_path_rewrites``. A path that starts
+        with a rewritten path, such as a file in an input's extra files
+        directory, is rewritten by that prefix. Where one rewritten path starts
+        with another, the longer one applies.
+        """
+        rewrites = self.compute_environment.evaluated_path_rewrites()
+        if not rewrites:
+            return
+        pattern = re.compile("|".join(re.escape(path) for path in sorted(rewrites, key=len, reverse=True)))
+
+        def rewrite(text: str) -> str:
+            return pattern.sub(lambda match: rewrites[match.group(0)], text)
+
+        if self.command_line:
+            self.command_line = rewrite(self.command_line)
+        environment_files = [
+            variable["job_directory_path"]
+            for variable in self.environment_variables
+            if "job_directory_path" in variable
+        ]
+        for path in [*self.extra_filenames, *environment_files]:
+            with open(path, encoding="utf-8") as fh:
+                text = fh.read()
+            rewritten = rewrite(text)
+            if rewritten != text:
+                # Write in place: config files with a filename are hard links in the working directory.
+                with open(path, "w", encoding="utf-8") as fh:
+                    fh.write(rewritten)
 
     def _join_for_compute(self, *args):
         """
@@ -1117,6 +1149,7 @@ class PartialToolEvaluator(ToolEvaluator):
     def build(self):
         config_file = self.tool.config_file
         global_tool_logs(self._build_environment_variables, config_file, "Building Environment Variables", self.tool)
+        self._rewrite_evaluated_paths()
         return (
             self.command_line,
             self.version_command_line,

@@ -157,6 +157,29 @@ class TestToolEvaluator(TestCase, UsesApp):
         assert open(config_filename).read() == "4"
         assert command_line == f"prog1 {config_filename}"
 
+    def test_templates_read_galaxy_paths_rewritten_to_compute_paths(self):
+        self._setup_test_bwa_job()
+        galaxy_input = os.path.join(self.test_directory, "dataset_1.dat")
+        with open(galaxy_input, "w") as f:
+            f.write("abc\n")
+        self.tool.config_files.append(XmlTemplateConfigFile(name="conf1", content="$input1"))
+        self.tool._command_line = (
+            "#import os\nprog ${os.path.getsize(str($input1))} $input1 $conf1 ${open(str($conf1)).read()}"
+        )
+        compute_environment = RewritingComputeEnvironment(
+            new_file_path=self.app.config.new_file_path,
+            working_directory=self.test_directory,
+            input_paths=[galaxy_input],
+            evaluated_path_rewrites={galaxy_input: "/compute/inputs/dataset_1.dat"},
+        )
+        self.evaluator.set_compute_environment(compute_environment)  # type: ignore[arg-type]
+
+        command_line, _, extra_filenames, *_ = self.evaluator.build()
+
+        compute_config = f"/compute/configs/{os.path.basename(extra_filenames[0])}"
+        assert command_line == f"prog 4 /compute/inputs/dataset_1.dat {compute_config} /compute/inputs/dataset_1.dat"
+        assert open(extra_filenames[0]).read() == "/compute/inputs/dataset_1.dat"
+
     def test_galaxy_environment_files_in_configs_directory(self):
         # Containers mount the job directory's subdirectories, not its root.
         self.job.tool_id = "upload1"
@@ -293,8 +316,11 @@ class ComputeEnvironment(SimpleComputeEnvironment):
     def new_file_path(self):
         return self._new_file_path
 
-    def stage_config_file(self, local_path):
-        pass
+    def config_file_path(self, local_path, compute_path):
+        return compute_path
+
+    def evaluated_path_rewrites(self):
+        return {}
 
     def unstructured_path_rewrite(self, path):
         for key, val in self._unstructured_path_rewrites.items():
@@ -313,6 +339,19 @@ class ComputeEnvironment(SimpleComputeEnvironment):
 
     def get_file_sources_dict(self):
         return {}
+
+
+class RewritingComputeEnvironment(ComputeEnvironment):
+    def __init__(self, evaluated_path_rewrites, **kwds):
+        super().__init__(**kwds)
+        self._evaluated_path_rewrites = dict(evaluated_path_rewrites)
+
+    def config_file_path(self, local_path, compute_path):
+        self._evaluated_path_rewrites[local_path] = f"/compute/configs/{os.path.basename(local_path)}"
+        return local_path
+
+    def evaluated_path_rewrites(self):
+        return self._evaluated_path_rewrites
 
 
 class MockTool:

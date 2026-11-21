@@ -166,7 +166,6 @@
   <tool file="column_param_configfile.xml" />
   <tool file="command_reads_input_size.xml" />
   <tool file="command_reads_configfile.xml" />
-  <tool file="command_fails_after_reading_input.xml" />
   <tool file="column_param_list.xml" />
   <tool file="column_multi_param.xml" />
   <tool file="select_optional_legacy.xml" />

@@ -1,6 +1,5 @@
 import os
 import re
-from types import SimpleNamespace
 from typing import (
     Any,
     cast,
@@ -133,19 +132,10 @@ class _StubDataset:
         return self.file_name
 
 
-class _RecordingPulsarClient:
-    def __init__(self):
-        self.put_files = []
-
-    def put_file(self, path, input_type, action_type):
-        self.put_files.append((path, input_type, action_type))
-
-
-def _compute_environment(file_actions, pulsar_client=None):
+def _compute_environment(file_actions):
     # Skip __init__, which needs a live Pulsar client and job wrapper; only the
     # attributes the path rewrites read are set here.
     compute_environment = PulsarComputeEnvironment.__new__(PulsarComputeEnvironment)
-    compute_environment.pulsar_client = pulsar_client
     compute_environment.local_path_config = SharedComputeEnvironment(cast(Any, _StubJobIO()), cast(Any, None))
     compute_environment.path_mapper = PathMapper(
         None,
@@ -154,42 +144,50 @@ def _compute_environment(file_actions, pulsar_client=None):
         action_mapper=FileActionMapper(config=FILE_ACTION_CONFIGS[file_actions]),
     )
     compute_environment.path_rewrites_input_extra = {}
-    compute_environment.staged_input_paths = set()
+    compute_environment._evaluated_path_rewrites = {}
     return compute_environment
 
 
-@pytest.mark.parametrize("file_actions, staged", [("transfer", True), ("remote_copy", False), ("none", False)])
-def test_input_path_rewrite_stages_inputs_galaxy_transfers(tmp_path, file_actions, staged):
-    local_input = str(tmp_path / "dataset_1.dat")
-    with open(local_input, "w") as f:
-        f.write("1\n")
-    pulsar_client = _RecordingPulsarClient()
-    compute_environment = _compute_environment(file_actions, pulsar_client)
-    compute_environment.local_path_config = cast(Any, SimpleNamespace(input_path_rewrite=lambda dataset: local_input))
-    dataset = _StubDataset(local_input)
-
-    compute_environment.input_path_rewrite(dataset)
-    compute_environment.input_path_rewrite(dataset)
-
-    assert pulsar_client.put_files == ([(local_input, "input", file_actions)] if staged else [])
-    assert compute_environment.staged_input_paths == ({local_input} if staged else set())
-
-
 @pytest.mark.parametrize(
-    "file_actions, expected_path, staged",
+    "file_actions, compute_path",
     [
-        ("none", "/galaxy/jobs/1/inputs/dataset_1_files", False),
-        ("transfer", "/remote/staging/inputs/dataset_1_files", True),
-        ("rewrite", "/mnt/galaxy/jobs/1/inputs/dataset_1_files", True),
+        ("none", None),
+        ("transfer", "/remote/staging/inputs/dataset_1.dat"),
+        ("rewrite", "/mnt/galaxy/jobs/1/inputs/dataset_1.dat"),
     ],
 )
-def test_input_extra_files_rewrite(file_actions, expected_path, staged):
+def test_input_path_rewrite_hands_templates_galaxy_path(file_actions, compute_path):
     compute_environment = _compute_environment(file_actions)
     dataset = _StubDataset(GALAXY_INPUT)
 
-    assert compute_environment.input_extra_files_rewrite(dataset) == expected_path
-    expected_rewrites = {dataset.extra_files_path: expected_path} if staged else {}
-    assert compute_environment.path_rewrites_input_extra == expected_rewrites
+    if compute_path is None:
+        assert compute_environment.input_path_rewrite(dataset) is None
+        assert compute_environment.evaluated_path_rewrites() == {}
+    else:
+        assert compute_environment.input_path_rewrite(dataset) == JOB_INPUT
+        assert compute_environment.evaluated_path_rewrites() == {JOB_INPUT: compute_path}
+
+
+@pytest.mark.parametrize(
+    "file_actions, compute_path",
+    [
+        ("none", None),
+        ("transfer", "/remote/staging/inputs/dataset_1_files"),
+        ("rewrite", "/mnt/galaxy/jobs/1/inputs/dataset_1_files"),
+    ],
+)
+def test_input_extra_files_rewrite(file_actions, compute_path):
+    compute_environment = _compute_environment(file_actions)
+    dataset = _StubDataset(GALAXY_INPUT)
+
+    if compute_path is None:
+        # Pulsar reads unstaged inputs in place.
+        assert compute_environment.input_extra_files_rewrite(dataset) == "/galaxy/jobs/1/inputs/dataset_1_files"
+        assert compute_environment.path_rewrites_input_extra == {}
+    else:
+        assert compute_environment.input_extra_files_rewrite(dataset) == dataset.extra_files_path
+        assert compute_environment.path_rewrites_input_extra == {dataset.extra_files_path: compute_path}
+        assert compute_environment.evaluated_path_rewrites() == {dataset.extra_files_path: compute_path}
 
 
 @pytest.mark.parametrize(

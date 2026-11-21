@@ -20,7 +20,9 @@ def _evaluator(evaluator_class, job_directory, config_file):
     evaluator = evaluator_class(app, tool, None, str(job_directory))
     evaluator.param_dict = {"inputs": {}, "outdir": str(job_directory / "working")}
     evaluator.compute_environment = Bunch(
-        config_directory=lambda: "/compute/configs", sep=lambda: "/", stage_config_file=lambda local_path: None
+        config_directory=lambda: "/compute/configs",
+        sep=lambda: "/",
+        config_file_path=lambda local_path, compute_path: compute_path,
     )
     return evaluator
 
