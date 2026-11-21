@@ -220,6 +220,27 @@ class WorkflowsManager(sharable.SharableModelManager[model.StoredWorkflow], dele
                 step.dynamic_tool = tool_copies[step.dynamic_tool.id]
         return copied_workflow
 
+    def ensure_owns_user_defined_tools(self, user: model.User | None, workflow: model.Workflow) -> None:
+        """Refuse to run ``workflow`` for a user who doesn't own the user-defined tools it uses."""
+        unowned_tool_ids: list[str] = []
+        for step in _tool_steps(workflow):
+            dynamic_tool = step.user_defined_tool
+            if dynamic_tool is None or dynamic_tool.uuid is None:
+                continue
+            self.dynamic_tool_manager.ensure_can_use_unprivileged_tool(user)
+            assert user
+            tool_id = dynamic_tool.tool_id or str(dynamic_tool.uuid)
+            if (
+                not self.dynamic_tool_manager.get_unprivileged_tool_by_uuid(user, dynamic_tool.uuid)
+                and tool_id not in unowned_tool_ids
+            ):
+                unowned_tool_ids.append(tool_id)
+        if unowned_tool_ids:
+            raise exceptions.ItemAccessibilityException(
+                f"This workflow uses user-defined tools owned by another user ({', '.join(unowned_tool_ids)}). "
+                "Import the workflow to run it with your own copy of these tools."
+            )
+
     def index_query(
         self, trans: ProvidesUserContext, payload: WorkflowIndexQueryPayload, include_total_count: bool = False
     ) -> tuple["ScalarResult[model.StoredWorkflow]", int | None]:
@@ -594,7 +615,7 @@ class WorkflowsManager(sharable.SharableModelManager[model.StoredWorkflow], dele
         workflow_canvas = WorkflowCanvas()
         for step in workflow.steps:
             # Load from database representation
-            module = module_factory.from_workflow_step(trans, step)
+            module = module_factory.from_workflow_step(trans, step, view_only=True)
             module_name = module.get_name()
             module_data_inputs = module.get_data_inputs()
             module_data_outputs = module.get_data_outputs()
@@ -1325,6 +1346,7 @@ class WorkflowContentsManager(UsesAnnotations):
             raise exceptions.MessageException("Workflow cannot be run because it does not have any steps.")
         if has_cycles(workflow):
             raise exceptions.MessageException("Workflow cannot be run because it contains cycles.")
+        self.app.workflow_manager.ensure_owns_user_defined_tools(trans.user, workflow)
         trans.workflow_building_mode = workflow_building_modes.USE_HISTORY
         module_injector = WorkflowModuleInjector(trans)
         has_upgrade_messages = False
@@ -1528,7 +1550,7 @@ class WorkflowContentsManager(UsesAnnotations):
             return input_dicts
 
         module_injector = WorkflowModuleInjector(trans)
-        module_injector.inject_all(workflow, ignore_tool_missing_exception=True, exact_tools=False)
+        module_injector.inject_all(workflow, ignore_tool_missing_exception=True, exact_tools=False, view_only=True)
         step_dicts = []
         for step in workflow.steps:
             step_dict = {}
@@ -1544,11 +1566,11 @@ class WorkflowContentsManager(UsesAnnotations):
                 continue
             if step.type == "tool":
                 tool_id = step.effective_tool_id
-                tool = trans.app.toolbox.get_tool(tool_id, step.tool_version, tool_uuid=step.tool_uuid, user=trans.user)
+                assert isinstance(step.module, ToolModule)
+                tool = step.module.tool
                 assert (
                     tool is not None
                 ), f"Tool '{tool_id}' unexpectedly missing after successful runtime state computation"
-                tool = trans.app.toolbox.materialize_tool(tool, reason="serialization")
                 step_dict["tool_id"] = tool_id
                 step_dict["tool_version"] = step.tool_version
                 step_dict["label"] = step.label or tool.name
@@ -1608,7 +1630,7 @@ class WorkflowContentsManager(UsesAnnotations):
         # For each step, rebuild the form and encode the state
         for step in workflow.steps:
             # Load from database representation
-            module = module_factory.from_workflow_step(trans, step, exact_tools=False)
+            module = module_factory.from_workflow_step(trans, step, exact_tools=False, view_only=True)
             if not module:
                 raise exceptions.MessageException(f"Unrecognized step type: {step.type}")
             # Load label from state of data input modules, necessary for backward compatibility
@@ -1878,7 +1900,9 @@ class WorkflowContentsManager(UsesAnnotations):
         # For each step, rebuild the form and encode the state
         for step in workflow.steps:
             # Load from database representation
-            module = module_factory.from_workflow_step(trans, step)
+            # An internal export is rebuilt into a workflow (refactoring), so it resolves tools
+            # as saving does.
+            module = module_factory.from_workflow_step(trans, step, view_only=not internal)
             if not module:
                 raise exceptions.MessageException(f"Unrecognized step type: {step.type}")
             # Get user annotation if it exists, otherwise get owner annotation.

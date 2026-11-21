@@ -12,7 +12,6 @@ from galaxy.model.store.discover import (
     get_required_item,
     replace_request_syntax_sugar,
 )
-from galaxy.schema.fields import Security
 from galaxy.tools.actions.upload_common import validate_datatype_extension
 from galaxy.util import relpath
 
@@ -51,7 +50,10 @@ def validate_and_normalize_targets(trans: ProvidesUserContext, payload, set_inte
             for key in ["name", "description", "synopsis"]:
                 if key in destination:
                     del destination[key]
-            destination["library_folder_id"] = Security.security.encode_id(library.root_folder.id)
+            destination["library_folder_id"] = library.root_folder.id
+        elif destination_type == "library_folder":
+            folder_id = get_required_item(destination, "library_folder_id", "Must specify a library_folder_id")
+            trans.app.library_folder_manager.get_for_adding(trans, folder_id)
 
     # Unlike upload.py we don't transmit or use run_as_real_user in the job - we just make sure
     # in_place and purge_source are set on the individual upload fetch sources as needed based

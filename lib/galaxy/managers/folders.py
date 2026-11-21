@@ -363,6 +363,17 @@ class FolderManager:
                 return True
         return False
 
+    def get_for_adding(self, trans, decoded_folder_id: int) -> LibraryFolder:
+        """
+        Get the folder from the DB, checking that the user can add items to it.
+
+        :raises: RequestParameterInvalidException, InsufficientPermissionsException
+        """
+        folder: LibraryFolder = self.get(trans, decoded_folder_id)
+        if not self.can_add_item(trans, folder):
+            raise InsufficientPermissionsException("You do not have permission to add items to this library folder.")
+        return folder
+
     def cut_the_prefix(self, encoded_folder_id):
         """
         Remove the prefix from the encoded folder id.

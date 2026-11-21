@@ -54,5 +54,6 @@ test_tools = integration_util.integration_tool_runner(
         "job_properties",
         "from_work_dir_glob",
         "gx_group_tag",
+        "output_format",
     ]
 )

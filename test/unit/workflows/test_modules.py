@@ -9,7 +9,10 @@ import pytest
 from sqlalchemy.exc import IntegrityError
 
 from galaxy import model
-from galaxy.exceptions import RequestParameterInvalidException
+from galaxy.exceptions import (
+    InternalServerError,
+    RequestParameterInvalidException,
+)
 from galaxy.managers.workflows import WorkflowContentsManager
 from galaxy.schema.invocation import FailureReason
 from galaxy.tool_util.parameters import input_models_for_tool_source
@@ -314,6 +317,16 @@ def test_cannot_create_tool_modules_for_missing_tools():
     trans = MockTrans()
     module = modules.module_factory.from_dict(trans, {"type": "tool", "tool_id": "cat1"})
     assert not module.tool
+
+
+def test_view_only_tool_module_cannot_execute():
+    trans = MockTrans()
+    trans.app.toolbox.tools["cat1"] = __mock_tool(id="cat1", version="1.0")
+    step = __step(type="tool", tool_id="cat1", tool_version="1.0", config=None)
+    module = modules.module_factory.from_workflow_step(trans, step, view_only=True)
+    assert module.tool
+    with pytest.raises(InternalServerError):
+        module.execute(trans, mock.Mock(), mock.Mock())
 
 
 def test_tool_version_latest_resolves_toolshed_guid():
