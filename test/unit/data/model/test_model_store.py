@@ -441,6 +441,30 @@ def test_import_library_require_permissions():
     assert error_caught
 
 
+def test_serialize_fetch_job_encodes_request_ids():
+    app = _mock_app()
+    job = model.Job()
+    job.tool_id = "__DATA_FETCH__"
+    request = {
+        "targets": [
+            {
+                "destination": {"type": "library_folder", "library_folder_id": 3},
+                "elements": [{"src": "pasted", "paste_content": "1 2 3", "object_id": 7}],
+            }
+        ]
+    }
+    job.add_parameter("request_json", json.dumps(json.dumps(request)))
+    app.add_and_commit(job)
+
+    exported = job.serialize(app.security, model.SerializationOptions(for_edit=False))
+    target = json.loads(exported["params"]["request_json"])["targets"][0]
+    assert target["destination"]["library_folder_id"] == app.security.encode_id(3, kind="model_export")
+    assert target["elements"][0]["object_id"] == app.security.encode_id(7, kind="model_export")
+
+    for_edit = job.serialize(app.security, model.SerializationOptions(for_edit=True))
+    assert json.loads(for_edit["params"]["request_json"]) == request
+
+
 def test_import_export_library(tmp_path):
     """Test basics of library, library folder, and library dataset import/export."""
     app = _mock_app()

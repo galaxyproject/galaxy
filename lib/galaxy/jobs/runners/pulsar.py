@@ -1046,16 +1046,20 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
             # false_path to send the metadata command generation module.
             work_dir_outputs = self.get_work_dir_outputs(job_wrapper, tool_working_directory=working_directory)
             outputs = job_wrapper.job_io.get_output_fnames()
+            outputs_to_working_directory = job_wrapper.outputs_to_working_directory
+            # Keys must match the destination paths chosen by BaseJobRunner.get_work_dir_outputs.
             # copy fixes 'test/integration/test_pulsar_embedded_remote_metadata.py::test_tools[job_properties]'
-            real_path_to_output = {o.real_path: copy.copy(o) for o in outputs}
+            destination_to_output = {
+                (o.false_path if outputs_to_working_directory else o.real_path): copy.copy(o) for o in outputs
+            }
             rewritten_outputs = []
-            for pulsar_workdir_path, real_path in work_dir_outputs:
-                work_dir_output = real_path_to_output.pop(real_path, None)
+            for pulsar_workdir_path, destination in work_dir_outputs:
+                work_dir_output = destination_to_output.pop(destination, None)
                 if work_dir_output:
                     work_dir_output.false_path = pulsar_workdir_path
                     rewritten_outputs.append(work_dir_output)
 
-            for output in real_path_to_output.values():
+            for output in destination_to_output.values():
                 if compute_environment:
                     output.false_path = compute_environment.path_mapper.remote_output_path_rewrite(str(output))
                 rewritten_outputs.append(output)
