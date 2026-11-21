@@ -705,6 +705,11 @@ def default_exit_code_file(files_dir, id_tag):
     return os.path.join(files_dir, f"galaxy_{id_tag}.ec")
 
 
+def rejected_work_dir_outputs_file(job_directory: str) -> str:
+    """File the job script appends to when it refuses to copy a ``from_work_dir`` output."""
+    return os.path.join(job_directory, "rejected_work_dir_outputs")
+
+
 def collect_extra_files(
     object_store: ObjectStore,
     dataset: "DatasetInstance",

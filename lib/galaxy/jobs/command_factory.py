@@ -14,7 +14,10 @@ from os.path import (
 from typing import Optional
 
 from galaxy import util
-from galaxy.job_execution.output_collect import default_exit_code_file
+from galaxy.job_execution.output_collect import (
+    default_exit_code_file,
+    rejected_work_dir_outputs_file,
+)
 from galaxy.jobs.runners.util.job_script import (
     INTEGRITY_INJECTION,
     ScriptIntegrityChecks,
@@ -315,7 +318,8 @@ def __copy_if_exists_command(work_dir_output: tuple[str, str], job_directory: st
     is_directory = True if destination.endswith("_files") else False
     test_flag = "-d" if is_directory else "-f"
     recursive_flag = " -r" if is_directory else ""
-    message = shlex.quote(f"Not collecting {source_file}: it resolves to a path outside of the job directory")
+    message = shlex.quote(f"Not collecting {source_file}: it does not resolve to a path inside the job directory")
+    rejected_file = shlex.quote(rejected_work_dir_outputs_file(job_directory))
     source_file = __quote_preserving_globs(source_file)
     destination = shlex.quote(destination)
     job_directory = shlex.quote(job_directory)
@@ -330,7 +334,7 @@ def __copy_if_exists_command(work_dir_output: tuple[str, str], job_directory: st
         f"\nif [ {test_flag} {source_file} -a {test_flag} {destination} ] ; then "
         f'case "$(realpath {source_file})" in "$(realpath {job_directory})"/*)'
         f"{delete_destination_dir} cp{recursive_flag} {source_file} {destination} ;; "
-        f"*) echo {message} >&2 ;; esac ; fi"
+        f"*) echo {message} >&2 ; echo {message} >> {rejected_file} ;; esac ; fi"
     )
 
 

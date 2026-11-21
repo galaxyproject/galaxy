@@ -20,10 +20,11 @@ RETURN_CODE_CAPTURE = "; return_code=$?; echo $return_code > galaxy_1.ec"
 
 
 def _copy_command(source, destination, job_directory):
+    message = f"'Not collecting {source}: it does not resolve to a path inside the job directory'"
     return (
         f"\nif [ -f {source} -a -f {destination} ] ; then "
         f'case "$(realpath {source})" in "$(realpath {job_directory})"/*) cp {source} {destination} ;; '
-        f"*) echo 'Not collecting {source}: it resolves to a path outside of the job directory' >&2 ;; esac ; fi"
+        f"*) echo {message} >&2 ; echo {message} >> {job_directory}/rejected_work_dir_outputs ;; esac ; fi"
     )
 
 
@@ -187,6 +188,31 @@ class TestCommandFactory(TestCase):
         assert _read(os.path.join(outputs, "globbed")) == "globbed"
         assert _read(os.path.join(outputs, "extra_files", "file.txt")) == "extra"
         assert os.listdir(os.path.join(outputs, "linked_extra_files")) == []
+        assert _read(os.path.join(self.job_dir, "rejected_work_dir_outputs")).count("Not collecting") == 3
+
+    def test_workdir_outputs_refused_copy_without_realpath_is_recorded(self):
+        working = os.path.join(self.job_dir, "working")
+        outputs = os.path.join(self.job_dir, "outputs")
+        os.makedirs(working)
+        os.makedirs(outputs)
+        _write(os.path.join(working, "real.txt"), "real")
+        _write(os.path.join(outputs, "real"), "")
+        self.workdir_outputs = [(os.path.join(working, "real.txt"), os.path.join(outputs, "real"))]
+        self.job_wrapper.command_line = "true"
+        rejected_file = os.path.join(self.job_dir, "rejected_work_dir_outputs")
+
+        subprocess.run(["/bin/sh", "-c", self.__command()], cwd=self.job_dir, check=True)
+        assert _read(os.path.join(outputs, "real")) == "real"
+        assert not os.path.exists(rejected_file)
+
+        _write(os.path.join(outputs, "real"), "")
+        bin_directory = os.path.join(self.job_dir, "bin")
+        os.makedirs(bin_directory)
+        for tool in ("cp", "sh"):
+            os.symlink(shutil.which(tool), os.path.join(bin_directory, tool))
+        subprocess.run(["/bin/sh", "-c", self.__command()], cwd=self.job_dir, check=True, env={"PATH": bin_directory})
+        assert _read(os.path.join(outputs, "real")) == ""
+        assert os.path.exists(rejected_file)
 
     def test_set_metadata_skipped_if_unneeded(self):
         self.include_metadata = True

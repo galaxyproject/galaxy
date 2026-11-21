@@ -67,6 +67,7 @@ from galaxy.job_execution.output_collect import (
     collect_extra_files,
     collect_shrinked_content_from_path,
     PermissionProvider,
+    rejected_work_dir_outputs_file,
 )
 from galaxy.job_execution.setup import (
     create_working_directory_for_job,
@@ -2917,6 +2918,12 @@ class MinimalJobWrapper(HasResourceParameters):
         for dataset_path in self.job_io.get_output_fnames():
             if dataset_path.false_path:
                 ensure_job_path_in_job_directory(dataset_path.false_path, self.working_directory)
+        # Only check existence, the file is writable by the tool.
+        if os.path.lexists(rejected_work_dir_outputs_file(self.working_directory)):
+            raise OutputCollectionSecurityError(
+                "The job script refused to collect a from_work_dir output "
+                "that does not resolve to a path inside the job directory."
+            )
         if not self.tool:
             return
         for dataset_assoc in job.output_datasets + job.output_library_datasets:
