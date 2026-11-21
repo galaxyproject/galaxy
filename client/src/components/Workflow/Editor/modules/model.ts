@@ -1,3 +1,4 @@
+import type { BasedOnWork } from "@/api/workflows";
 import reportDefault from "@/components/Workflow/Editor/reportDefault";
 import { useWorkflowCommentStore, type WorkflowComment } from "@/stores/workflowEditorCommentStore";
 import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
@@ -23,6 +24,7 @@ export interface Workflow {
     readme?: string | null;
     help?: string | null;
     doi?: string[];
+    is_based_on?: BasedOnWork[] | null;
 }
 
 export interface LoadWorkflowOptions {
@@ -162,6 +164,7 @@ export function toSimple(id: string, workflow: Workflow): Omit<Workflow, "versio
     const readme = workflow.readme;
     const help = workflow.help;
     const doi = workflow.doi;
+    const is_based_on = workflow.is_based_on;
 
     const commentStore = useWorkflowCommentStore(id);
     commentStore.resolveCommentsInFrames();
@@ -169,5 +172,19 @@ export function toSimple(id: string, workflow: Workflow): Omit<Workflow, "versio
 
     const comments = workflow.comments.filter((comment) => !(comment.type === "text" && comment.data.text === ""));
 
-    return { steps, report, license, creator, annotation, name, comments, tags, readme, help, logo_url, doi };
+    return {
+        steps,
+        report,
+        license,
+        creator,
+        annotation,
+        name,
+        comments,
+        tags,
+        readme,
+        help,
+        logo_url,
+        doi,
+        is_based_on,
+    };
 }

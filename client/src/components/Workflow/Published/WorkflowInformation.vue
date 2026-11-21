@@ -11,6 +11,7 @@ import { useUserStore } from "@/stores/userStore";
 import Heading from "@/components/Common/Heading.vue";
 import CopyToClipboard from "@/components/CopyToClipboard.vue";
 import License from "@/components/License/License.vue";
+import BasedOnViewer from "@/components/SchemaOrg/BasedOnViewer.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 import UtcDate from "@/components/UtcDate.vue";
 
@@ -91,6 +92,16 @@ function hasDoi() {
                     <FontAwesomeIcon v-if="creator.class === 'Person'" :icon="faUser" />
                     <FontAwesomeIcon v-if="creator.class === 'Organization'" :icon="faBuilding" />
                     {{ creator.name }}
+                </li>
+            </ul>
+        </div>
+
+        <div v-if="workflowInfo.is_based_on?.length" class="workflow-info-box" data-description="workflow based on">
+            <Heading v-localize h3 size="md" class="mb-0">Based On</Heading>
+
+            <ul class="list-unstyled mb-0">
+                <li v-for="(work, index) in workflowInfo.is_based_on" :key="index">
+                    <BasedOnViewer :work="work" />
                 </li>
             </ul>
         </div>
