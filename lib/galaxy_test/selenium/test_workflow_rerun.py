@@ -83,6 +83,34 @@ class TestWorkflowRun(SeleniumTestCase, UsesHistoryItemAssertions, RunsWorkflows
 
     @selenium_test
     @managed_history
+    def test_workflow_rerun_records_source(self):
+        """Reruns from the simple and expanded run forms record their source invocation."""
+        invocations = self.components.invocations
+        self.workflow_run_open_workflow(WORKFLOW_BOOLEAN_PARAMETER_DEFAULT_TRUE)
+        self.workflow_run_submit()
+        invocations.state_details.wait_for_visible()
+        self.workflow_run_wait_for_ok(hid=1)
+        source_id = self._current_invocation_id()
+        assert self.workflow_populator.get_invocation(source_id)["rerun_of_invocation_id"] is None
+
+        for expanded, output_hid in ((False, 2), (True, 3)):
+            invocations.workflow_rerun_button.wait_for_and_click()
+            self.components.workflow_run.run_workflow.wait_for_visible()
+            if expanded:
+                self.workflow_run_ensure_expanded()
+            self.workflow_run_submit()
+            invocations.state_details.wait_for_visible()
+            self.workflow_run_wait_for_ok(hid=output_hid)
+            rerun_id = self._current_invocation_id()
+            assert rerun_id != source_id
+            assert self.workflow_populator.get_invocation(rerun_id)["rerun_of_invocation_id"] == source_id
+            source_id = rerun_id
+
+    def _current_invocation_id(self) -> str:
+        return self.current_url.split("?")[0].rstrip("/").rsplit("/", 1)[-1]
+
+    @selenium_test
+    @managed_history
     def test_workflow_rerun_preserves_false_boolean_parameter(self):
         """Regression test for boolean workflow parameters reverting to default on rerun.
 
