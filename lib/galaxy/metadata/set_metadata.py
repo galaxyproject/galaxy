@@ -537,7 +537,11 @@ def set_metadata_portable(
     if export_store:
         export_store.push_metadata_files()
         export_store._finalize()
-    write_job_metadata(tool_job_working_directory, job_metadata, set_meta, tool_provided_metadata)
+    if not extended_metadata_collection:
+        # Galaxy discovers the galaxy.json datasets after the job and reads their metadata from the
+        # rewritten galaxy.json. With extended metadata they were discovered above, and setting metadata
+        # again on a placeholder dataset that is not in the object store fails for metadata files.
+        write_job_metadata(tool_job_working_directory, job_metadata, set_meta, tool_provided_metadata)
 
 
 def validate_and_load_datatypes_config(datatypes_config):
