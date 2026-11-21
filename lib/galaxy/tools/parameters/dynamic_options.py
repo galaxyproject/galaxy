@@ -8,7 +8,10 @@ import json
 import logging
 import os
 import re
-from collections.abc import Sequence
+from collections.abc import (
+    Callable,
+    Sequence,
+)
 from dataclasses import dataclass
 from io import StringIO
 from typing import (
@@ -17,6 +20,7 @@ from typing import (
     get_args,
     Literal,
 )
+from urllib.parse import quote
 
 from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.model import (
@@ -791,6 +795,8 @@ class DynamicOptions:
             depend = filter.get_dependency_name()
             if depend:
                 rval.append(depend)
+        if self.from_url_options:
+            rval.extend(self.from_url_options.depends_on)
         return rval
 
     def get_fields(self, trans: ProvidesHistoryContext, other_values):
@@ -986,10 +992,14 @@ class DynamicOptions:
                 return ParameterOption(str(values[0]), str(values[1]), bool(values[2]))
 
         if from_url_options := self.from_url_options:
-            context = User.user_template_environment(trans.user)
-            url = fill_template(from_url_options.from_url, context)
-            request_body = template_or_none(from_url_options.request_body, context)
-            request_headers = template_or_none(from_url_options.request_headers, context)
+            dependency_values = from_url_dependency_values(from_url_options.depends_on, other_values)
+            if dependency_values is None:
+                return []
+            url_context = from_url_template_context(trans, dependency_values, quote_url_value)
+            json_context = from_url_template_context(trans, dependency_values, escape_json_string_value)
+            url = fill_template(from_url_options.from_url, url_context)
+            request_body = template_or_none(from_url_options.request_body, json_context)
+            request_headers = template_or_none(from_url_options.request_headers, json_context)
             cache_key = (url, from_url_options.request_method, request_body, request_headers)
             try:
                 data = trans.get_or_set_cache_value(
@@ -1017,7 +1027,7 @@ class DynamicOptions:
                     data = []
 
             # We only support the very specific ["name", "value", "selected"] format for now.
-            rval = [to_option(d) for d in data]
+            rval = [to_option(d) for d in data or []]
         if (
             self.file_fields is not None
             or self.tool_data_table is not None
@@ -1060,6 +1070,7 @@ class FromUrlOptions:
     request_body: str | None
     request_headers: str | None
     postprocess_expression: str | None
+    depends_on: list[str]
 
 
 def strip_or_none(maybe_string: Element | None) -> str | None:
@@ -1076,14 +1087,115 @@ def parse_from_url_options(elem: Element) -> FromUrlOptions | None:
         request_headers = strip_or_none(elem.find("request_headers"))
         request_body = strip_or_none(elem.find("request_body"))
         postprocess_expression = strip_or_none(elem.find("postprocess_expression"))
+        depends_on = [name.strip() for name in elem.get("depends_on", "").split(",") if name.strip()]
+        check_from_url_host_is_static(from_url, depends_on)
         return FromUrlOptions(
             from_url,
             request_method=request_method,
             request_headers=request_headers,
             request_body=request_body,
             postprocess_expression=postprocess_expression,
+            depends_on=depends_on,
         )
     return None
+
+
+def check_from_url_host_is_static(from_url: str, depends_on: list[str]) -> None:
+    """Raise if a parameter listed in ``depends_on`` is used before the URL's host is complete.
+
+    Parameter values may only fill the path, query or fragment of ``from_url``.
+    Percent-encoding keeps values from adding ``/``, ``?`` or ``#``, so the host is
+    complete once the template text before the first parameter placeholder reaches
+    one of these after the scheme.
+    """
+    roots = {name.split(".")[0] for name in depends_on}
+    if not roots:
+        return
+    alternation = "|".join(re.escape(root) for root in roots)
+    pattern = re.compile(rf"\$\{{?\s*({alternation})\b")
+    if match := pattern.search(from_url):
+        prefix = from_url[: match.start()]
+        after_scheme = prefix.split("://", 1)[-1]
+        if not any(delimiter in after_scheme for delimiter in "/?#"):
+            raise ValueError(
+                f"from_url '{from_url}' uses parameter '{match.group(1)}' in the URL's scheme or host; "
+                "parameter values may only be used in the path, query or fragment"
+            )
+
+
+def from_url_dependency_values(depends_on: list[str], other_values) -> dict[str, Any] | None:
+    """Look up the value of each parameter in ``depends_on``.
+
+    Names are resolved like the ``ref`` of a ``param_value`` filter, and ``a.b``
+    looks up ``b`` inside section, conditional or repeat ``a``. A name inside a
+    repeat yields the values of all repeat instances. Returns ``None`` if any
+    value is unset, a runtime value, or not a plain scalar or list of scalars.
+    """
+    values: dict[str, Any] = {}
+    for name in depends_on:
+        root, *path = name.split(".")
+        value = _nested_value(other_values.get(root), path)
+        if isinstance(value, list):
+            if not value or not all(_is_set_scalar(item) for item in value):
+                return None
+        elif not _is_set_scalar(value):
+            return None
+        values[name] = value
+    return values
+
+
+def _nested_value(value: Any, path: list[str]) -> Any:
+    if not path:
+        return value
+    part, *rest = path
+    if isinstance(value, dict):
+        return _nested_value(value.get(part), rest)
+    if isinstance(value, list):
+        # Repeat state is a list of instance states; collect the value of every instance.
+        collected: list[Any] = []
+        for instance in value:
+            instance_value = _nested_value(instance, path) if isinstance(instance, dict) else None
+            if isinstance(instance_value, list) and instance_value:
+                collected.extend(instance_value)
+            else:
+                # An empty list stays visible as None, so an unset instance is not dropped.
+                collected.append(instance_value or None)
+        return collected
+    return None
+
+
+def _is_set_scalar(value: Any) -> bool:
+    return isinstance(value, (str, int, float)) and value != ""
+
+
+def quote_url_value(value: str) -> str:
+    return quote(value, safe="")
+
+
+def escape_json_string_value(value: str) -> str:
+    return json.dumps(value)[1:-1]
+
+
+def from_url_template_context(
+    trans: ProvidesHistoryContext, dependency_values: dict[str, Any], encode: Callable[[str], str]
+) -> dict[str, Any]:
+    """Build the template context for ``from_url``, ``request_body`` and ``request_headers``.
+
+    The context holds the user environment (``__user__``, ``__user_id__``, ...) and the
+    encoded value of each parameter in ``depends_on``. Values are strings; multiple
+    values are joined with ``,``. Dotted names become nested dictionaries, so
+    ``$section.param`` resolves in Cheetah.
+    """
+    context: dict[str, Any] = User.user_template_environment(trans.user)
+    for name, value in dependency_values.items():
+        items = value if isinstance(value, list) else [value]
+        encoded = ",".join(encode(str(item)) for item in items)
+        *parents, leaf = name.split(".")
+        target = context
+        for parent in parents:
+            target = target.setdefault(parent, {})
+        target[leaf] = encoded
+    return context
 
 
 def template_or_none(template: str | None, context: dict[str, Any]) -> str | None:
