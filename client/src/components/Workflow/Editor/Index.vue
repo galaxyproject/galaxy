@@ -23,7 +23,11 @@ import { useRoute, useRouter } from "vue-router";
 import { generateAIReport as generateAIReportFetch } from "@/api/chat";
 import type { Creator, RefactorRequestAction } from "@/api/workflows";
 import { InsertStepAction, useStepActions } from "@/components/Workflow/Editor/Actions/stepActions";
-import { CopyIntoWorkflowAction, SetValueActionHandler } from "@/components/Workflow/Editor/Actions/workflowActions";
+import {
+    CopyIntoWorkflowAction,
+    RefactorWorkflowAction,
+    SetValueActionHandler,
+} from "@/components/Workflow/Editor/Actions/workflowActions";
 import { defaultPosition } from "@/components/Workflow/Editor/composables/useDefaultStepPosition";
 import { useSpecialWorkflowActivities, useWorkflowActivities } from "@/components/Workflow/Editor/modules/activities";
 import { fromSimple, type Workflow } from "@/components/Workflow/Editor/modules/model";
@@ -387,13 +391,15 @@ commentStore.$subscribe((_mutation, _state) => {
     }
 });
 
-async function resetStores() {
+async function resetStores({ keepUndoHistory = false } = {}) {
     hasChanges.value = false;
     connectionStore.$reset();
     stepStore.$reset();
     stateStore.$reset();
     commentStore.$reset();
-    undoRedoStore.$reset();
+    if (!keepUndoHistory) {
+        undoRedoStore.$reset();
+    }
     await nextTick();
 }
 
@@ -647,13 +653,38 @@ function hideErrorModal() {
 async function onRefactor(response: { workflow: any }) {
     // Store transform and bounds before resetting to adjust for coordinate shifts
     const { transform: transformBefore, bounds: boundsBefore } = captureTransformAndBounds(transform.value);
+    // The version number stays out so that undoing leaves the editor on the newest version, as an unsaved change.
+    const before = { ...cloneRaw(workflowData.value), version: undefined };
+    const after = cloneRaw(response.workflow);
 
-    await resetStores();
+    await resetStores({ keepUndoHistory: true });
     await fromSimple(id.value, response.workflow);
     await loadEditorData(response.workflow);
 
     // Adjust for coordinate shifts so nodes appear in the same position
     // and stateStore.position is synced with the d3 transform
+    adjustForCoordinateShift(transformBefore, boundsBefore);
+
+    undoRedoStore.applyAction(new RefactorWorkflowAction(before, after, restoreWorkflowState));
+}
+
+/**
+ * Puts a complete workflow state back into the editor. Runs synchronously, so that a
+ * history roll-over can replay the actions recorded on top of this state straight after it.
+ */
+function restoreWorkflowState(data: Workflow) {
+    const { transform: transformBefore, bounds: boundsBefore } = captureTransformAndBounds(transform.value);
+    const restored = cloneRaw(data);
+
+    connectionStore.$reset();
+    stepStore.$reset();
+    commentStore.$reset();
+    stateStore.activeNodeId = null;
+    stateStore.clearStepMultiSelection();
+    fromSimple(id.value, restored);
+    applyWorkflowAttributes(restored);
+    hideErrorModal();
+
     adjustForCoordinateShift(transformBefore, boundsBefore);
 }
 
@@ -1181,7 +1212,7 @@ async function insertStep(contentId: string, name: string, type: NewStep["type"]
     stateStore.activeNodeId = stepData.id;
 }
 
-async function loadEditorData(data: any) {
+function applyWorkflowAttributes(data: any) {
     if (data.name !== undefined) {
         name.value = data.name;
     }
@@ -1205,15 +1236,19 @@ async function loadEditorData(data: any) {
     const markdown = newReport.markdown || reportDefault;
     report.value.markdown = markdown;
 
+    tags.value = data.tags;
+    license.value = data.license;
+    creator.value = data.creator;
+    doi.value = data.doi;
+}
+
+async function loadEditorData(data: any) {
+    applyWorkflowAttributes(data);
     hideErrorModal();
 
     stateMessages.value = getStateUpgradeMessages(data);
     filledDefaults.value = [];
     const hasStateMessages = stateMessages.value.length > 0;
-    tags.value = data.tags;
-    license.value = data.license;
-    creator.value = data.creator;
-    doi.value = data.doi;
 
     // The attribute watchers just marked these loaded values as changes; undo that now,
     // not after the versions request, so the editor isn't dirty while it's pending.
