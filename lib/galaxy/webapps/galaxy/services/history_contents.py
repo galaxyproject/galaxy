@@ -1300,7 +1300,9 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
     ):
         dataset_collection_instance = self.__get_accessible_collection(trans, id)
         view = serialization_params.view or "element"
-        return self.__collection_dict(trans, dataset_collection_instance, view=view, fuzzy_count=fuzzy_count)
+        return self.__collection_dict(
+            trans, dataset_collection_instance, view=view, fuzzy_count=fuzzy_count, user=trans.user
+        )
 
     def __get_accessible_collection(self, trans: ProvidesHistoryContext, id: DecodedDatabaseIdField):
         return self.dataset_collection_manager.get_dataset_collection_instance(

@@ -310,6 +310,7 @@ class HDCASerializer(DCASerializer, taggable.TaggableSerializerMixin, annotatabl
             [
                 "populated",
                 "elements",
+                "annotation",
             ],
             include_keys_from="summary",
         )
