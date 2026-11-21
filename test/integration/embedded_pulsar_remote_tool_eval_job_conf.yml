@@ -20,7 +20,15 @@ execution:
       tool_evaluation_strategy: remote
       rewrite_parameters: true
       default_file_action: copy
+      env:
+      # Pulsar's setup route drops preserve_galaxy_python_environment, so tools that need
+      # Galaxy's Python environment (expression tools) would not get it on this client.
+      - name: PYTHONPATH
+        value: $GALAXY_LIB
 
 tools:
+# Expression tools are in the local tool class; run this one on Pulsar.
+- id: param_value_from_file
+  environment: pulsar_embed
 - class: local
   environment: local

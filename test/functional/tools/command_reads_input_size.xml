@@ -1,0 +1,23 @@
+<tool id="command_reads_input_size" name="Command reads input size" version="1.0.0" profile="24.0">
+    <command><![CDATA[
+#import os
+echo '${os.path.getsize(str($input1))} ${os.lstat(str($input1)).st_size}' > '$output1'
+    ]]></command>
+    <inputs>
+        <param name="input1" type="data" format="txt" label="Input"/>
+    </inputs>
+    <outputs>
+        <data name="output1" format="txt"/>
+    </outputs>
+    <tests>
+        <test>
+            <param name="input1" value="simple_line.txt"/>
+            <output name="output1">
+                <assert_contents>
+                    <has_line line="24 24"/>
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+    <help>Writes the size of the input, read by the command template while Galaxy builds the command.</help>
+</tool>

@@ -1,0 +1,27 @@
+<tool id="command_reads_configfile" name="Command reads configfile" version="1.0.0" profile="24.0">
+    <command><![CDATA[
+#import json
+#set inputs_dict = json.load(open(str($inputs)))
+echo '$inputs_dict["text"]' > '$output1'
+    ]]></command>
+    <configfiles>
+        <inputs name="inputs"/>
+    </configfiles>
+    <inputs>
+        <param name="text" type="text" value="from the configfile"/>
+    </inputs>
+    <outputs>
+        <data name="output1" format="txt"/>
+    </outputs>
+    <tests>
+        <test>
+            <param name="text" value="from the configfile"/>
+            <output name="output1">
+                <assert_contents>
+                    <has_line line="from the configfile"/>
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+    <help>Writes a parameter value, read by the command template from the inputs configfile while Galaxy builds the command.</help>
+</tool>
