@@ -1,5 +1,6 @@
-import { redirectLoggedIn } from "@/router/guards";
+import { redirectLoggedIn, requireAuth } from "@/router/guards";
 
+import DeviceVerification from "@/components/Login/DeviceVerification.vue";
 import Login from "@/entry/analysis/modules/Login.vue";
 import Register from "@/entry/analysis/modules/Register.vue";
 import ResetPassword from "@/entry/analysis/modules/ResetPassword.vue";
@@ -26,5 +27,11 @@ export default [
         path: "/login/reset_password",
         component: ResetPassword,
         beforeEnter: redirectLoggedIn,
+    },
+    {
+        // OAuth device flow verification page; unlike the routes above, it requires login.
+        path: "/login/device",
+        component: DeviceVerification,
+        beforeEnter: requireAuth,
     },
 ];
