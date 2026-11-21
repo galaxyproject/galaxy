@@ -1137,8 +1137,7 @@ class JobContext(BaseJobContext):
     def get_library_folder(self, destination: dict[str, Any]):
         folder_id = destination.get("library_folder_id")
         assert folder_id
-        decoded_folder_id = self.app.security.decode_id(folder_id) if isinstance(folder_id, str) else folder_id
-        library_folder = self.app.library_folder_manager.get(self.work_context, decoded_folder_id)
+        library_folder = self.app.library_folder_manager.get_for_adding(self.work_context, folder_id)
         return library_folder
 
     def get_hdca(self, object_id):
