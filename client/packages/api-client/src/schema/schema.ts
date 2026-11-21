@@ -169,13 +169,37 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        put?: never;
+        /**
+         * Update Document Exchange
+         * @description **Warning**: This API is unstable and may change without notice.
+         */
+        put: operations["update_document_exchange_api_chat_exchange__exchange_id__put"];
         post?: never;
         /**
          * Delete Exchange
          * @description **Warning**: This API is unstable and may change without notice.
          */
         delete: operations["delete_exchange_api_chat_exchange__exchange_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/chat/exchange/{exchange_id}/document": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Exchange Document
+         * @description **Warning**: This API is unstable and may change without notice.
+         */
+        get: operations["get_exchange_document_api_chat_exchange__exchange_id__document_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -215,6 +239,26 @@ export interface paths {
         get: operations["get_exchange_messages_api_chat_exchange__exchange_id__messages_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/chat/exchanges": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create Document Exchange
+         * @description **Warning**: This API is unstable and may change without notice.
+         */
+        post: operations["create_document_exchange_api_chat_exchanges_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -9232,6 +9276,64 @@ export interface components {
              * @description List of chat exchange IDs to delete.
              */
             ids: string[];
+        };
+        /** ChatExchangeDocumentResponse */
+        ChatExchangeDocumentResponse: {
+            /**
+             * Document
+             * @description The plugin's state, or null for a chat it did not save.
+             */
+            document?: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * Exchange ID
+             * @description The encoded ID of the chat exchange.
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+        };
+        /** ChatExchangeSavePayload */
+        ChatExchangeSavePayload: {
+            /**
+             * Agent Type
+             * @description The chat plugin's name.
+             */
+            agent_type: string;
+            /**
+             * Document
+             * @description The plugin's state, stored as given.
+             */
+            document: {
+                [key: string]: unknown;
+            };
+            /**
+             * Messages
+             * @description One entry per turn.
+             */
+            messages: components["schemas"]["ChatExchangeTurn"][];
+        };
+        /** ChatExchangeSaveResponse */
+        ChatExchangeSaveResponse: {
+            /**
+             * Exchange ID
+             * @description The encoded ID of the chat exchange.
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+        };
+        /** ChatExchangeTurn */
+        ChatExchangeTurn: {
+            /**
+             * Query
+             * @description The user's question.
+             */
+            query: string;
+            /**
+             * Response
+             * @description The answer.
+             */
+            response: string;
         };
         /** ChatHistoryItemResponse */
         ChatHistoryItemResponse: {
@@ -34524,6 +34626,53 @@ export interface operations {
             };
         };
     };
+    update_document_exchange_api_chat_exchange__exchange_id__put: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                exchange_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChatExchangeSavePayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChatExchangeSaveResponse"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
     delete_exchange_api_chat_exchange__exchange_id__delete: {
         parameters: {
             query?: never;
@@ -34547,6 +34696,49 @@ export interface operations {
                     "application/json": {
                         [key: string]: string;
                     };
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    get_exchange_document_api_chat_exchange__exchange_id__document_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                exchange_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChatExchangeDocumentResponse"];
                 };
             };
             /** @description Request Error */
@@ -34641,6 +34833,51 @@ export interface operations {
                     "application/json": {
                         [key: string]: unknown;
                     }[];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    create_document_exchange_api_chat_exchanges_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChatExchangeSavePayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChatExchangeSaveResponse"];
                 };
             };
             /** @description Request Error */

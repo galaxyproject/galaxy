@@ -53,6 +53,8 @@
                 <WindowManagerWindow v-for="win in windowManagerStore.windows" :key="win.id" :window="win" />
             </template>
             <TourRunner v-if="currentTour?.id" :key="currentTour.id" :tour-id="currentTour.id" />
+            <!-- Mounted once, so the chat plugin keeps running. -->
+            <AiChatBrain v-if="chatStore.chatPlugin" :plugin="chatStore.chatPlugin" />
         </template>
     </div>
 </template>
@@ -68,6 +70,7 @@ import { useRouteQueryBool } from "@/composables/route";
 import { useHasStagedUploads } from "@/composables/upload/useUploadStaging";
 import { useCommandPalette } from "@/composables/useCommandPalette";
 import { getAppRoot } from "@/onload";
+import { useChatStore } from "@/stores/chatStore";
 import { useConfigStore } from "@/stores/configurationStore";
 import { useEntryPointStore } from "@/stores/entryPointStore";
 import { useHistoryStore } from "@/stores/historyStore";
@@ -82,6 +85,7 @@ import GToast from "@/components/BaseComponents/GToast.vue";
 import CommandPalette from "@/components/CommandPalette/CommandPalette.vue";
 import ConfirmDialog from "@/components/ConfirmDialog.vue";
 import DragGhost from "@/components/DragGhost.vue";
+import AiChatBrain from "@/components/GalaxyAI/AiChatBrain.vue";
 import ExportToAnotherGalaxyDialog from "@/components/History/Content/ExportToAnotherGalaxyDialog.vue";
 import Masthead from "@/components/Masthead/Masthead.vue";
 import BroadcastsOverlay from "@/components/Notifications/Broadcasts/BroadcastsOverlay.vue";
@@ -109,6 +113,7 @@ const confirmDialogRef = ref<InstanceType<typeof ConfirmDialog> | null>(null);
 watch(confirmDialogRef, (instance) => setConfirmDialogComponentRef(instance));
 
 const windowManagerStore = useWindowManagerStore();
+const chatStore = useChatStore();
 const hasStagedUploads = useHasStagedUploads();
 
 // Unmounting the palette takes its ctrl/cmd+k listener with it, so an
@@ -230,7 +235,7 @@ const windowTab = computed(() => windowManagerStore.getTab());
 
 if (!embedded.value) {
     window.onbeforeunload = () => {
-        if (confirmation.value || windowManagerStore.beforeUnload() || hasStagedUploads.value) {
+        if (confirmation.value || windowManagerStore.beforeUnload() || hasStagedUploads.value || chatStore.unsaved) {
             return "Are you sure you want to leave the page?";
         }
     };

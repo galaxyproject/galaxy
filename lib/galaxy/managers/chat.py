@@ -37,6 +37,8 @@ from galaxy.model import (
 )
 from galaxy.util import unicodify
 
+MAX_PLUGIN_CHAT_SIZE = 16 * 1024 * 1024
+
 
 class ChatManager:
     """
@@ -226,6 +228,45 @@ class ChatManager:
         trans.sa_session.add(chat_message)
         trans.sa_session.commit()
         return chat_message
+
+    def save_document_chat(
+        self,
+        trans: ProvidesUserContext,
+        agent_type: str,
+        turns: list[tuple[str, str]],
+        document: dict[str, Any],
+        exchange_id: int | None = None,
+    ) -> ChatExchange:
+        """Save a chat plugin's document and one message per turn, replacing a chat it saved."""
+        size = len(json.dumps([document, turns], separators=(",", ":")).encode())
+        if size > MAX_PLUGIN_CHAT_SIZE:
+            raise RequestParameterInvalidException(
+                f"This conversation is too large to save ({size} bytes, the limit is {MAX_PLUGIN_CHAT_SIZE})."
+            )
+        if exchange_id is None:
+            chat_exchange = ChatExchange(user=trans.user)
+            trans.sa_session.add(chat_exchange)
+        else:
+            chat_exchange = self.get_document_chat(trans, exchange_id)
+            first = json.loads(chat_exchange.messages[0].message) if chat_exchange.messages else {}
+            if chat_exchange.document is None or self.responder_agent_type(first) != agent_type:
+                raise exceptions.ObjectNotFound("This chat was not saved by this chat plugin.")
+            for message in list(chat_exchange.messages):
+                trans.sa_session.delete(message)
+            chat_exchange.messages = []
+        chat_exchange.document = document
+        for query, response in turns:
+            content = json.dumps({"query": query, "response": response, "agent_type": agent_type})
+            chat_exchange.messages.append(ChatExchangeMessage(message=content))
+        trans.sa_session.commit()
+        return chat_exchange
+
+    def get_document_chat(self, trans: ProvidesUserContext, exchange_id: int) -> ChatExchange:
+        """Return a chat for the chat plugin to restore."""
+        chat_exchange = self.get_exchange_by_id(trans, exchange_id)
+        if chat_exchange is None:
+            raise exceptions.ObjectNotFound("No accessible chat exchange found with the ID provided.")
+        return chat_exchange
 
     def get(self, trans: ProvidesUserContext, job_id: int) -> ChatExchange | None:
         """

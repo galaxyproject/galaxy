@@ -29,6 +29,10 @@ describe("isActivityAvailable", () => {
         expect(isActivityAvailable("galaxyai", { ...OPEN, config: { llm_api_configured: false } })).toBe(false);
     });
 
+    it("shows GalaxyAI with a chat plugin alone", () => {
+        expect(isActivityAvailable("galaxyai", { ...OPEN, config: { ai_chat_plugin: "fixture" } })).toBe(true);
+    });
+
     it("treats a configuration that has not loaded yet as closed", () => {
         expect(isActivityAvailable("interactivetools", { canUseUnprivilegedTools: true })).toBe(false);
         expect(isActivityAvailable("galaxyai", { canUseUnprivilegedTools: true })).toBe(false);

@@ -1,10 +1,14 @@
-import { defineStore } from "pinia";
-import { computed, ref } from "vue";
+import { defineStore, storeToRefs } from "pinia";
+import { computed, ref, shallowRef } from "vue";
 
 import { GalaxyApi } from "@/api/client";
+import type { ChatCommand } from "@/components/GalaxyAI/chatPlugin";
 import type { ChatHistoryItem } from "@/components/GalaxyAI/chatTypes";
+import { Toast } from "@/composables/toast";
 import { useUserLocalStorage } from "@/composables/userLocalStorage";
-import { rethrowSimple } from "@/utils/simple-error";
+import { useConfigStore } from "@/stores/configurationStore";
+import { useUserStore } from "@/stores/userStore";
+import { errorMessageAsString, rethrowSimple } from "@/utils/simple-error";
 
 export type ChatLocation = "center" | "right" | "bottom";
 
@@ -16,17 +20,37 @@ export const useChatStore = defineStore("chatStore", () => {
     const loading = ref(false);
     const newChatRequestCount = ref(0);
 
+    const { config, isLoaded } = storeToRefs(useConfigStore());
+    const { currentUser, isAnonymous } = storeToRefs(useUserStore());
+
+    /** Null for Galaxy's own chat, undefined until known */
+    const chatPlugin = computed(() => {
+        let plugin: string | null | undefined;
+        if (isLoaded.value) {
+            const configured: string | null = config.value?.ai_chat_plugin || null;
+            if (!configured) {
+                plugin = null;
+            } else if (currentUser.value) {
+                plugin = isAnonymous.value ? null : configured;
+            }
+        }
+        return plugin;
+    });
+    const chatSlot = shallowRef<HTMLElement | null>(null);
+    const reportedChatId = ref<string | null>(null);
+    const chatCommands = ref<ChatCommand[]>([]);
+    const agentState = ref<"loading" | "ready" | "failed">("loading");
+    const unsaved = ref(false);
+
     const isRightPanelOpen = computed(() => chatLocation.value === "right" && chatVisible.value);
     const isBottomPanelOpen = computed(() => chatLocation.value === "bottom" && chatVisible.value);
     const isCenterMode = computed(() => chatLocation.value === "center");
 
     const activeChatId = computed({
-        get: () => cachedActiveChatId.value || null,
+        get: () => (chatPlugin.value ? reportedChatId.value : cachedActiveChatId.value || null),
         set: (id: string | null) => {
-            if (id) {
-                cachedActiveChatId.value = id;
-            } else {
-                cachedActiveChatId.value = "";
+            if (!chatPlugin.value) {
+                cachedActiveChatId.value = id || "";
             }
         },
     });
@@ -86,13 +110,14 @@ export const useChatStore = defineStore("chatStore", () => {
     async function loadHistory(pageId?: string) {
         loading.value = true;
 
-        const { data, error } = pageId
-            ? await GalaxyApi().GET("/api/chat/page/{page_id}/history", {
-                  params: { path: { page_id: pageId }, query: { limit: 50 } },
-              })
-            : await GalaxyApi().GET("/api/chat/history", {
-                  params: { query: { limit: 50 } },
-              });
+        const { data, error } =
+            pageId && !chatPlugin.value
+                ? await GalaxyApi().GET("/api/chat/page/{page_id}/history", {
+                      params: { path: { page_id: pageId }, query: { limit: 50 } },
+                  })
+                : await GalaxyApi().GET("/api/chat/history", {
+                      params: { query: { limit: 50 } },
+                  });
 
         loading.value = false;
 
@@ -132,6 +157,54 @@ export const useChatStore = defineStore("chatStore", () => {
         return activeChatId.value ?? chatHistory.value[0]?.id ?? null;
     }
 
+    function openChat(id: string) {
+        let accepted = true;
+        if (chatPlugin.value) {
+            const replacing = reportedChatId.value !== id || chatCommands.value.length > 0;
+            accepted = !replacing || mayReplace();
+            if (replacing && accepted) {
+                chatCommands.value.push({ type: "open", exchange_id: id });
+            }
+        } else {
+            setActiveChatId(id);
+        }
+        return accepted;
+    }
+
+    function askChat(question: string) {
+        const accepted = mayReplace();
+        if (accepted) {
+            chatCommands.value.push({ type: "ask", question });
+        }
+        return accepted;
+    }
+
+    function mayReplace() {
+        return !unsaved.value || window.confirm("This chat has unsaved changes, which may be lost. Continue?");
+    }
+
+    function takeCommands() {
+        let taken: ChatCommand[] = [];
+        if (agentState.value === "ready") {
+            taken = chatCommands.value;
+            chatCommands.value = [];
+        }
+        return taken;
+    }
+
+    function pluginShows(id: string | null) {
+        reportedChatId.value = id;
+        if (id && !chatHistory.value.some((item) => item.id === id)) {
+            loadHistory().catch((e) => Toast.error(errorMessageAsString(e), "Failed to load chat history"));
+        }
+    }
+
+    function agentSilent() {
+        if (agentState.value === "loading") {
+            agentState.value = "failed";
+        }
+    }
+
     /** Sets the chat location and shows the chat with the given id in one step. */
     function dockChat(location: ChatLocation, chatId?: string | null) {
         setLocation(location);
@@ -160,5 +233,15 @@ export const useChatStore = defineStore("chatStore", () => {
         setActiveChatId,
         resolveDockChatId,
         dockChat,
+        agentSilent,
+        agentState,
+        askChat,
+        chatCommands,
+        chatPlugin,
+        chatSlot,
+        openChat,
+        pluginShows,
+        takeCommands,
+        unsaved,
     };
 });

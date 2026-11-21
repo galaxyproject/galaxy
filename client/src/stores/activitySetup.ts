@@ -21,6 +21,7 @@ import {
     faWrench,
 } from "@fortawesome/free-solid-svg-icons";
 
+import { hasAiChat } from "@/components/GalaxyAI/chatPlugin";
 import { ACTIVITY_LABELS } from "@/components/Page/constants";
 import type { Activity } from "@/stores/activityStoreTypes";
 import type { EventData } from "@/stores/eventStore";
@@ -246,6 +247,7 @@ export interface ActivityAvailability {
     config?: {
         interactivetools_enable?: boolean;
         llm_api_configured?: boolean;
+        ai_chat_plugin?: string | null;
     };
 }
 
@@ -264,7 +266,7 @@ export function isActivityAvailable(activityId: string, availability: ActivityAv
         case "interactivetools":
             return Boolean(availability.config?.interactivetools_enable);
         case "galaxyai":
-            return Boolean(availability.config?.llm_api_configured);
+            return hasAiChat(availability.config);
         default:
             return true;
     }

@@ -9,6 +9,7 @@ import {
     faUpload,
 } from "@fortawesome/free-solid-svg-icons";
 
+import { hasAiChat } from "@/components/GalaxyAI/chatPlugin";
 import { Toast } from "@/composables/toast";
 import { useChatStore } from "@/stores/chatStore";
 import { useHistoryStore } from "@/stores/historyStore";
@@ -213,7 +214,7 @@ const ACTIONS: Gated<PaletteItem>[] = [
     },
     {
         anonymous: false,
-        configGate: (ctx) => Boolean(ctx.config.llm_api_configured),
+        configGate: (ctx) => hasAiChat(ctx.config),
         item: {
             id: "actions:galaxy-ai",
             icon: faMagic,

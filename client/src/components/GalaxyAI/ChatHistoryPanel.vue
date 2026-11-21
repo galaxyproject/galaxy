@@ -37,7 +37,7 @@ const notebookPageId = computed(() => {
 
 const newChat = useStartNewChat();
 
-const { chatHistory, loading } = storeToRefs(chatStore);
+const { chatHistory, chatPlugin, loading } = storeToRefs(chatStore);
 
 const {
     selectionMode,
@@ -78,8 +78,8 @@ function handleItemClick(item: ChatHistoryItem, index: number, event: MouseEvent
     }
     if (chatStore.isCenterMode) {
         router.push(`/galaxyai/${item.id}`);
-    } else {
-        chatStore.showChat(item.id);
+    } else if (chatStore.openChat(item.id)) {
+        chatStore.showChat();
     }
 }
 
@@ -122,7 +122,7 @@ async function deleteSelected() {
 <template>
     <ActivityPanel title="GalaxyAI">
         <template v-slot:header-buttons>
-            <GButton color="blue" transparent size="small" title="New Chat" @click="startNewChat">
+            <GButton v-if="!chatPlugin" color="blue" transparent size="small" title="New Chat" @click="startNewChat">
                 <FontAwesomeIcon :icon="faPlus" fixed-width />
             </GButton>
             <GButton
