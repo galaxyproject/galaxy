@@ -100,10 +100,6 @@ const baseRules = {
                     name: "vue-json-pretty",
                     message: "Import @/components/Common/legacy/VueJsonPretty, which keeps it on compat MODE 2.",
                 },
-                {
-                    name: "@handsontable/vue",
-                    message: "Import @/components/Common/legacy/HotTable, which keeps it on compat MODE 2.",
-                },
             ],
         },
     ],

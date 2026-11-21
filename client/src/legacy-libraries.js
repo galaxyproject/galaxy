@@ -1,7 +1,7 @@
-// Vue 2 libraries (bootstrap-vue, vue-json-pretty 1.x, @handsontable/vue 2.x)
-// keep compat's Vue 2 behavior for their own components, while the global
-// config in compat-config.js runs everything else, Galaxy code included, in
-// MODE 3. The other two are imported only through their marked wrappers in
+// Vue 2 libraries (bootstrap-vue, vue-json-pretty 1.x) keep compat's Vue 2
+// behavior for their own components, while the global config in
+// compat-config.js runs everything else, Galaxy code included, in MODE 3.
+// vue-json-pretty is imported only through its marked wrapper in
 // components/Common/legacy/, which eslint enforces.
 //
 // compat reads each key, MODE included, from `instance.type.compatConfig` when

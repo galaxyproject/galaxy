@@ -161,8 +161,6 @@ export default defineConfig({
             "viz/trackster$": path.resolve(__dirname, "./tests/vitest/__mocks__/trackster.js"),
             // Handle i18n imports
             "^i18n!(.*)": path.resolve(__dirname, "./tests/vitest/__mocks__/localization.js"),
-            // Handle handsontable
-            handsontable: "handsontable/dist/handsontable.js",
         },
         // Ensure .vue files are resolved
         extensions: [".js", ".ts", ".json", ".vue", ".yml", ".txt"],
