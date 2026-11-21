@@ -715,6 +715,12 @@ class TestMetadata(TestCase, tools_support.UsesTools):
         with open(output_dataset.dataset.get_file_name()) as f:
             assert f.read() == "stray 0\n"
 
+    @pytest.mark.parametrize("stray_files", [0, 2])
+    def test_extended_metadata_from_work_dir_output_missing(self, stray_files):
+        output_dataset = self._run_from_work_dir_output(stray_files, write_output=False)
+
+        assert self._exported_dataset_state(output_dataset) == model.Dataset.states.ERROR
+
     def _run_from_work_dir_output(self, stray_files, write_output=True):
         self.app.config.metadata_strategy = "extended"
         source_file_name = os.path.join(galaxy_directory(), "test/functional/tools/for_workflows/cat.xml")
