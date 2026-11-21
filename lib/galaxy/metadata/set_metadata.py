@@ -187,20 +187,15 @@ def get_metadata_params(tool_job_working_directory):
 
 def get_object_store(tool_job_working_directory, object_store=None):
     if not object_store:
-        object_store = object_store_from_conf(
-            os.path.join(tool_job_working_directory, "metadata", "object_store_conf.json")
-        )
+        object_store_conf_path = os.path.join(tool_job_working_directory, "metadata", "object_store_conf.json")
+        with open(object_store_conf_path) as f:
+            config_dict = json.load(f)
+        assert config_dict is not None
+        # build an object store but disable any process management associated with it
+        # we're using it as a library - not as a service.
+        object_store = build_object_store_from_config(None, config_dict=config_dict, disable_process_management=True)
     Dataset.object_store = object_store
     return object_store
-
-
-def object_store_from_conf(object_store_conf_path) -> ObjectStore:
-    with open(object_store_conf_path) as f:
-        config_dict = json.load(f)
-    assert config_dict is not None
-    # build an object store but disable any process management associated with it
-    # we're using it as a library - not as a service.
-    return build_object_store_from_config(None, config_dict=config_dict, disable_process_management=True)
 
 
 def set_metadata_portable(

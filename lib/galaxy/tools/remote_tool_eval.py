@@ -10,10 +10,7 @@ from typing import (
 
 from galaxy.datatypes.registry import Registry
 from galaxy.files import ConfiguredFileSources
-from galaxy.job_execution.compute_environment import (
-    RemoteComputeEnvironment,
-    SharedComputeEnvironment,
-)
+from galaxy.job_execution.compute_environment import RemoteComputeEnvironment
 from galaxy.job_execution.setup import JobIO
 from galaxy.managers.dbkeys import GenomeBuilds
 from galaxy.metadata import (
@@ -22,13 +19,10 @@ from galaxy.metadata import (
 )
 from galaxy.metadata.set_metadata import (
     get_metadata_params,
-    get_object_store,
-    object_store_from_conf,
     validate_and_load_datatypes_config,
 )
 from galaxy.model import store
 from galaxy.model.store import SessionlessContext
-from galaxy.objectstore import BaseObjectStore
 from galaxy.structured_app import MinimalToolApp
 from galaxy.tools import (
     create_tool_from_representation,
@@ -65,7 +59,6 @@ class ToolApp(MinimalToolApp):
         sa_session: SessionlessContext,
         tool_app_config: ToolAppConfig,
         datatypes_registry: Registry,
-        object_store: BaseObjectStore,
         tool_data_table_manager: ToolDataTableManager,
         file_sources: ConfiguredFileSources,
     ):
@@ -73,7 +66,8 @@ class ToolApp(MinimalToolApp):
         self.model = Bunch(context=sa_session, session=sa_session)
         self.config = tool_app_config
         self.datatypes_registry = datatypes_registry
-        self.object_store = object_store
+        # Job files are resolved through compute_environment.json, without an object store.
+        self.object_store = None  # type: ignore[assignment]
         self.genome_builds = GenomeBuilds(self)
         self._tool_data_tables = tool_data_table_manager
         self.file_sources = file_sources
@@ -91,10 +85,6 @@ def evaluate_tool(tmpdir: str, working_directory: str, import_store_directory: s
     if not os.path.exists(datatypes_config):
         datatypes_config = os.path.join(working_directory, "configs", datatypes_config)
     datatypes_registry = validate_and_load_datatypes_config(datatypes_config)
-    # Written by the job handler for remote evaluation, whatever the metadata strategy.
-    object_store = get_object_store(
-        working_directory, object_store_from_conf(os.path.join(import_store_directory, "object_store_conf.json"))
-    )
     import_store = store.imported_store_for_metadata(import_store_directory)
     assert isinstance(import_store.sa_session, SessionlessContext)
     # TODO: clean up random places from which we read files in the working directory
@@ -115,7 +105,6 @@ def evaluate_tool(tmpdir: str, working_directory: str, import_store_directory: s
         sa_session=import_store.sa_session,
         tool_app_config=tool_app_config,
         datatypes_registry=datatypes_registry,
-        object_store=object_store,
         tool_data_table_manager=tdtm,
         file_sources=job_io.file_sources,
     )
@@ -129,14 +118,8 @@ def evaluate_tool(tmpdir: str, working_directory: str, import_store_directory: s
     tool_evaluator = evaluation.RemoteToolEvaluator(
         app=app, tool=tool, job=job_io.job, local_working_directory=working_directory
     )
-    paths_file = os.path.join(import_store_directory, "compute_environment.json")
-    compute_environment: SharedComputeEnvironment
-    if os.path.exists(paths_file):
-        with open(paths_file) as f:
-            paths = json.load(f)
-        compute_environment = RemoteComputeEnvironment(job_io=job_io, job=job_io.job, paths=paths)
-    else:
-        compute_environment = SharedComputeEnvironment(job_io=job_io, job=job_io.job)
+    with open(os.path.join(import_store_directory, "compute_environment.json")) as f:
+        compute_environment = RemoteComputeEnvironment(job_io=job_io, job=job_io.job, paths=json.load(f))
     tool_evaluator.set_compute_environment(compute_environment=compute_environment)
     with open(os.path.join(working_directory, "tool_script.sh"), "a") as out:
         command_line, version_command_line, extra_filenames, environment_variables, *_ = tool_evaluator.build()
