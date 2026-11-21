@@ -24,6 +24,8 @@ TOOL_IDS = [
     "command_reads_configfile",
     # Expression tool reading its input with load_contents.
     "param_value_from_file",
+    # Source paths of datasets, collection elements and their metadata files in a configfile.
+    "inputs_as_json_with_staging_paths",
 ]
 
 
