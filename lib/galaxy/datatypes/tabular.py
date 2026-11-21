@@ -373,26 +373,30 @@ class TabularData(Text):
         """Uses column settings that are passed in"""
         dataset_source = DatasetDataProvider(dataset)
         delimiter = dataset.metadata.delimiter
-        return ColumnarDataProvider(dataset_source, deliminator=delimiter, **settings)
+        dialect = getattr(self, "dialect", None)
+        return ColumnarDataProvider(dataset_source, deliminator=delimiter, dialect=dialect, **settings)
 
     @dataproviders.decorators.dataprovider_factory("dataset-column", ColumnarDataProvider.settings)
     def dataset_column_dataprovider(self, dataset: DatasetProtocol, **settings) -> DatasetColumnarDataProvider:
         """Attempts to get column settings from dataset.metadata"""
         delimiter = dataset.metadata.delimiter
-        return DatasetColumnarDataProvider(dataset, deliminator=delimiter, **settings)
+        dialect = getattr(self, "dialect", None)
+        return DatasetColumnarDataProvider(dataset, deliminator=delimiter, dialect=dialect, **settings)
 
     @dataproviders.decorators.dataprovider_factory("dict", DictDataProvider.settings)
     def dict_dataprovider(self, dataset: DatasetProtocol, **settings) -> DictDataProvider:
         """Uses column settings that are passed in"""
         dataset_source = DatasetDataProvider(dataset)
         delimiter = dataset.metadata.delimiter
-        return DictDataProvider(dataset_source, deliminator=delimiter, **settings)
+        dialect = getattr(self, "dialect", None)
+        return DictDataProvider(dataset_source, deliminator=delimiter, dialect=dialect, **settings)
 
     @dataproviders.decorators.dataprovider_factory("dataset-dict", DictDataProvider.settings)
     def dataset_dict_dataprovider(self, dataset: DatasetProtocol, **settings) -> DatasetDictDataProvider:
         """Attempts to get column settings from dataset.metadata"""
         delimiter = dataset.metadata.delimiter
-        return DatasetDictDataProvider(dataset, deliminator=delimiter, **settings)
+        dialect = getattr(self, "dialect", None)
+        return DatasetDictDataProvider(dataset, deliminator=delimiter, dialect=dialect, **settings)
 
 
 @dataproviders.decorators.has_dataproviders

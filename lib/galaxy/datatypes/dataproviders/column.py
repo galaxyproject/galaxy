@@ -3,6 +3,7 @@ Providers that provide lists of lists generally where each line of a source
 is further subdivided into multiple data (e.g. columns from a line).
 """
 
+import csv
 import logging
 import re
 from urllib.parse import unquote_plus
@@ -52,6 +53,7 @@ class ColumnarDataProvider(line.RegexLineDataProvider):
         parse_columns=True,
         deliminator="\t",
         filters=None,
+        dialect=None,
         **kwargs,
     ):
         """
@@ -87,6 +89,9 @@ class ColumnarDataProvider(line.RegexLineDataProvider):
         :param deliminator: character(s) used to split each row/line of the source. Optional: defaults to the tab character.
         :type deliminator: str
 
+        :param dialect: `csv` dialect for parsing lines. Optional: defaults to splitting at `deliminator`.
+        :type dialect: csv.Dialect or None
+
         .. note:: that the subclass constructors are passed kwargs - so they're
                   params (limit, offset, etc.) are also applicable here.
         """
@@ -108,6 +113,7 @@ class ColumnarDataProvider(line.RegexLineDataProvider):
             self.selected_column_indeces = list(range(self.column_count))
 
         self.deliminator = deliminator
+        self.dialect = dialect
 
         # how/whether to parse each column value
         self.parsers = {}
@@ -268,7 +274,10 @@ class ColumnarDataProvider(line.RegexLineDataProvider):
         :type line: str
         """
         # TODO: too much going on in this loop - the above should all be precomputed AMAP...
-        all_columns = line.split(self.deliminator)
+        if self.dialect:
+            all_columns = next(csv.reader([line], self.dialect))
+        else:
+            all_columns = line.split(self.deliminator)
         # if no indeces were passed to init, return all columns
         selected_indeces = self.selected_column_indeces or list(range(len(all_columns)))
         parsed_columns = []

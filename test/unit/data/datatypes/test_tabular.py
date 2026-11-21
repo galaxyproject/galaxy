@@ -62,6 +62,37 @@ def test_delimited_metadata_empty_input(tmp_path, datatype):
     assert dataset.metadata.column_names == []
 
 
+@pytest.mark.parametrize(
+    "datatype, content, value",
+    [
+        (CSV(), 'name,count,score\n"alpha, one",1,1.5\n"say ""hi""",2,2.5\nbeta,,3.5\n', "alpha, one"),
+        (TSV(), 'name\tcount\tscore\n"alpha\tone"\t1\t1.5\n"say ""hi"""\t2\t2.5\nbeta\t\t3.5\n', "alpha\tone"),
+    ],
+    ids=["csv", "tsv"],
+)
+def test_delimited_dataprovider_parses_quoted_values(tmp_path, datatype, content, value):
+    source = tmp_path / f"input.{datatype.file_ext}"
+    source.write_text(content)
+    dataset = MockDataset(id=1)
+    dataset.set_file_name(str(source))
+    cast(Any, dataset).datatype = datatype
+    datatype.set_meta(dataset)
+    rows = list(datatype.dataset_column_dataprovider(dataset, indeces=[0, 1, 2]))
+    assert rows[1:] == [[value, 1, 1.5], ['say "hi"', 2, 2.5], ["beta", None, 3.5]]
+
+
+def test_tabular_dataprovider_ignores_quotes(tmp_path):
+    source = tmp_path / "input.tabular"
+    source.write_text('"alpha\tone"\t1\n')
+    datatype = Tabular()
+    dataset = MockDataset(id=1)
+    dataset.set_file_name(str(source))
+    cast(Any, dataset).datatype = datatype
+    datatype.set_meta(dataset)  # type: ignore [arg-type]
+    rows = list(datatype.dataset_column_dataprovider(dataset, indeces=[0, 1]))  # type: ignore [arg-type]
+    assert rows == [['"alpha', 'one"']]
+
+
 def test_tabular_set_meta_large_file():
     with tempfile.NamedTemporaryFile(mode="w") as test_file:
         for _ in range(MAX_DATA_LINES + 1):
