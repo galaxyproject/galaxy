@@ -2251,6 +2251,11 @@ class MinimalJobWrapper(HasResourceParameters):
                 try:
                     self._move_working_directory_output(dataset_path)
                     log.debug(f"finish(): Moved {dataset_path.false_path} to {dataset_path.real_path}")
+                except OutputCollectionSecurityError as e:
+                    log.warning("Job %s failed output collection: %s", job.id, e)
+                    output_collection_security_error = e
+                    final_job_state = job.states.ERROR
+                    break
                 except OSError:
                     # this can happen if Galaxy is restarted during the job's
                     # finish method - the false_path file has already moved,
