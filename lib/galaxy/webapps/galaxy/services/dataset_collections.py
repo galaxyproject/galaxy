@@ -274,6 +274,7 @@ class DatasetCollectionsService(ServiceBase, UsesLibraryMixinItems):
             url_builder=trans.url_builder,
             parent=parent,
             view=view,
+            user=trans.user,
         )
         return rval
 

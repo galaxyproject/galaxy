@@ -554,6 +554,23 @@ class TestHistoriesApi(ApiTestCase, BaseHistories):
         create_response = self._post("histories", data=post_data, admin=True, json=True)
         self._assert_status_code_is(create_response, 400)
 
+    def test_create_with_annotation(self):
+        annotation = "Compare liver and kidney expression"
+        for as_json in [True, False]:
+            create_response = self._post("histories", data=dict(name="Annotated", annotation=annotation), json=as_json)
+            self._assert_status_code_is(create_response, 200)
+            assert self._show(create_response.json()["id"])["annotation"] == annotation
+        unannotated = self._post("histories", data=dict(name="Unannotated"), json=True).json()
+        assert not self._show(unannotated["id"])["annotation"]
+
+    def test_copy_history_with_annotation(self):
+        history_id = self._post("histories", data=dict(name="Source", annotation="Original"), json=True).json()["id"]
+        kept = self.dataset_populator.copy_history(history_id).json()
+        assert self._show(kept["id"])["annotation"] == "Original"
+        replaced = self.dataset_populator.copy_history(history_id, annotation="Rerun with stricter filtering").json()
+        assert self._show(replaced["id"])["annotation"] == "Rerun with stricter filtering"
+        assert self._show(history_id)["annotation"] == "Original"
+
     def test_create_tag(self):
         post_data = dict(name="TestHistoryForTag")
         history_id = self._post("histories", data=post_data, json=True).json()["id"]
