@@ -453,6 +453,7 @@ class WorkflowsService(ServiceBase):
             raise exceptions.RequestParameterInvalidException(
                 f"Unknown workflow scheduler '{workflow_scheduler_id}' specified."
             )
+        self._workflows_manager.ensure_owns_user_defined_tools(trans.user, workflow)
         self._check_workflow_tools(trans, workflow, bool(payload.require_exact_tool_versions))
         self._check_on_complete(payload.on_complete)
         run_configs = build_workflow_run_configs(trans, workflow, payload.model_dump(exclude_unset=True))

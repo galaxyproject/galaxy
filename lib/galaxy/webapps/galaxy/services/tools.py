@@ -279,6 +279,10 @@ class ToolsService(ServiceBase):
     ) -> CreateToolLandingRequestPayload:
         request_version = "1"
         payload = data_landing_payload.model_dump(exclude_unset=True)["request_state"]
+        for target in payload["targets"]:
+            # The claimant runs the landing, so it may only import into their own history.
+            if target["destination"]["type"] in ("library", "library_folder"):
+                raise exceptions.RequestParameterInvalidException("Data landings cannot target libraries.")
         validate_and_normalize_targets(trans, payload, set_internal_fields=False)
         validated_back_to_model = TargetsAdapter.validate_python(payload["targets"])
         request_state = {
