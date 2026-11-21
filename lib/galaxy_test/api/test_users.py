@@ -28,6 +28,8 @@ TEST_USER_EMAIL_INDEX_DELETED = "user_for_users_index_deleted_test@bx.psu.edu"
 TEST_USER_EMAIL_DELETE = "user_for_delete_test@bx.psu.edu"
 TEST_USER_EMAIL_DELETE_CANCEL_JOBS = "user_for_delete_cancel_jobs_test@bx.psu.edu"
 TEST_USER_EMAIL_PURGE = "user_for_purge_test@bx.psu.edu"
+TEST_USER_EMAIL_PURGE_UNDELETED = "user_for_purge_undeleted_test@bx.psu.edu"
+TEST_USER_EMAIL_PURGE_CANCEL_JOBS = "user_for_purge_cancel_jobs_test@bx.psu.edu"
 TEST_USER_EMAIL_UNDELETE = "user_for_undelete_test@bx.psu.edu"
 TEST_USER_EMAIL_SHOW = "user_for_show_test@bx.psu.edu"
 TEST_USER_EMAIL_UPDATE = "user_for_email_update_test@bx.psu.edu"
@@ -316,6 +318,46 @@ class TestUsersApi(ApiTestCase):
         purged_user = self._get(f"users/{user['id']}", params, admin=True).json()
         assert purged_user["deleted"] is True, purged_user
         assert purged_user["purged"] is True, purged_user
+
+    @requires_admin
+    @requires_new_user
+    def test_purge_user_not_deleted(self):
+        """Purge a user in one request, without deleting them first."""
+        user = self._setup_user(TEST_USER_EMAIL_PURGE_UNDELETED)
+        params = dict(purge="True")
+        response = self._delete(f"users/{user['id']}", params=params, admin=True, json=True)
+        self._assert_status_code_is_ok(response)
+        purged_user = response.json()
+        assert purged_user["deleted"] is True, purged_user
+        assert purged_user["purged"] is True, purged_user
+        assert purged_user["email"] != TEST_USER_EMAIL_PURGE_UNDELETED, purged_user
+
+    @requires_admin
+    @requires_new_user
+    @requires_new_history
+    @skip_without_tool("cat_data_and_sleep")
+    def test_purge_user_not_deleted_cancels_jobs(self):
+        dataset_populator = DatasetPopulator(self.galaxy_interactor)
+        with self._different_user(TEST_USER_EMAIL_PURGE_CANCEL_JOBS):
+            user_id = self._get_current_user_id()
+            history_id = dataset_populator.new_history()
+            hda_id = dataset_populator.new_dataset(history_id)["id"]
+            inputs = {
+                "input1": {"src": "hda", "id": hda_id},
+                "sleep_time": 6000,
+            }
+            run_response = dataset_populator.run_tool_raw("cat_data_and_sleep", inputs, history_id)
+            self._assert_status_code_is_ok(run_response)
+            job_id = run_response.json()["jobs"][0]["id"]
+            expected_job_states = ["new", "queued", "running"]
+            dataset_populator.wait_for_job(job_id, ok_states=expected_job_states)
+
+        # Purging a user who is not deleted deletes them first, which cancels their jobs
+        response = self._delete(f"users/{user_id}", params=dict(purge="True"), admin=True, json=True)
+        self._assert_status_code_is_ok(response)
+
+        job_response = self._get(f"jobs/{job_id}", admin=True).json()
+        assert job_response["state"] in ["deleting", "deleted"], job_response
 
     @requires_admin
     @requires_new_user

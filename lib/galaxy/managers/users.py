@@ -317,18 +317,18 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         super().undelete(user, flush=flush)
 
     def purge(self, user, flush=True):
-        """Purge the given user. They must have the deleted flag already."""
+        """Purge the given user, also deleting them if they are not deleted yet."""
         if not self.app.config.allow_user_deletion:
             raise exceptions.ConfigDoesNotAllowException(
                 "The configuration of this Galaxy instance does not allow admins to delete or purge users."
             )
-        if not user.deleted:
-            raise exceptions.MessageException(f"User '{user.email}' has not been deleted, so they cannot be purged.")
         private_role = self.app.security_agent.get_private_user_role(user)
         if private_role is None:
             raise exceptions.InconsistentDatabase(
-                f"User {user.email} private role is missing while attempting to purge deleted user."
+                f"User {user.email} private role is missing while attempting to purge user."
             )
+        # A user who is not deleted yet is deleted by super().purge() below, which also
+        # stops their active jobs, in the same commit as the rest of the purge.
         # Delete History
         for active_history in user.active_histories:
             self.session().refresh(active_history)
