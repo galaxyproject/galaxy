@@ -53,6 +53,7 @@ test_tools = integration_util.integration_tool_runner(
         "metadata_bam",
         "job_properties",
         "from_work_dir_glob",
+        "from_work_dir_glob_output_written",
         "gx_group_tag",
         "output_format",
     ]
