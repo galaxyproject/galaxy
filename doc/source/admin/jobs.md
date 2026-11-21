@@ -15,21 +15,21 @@ parameters on the Pulsar destination:
 
 ```yaml
 remote_metadata: true
-metadata_strategy: extended
 tool_evaluation_strategy: remote
 ```
 
-Galaxy uses structured path rewriting for remote evaluation. Input datasets,
-metadata files, and composite input files are staged before the command is
-evaluated. Deferred inputs are downloaded by the remote evaluator instead of
-being transferred from Galaxy. The job working directories can be separate;
-the extended metadata strategy still requires Pulsar to access the configured
-object store, including write access for outputs and metadata files.
+The job then builds the tool command where it runs, after Pulsar has staged the
+inputs and config files, so command templates can read them. Galaxy uses
+structured path rewriting for remote evaluation. Deferred inputs are downloaded
+by the remote evaluator instead of being transferred from Galaxy.
 
 Pulsar needs a matching Galaxy runtime for remote evaluation and metadata
-collection. Declare supporting tool files with `<required_files>` to limit
-transfers; when it is absent, remote evaluation stages the tool directory with
-the standard exclusions for test data, tool data, and Mercurial metadata.
+collection. Remote evaluation works with the `directory` and `extended` metadata
+strategies; `metadata_strategy: extended` additionally requires Pulsar to access
+the configured object store, including write access for outputs and metadata
+files. Declare supporting tool files with `<required_files>` to limit transfers;
+when it is absent, remote evaluation stages the tool directory with the standard
+exclusions for test data, tool data, and Mercurial metadata.
 
 ## job_conf.xml Syntax
 
