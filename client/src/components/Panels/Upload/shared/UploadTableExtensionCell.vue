@@ -1,10 +1,8 @@
 <script setup lang="ts">
-import { faExclamationTriangle } from "@fortawesome/free-solid-svg-icons";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-
 import type { ExtensionDetails } from "@/composables/uploadConfigurations";
 
 import SingleItemSelector from "@/components/SingleItemSelector.vue";
+import UploadDatatypeWarning from "@/components/Upload/UploadDatatypeWarning.vue";
 
 interface Props {
     /** Currently selected extension for this item */
@@ -35,22 +33,22 @@ function onItemSelection(value: ExtensionDetails) {
 </script>
 
 <template>
-    <div class="d-flex align-items-center w-100">
+    <div class="w-100">
         <SingleItemSelector
             v-g-tooltip.hover
-            class="flex-grow-1"
             collection-name="Data Types"
             :title="tooltip"
             :items="extensions"
             :current-item="extensions.find((ext) => ext.id === value)"
             :disabled="disabled"
             @update:selected-item="onItemSelection">
+            <template v-slot:option="{ option }">
+                {{ option.text }}
+                <UploadDatatypeWarning :message="option.upload_warning" />
+            </template>
         </SingleItemSelector>
-        <FontAwesomeIcon
-            v-if="warning"
-            v-g-tooltip.hover
-            class="text-warning ml-1 flex-shrink-0"
-            :icon="faExclamationTriangle"
-            :title="warning" />
+        <div role="status">
+            <UploadDatatypeWarning :message="warning" />
+        </div>
     </div>
 </template>

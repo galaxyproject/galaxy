@@ -526,11 +526,13 @@
                     <input v-if="elementsType == 'datasets'" v-model="hideSourceItems" type="checkbox" />
                     <div v-if="extension && showFileTypeSelector" class="rule-footer-extension-group">
                         <label>{{ l("Type") }}:</label>
-                        <SelectBasic
-                            v-model="extension"
+                        <UploadTableExtensionCell
+                            :value="extension"
                             name="extension"
                             class="extension-select"
-                            :options="extensions" />
+                            :extensions="extensions"
+                            :warning="extensions.find((ext) => ext.id === extension)?.upload_warning"
+                            @input="extension = $event" />
                     </div>
                     <div v-if="genome && showGenomeSelector" class="rule-footer-genome-group">
                         <label>{{ l("Genome") }}:</label>
@@ -628,6 +630,7 @@ import { errorMessageAsString } from "@/utils/simple-error";
 
 import GButton from "./BaseComponents/GButton.vue";
 import GAlert from "@/components/BaseComponents/GAlert.vue";
+import UploadTableExtensionCell from "@/components/Panels/Upload/shared/UploadTableExtensionCell.vue";
 import ColumnSelector from "@/components/RuleBuilder/ColumnSelector.vue";
 import IdentifierDisplay from "@/components/RuleBuilder/IdentifierDisplay.vue";
 import RegularExpressionInput from "@/components/RuleBuilder/RegularExpressionInput.vue";
@@ -660,6 +663,7 @@ const stripUiKeys = function (entry) {
 
 export default {
     components: {
+        UploadTableExtensionCell,
         BFormInput,
         BRow,
         GAlert,

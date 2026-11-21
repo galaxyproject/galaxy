@@ -17,11 +17,12 @@
             :internal-search="false"
             :title="title"
             :track-by="trackBy"
+            @keydown="scrollMultiselectOptionIntoView"
             @select="onSelectItem"
             @search-change="onSearchChange">
             <template v-slot:option="{ option }">
                 <span data-test-id="single-item-selector-option" :data-id="option[trackBy]" :data-label="option[label]">
-                    {{ option[label] }}
+                    <slot name="option" :option="option">{{ option[label] }}</slot>
                 </span>
             </template>
         </Multiselect>
@@ -33,6 +34,7 @@ import { computed, ref, watch } from "vue";
 import Multiselect from "vue-multiselect";
 
 import { useRankedSearch } from "@/composables/useRankedSearch";
+import { scrollMultiselectOptionIntoView } from "@/utils/multiselect";
 import { uid } from "@/utils/utils";
 
 import LoadingSpan from "@/components/LoadingSpan.vue";
