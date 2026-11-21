@@ -5,10 +5,7 @@ API operations on a jobs.
 """
 
 import logging
-from datetime import (
-    date,
-    datetime,
-)
+from datetime import date
 from typing import (
     Annotated,
     Any,
@@ -272,8 +269,8 @@ class FastAPIJobs:
         view: JobIndexViewEnum = ViewQueryParam,
         tool_ids: Optional[list[str]] = Depends(query_parameter_as_list(ToolIdQueryParam)),
         tool_ids_like: Optional[list[str]] = Depends(query_parameter_as_list(ToolIdLikeQueryParam)),
-        date_range_min: Optional[Union[datetime, date]] = DateRangeMinQueryParam,
-        date_range_max: Optional[Union[datetime, date]] = DateRangeMaxQueryParam,
+        date_range_min: Optional[Union[OffsetNaiveDatetime, date]] = DateRangeMinQueryParam,
+        date_range_max: Optional[Union[OffsetNaiveDatetime, date]] = DateRangeMaxQueryParam,
         history_id: Optional[DecodedDatabaseIdField] = HistoryIdQueryParam,
         workflow_id: Optional[DecodedDatabaseIdField] = WorkflowIdQueryParam,
         invocation_id: Optional[DecodedDatabaseIdField] = InvocationIdQueryParam,
