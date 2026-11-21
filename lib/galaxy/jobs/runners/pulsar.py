@@ -53,6 +53,7 @@ from galaxy.exceptions import InsufficientPermissionsException
 from galaxy.job_execution.compute_environment import (
     ComputeEnvironment,
     dataset_path_to_extra_path,
+    remote_evaluation_paths,
 )
 from galaxy.job_metrics.instrumenters.pulsar import PulsarPlugin
 from galaxy.jobs.command_factory import build_command
@@ -850,20 +851,7 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
     def _setup_remote_tool_evaluation(job_wrapper, compute_environment, remote_job_config):
         """Serialize compute paths alongside the model store transferred by Pulsar."""
         job_io = job_wrapper.job_io
-        paths = {}
-        for dataset in job_io.get_input_datasets():
-            if dataset.state != model.Dataset.states.DEFERRED:
-                path = str(job_io.get_input_path(dataset))
-                paths[path] = compute_environment.input_path_rewrite(dataset)
-                if dataset.dataset and dataset.dataset.extra_files_path_exists():
-                    paths[dataset.extra_files_path] = compute_environment.input_extra_files_rewrite(dataset)
-                for value in dataset.metadata.values():
-                    if isinstance(value, model.MetadataFile):
-                        compute_environment.input_metadata_rewrite(dataset, value.get_file_name())
-        for dataset, path in job_io.get_output_hdas_and_fnames().values():
-            paths[path.real_path] = compute_environment.output_path_rewrite(dataset)
-        paths.update(compute_environment.path_rewrites_input_metadata)
-        paths.update(compute_environment.path_rewrites_unstructured)
+        paths = remote_evaluation_paths(job_io, compute_environment, compute_environment.path_rewrites_unstructured)
 
         io_dict = job_io.to_dict()
         io_dict["working_directory"] = remote_job_config["job_directory"]
@@ -1782,9 +1770,10 @@ class PulsarComputeEnvironment(ComputeEnvironment):
         remote_extra_files_path_rewrite = dataset_path_to_extra_path(output_path_rewrite)
         return remote_extra_files_path_rewrite
 
-    def input_metadata_rewrite(self, dataset, metadata_val):
+    def input_metadata_rewrite(self, dataset, metadata_file):
         # May technically be incorrect to not pass through local_path_config.input_metadata_rewrite
         # first but that adds untested logic that wouln't ever be used.
+        metadata_val = metadata_file.get_file_name()
         remote_input_path = self.path_mapper.remote_input_path_rewrite(
             metadata_val, client_input_path_type=CLIENT_INPUT_PATH_TYPES.INPUT_METADATA_PATH
         )
