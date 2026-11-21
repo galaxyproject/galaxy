@@ -58,29 +58,46 @@ const searchHelp = computed(() => {
 
 const services = new Services();
 
-watch(query, async () => {
-    if (query.value == "") {
-        results.value = [];
-    } else {
-        loading.value = true;
+let searchCount = 0;
 
-        try {
-            const response = await axios.get(
-                withPrefix(`/api/trs_search?query=${query.value}&trs_server=${trsServer.value}`),
-            );
+// A query typed before the TRS server list has loaded is searched once a server is selected.
+watch([query, trsServer], async () => {
+    const searchId = ++searchCount;
+    if (query.value == "" || trsServer.value == "") {
+        results.value = [];
+        loading.value = false;
+        return;
+    }
+
+    loading.value = true;
+
+    try {
+        const response = await axios.get(withPrefix("/api/trs_search"), {
+            params: { query: query.value, trs_server: trsServer.value },
+        });
+        // ignore responses to searches that a newer search has replaced
+        if (searchId === searchCount) {
             results.value = response.data;
-        } catch (e) {
+        }
+    } catch (e) {
+        if (searchId === searchCount) {
             errorMessage.value = errorMessageAsString(e);
         }
+    }
 
+    if (searchId === searchCount) {
         loading.value = false;
     }
 });
 
 function onTrsSelection(selection: TrsSelection) {
+    // Only clear the query when switching servers, not when the initial selection arrives
+    // while the user may already be typing.
+    if (trsServer.value && trsServer.value !== selection.id) {
+        query.value = "";
+    }
     trsSelection.value = selection;
     trsServer.value = selection.id;
-    query.value = "";
 }
 
 function onTrsSelectionError(message: string) {
