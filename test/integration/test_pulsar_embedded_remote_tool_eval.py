@@ -59,6 +59,29 @@ class TestPulsarRemoteToolEvaluation(integration_util.IntegrationTestCase):
             command_line = populator.get_job_details(job_id, full=True).json()["command_line"]
             assert re.search(r"echo '(\d+) \1' > '", command_line)
 
+    def test_object_store_configuration_not_sent(self):
+        populator = DatasetPopulator(self.galaxy_interactor)
+        with populator.test_history() as history_id:
+            dataset = populator.new_dataset(history_id, content="abc", ext="txt", wait=True)
+            response = populator.run_tool(
+                "command_reads_input_size",
+                inputs={"input1": {"src": "hda", "id": dataset["id"]}},
+                history_id=history_id,
+            )
+            job_id = response["jobs"][0]["id"]
+            populator.wait_for_job(job_id, assert_ok=True)
+        job = self._app.model.session.get(Job, self._app.security.decode_id(job_id))
+        assert job is not None
+        galaxy_job_directory = JobWorkingDirectory(job, self._app.object_store).resolve()
+        pulsar_job_directory = os.path.join(self._app.config.data_dir, "pulsar_staging", str(job.id))
+        for job_directory in (galaxy_job_directory, pulsar_job_directory):
+            assert os.path.exists(os.path.join(job_directory, "metadata", "outputs_new", "compute_environment.json"))
+            assert not os.path.exists(os.path.join(job_directory, "metadata", "outputs_new", "object_store_conf.json"))
+            # Extended metadata collection writes outputs through the object store.
+            assert os.path.exists(os.path.join(job_directory, "metadata", "object_store_conf.json")) == (
+                self.metadata_strategy == "extended"
+            )
+
     def test_deferred_input(self, test_http_server):
         populator = DatasetPopulator(self.galaxy_interactor)
         with populator.test_history() as history_id:
