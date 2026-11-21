@@ -19,7 +19,9 @@ def _evaluator(evaluator_class, job_directory, config_file):
     tool = Bunch(config_files=[config_file], javascript_requirements=None, python_template_version="3")
     evaluator = evaluator_class(app, tool, None, str(job_directory))
     evaluator.param_dict = {"inputs": {}, "outdir": str(job_directory / "working")}
-    evaluator.compute_environment = Bunch(config_directory=lambda: "/compute/configs", sep=lambda: "/")
+    evaluator.compute_environment = Bunch(
+        config_directory=lambda: "/compute/configs", sep=lambda: "/", stage_config_file=lambda local_path: None
+    )
     return evaluator
 
 
