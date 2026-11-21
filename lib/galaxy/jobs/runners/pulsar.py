@@ -1443,6 +1443,11 @@ class PulsarComputeEnvironment(ComputeEnvironment):
         self.path_rewrites_unstructured = {}
         self.path_rewrites_input_extra = {}
         self.path_rewrites_input_metadata = {}
+        # Pulsar stages inputs and config files when the job is submitted, after
+        # Galaxy has evaluated the tool's templates. Templates therefore see the
+        # Galaxy-side paths of these files, which can be read while the command
+        # is built, and the evaluator rewrites them to these Pulsar paths.
+        self._evaluated_path_rewrites: dict[str, str] = {}
 
         # job_wrapper.prepare is going to expunge the job backing the following
         # computations, so precalculate these paths.
@@ -1463,14 +1468,27 @@ class PulsarComputeEnvironment(ComputeEnvironment):
         # Maybe this should use the path mapper, but the path mapper just uses basenames
         return self.job_wrapper.job_io.get_output_basenames()
 
-    def input_path_rewrite(self, dataset):
+    def _local_and_remote_input_paths(self, dataset) -> tuple[str, str | None]:
         local_input_path_rewrite = self.local_path_config.input_path_rewrite(dataset)
         if local_input_path_rewrite is not None:
             local_input_path = local_input_path_rewrite
         else:
             local_input_path = dataset.get_file_name()
-        remote_path = self.path_mapper.remote_input_path_rewrite(local_input_path)
-        return remote_path
+        return local_input_path, self.path_mapper.remote_input_path_rewrite(local_input_path)
+
+    def input_path_rewrite(self, dataset):
+        local_input_path, remote_input_path = self._local_and_remote_input_paths(dataset)
+        if remote_input_path is None:
+            return None
+        self._evaluated_path_rewrites[local_input_path] = remote_input_path
+        return local_input_path
+
+    def config_file_path(self, local_path: str, compute_path: str) -> str:
+        self._evaluated_path_rewrites[local_path] = compute_path
+        return local_path
+
+    def evaluated_path_rewrites(self) -> dict[str, str]:
+        return self._evaluated_path_rewrites
 
     def output_path_rewrite(self, dataset):
         local_output_path_rewrite = self.local_path_config.output_path_rewrite(dataset)
@@ -1482,13 +1500,15 @@ class PulsarComputeEnvironment(ComputeEnvironment):
         return remote_path
 
     def input_extra_files_rewrite(self, dataset):
-        input_path_rewrite = self.input_path_rewrite(dataset)
-        if input_path_rewrite is None:
+        _, remote_input_path = self._local_and_remote_input_paths(dataset)
+        if remote_input_path is None:
             # Pulsar reads unstaged inputs in place, so their extra files stay where Galaxy keeps them.
             return self.local_path_config.input_extra_files_rewrite(dataset)
-        remote_extra_files_path_rewrite = dataset_path_to_extra_path(input_path_rewrite)
-        self.path_rewrites_input_extra[dataset.extra_files_path] = remote_extra_files_path_rewrite
-        return remote_extra_files_path_rewrite
+        local_extra_files_path = dataset.extra_files_path
+        remote_extra_files_path = dataset_path_to_extra_path(remote_input_path)
+        self.path_rewrites_input_extra[local_extra_files_path] = remote_extra_files_path
+        self._evaluated_path_rewrites[local_extra_files_path] = remote_extra_files_path
+        return local_extra_files_path
 
     def output_extra_files_rewrite(self, dataset):
         output_path_rewrite = self.output_path_rewrite(dataset)
@@ -1506,7 +1526,8 @@ class PulsarComputeEnvironment(ComputeEnvironment):
         if remote_input_path:
             log.info(f"input_metadata_rewrite is {remote_input_path} from {metadata_val}")
             self.path_rewrites_input_metadata[metadata_val] = remote_input_path
-            return remote_input_path
+            self._evaluated_path_rewrites[metadata_val] = remote_input_path
+            return metadata_val
 
         # No rewrite...
         return None

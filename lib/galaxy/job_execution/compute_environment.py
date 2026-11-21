@@ -62,6 +62,25 @@ class ComputeEnvironment(metaclass=ABCMeta):
         """
         return None
 
+    def config_file_path(self, local_path: str, compute_path: str) -> str:
+        """Path of a config file Galaxy has written, as tool templates see it.
+
+        The compute path by default; see ``evaluated_path_rewrites``.
+        """
+        return compute_path
+
+    def evaluated_path_rewrites(self) -> dict[str, str]:
+        """Galaxy-side paths that tool templates saw, mapped to their compute paths.
+
+        Empty by default. A compute environment whose input and config files
+        only reach the compute side after the job is submitted (Pulsar in
+        ``rewrite_parameters`` mode) hands templates the Galaxy-side paths, so
+        templates can read these files while the command is built. The
+        evaluator then replaces each path with its compute path in the command
+        line, config files and environment variable files.
+        """
+        return {}
+
     @abstractmethod
     def working_directory(self):
         """Job working directory (potentially remote)"""
