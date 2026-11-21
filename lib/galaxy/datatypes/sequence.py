@@ -53,6 +53,11 @@ from . import data
 log = logging.getLogger(__name__)
 
 
+def _toc_count(value: str | int) -> int:
+    """Parse an FQTOC sequence count, which older converters wrote as a float string (e.g. "10.0")."""
+    return int(float(value))
+
+
 @build_sniff_from_prefix
 class SequenceSplitLocations(data.Text):
     """
@@ -140,12 +145,22 @@ class Sequence(data.Text):
 
     @staticmethod
     def get_sequences_per_file(total_sequences: int, split_params: dict) -> list:
+        """
+        >>> Sequence.get_sequences_per_file(10, dict(split_mode="number_of_parts", split_size=4))
+        [3, 3, 2, 2]
+        >>> Sequence.get_sequences_per_file(2, dict(split_mode="number_of_parts", split_size=4))
+        [1, 1]
+        >>> Sequence.get_sequences_per_file(10, dict(split_mode="to_size", split_size=4))
+        [4, 4, 2]
+        """
+        total_sequences = int(total_sequences)
         if split_params["split_mode"] == "number_of_parts":
             # legacy basic mode - split into a specified number of parts
             parts = int(split_params["split_size"])
-            sequences_per_file = [total_sequences / parts for i in range(parts)]
-            for i in range(total_sequences % parts):
-                sequences_per_file[i] += 1
+            base, rem = divmod(total_sequences, parts)
+            sequences_per_file = [base + 1 if i < rem else base for i in range(parts)]
+            # with fewer sequences than parts, don't create empty parts
+            sequences_per_file = [n for n in sequences_per_file if n > 0] or [0]
         elif split_params["split_mode"] == "to_size":
             # loop through the sections and calculate the number of sequences
             chunk_size = int(split_params["split_size"])
@@ -167,7 +182,7 @@ class Sequence(data.Text):
         else:
             with compression_utils.get_fileobj(input_datasets[0].get_file_name()) as in_file:
                 total_sequences = sum(1 for line in in_file)
-            total_sequences /= 4
+            total_sequences //= 4
 
         sequences_per_file = cls.get_sequences_per_file(total_sequences, split_params)
         return cls.write_split_files(input_datasets, None, subdir_generator_function, sequences_per_file)
@@ -178,7 +193,7 @@ class Sequence(data.Text):
         sections = data["sections"]
         total_sequences = 0
         for section in sections:
-            total_sequences += int(section["sequences"])
+            total_sequences += _toc_count(section["sequences"])
         sequences_per_file = cls.get_sequences_per_file(total_sequences, split_params)
         return cls.write_split_files(input_datasets, toc_file_datasets, subdir_generator_function, sequences_per_file)
 
@@ -226,24 +241,31 @@ class Sequence(data.Text):
 
     @staticmethod
     def get_split_commands_with_toc(
-        input_name: str, output_name: str, toc_file: Any, start_sequence: int, sequence_count: int
+        input_name: str,
+        output_name: str,
+        toc_file: Any,
+        start_sequence: int,
+        sequence_count: int,
+        is_compressed: bool,
     ) -> list:
         """
         Uses a Table of Contents dict, parsed from an FQTOC file, to come up with a set of
         shell commands that will extract the parts necessary
         >>> three_sections=[dict(start=0, end=74, sequences=10), dict(start=74, end=148, sequences=10), dict(start=148, end=148+76, sequences=10)]
-        >>> Sequence.get_split_commands_with_toc('./input.gz', './output.gz', dict(sections=three_sections), start_sequence=0, sequence_count=10)
+        >>> Sequence.get_split_commands_with_toc('./input.gz', './output.gz', dict(sections=three_sections), start_sequence=0, sequence_count=10, is_compressed=True)
         ['dd bs=1 skip=0 count=74 if=./input.gz 2> /dev/null >> ./output.gz']
-        >>> Sequence.get_split_commands_with_toc('./input.gz', './output.gz', dict(sections=three_sections), start_sequence=1, sequence_count=5)
+        >>> Sequence.get_split_commands_with_toc('./input.gz', './output.gz', dict(sections=three_sections), start_sequence=1, sequence_count=5, is_compressed=True)
         ['(dd bs=1 skip=0 count=74 if=./input.gz 2> /dev/null )| zcat | ( tail -n +5 2> /dev/null) | head -20 | gzip -c >> ./output.gz']
-        >>> Sequence.get_split_commands_with_toc('./input.gz', './output.gz', dict(sections=three_sections), start_sequence=0, sequence_count=20)
+        >>> Sequence.get_split_commands_with_toc('./input.gz', './output.gz', dict(sections=three_sections), start_sequence=0, sequence_count=20, is_compressed=True)
         ['dd bs=1 skip=0 count=148 if=./input.gz 2> /dev/null >> ./output.gz']
-        >>> Sequence.get_split_commands_with_toc('./input.gz', './output.gz', dict(sections=three_sections), start_sequence=5, sequence_count=10)
+        >>> Sequence.get_split_commands_with_toc('./input.gz', './output.gz', dict(sections=three_sections), start_sequence=5, sequence_count=10, is_compressed=True)
         ['(dd bs=1 skip=0 count=74 if=./input.gz 2> /dev/null )| zcat | ( tail -n +21 2> /dev/null) | head -20 | gzip -c >> ./output.gz', '(dd bs=1 skip=74 count=74 if=./input.gz 2> /dev/null )| zcat | ( tail -n +1 2> /dev/null) | head -20 | gzip -c >> ./output.gz']
-        >>> Sequence.get_split_commands_with_toc('./input.gz', './output.gz', dict(sections=three_sections), start_sequence=10, sequence_count=10)
+        >>> Sequence.get_split_commands_with_toc('./input.gz', './output.gz', dict(sections=three_sections), start_sequence=10, sequence_count=10, is_compressed=True)
         ['dd bs=1 skip=74 count=74 if=./input.gz 2> /dev/null >> ./output.gz']
-        >>> Sequence.get_split_commands_with_toc('./input.gz', './output.gz', dict(sections=three_sections), start_sequence=5, sequence_count=20)
+        >>> Sequence.get_split_commands_with_toc('./input.gz', './output.gz', dict(sections=three_sections), start_sequence=5, sequence_count=20, is_compressed=True)
         ['(dd bs=1 skip=0 count=74 if=./input.gz 2> /dev/null )| zcat | ( tail -n +21 2> /dev/null) | head -20 | gzip -c >> ./output.gz', 'dd bs=1 skip=74 count=74 if=./input.gz 2> /dev/null >> ./output.gz', '(dd bs=1 skip=148 count=76 if=./input.gz 2> /dev/null )| zcat | ( tail -n +1 2> /dev/null) | head -20 | gzip -c >> ./output.gz']
+        >>> Sequence.get_split_commands_with_toc('./input.fastq', './output.fastq', dict(sections=three_sections), start_sequence=1, sequence_count=5, is_compressed=False)
+        ['(dd bs=1 skip=0 count=74 if=./input.fastq 2> /dev/null )| ( tail -n +5 2> /dev/null) | head -20 >> ./output.fastq']
         """
         sections = toc_file["sections"]
         result = []
@@ -251,8 +273,8 @@ class Sequence(data.Text):
         current_sequence = 0
         i = 0
         # skip to the section that contains my starting sequence
-        while i < len(sections) and start_sequence >= current_sequence + int(sections[i]["sequences"]):
-            current_sequence += int(sections[i]["sequences"])
+        while i < len(sections) and start_sequence >= current_sequence + _toc_count(sections[i]["sequences"]):
+            current_sequence += _toc_count(sections[i]["sequences"])
             i += 1
         if i == len(sections):  # bad input data!
             raise Exception(f"No FQTOC section contains starting sequence {start_sequence}")
@@ -267,7 +289,7 @@ class Sequence(data.Text):
             # we need to extract partial data. So, find the byte offsets of the chunks that contain the data we need
             # use a combination of dd (to pull just the right sections out) tail (to skip lines) and head (to get the
             # right number of lines
-            sequences = int(sections[i]["sequences"])
+            sequences = _toc_count(sections[i]["sequences"])
             skip_sequences = start_sequence - current_sequence
             sequences_to_extract = min(sequence_count, sequences - skip_sequences)
             start_copy = int(sections[i]["start"])
@@ -276,10 +298,13 @@ class Sequence(data.Text):
                 if start_chunk > -1:
                     result.append(copy_chunk_cmd % (start_chunk, end_chunk - start_chunk, input_name, output_name))
                     start_chunk = -1
-                # extract, unzip, trim, recompress
-                result.append(
-                    f"(dd bs=1 skip={start_copy} count={end_copy - start_copy} if={input_name} 2> /dev/null )| zcat | ( tail -n +{skip_sequences * 4 + 1} 2> /dev/null) | head -{sequences_to_extract * 4} | gzip -c >> {output_name}"
-                )
+                # extract, (unzip,) trim, (recompress)
+                extract = f"(dd bs=1 skip={start_copy} count={end_copy - start_copy} if={input_name} 2> /dev/null )|"
+                trim = f" ( tail -n +{skip_sequences * 4 + 1} 2> /dev/null) | head -{sequences_to_extract * 4}"
+                if is_compressed:
+                    result.append(f"{extract} zcat |{trim} | gzip -c >> {output_name}")
+                else:
+                    result.append(f"{extract}{trim} >> {output_name}")
             else:  # whole section - add it to the start_chunk/end_chunk accumulator
                 if start_chunk == -1:
                     start_chunk = start_copy
@@ -833,7 +858,7 @@ class BaseFastq(Sequence):
             with open(args["toc_file"]) as f:
                 toc_file = json.load(f)
             commands = Sequence.get_split_commands_with_toc(
-                input_name, output_name, toc_file, start_sequence, sequence_count
+                input_name, output_name, toc_file, start_sequence, sequence_count, is_gzip(input_name)
             )
         else:
             commands = Sequence.get_split_commands_sequential(
