@@ -16,7 +16,10 @@ from fastapi import (
 from pydantic import BaseModel
 from starlette.responses import StreamingResponse
 
-from galaxy.managers.context import ProvidesUserContext
+from galaxy.managers.context import (
+    ProvidesHistoryContext,
+    ProvidesUserContext,
+)
 from galaxy.webapps.base.api import GalaxyStreamingResponse
 from galaxy.webapps.galaxy.services.events import EventsService
 from . import (
@@ -79,7 +82,7 @@ class FastAPIEvents:
     def subscribe_history_viewer(
         self,
         payload: HistoryViewerSubscriptionPayload = Body(...),
-        trans: ProvidesUserContext = DependsOnTrans,
+        trans: ProvidesHistoryContext = DependsOnTrans,
     ) -> None:
         """Asks every webapp worker to start routing ``history_update`` events
         for these histories to the requesting user/session, in addition to the

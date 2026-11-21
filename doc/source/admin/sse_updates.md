@@ -1,7 +1,7 @@
 # Server-Sent Events (SSE) for real-time updates
 
-Galaxy can push history changes, interactive-tool entry-point changes, and
-in-app notifications to connected browsers via [Server-Sent Events][sse-mdn]
+Galaxy can push history changes, interactive-tool entry-point changes,
+workflow invocation and job changes, and in-app notifications to connected browsers via [Server-Sent Events][sse-mdn]
 instead of polling. This replaces the legacy 3-second history poll and
 10-second entry-point poll with a single long-lived HTTP connection per
 browser tab, dramatically reducing API load on busy servers and giving users
@@ -29,6 +29,8 @@ A high-level view of the moving parts on the server:
                                      │  control task fan-out:      │
                                      │   • history_update          │
                                      │   • entry_point_update      │
+                                     │   • invocation_update       │
+                                     │   • job_update              │
                                      │   • notification_update     │
                                      │   • broadcast_update        │
                                      └──────────────┬──────────────┘
@@ -51,8 +53,8 @@ Concretely:
 
 1. **One stream per browser, many event types.** The browser opens a single
    `EventSource` against `/api/events/stream`. The same connection carries
-   `history_update`, `entry_point_update`, `notification_update`,
-   `broadcast_update`, and `notification_status` events.
+   `history_update`, `entry_point_update`, `invocation_update`, `job_update`,
+   `notification_update`, `broadcast_update`, and `notification_status` events.
 2. **Per-process registries.** Each Gunicorn worker keeps an
    `SSEConnectionManager` that holds an `asyncio.Queue` per connected tab,
    indexed by user id (and Galaxy session id, so anonymous users still
@@ -66,6 +68,20 @@ Concretely:
      otherwise one webapp picks it up.
    - Entry-point updates are dispatched directly from the code paths that
      mutate interactive-tool entry points — there is no separate watcher.
+   - Invocation updates are sent to the owner of a workflow invocation's
+     history whenever a transaction that changed the invocation's state,
+     steps or messages commits, from whichever process committed it (web,
+     workflow handler or Celery worker).
+   - Job updates are sent to a job's user (or, for anonymous jobs, its
+     browser session) whenever a transaction that changed the job's state
+     commits, from whichever process committed it. A transaction that
+     changes more than 500 jobs of one user, such as mapping a tool over a
+     large collection, sends that user a single resync event instead.
+   - History, invocation and job updates also reach the viewers of a
+     history: users or sessions that subscribed to it through
+     `POST /api/events/history-subscriptions`, such as a page showing a
+     history someone else owns. Only histories the requester can access are
+     subscribed.
    - Notifications dispatch SSE events from `NotificationManager` whenever
      a notification or broadcast is created.
 4. **Cross-process fan-out.** Producers don't know which worker holds the

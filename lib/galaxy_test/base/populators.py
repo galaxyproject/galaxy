@@ -56,7 +56,10 @@ from collections.abc import (
     Callable,
     Generator,
 )
-from functools import wraps
+from functools import (
+    partial,
+    wraps,
+)
 from io import StringIO
 from operator import itemgetter
 from typing import (
@@ -65,6 +68,7 @@ from typing import (
     Literal,
     NamedTuple,
     Self,
+    TypeVar,
     Union,
 )
 from uuid import UUID
@@ -135,6 +139,15 @@ from .api import (
 )
 from .api_util import random_name
 from .env import REQUIRE_ALL_NEEDED_TOOLS
+from .sse import (
+    SSELineListener,
+    wait_on_events,
+)
+
+T = TypeVar("T")
+
+# The stream sends a keepalive every 30 seconds; a longer read timeout keeps idle waits connected.
+SSE_WAIT_READ_TIMEOUT = 60
 
 FILE_URL = "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/4.bed"
 FILE_MD5 = "37b59762b59fff860460522d271bc111"
@@ -466,6 +479,90 @@ class BasePopulator(metaclass=ABCMeta):
     def _delete(self, route, data=None, headers=None, admin=False, json: bool = False) -> Response:
         """DELETE against target Galaxy instance on specified route."""
 
+    def _sse_listener(self) -> SSELineListener | None:
+        """A started listener on the server's event stream for the current user, or ``None`` to poll."""
+        return None
+
+    def wait_on_sse(
+        self,
+        event_type: str,
+        predicate: Callable[[dict], bool],
+        function: Callable[[], T | None],
+        desc: str,
+        timeout: timeout_type,
+        history_id: Callable[[], str] | None = None,
+    ) -> T:
+        """Wait for ``function`` to return a value, re-running it on matching SSE events.
+
+        With SSE updates enabled on the server, ``function`` re-runs only when an ``event_type``
+        event matching ``predicate`` arrives, so a missing event fails the wait. Events go to the
+        owner of the changed object's history; for the history ``history_id`` returns, the current
+        user subscribes as a viewer for the wait when someone else owns it. Otherwise this polls.
+        """
+        listener = self._sse_listener()
+        if listener is None:
+            return wait_on(function, desc, timeout=timeout)
+        viewed_history_id = None
+        try:
+            if history_id is not None:
+                viewed_history_id = self._subscribe_to_history_owned_by_others(history_id())
+            return wait_on_events(listener, event_type, predicate, function, desc, timeout)
+        finally:
+            if viewed_history_id is not None:
+                self._delete("events/history-subscriptions", {"history_ids": [viewed_history_id]}, json=True)
+            listener.stop()
+
+    def _subscribe_to_history_owned_by_others(self, history_id: str) -> str | None:
+        """Subscribe as a viewer of ``history_id`` unless the current user owns it; return it if subscribed.
+
+        The subscription reaches the server's workers through the same control queue as the events,
+        ahead of the events for any change committed after this returns.
+        """
+        if self._get(f"histories/{history_id}", {"keys": "user_id"}).json()["user_id"] == self._current_user_id():
+            return None
+        response = self._post("events/history-subscriptions", {"history_ids": [history_id]}, json=True)
+        api_asserts.assert_status_code_is(response, 204)
+        return history_id
+
+    def _current_user_id(self) -> str:
+        response = self._get("users/current")
+        response.raise_for_status()
+        return response.json()["id"]
+
+    def wait_on_job_update(
+        self,
+        job_id: str | None,
+        function: Callable[[], T | None],
+        desc: str,
+        timeout: timeout_type,
+        history_id: str | None = None,
+    ) -> T:
+        """Re-run ``function`` on ``job_update`` events for ``job_id``, or for any job in ``history_id``."""
+
+        def matches(event: dict) -> bool:
+            data = json.loads(event["data"])
+            return "resync" in data or job_id is None or any(job["id"] == job_id for job in data["jobs"])
+
+        def job_history_id() -> str:
+            if job_id is None:
+                assert history_id is not None
+                return history_id
+            return self._get(f"jobs/{job_id}").json()["history_id"]
+
+        return self.wait_on_sse("job_update", matches, function, desc, timeout, history_id=job_history_id)
+
+    def wait_on_history_update(
+        self, history_id: str, function: Callable[[], T | None], desc: str, timeout: timeout_type
+    ) -> T:
+        return self.wait_on_sse(
+            "history_update",
+            lambda event: history_id in json.loads(event["data"])["history_ids"],
+            function,
+            desc,
+            timeout,
+            history_id=lambda: history_id,
+        )
+
     def _get_to_tempfile(self, route, suffix=None, **kwd) -> str:
         """Perform a _get and store the result in a tempfile."""
         get_response = self._get(route, **kwd)
@@ -780,7 +877,11 @@ class BaseDatasetPopulator(BasePopulator):
     ) -> str:
         try:
             return wait_on_state(
-                lambda: self.get_history_raw(history_id), desc="history state", assert_ok=assert_ok, timeout=timeout
+                lambda: self.get_history_raw(history_id),
+                desc="history state",
+                assert_ok=assert_ok,
+                timeout=timeout,
+                wait=partial(self.wait_on_history_update, history_id),
             )
         except AssertionError:
             self._summarize_history(history_id)
@@ -795,7 +896,8 @@ class BaseDatasetPopulator(BasePopulator):
                 return None
 
         try:
-            wait_on(has_active_jobs, "active jobs", timeout=timeout)
+            # Job events do not name the history, so any change to a job the user sees re-checks it.
+            self.wait_on_job_update(None, has_active_jobs, "active jobs", timeout, history_id=history_id)
         except TimeoutAssertionError as e:
             jobs = self.history_jobs(history_id)
             message = f"Failed waiting on active jobs to complete, current jobs are [{jobs}]. {e}"
@@ -828,6 +930,7 @@ class BaseDatasetPopulator(BasePopulator):
             assert_ok=assert_ok,
             timeout=timeout,
             ok_states=ok_states,
+            wait=partial(self.wait_on_job_update, job_id),
         )
 
     def get_job_details(self, job_id: str, full: bool = False) -> Response:
@@ -2490,6 +2593,23 @@ class BaseDatasetPopulator(BasePopulator):
 
 class GalaxyInteractorHttpMixin:
     galaxy_interactor: ApiTestInteractor
+    _sse_updates_enabled: bool | None = None
+
+    def _sse_listener(self) -> SSELineListener | None:
+        if self._sse_updates_enabled is None:
+            response = self._get("configuration")
+            response.raise_for_status()
+            # Servers that predate SSE updates do not report the option.
+            self._sse_updates_enabled = bool(response.json().get("enable_sse_updates"))
+        api_key = self.galaxy_interactor.api_key
+        # Events are routed to users; anonymous waits poll.
+        if not self._sse_updates_enabled or api_key is None:
+            return None
+        listener = SSELineListener(
+            f"{self.galaxy_interactor.api_url}/events/stream", api_key, timeout=SSE_WAIT_READ_TIMEOUT
+        )
+        listener.start()
+        return listener
 
     @property
     def _api_key(self):
@@ -2845,7 +2965,25 @@ class BaseWorkflowPopulator(BasePopulator):
         def workflow_state():
             return self._get(url)
 
-        return wait_on_state(workflow_state, desc="workflow invocation state", timeout=timeout, assert_ok=assert_ok)
+        return wait_on_state(
+            workflow_state,
+            desc="workflow invocation state",
+            timeout=timeout,
+            assert_ok=assert_ok,
+            wait=partial(self.wait_on_invocation, invocation_id),
+        )
+
+    def wait_on_invocation(
+        self, invocation_id: str, function: Callable[[], T | None], desc: str, timeout: timeout_type
+    ) -> T:
+        return self.wait_on_sse(
+            "invocation_update",
+            lambda event: any(item["id"] == invocation_id for item in json.loads(event["data"])["invocations"]),
+            function,
+            desc,
+            timeout,
+            history_id=lambda: self.get_invocation(invocation_id)["history_id"],
+        )
 
     def workflow_invocations(self, workflow_id: str, include_nested_invocations=True) -> list[dict[str, Any]]:
         response = self._get(f"workflows/{workflow_id}/invocations")
@@ -3495,8 +3633,7 @@ steps: []
                 raise AssertionError(f"Invocation reached terminal state: {invocation['state']}")
             return None
 
-        invocation = wait_on(check_completed, "invocation to reach completed state", timeout=timeout)
-        return invocation
+        return self.wait_on_invocation(invocation_id, check_completed, "invocation to reach completed state", timeout)
 
     def index(
         self,
@@ -4663,6 +4800,7 @@ def wait_on_state(
     ok_states=None,
     assert_ok: bool = False,
     timeout: timeout_type = DEFAULT_TIMEOUT,
+    wait: Callable[[Callable[[], str | None], str, timeout_type], str] = tool_util_wait_on,
 ) -> str:
     def get_state():
         response = state_func()
@@ -4696,7 +4834,7 @@ def wait_on_state(
     # Remove ok_states from skip_states, so we can wait for a state to becoming running
     skip_states = [s for s in skip_states if s not in ok_states]
     try:
-        return wait_on(get_state, desc=desc, timeout=timeout)
+        return wait(get_state, desc, timeout)
     except TimeoutAssertionError as e:
         response = state_func()
         raise TimeoutAssertionError(f"{e} Current response containing state [{response.json()}].")

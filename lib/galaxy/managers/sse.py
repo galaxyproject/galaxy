@@ -13,6 +13,7 @@ from collections.abc import (
     AsyncIterator,
     Awaitable,
     Callable,
+    Collection,
 )
 from dataclasses import dataclass
 from datetime import datetime
@@ -203,13 +204,16 @@ class SSEConnectionManager:
         for queue in list(self._broadcast_connections):
             self._safe_put(queue, event)
 
-    def push_to_history_viewers(self, history_id: str, event: SSEEvent) -> None:
+    def push_to_history_viewers(self, history_id: str, event: SSEEvent, exclude_user_ids: Collection[int] = ()) -> None:
         """Thread-safe. Push an event to every user/session that has subscribed
         to ``history_id`` as a viewer (i.e. is watching a history they don't
         own). Owner routing remains a separate path so the common "user changes
-        their own history" case never depends on a subscribe round trip.
+        their own history" case never depends on a subscribe round trip;
+        ``exclude_user_ids`` skips users who already got the event that way.
         """
         for user_id in list(self._history_viewers_user.get(history_id, ())):
+            if user_id in exclude_user_ids:
+                continue
             self.push_to_user(user_id, event)
         for session_id in list(self._history_viewers_session.get(history_id, ())):
             self.push_to_session(session_id, event)
