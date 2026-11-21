@@ -6,6 +6,7 @@ import uuid
 from galaxy import model
 from galaxy.jobs.runners.pulsar import (
     active_job_index_entries,
+    EMBEDDED_PULSAR_PERSISTENCE_DIRECTORY,
     migrate_embedded_pulsar_persistence,
     PersistenceEntryMigration,
 )
@@ -66,7 +67,7 @@ class TestEmbeddedPulsarPersistenceDirectory(integration_util.IntegrationTestCas
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
 
     def test_default_persistence_directory_is_per_server(self, history_id: str) -> None:
-        shared_directory = os.path.join(self._app.config.data_dir, "pulsar_persisted_data")
+        shared_directory = os.path.join(self._app.config.data_dir, EMBEDDED_PULSAR_PERSISTENCE_DIRECTORY)
         job_id = self._run_sleep_job(history_id, sleep_time=5)
         entry = self._wait_for_active_job_entry(os.path.join(shared_directory, self._app.config.server_name), job_id)
 
@@ -93,7 +94,7 @@ class TestEmbeddedPulsarPersistenceDirectory(integration_util.IntegrationTestCas
         self.dataset_populator.wait_for_job(finished_job_id, assert_ok=True)
         running_job_id = self._run_sleep_job(history_id, sleep_time=10)
         self._wait_for_active_job_entry(
-            os.path.join(self._app.config.data_dir, "pulsar_persisted_data", server_name), running_job_id
+            os.path.join(self._app.config.data_dir, EMBEDDED_PULSAR_PERSISTENCE_DIRECTORY, server_name), running_job_id
         )
 
         source = os.path.join(self.persistence_root, "shared")
