@@ -1,11 +1,19 @@
 """Tests for coordinating tool source store populates across processes."""
 
 import threading
-import time
-from datetime import timedelta
+from datetime import (
+    datetime,
+    timedelta,
+)
 from typing import Any
 
 import pytest
+from sqlalchemy import (
+    column,
+    DateTime,
+    table,
+    update,
+)
 
 from galaxy.tools.source_store.composite import CompositeToolSourceStore
 from galaxy.tools.source_store.coordination import populate_once
@@ -56,12 +64,23 @@ def test_failed_populate_releases_the_lease_without_recording_it(store):
 
 
 def test_holder_keeps_the_lease_past_its_ttl_while_populating(store):
-    lease = _lease(store)
-    ttl = timedelta(seconds=0.3)
+    lease = _FlakyLease(_lease(store))
+    ttl = timedelta(minutes=1)
     taken_over = []
 
     def slow_populate():
-        time.sleep(0.8)
+        # Expire the lease in the database rather than waiting out a TTL, so a
+        # runner stalling the renewal thread cannot expire it.
+        with store._engine.begin() as connection:
+            connection.execute(
+                update(table("tool_source_populate_lease", column("expires_at", DateTime))).values(
+                    expires_at=datetime(2000, 1, 1)
+                )
+            )
+        # Renewals run one at a time, so the second one to complete from here
+        # started after the lease expired.
+        renewals = lease.renewals
+        assert lease.wait_for_renewals(renewals + 2, timeout=10)
         taken_over.append(lease.try_acquire("other process", ttl))
 
     assert populate_once(lease, lambda: True, slow_populate, ttl=ttl, **FAST)
@@ -71,7 +90,8 @@ def test_holder_keeps_the_lease_past_its_ttl_while_populating(store):
 class _FlakyLease(PopulateLease):
     """Delegates to a real lease, failing the operations named in ``fail``.
 
-    ``waiting`` is set once a ``try_acquire`` finds the lease held by another holder.
+    ``waiting`` is set once a ``try_acquire`` finds the lease held by another holder;
+    ``renewals`` counts completed renewals.
     """
 
     def __init__(self, lease, fail_acquires=0, fail_release=False):
@@ -79,6 +99,8 @@ class _FlakyLease(PopulateLease):
         self._fail_acquires = fail_acquires
         self._fail_release = fail_release
         self.waiting = threading.Event()
+        self.renewals = 0
+        self._renewed = threading.Condition()
 
     def last_populated_at(self):
         return self._lease.last_populated_at()
@@ -93,7 +115,15 @@ class _FlakyLease(PopulateLease):
         return acquired
 
     def renew(self, holder, ttl):
-        return self._lease.renew(holder, ttl)
+        renewed = self._lease.renew(holder, ttl)
+        with self._renewed:
+            self.renewals += 1
+            self._renewed.notify_all()
+        return renewed
+
+    def wait_for_renewals(self, count, timeout):
+        with self._renewed:
+            return self._renewed.wait_for(lambda: self.renewals >= count, timeout)
 
     def release(self, holder, populated):
         if self._fail_release:
