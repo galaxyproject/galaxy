@@ -146,5 +146,7 @@ test_tools = integration_util.integration_tool_runner(
         "dataset_path",
         "directory_or_file_user_defined",
         "collection_split_on_column",
+        "command_reads_input_size",
+        "command_reads_configfile",
     ]
 )

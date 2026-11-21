@@ -62,6 +62,16 @@ class ComputeEnvironment(metaclass=ABCMeta):
         """
         return None
 
+    def stage_config_file(self, local_path: str) -> None:
+        """Place a config file Galaxy has written at its compute path.
+
+        Called before the command template is evaluated, so templates may read
+        config files through their compute paths. No-op by default; overridden
+        where config files only reach the compute environment when the job is
+        submitted (Pulsar in ``rewrite_parameters`` mode).
+        """
+        return None
+
     @abstractmethod
     def working_directory(self):
         """Job working directory (potentially remote)"""

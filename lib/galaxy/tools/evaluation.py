@@ -1062,6 +1062,7 @@ class ToolEvaluator:
         remote) path.
         """
         self.extra_filenames.append(local_config_path)
+        self.compute_environment.stage_config_file(local_config_path)
         config_basename = os.path.basename(local_config_path)
         compute_config_path: str = self._join_for_compute(self.compute_environment.config_directory(), config_basename)
         return compute_config_path

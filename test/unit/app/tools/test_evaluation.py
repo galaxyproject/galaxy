@@ -293,6 +293,9 @@ class ComputeEnvironment(SimpleComputeEnvironment):
     def new_file_path(self):
         return self._new_file_path
 
+    def stage_config_file(self, local_path):
+        pass
+
     def unstructured_path_rewrite(self, path):
         for key, val in self._unstructured_path_rewrites.items():
             if path.startswith(key):

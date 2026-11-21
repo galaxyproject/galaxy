@@ -20,6 +20,7 @@ from typing import (
 import pulsar.core
 import yaml
 from packaging.version import Version
+from pulsar.client.action_mapper import path_type
 from pulsar.client.coexecution_manager import build_client_manager
 from pulsar.client.destination import url_to_destination_params
 from pulsar.client.exceptions import PulsarClientTransportError
@@ -483,6 +484,8 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
                 ):
                     # str here to resolve false_path if set on a DatasetPath object.
                     path = str(input_dataset_wrapper)
+                    if path in compute_environment.staged_input_paths:
+                        continue
                     object_store_ref = {
                         "dataset_id": input_dataset_wrapper.dataset_id,
                         "dataset_uuid": str(input_dataset_wrapper.dataset_uuid),
@@ -625,6 +628,8 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
                 self.work_queue.put((self.fail_job, job_state))
                 job_prepare_ret = False
             if job_prepare_ret is False:
+                if compute_environment:
+                    compute_environment.clean_staged_files()
                 return (
                     command_line,
                     client,
@@ -711,6 +716,8 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
         # If we were unable to get a command line, there was problem
         fail_or_resubmit = fail_or_resubmit or not command_line
         if fail_or_resubmit:
+            if compute_environment:
+                compute_environment.clean_staged_files()
             job_state = self._job_state(job_wrapper.get_job(), job_wrapper)
             if fail_message:
                 job_state.fail_message = fail_message
@@ -1435,10 +1442,19 @@ class PulsarComputeEnvironment(ComputeEnvironment):
         self.pulsar_client = pulsar_client
         self.job_wrapper = job_wrapper
         self.local_path_config = job_wrapper.default_compute_environment()
+        # A Pulsar server may assign its own job id during setup. Inputs and
+        # config files are staged before job submission, so the client must
+        # address that job from here on.
+        remote_job_id = remote_job_config.get("job_id", pulsar_client.job_id)
+        if remote_job_id != pulsar_client.job_id:
+            pulsar_client.assign_job_id(remote_job_id)
 
         self.path_rewrites_unstructured = {}
         self.path_rewrites_input_extra = {}
         self.path_rewrites_input_metadata = {}
+        # Inputs staged while the command was built, which job submission must not stage again.
+        self.staged_input_paths: set[str] = set()
+        self.staged_config_file = False
 
         # job_wrapper.prepare is going to expunge the job backing the following
         # computations, so precalculate these paths.
@@ -1466,7 +1482,40 @@ class PulsarComputeEnvironment(ComputeEnvironment):
         else:
             local_input_path = dataset.get_file_name()
         remote_path = self.path_mapper.remote_input_path_rewrite(local_input_path)
+        if remote_path is not None:
+            self._stage_input(local_input_path)
         return remote_path
+
+    def _stage_input(self, local_path: str) -> None:
+        # Tool templates may read inputs through their rewritten paths while the
+        # command is built, so stage inputs that Galaxy stages itself (copy,
+        # hardlink, transfer) now instead of at job submission. Pulsar stages
+        # inputs with remote actions after the command is built.
+        if local_path in self.staged_input_paths or not os.path.exists(local_path):
+            return
+        action = self.path_mapper.action_mapper.action({"path": local_path}, path_type.INPUT)
+        if action.staging_needed and action.staging_action_local:
+            self.pulsar_client.put_file(local_path, path_type.INPUT, action_type=action.action_type)
+            self.staged_input_paths.add(local_path)
+
+    def stage_config_file(self, local_path: str) -> None:
+        # Job submission sends config files as messages; send this one now so
+        # the command template can read it. Submission sends it again with the
+        # same contents.
+        if self.pulsar_client.prefer_local_staging:
+            with open(local_path, "rb") as fh:
+                contents = fh.read()
+            self.pulsar_client.put_file(local_path, path_type.CONFIG, contents=contents, action_type="message")
+            self.staged_config_file = True
+
+    def clean_staged_files(self) -> None:
+        """Remove the Pulsar job directory if files were staged for a job that is not submitted."""
+        if not (self.staged_input_paths or self.staged_config_file) or self.job_wrapper.cleanup_job == "never":
+            return
+        try:
+            self.pulsar_client.clean()
+        except Exception:
+            log.exception("failed to clean up Pulsar job directory of job %d", self.job_wrapper.job_id)
 
     def output_path_rewrite(self, dataset):
         local_output_path_rewrite = self.local_path_config.output_path_rewrite(dataset)
