@@ -648,6 +648,27 @@ class TestUserManager(BaseTestCase):
         assert user2.email != user2_email
         assert job.state == model.Job.states.DELETED
 
+    def test_failed_purge_leaves_user_undeleted(self):
+        self.log("a purge that fails part way should not leave the user deleted or their jobs stopped")
+        self.trans.app.config.allow_user_deletion = True
+        user2 = self.user_manager.create(**user2_data)
+        user2_email = user2.email
+        job = model.Job()
+        job.user = user2
+        job.state = model.Job.states.RUNNING
+        self.trans.sa_session.add(job)
+        self.trans.sa_session.commit()
+
+        with patch("galaxy.managers.users._cleanup_nonprivate_user_roles", side_effect=RuntimeError("purge failed")):
+            with pytest.raises(RuntimeError):
+                self.user_manager.purge(user2)
+        self.trans.sa_session.rollback()
+
+        assert not user2.deleted
+        assert not user2.purged
+        assert user2.email == user2_email
+        assert job.state == model.Job.states.RUNNING
+
     def test_purge_not_allowed_leaves_user_undeleted(self):
         self.log("a purge refused by the configuration should not delete the user either")
         self.trans.app.config.allow_user_deletion = False
