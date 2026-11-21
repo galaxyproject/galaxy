@@ -9,7 +9,11 @@ from typing import (
 
 from galaxy.job_execution.datasets import DeferrableObjectsT
 from galaxy.job_execution.setup import JobIO
-from galaxy.model import Job
+from galaxy.model import (
+    Dataset,
+    Job,
+    MetadataFile,
+)
 
 
 def dataset_path_to_extra_path(path: str) -> str:
@@ -46,8 +50,8 @@ class ComputeEnvironment(metaclass=ABCMeta):
         """Output extra files path rewrite for specified dataset."""
 
     @abstractmethod
-    def input_metadata_rewrite(self, dataset, metadata_value):
-        """Input metadata path rewrite for specified dataset."""
+    def input_metadata_rewrite(self, dataset, metadata_name: str, metadata_file: MetadataFile):
+        """Path rewrite for the input dataset's metadata file of this name."""
 
     @abstractmethod
     def unstructured_path_rewrite(self, path):
@@ -151,7 +155,7 @@ class SharedComputeEnvironment(SimpleComputeEnvironment, ComputeEnvironment):
         output_path_rewrite = self.output_path_rewrite(dataset)
         return dataset_path_to_extra_path(output_path_rewrite)
 
-    def input_metadata_rewrite(self, dataset, metadata_value):
+    def input_metadata_rewrite(self, dataset, metadata_name: str, metadata_file: MetadataFile):
         return None
 
     def unstructured_path_rewrite(self, path):
@@ -181,3 +185,77 @@ class SharedComputeEnvironment(SimpleComputeEnvironment, ComputeEnvironment):
 
     def galaxy_url(self):
         return self.job_io.galaxy_url
+
+
+class RemoteComputeEnvironment(SharedComputeEnvironment):
+    """Resolve job files through the compute paths Galaxy recorded for remote tool evaluation.
+
+    Files are looked up by database ids, which the imported job model keeps, so evaluation
+    needs no object store.
+    """
+
+    def __init__(self, job_io: JobIO, job: Job, paths: "RemoteEvaluationPaths"):
+        super().__init__(job_io, job)
+        self.paths = paths
+
+    def input_path_rewrite(self, dataset):
+        path = self.paths["datasets"].get(str(dataset.dataset.id))
+        if path is None:
+            # Deferred inputs are materialized by the evaluator, into files outside the object store.
+            return super().input_path_rewrite(dataset)
+        return path
+
+    def output_path_rewrite(self, dataset):
+        return self.paths["datasets"][str(dataset.dataset.id)]
+
+    def input_extra_files_rewrite(self, dataset):
+        path = self.paths["extra_files"].get(str(dataset.dataset.id))
+        if path is None:
+            return super().input_extra_files_rewrite(dataset)
+        return path
+
+    def input_metadata_rewrite(self, dataset, metadata_name: str, metadata_file: MetadataFile):
+        return self.paths["metadata_files"].get(metadata_file_key(dataset, metadata_name))
+
+    def unstructured_path_rewrite(self, path):
+        return self.paths["unstructured"].get(path)
+
+
+RemoteEvaluationPaths = dict[str, dict[str, str]]
+
+
+def metadata_file_key(dataset_instance, metadata_name: str) -> str:
+    # Metadata file uuids may be missing or shared between rows, and their ids aren't exported.
+    return f"{dataset_instance.__class__.__name__}:{dataset_instance.id}:{metadata_name}"
+
+
+def remote_evaluation_paths(
+    job_io: JobIO, compute_environment: ComputeEnvironment, unstructured: dict[str, str] | None = None
+) -> RemoteEvaluationPaths:
+    """Record where the job's files are for the compute environment, by dataset id and metadata name."""
+    datasets: dict[str, str] = {}
+    extra_files: dict[str, str] = {}
+    metadata_files: dict[str, str] = {}
+    for dataset in job_io.get_input_datasets():
+        if dataset.state == Dataset.states.DEFERRED:
+            # The evaluator materializes these.
+            continue
+        assert dataset.dataset
+        dataset_id = str(dataset.dataset.id)
+        datasets[dataset_id] = compute_environment.input_path_rewrite(dataset) or str(job_io.get_input_path(dataset))
+        if dataset.dataset.extra_files_path_exists():
+            extra_files[dataset_id] = compute_environment.input_extra_files_rewrite(dataset)
+        for name, value in dataset.metadata.items():
+            if isinstance(value, MetadataFile):
+                metadata_files[metadata_file_key(dataset, name)] = (
+                    compute_environment.input_metadata_rewrite(dataset, name, value) or value.get_file_name()
+                )
+    for output_dataset, path in job_io.get_output_hdas_and_fnames().values():
+        assert output_dataset.dataset
+        datasets[str(output_dataset.dataset.id)] = compute_environment.output_path_rewrite(output_dataset) or str(path)
+    return {
+        "datasets": datasets,
+        "extra_files": extra_files,
+        "metadata_files": metadata_files,
+        "unstructured": unstructured or {},
+    }

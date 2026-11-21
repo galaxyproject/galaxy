@@ -5,6 +5,7 @@ More information on Pulsar can be found at https://pulsar.readthedocs.io/ .
 
 import copy
 import errno
+import json
 import logging
 import os
 import re
@@ -47,6 +48,7 @@ from galaxy.exceptions import InsufficientPermissionsException
 from galaxy.job_execution.compute_environment import (
     ComputeEnvironment,
     dataset_path_to_extra_path,
+    remote_evaluation_paths,
 )
 from galaxy.job_metrics.instrumenters.pulsar import PulsarPlugin
 from galaxy.jobs.command_factory import build_command
@@ -65,6 +67,7 @@ from galaxy.tool_util.deps.container_classes import (
     Container,
     requires_dependency_resolution,
 )
+from galaxy.tool_util.parser.interface import RequiredFiles
 from galaxy.tool_util.parser.output_collection_def import FilePatternDatasetCollectionDescription
 from galaxy.tool_util.parser.output_objects import ToolOutput
 from galaxy.tool_util.runtime_environment import RUNTIME_ENVIRONMENT_WARNING_FILE
@@ -478,9 +481,16 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
                 output_names = compute_environment.output_names()
 
                 client_inputs_list = []
+                deferred_dataset_ids = {
+                    ds.dataset.id
+                    for ds in job_wrapper.job_io.get_input_datasets()
+                    if job_wrapper.remote_command_line and ds.state == model.Dataset.states.DEFERRED and ds.dataset
+                }
                 for input_dataset_wrapper in job_wrapper.job_io.get_input_paths(
                     compute_environment.materialized_objects
                 ):
+                    if input_dataset_wrapper.dataset_id in deferred_dataset_ids:
+                        continue
                     # str here to resolve false_path if set on a DatasetPath object.
                     path = str(input_dataset_wrapper)
                     object_store_ref = {
@@ -529,6 +539,12 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
                 log.debug(f"Registering tool_script for Pulsar transfer [{tool_script}]")
                 job_directory_files.append(tool_script)
                 config_files.append(tool_script)
+            assert job_wrapper.tool is not None
+            for name in job_wrapper.tool.job_directory_files:
+                # Registered as config files too, so paths in them are rewritten like in tool_script.sh.
+                job_directory_file = os.path.join(job_wrapper.working_directory, name)
+                job_directory_files.append(job_directory_file)
+                config_files.append(job_directory_file)
             # Following is job destination environment variables
             env = client.env
             # extend it with tool defined environment variables
@@ -540,6 +556,12 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
                     config_files.append(job_directory_path)
             assert job_wrapper.tool is not None
             tool_directory_required_files = job_wrapper.tool.required_files
+            if job_wrapper.remote_command_line and tool_directory_required_files is None:
+                # Templates have not been evaluated, so Pulsar cannot discover
+                # which supporting files will be referenced by the command.
+                tool_directory_required_files = RequiredFiles.from_dict(
+                    {"includes": [{"path": "", "path_type": "prefix"}]}
+                )
             client_job_description = ClientJobDescription(
                 command_line=command_line,
                 input_files=input_files,
@@ -600,6 +622,12 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
             assert job_wrapper.tool is not None
             tool = job_wrapper.tool
             remote_job_config = client.setup(tool.id, tool.version, tool.requires_galaxy_python_environment)
+            if job_wrapper.remote_command_line:
+                # Remote evaluation needs structured path mapping: the command and
+                # config files do not exist until after Pulsar has staged the job.
+                client.destination_params["rewrite_parameters"] = True
+                if not PulsarJobRunner.__remote_metadata(client):
+                    raise Exception("Remote tool evaluation with Pulsar requires remote_metadata: true")
             needed_features = self.__needed_features(client)
             PulsarJobRunner.check_job_config(remote_job_config, check_features=needed_features)
             rewrite_parameters = PulsarJobRunner.__rewrite_parameters(client)
@@ -674,6 +702,9 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
                 dependency_resolution=dependency_resolution,
                 pulsar_version=pulsar_version,
             )
+            if job_wrapper.remote_command_line:
+                assert compute_environment is not None
+                remote_command_params["version_path"] = compute_environment.version_path()
             rewrite_paths = not PulsarJobRunner.__rewrite_parameters(client)
             if pulsar_version < Version("0.14.999") and rewrite_paths:
                 job_wrapper.disable_commands_in_new_shell()
@@ -694,6 +725,9 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
                 remote_job_directory=remote_job_directory,
                 metadata_container=metadata_container,
             )
+            if job_wrapper.remote_command_line:
+                assert compute_environment is not None
+                self._setup_remote_tool_evaluation(job_wrapper, compute_environment, remote_job_config)
         except UnsupportedPulsarException:
             log.exception("failure running job %d, unsupported Pulsar target", job_wrapper.job_id)
             fail_or_resubmit = True
@@ -717,6 +751,25 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
             self.work_queue.put((self.fail_job, job_state))
 
         return command_line, client, remote_job_config, compute_environment, remote_container, dependencies_description
+
+    @staticmethod
+    def _setup_remote_tool_evaluation(job_wrapper, compute_environment, remote_job_config):
+        """Serialize compute paths alongside the model store transferred by Pulsar."""
+        job_io = job_wrapper.job_io
+        paths = remote_evaluation_paths(job_io, compute_environment, compute_environment.path_rewrites_unstructured)
+
+        io_dict = job_io.to_dict()
+        io_dict["working_directory"] = remote_job_config["job_directory"]
+        io_dict["outputs_directory"] = "outputs"
+        io_dict["outputs_to_working_directory"] = False
+        for name in ("tool_directory", "version_path", "home_directory", "tmp_directory", "new_file_path"):
+            io_dict[name] = getattr(compute_environment, name)()
+        io_dict["tool_dir"] = compute_environment.tool_directory()
+        export_directory = os.path.join(job_wrapper.working_directory, "metadata", "outputs_new")
+        with open(os.path.join(export_directory, "job_io.json"), "w") as f:
+            json.dump(io_dict, f)
+        with open(os.path.join(export_directory, "compute_environment.json"), "w") as f:
+            json.dump(paths, f)
 
     @staticmethod
     def _rewrite_container_for_compute_environment(container, compute_environment):
@@ -1497,9 +1550,10 @@ class PulsarComputeEnvironment(ComputeEnvironment):
         remote_extra_files_path_rewrite = dataset_path_to_extra_path(output_path_rewrite)
         return remote_extra_files_path_rewrite
 
-    def input_metadata_rewrite(self, dataset, metadata_val):
+    def input_metadata_rewrite(self, dataset, metadata_name, metadata_file):
         # May technically be incorrect to not pass through local_path_config.input_metadata_rewrite
         # first but that adds untested logic that wouln't ever be used.
+        metadata_val = metadata_file.get_file_name()
         remote_input_path = self.path_mapper.remote_input_path_rewrite(
             metadata_val, client_input_path_type=CLIENT_INPUT_PATH_TYPES.INPUT_METADATA_PATH
         )

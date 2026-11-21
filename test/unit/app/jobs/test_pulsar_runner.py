@@ -407,6 +407,7 @@ def test_rejected_job_fails_without_resubmission():
     job_wrapper = SimpleNamespace(
         job_id=1,
         tool=SimpleNamespace(id="cat", version="1.0", requires_galaxy_python_environment=False),
+        remote_command_line=False,
         prepare=reject,
         get_job=lambda: None,
         fail=lambda message, **kwargs: failures.append(message),

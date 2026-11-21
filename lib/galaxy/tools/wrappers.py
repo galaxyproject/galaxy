@@ -331,11 +331,10 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
                     rval = self.metadata.spec[name].no_value
                 metadata_param = self.metadata.spec[name].param
 
-                rval = metadata_param.to_safe_string(rval)
-                if isinstance(metadata_param, FileParameter) and self.compute_environment:
-                    rewrite = self.compute_environment.input_metadata_rewrite(self.dataset, rval)
-                    if rewrite is not None:
-                        rval = rewrite
+                rewrite = None
+                if isinstance(metadata_param, FileParameter) and self.compute_environment and rval:
+                    rewrite = self.compute_environment.input_metadata_rewrite(self.dataset, name, rval)
+                rval = metadata_param.to_safe_string(rval) if rewrite is None else rewrite
 
                 # Store this value, so we don't need to recalculate if needed
                 # again
@@ -475,7 +474,20 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
 
     @property
     def all_metadata_files(self) -> list[tuple[str, str]]:
-        return self.unsanitized.get_metadata_file_paths_and_extensions() if self else []
+        """Extension and path of each metadata file, as seen by the compute environment."""
+        if not self:
+            return []
+        metadata = self.unsanitized.metadata
+        metadata_files = []
+        for metadata_name in self.unsanitized.metadata_file_types:
+            metadata_file = metadata[metadata_name]
+            if not metadata_file:
+                continue
+            path = None
+            if self.compute_environment and self.__io_type == "input":
+                path = self.compute_environment.input_metadata_rewrite(self.unsanitized, metadata_name, metadata_file)
+            metadata_files.append((metadata.spec[metadata_name].file_ext, path or metadata_file.get_file_name()))
+        return metadata_files
 
     def serialize(self, invalid_chars: Sequence[str] = ("/",)) -> dict[str, Any]:
         return data_input_to_staging_path_and_source_path(self, invalid_chars=invalid_chars) if self else {}
@@ -787,12 +799,19 @@ class DatasetCollectionWrapper(ToolParameterValueWrapper, HasDatasets):
         self,
     ) -> list[list[Any]]:
         if self._element_identifiers_extensions_paths_and_metadata_files is None:
-            if self.collection:
-                result = self.collection.element_identifiers_extensions_paths_and_metadata_files
-                self._element_identifiers_extensions_paths_and_metadata_files = result
-                return result
-            else:
+            if not self.__input_supplied:
                 return []
+            # Built from the element wrappers, so paths are those of the compute environment.
+            result: list[list[Any]] = []
+            for element_identifier, element in self.__element_instances.items():
+                if isinstance(element, DatasetCollectionWrapper):
+                    for identifiers, *rest in element.element_identifiers_extensions_paths_and_metadata_files:
+                        result.append([(element_identifier, *identifiers), *rest])
+                else:
+                    result.append(
+                        [(element_identifier,), element.unsanitized.extension, str(element), element.all_metadata_files]
+                    )
+            self._element_identifiers_extensions_paths_and_metadata_files = result
         return self._element_identifiers_extensions_paths_and_metadata_files
 
     def get_all_staging_paths(

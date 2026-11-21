@@ -142,6 +142,47 @@ class TestCommandFactory(TestCase):
         assert 'if [ "$GALAXY_LIB" != "None" ]' in source_command
         assert '"$GALAXY_LIB"/galaxy/tools/remote_tool_eval.py; else galaxy-remote-tool-eval; fi' in source_command
 
+    def test_pulsar_remote_tool_runs_once_and_preserves_exit_code(self):
+        self._execute_pulsar_remote_command(evaluation_fails=False)
+
+    def test_pulsar_remote_tool_does_not_run_after_evaluation_failure(self):
+        self._execute_pulsar_remote_command(evaluation_fails=True)
+
+    def _execute_pulsar_remote_command(self, evaluation_fails):
+        self.job_wrapper.remote_command_line = True
+        self.job_wrapper.commands_in_new_shell = True
+        self.job_wrapper.command_line = ""
+        working_directory = os.path.join(self.job_dir, "working")
+        os.makedirs(working_directory)
+        os.makedirs(os.path.join(self.job_dir, "metadata"))
+        lib_dir = os.path.join(self.job_dir, "galaxy lib")
+        script_dir = os.path.join(lib_dir, "galaxy", "tools")
+        os.makedirs(script_dir)
+        with open(os.path.join(script_dir, "remote_tool_eval.py"), "w") as f:
+            if evaluation_fails:
+                f.write("raise SystemExit(17)")
+            else:
+                f.write("with open('../tool_script.sh', 'a') as f: f.write('echo ran >> executions; exit 23')")
+        self.include_work_dir_outputs = False
+        command = self.__command(
+            create_tool_working_directory=False,
+            remote_command_params={"pulsar_version": "0.15.0", "script_directory": self.job_dir},
+        )
+        result = subprocess.run(
+            command,
+            shell=True,
+            cwd=working_directory,
+            env={**os.environ, "GALAXY_LIB": lib_dir, "GALAXY_PYTHON": sys.executable},
+            capture_output=True,
+        )
+        assert result.returncode == (17 if evaluation_fails else 23), result.stderr
+        counter = os.path.join(working_directory, "executions")
+        if evaluation_fails:
+            assert not os.path.exists(counter)
+        else:
+            with open(counter) as f:
+                assert f.read() == "ran\n"
+
     def test_workdir_outputs(self):
         self.include_work_dir_outputs = True
         self.workdir_outputs = [("foo", "bar")]
