@@ -2369,14 +2369,18 @@ class MinimalJobWrapper(HasResourceParameters):
 
         if output_collection_security_error:
             # Importing job outputs and output discovery replace the job's messages, so add this one afterwards.
-            job.job_messages = [
-                *(job.job_messages or []),
-                {
-                    "type": "output_collection_security",
-                    "desc": str(output_collection_security_error),
-                    "error_level": StdioErrorLevel.FATAL,
-                },
-            ]
+            # Extended metadata may already have recorded the same rejection.
+            message = {
+                "type": "output_collection_security",
+                "desc": str(output_collection_security_error),
+                "error_level": StdioErrorLevel.FATAL,
+            }
+            job_messages = job.job_messages or []
+            if not any(
+                existing.get("type") == message["type"] and existing.get("desc") == message["desc"]
+                for existing in job_messages
+            ):
+                job.job_messages = [*job_messages, message]
 
         if job.states.ERROR == final_job_state:
             for dataset_assoc in output_dataset_associations:

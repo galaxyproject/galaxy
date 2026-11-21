@@ -41,9 +41,8 @@ class BaseOutputSymlinkContainmentIntegrationTestCase(integration_util.Integrati
             if not assert_ok:
                 job_details = self.dataset_populator.get_job_details(job_id, full=True).json()
                 assert job_details["state"] == "error"
-                assert "output_collection_security" in {
-                    message["type"] for message in (job_details.get("job_messages") or [])
-                }
+                message_types = [message["type"] for message in (job_details.get("job_messages") or [])]
+                assert message_types.count("output_collection_security") == 1, message_types
             return {
                 output["output_name"]: self.dataset_populator.get_history_dataset_content(
                     history_id, dataset_id=output["id"], assert_ok=False
