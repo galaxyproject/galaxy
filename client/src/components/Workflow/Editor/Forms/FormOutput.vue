@@ -153,7 +153,11 @@ export default {
         renameHelp() {
             /* TODO: FormElement should provide a slot for custom help templating instead. */
             const helpLink = `<a href="${this.renameHelpUrl}">here</a>`;
-            const helpSection = `This action will rename the output dataset. Click ${helpLink} for more information. Valid input variables are:`;
+            const helpSection =
+                `This action will rename the output dataset. Click ${helpLink} for more information. ` +
+                "Use <code>#{input}</code> for the name of an input dataset, <code>${parameter}</code> for a workflow parameter, " +
+                "and <code>$(inputs.name)</code> for the value of a parameter connected to this step: " +
+                "the step gets an input named <i>name</i> to connect it to. Valid input variables are:";
             let helpLabels = "";
             for (const input of this.inputs) {
                 const name = input.name.replace(/\|/g, ".");

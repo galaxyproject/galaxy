@@ -165,6 +165,9 @@ GALAXY_TEST_SELENIUM_REMOTE_HOST = os.environ.get(
     "GALAXY_TEST_SELENIUM_REMOTE_HOST", driver_factory.DEFAULT_SELENIUM_REMOTE_HOST
 )
 GALAXY_TEST_SELENIUM_HEADLESS = os.environ.get("GALAXY_TEST_SELENIUM_HEADLESS", DEFAULT_SELENIUM_HEADLESS)
+# Playwright only: record a video of each test into this directory, slowed down by this many milliseconds per action.
+GALAXY_TEST_PLAYWRIGHT_VIDEO_DIRECTORY = os.environ.get("GALAXY_TEST_PLAYWRIGHT_VIDEO_DIRECTORY", None)
+GALAXY_TEST_PLAYWRIGHT_SLOW_MO = os.environ.get("GALAXY_TEST_PLAYWRIGHT_SLOW_MO", None)
 GALAXY_TEST_EXTERNAL_FROM_SELENIUM = os.environ.get("GALAXY_TEST_EXTERNAL_FROM_SELENIUM", None)
 # Auto-retry selenium tests this many times.
 GALAXY_TEST_SELENIUM_RETRIES = int(os.environ.get("GALAXY_TEST_SELENIUM_RETRIES", "0"))
@@ -1534,6 +1537,8 @@ def get_configured_driver():
         remote_port=GALAXY_TEST_SELENIUM_REMOTE_PORT,
         headless=headless_selenium(),
         backend_type=cast(BackendType, backend_type),
+        video_dir=GALAXY_TEST_PLAYWRIGHT_VIDEO_DIRECTORY,
+        slow_mo=float(GALAXY_TEST_PLAYWRIGHT_SLOW_MO) if GALAXY_TEST_PLAYWRIGHT_SLOW_MO else None,
     )
 
 

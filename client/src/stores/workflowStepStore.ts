@@ -85,6 +85,8 @@ export interface DataCollectionStepInput extends BaseStepInput {
 export interface ParameterStepInput extends Omit<BaseStepInput, "input_type"> {
     input_type: "parameter";
     type: typeof ParameterTypes | "select" | "data_column";
+    /** A port for a `$(inputs.name)` rename reference, which takes any single parameter value. */
+    rename_reference?: boolean;
 }
 
 export type InputTerminalSource = DataStepInput | DataCollectionStepInput | ParameterStepInput;
@@ -479,6 +481,34 @@ function stepToConnections(step: Step): Connection[] {
 }
 
 function findStepExtraInputs(step: Step) {
+    const extraInputs = findGatePorts(step);
+    renameStepInputReferences(step).forEach((name) => {
+        if (step.inputs.some((input) => input.name === name) || extraInputs.some((input) => input.name === name)) {
+            return;
+        }
+        extraInputs.push(renameReferencePort(name));
+    });
+    return extraInputs;
+}
+
+/** `$(inputs.name)` in a rename action, as resolved by `STEP_INPUT_REFERENCE_PATTERN` in `job_execution/actions/post.py`. */
+const RENAME_STEP_INPUT_REFERENCE = /\$\(inputs\.([A-Za-z0-9_]+)\)/g;
+
+/** Names of the step inputs the step's rename actions reference with `$(inputs.name)`. */
+export function renameStepInputReferences(step: Pick<Step, "post_job_actions">): string[] {
+    const names = new Set<string>();
+    Object.values(step.post_job_actions ?? {}).forEach((action) => {
+        if (action.action_type !== "RenameDatasetAction") {
+            return;
+        }
+        for (const match of (action.action_arguments?.newname ?? "").matchAll(RENAME_STEP_INPUT_REFERENCE)) {
+            names.add(match[1]!);
+        }
+    });
+    return [...names];
+}
+
+function findGatePorts(step: Step) {
     const extraInputs: InputTerminalSource[] = [];
     if (step.when === undefined) {
         return extraInputs;
@@ -517,6 +547,20 @@ function unconnectedGateNames(step: Step, connectionNames: string[]): string[] {
         }
     });
     return [...names];
+}
+
+function renameReferencePort(name: string): InputTerminalSource {
+    // An unset optional value renames to an empty string, so optional outputs may connect.
+    return {
+        name,
+        optional: true,
+        input_type: "parameter",
+        type: "text",
+        rename_reference: true,
+        multiple: false,
+        label: name,
+        extensions: [],
+    };
 }
 
 function gatePort(name: string): InputTerminalSource {

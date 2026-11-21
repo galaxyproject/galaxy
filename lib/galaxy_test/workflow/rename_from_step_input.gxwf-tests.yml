@@ -1,0 +1,16 @@
+- doc: |
+    The output is named after the first line of the sample sheet, computed during the run.
+  job:
+    sample_sheet:
+      class: File
+      contents: "sampleA\nsampleB\n"
+      filetype: txt
+    reads:
+      class: File
+      contents: "ACGT\n"
+      filetype: txt
+  outputs:
+    final_output:
+      class: File
+      metadata:
+        name: "sampleA_processed"
