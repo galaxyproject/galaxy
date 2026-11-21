@@ -5,8 +5,8 @@ from .framework import (
 
 
 class TestToolDescribingTours(SeleniumTestCase):
-    def setUp(self):
-        super().setUp()
+    def setup_with_driver(self):
+        super().setup_with_driver()
         self.home()
 
     @selenium_test
