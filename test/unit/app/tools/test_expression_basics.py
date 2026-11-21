@@ -316,10 +316,15 @@ def test_timeout_kills_worker_under_waiting_wrapper(tmp_path, short_timeout_grac
             sandbox_command=[sys.executable, str(wrapper), str(pid_file)],
         )
     pid = int(pid_file.read_text())
+    dead = (psutil.STATUS_ZOMBIE, psutil.STATUS_DEAD)
     try:
         child = psutil.Process(pid)
-        # The orphaned worker is reaped asynchronously by init or a subreaper.
-        assert child.status() in (psutil.STATUS_ZOMBIE, psutil.STATUS_DEAD)
+        # SIGKILL takes effect asynchronously and the orphaned worker is reaped by init
+        # or a subreaper, so it can still report running briefly after the wrapper exits.
+        deadline = time.monotonic() + 10
+        while (status := child.status()) not in dead and time.monotonic() < deadline:
+            time.sleep(0.05)
+        assert status in dead
     except psutil.NoSuchProcess:
         pass
 
