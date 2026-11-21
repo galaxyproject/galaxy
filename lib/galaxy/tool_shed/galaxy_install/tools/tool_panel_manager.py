@@ -1,5 +1,8 @@
 import errno
+import fcntl
 import logging
+from collections.abc import Iterator
+from contextlib import contextmanager
 from typing import (
     Any,
 )
@@ -15,11 +18,24 @@ from galaxy.util import (
     SubElement,
     xml_to_string,
 )
+from galaxy.util.path import StrPath
 from galaxy.util.renamed_temporary_file import RenamedTemporaryFile
 from galaxy.util.tool_shed.common_util import remove_protocol_and_user_from_clone_url
 from galaxy.util.tool_shed.xml_util import parse_xml
 
 log = logging.getLogger(__name__)
+
+
+@contextmanager
+def shed_tool_conf_lock(shed_tool_conf: StrPath) -> Iterator[None]:
+    """Serialize read-modify-write cycles of a shed tool conf across threads and processes.
+
+    Writers replace the conf by renaming a temporary file over it, so the lock
+    is taken on a sibling ``.lock`` file whose inode outlives each rewrite.
+    """
+    with open(f"{shed_tool_conf}.lock", "a") as lock_file:
+        fcntl.flock(lock_file, fcntl.LOCK_EX)
+        yield
 
 
 class ToolPanelManager:
@@ -42,45 +58,47 @@ class ToolPanelManager:
         shed_tool_conf = shed_tool_conf_dict["config_filename"]
         tool_path = shed_tool_conf_dict["tool_path"]
         config_elems = []
-        # Ideally shed_tool_conf.xml would be created before the repo is cloned and added to the DB, but this is called
-        # from too many places to make it feasible at this time
-        try:
-            tree, error_message = parse_xml(shed_tool_conf, check_exists=False)
-        except OSError as exc:
-            if exc.errno == errno.ENOENT and shed_tool_conf_dict.get("create", None) is not None:
-                log.info("Creating shed tool config with default contents: %s", shed_tool_conf)
-                with open(shed_tool_conf, "w") as fh:
-                    fh.write(shed_tool_conf_dict["create"])
-                tree, error_message = parse_xml(shed_tool_conf)
-            else:
-                log.error("Unable to load shed tool config: %s", shed_tool_conf)
-                raise
-        if tree:
-            root = tree.getroot()
-            for elem in root:
-                config_elems.append(elem)
-            # Add the new elements to the in-memory list of config_elems.
-            for elem_entry in elem_list:
-                if elem_entry.tag == "section":
-                    # Loop through section entries in the in-memory tool panel.
-                    for existing_elem in config_elems:
-                        # Compare the section ID for each one to the section ID for the tool being installed.
-                        if existing_elem.tag == "section" and existing_elem.attrib.get(
-                            "id", None
-                        ) == elem_entry.attrib.get("id", None):
-                            # We've found a section, add the incoming tools to it.
-                            for child in elem_entry:
-                                existing_elem.append(child)
-                            # Break out of the config_elems loop back to the elem_list loop.
-                            break
-                    # If we reach this point, no section was found. Create one with contents.
+        with shed_tool_conf_lock(shed_tool_conf):
+            # Ideally shed_tool_conf.xml would be created before the repo is cloned and added to the DB, but this is called
+            # from too many places to make it feasible at this time
+            try:
+                tree, error_message = parse_xml(shed_tool_conf, check_exists=False)
+            except OSError as exc:
+                if exc.errno == errno.ENOENT and shed_tool_conf_dict.get("create", None) is not None:
+                    log.info("Creating shed tool config with default contents: %s", shed_tool_conf)
+                    with open(shed_tool_conf, "w") as fh:
+                        fh.write(shed_tool_conf_dict["create"])
+                    tree, error_message = parse_xml(shed_tool_conf)
+                else:
+                    log.error("Unable to load shed tool config: %s", shed_tool_conf)
+                    raise
+            if tree:
+                root = tree.getroot()
+                for elem in root:
+                    config_elems.append(elem)
+                # Add the new elements to the in-memory list of config_elems.
+                for elem_entry in elem_list:
+                    if elem_entry.tag == "section":
+                        # Loop through section entries in the in-memory tool panel.
+                        for existing_elem in config_elems:
+                            # Compare the section ID for each one to the section ID for the tool being installed.
+                            if existing_elem.tag == "section" and existing_elem.attrib.get(
+                                "id", None
+                            ) == elem_entry.attrib.get("id", None):
+                                # We've found a section, add the incoming tools to it.
+                                for child in elem_entry:
+                                    existing_elem.append(child)
+                                # Break out of the config_elems loop back to the elem_list loop.
+                                break
+                        # If we reach this point, no section was found. Create one with contents.
+                        else:
+                            config_elems.append(elem_entry)
+                    # This is not a section, but a tool or label. No need to search for matching sections, just add it.
                     else:
                         config_elems.append(elem_entry)
-                # This is not a section, but a tool or label. No need to search for matching sections, just add it.
-                else:
-                    config_elems.append(elem_entry)
-            # Persist the altered shed_tool_config file.
-            self.config_elems_to_xml_file(config_elems, shed_tool_conf, tool_path)
+                # Persist the altered shed_tool_config file.
+                self.config_elems_to_xml_file(config_elems, shed_tool_conf, tool_path)
+        if tree:
             self.app.wait_for_toolbox_reload(old_toolbox)
         else:
             log.error(error_message)
@@ -469,31 +487,32 @@ class ToolPanelManager:
         shed_tool_conf = shed_tool_conf_dict["config_filename"]
         tool_path = shed_tool_conf_dict["tool_path"]
         config_elems = []
-        tree, error_message = parse_xml(shed_tool_conf)
-        if tree:
-            root = tree.getroot()
-            for elem in root:
-                config_elems.append(elem)
-            config_elems_to_remove = []
-            for config_elem in config_elems:
-                if config_elem.tag == "section":
-                    tool_elems_to_remove = []
-                    for tool_elem in config_elem:
-                        if (tool_elem.get("guid"), tool_elem.get("file")) in guid_paths_to_remove:
-                            tool_elems_to_remove.append(tool_elem)
-                    for tool_elem in tool_elems_to_remove:
-                        # Remove all of the appropriate tool sub-elements from the section element.
-                        config_elem.remove(tool_elem)
-                    if len(config_elem) < 1:
-                        # Keep a list of all empty section elements so they can be removed.
-                        config_elems_to_remove.append(config_elem)
-                elif config_elem.tag == "tool":
-                    if (config_elem.get("guid"), config_elem.get("file")) in guid_paths_to_remove:
-                        config_elems_to_remove.append(config_elem)
-            for config_elem in config_elems_to_remove:
-                config_elems.remove(config_elem)
-            # Persist the altered in-memory version of the tool config.
-            self.config_elems_to_xml_file(config_elems, shed_tool_conf, tool_path)
+        with shed_tool_conf_lock(shed_tool_conf):
+            tree, error_message = parse_xml(shed_tool_conf)
+            if tree:
+                root = tree.getroot()
+                for elem in root:
+                    config_elems.append(elem)
+                config_elems_to_remove = []
+                for config_elem in config_elems:
+                    if config_elem.tag == "section":
+                        tool_elems_to_remove = []
+                        for tool_elem in config_elem:
+                            if (tool_elem.get("guid"), tool_elem.get("file")) in guid_paths_to_remove:
+                                tool_elems_to_remove.append(tool_elem)
+                        for tool_elem in tool_elems_to_remove:
+                            # Remove all of the appropriate tool sub-elements from the section element.
+                            config_elem.remove(tool_elem)
+                        if len(config_elem) < 1:
+                            # Keep a list of all empty section elements so they can be removed.
+                            config_elems_to_remove.append(config_elem)
+                    elif config_elem.tag == "tool":
+                        if (config_elem.get("guid"), config_elem.get("file")) in guid_paths_to_remove:
+                            config_elems_to_remove.append(config_elem)
+                for config_elem in config_elems_to_remove:
+                    config_elems.remove(config_elem)
+                # Persist the altered in-memory version of the tool config.
+                self.config_elems_to_xml_file(config_elems, shed_tool_conf, tool_path)
 
     def remove_repository_contents(self, repository, shed_tool_conf, uninstall):
         """

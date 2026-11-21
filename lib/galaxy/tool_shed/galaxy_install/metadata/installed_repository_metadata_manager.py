@@ -234,18 +234,19 @@ class InstalledRepositoryMetadataManager(GalaxyMetadataGenerator):
                 None,
             )
         config_elems = []
-        tree, error_message = xml_util.parse_xml(shed_tool_conf)
-        if tree:
-            root = tree.getroot()
-            for elem in root:
-                if elem.tag == "section":
-                    for i, tool_elem in enumerate(elem):
-                        guid = tool_elem.attrib.get("guid")
+        with tool_panel_manager.shed_tool_conf_lock(shed_tool_conf):
+            tree, error_message = xml_util.parse_xml(shed_tool_conf)
+            if tree:
+                root = tree.getroot()
+                for elem in root:
+                    if elem.tag == "section":
+                        for i, tool_elem in enumerate(elem):
+                            guid = tool_elem.attrib.get("guid")
+                            if guid in guid_to_tool_elem_dict:
+                                elem[i] = guid_to_tool_elem_dict[guid]
+                    elif elem.tag == "tool":
+                        guid = elem.attrib.get("guid")
                         if guid in guid_to_tool_elem_dict:
-                            elem[i] = guid_to_tool_elem_dict[guid]
-                elif elem.tag == "tool":
-                    guid = elem.attrib.get("guid")
-                    if guid in guid_to_tool_elem_dict:
-                        elem = guid_to_tool_elem_dict[guid]
-                config_elems.append(elem)
-            self.tpm.config_elems_to_xml_file(config_elems, shed_tool_conf, tool_path)
+                            elem = guid_to_tool_elem_dict[guid]
+                    config_elems.append(elem)
+                self.tpm.config_elems_to_xml_file(config_elems, shed_tool_conf, tool_path)
