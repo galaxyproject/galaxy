@@ -101,6 +101,7 @@ class TestEmbeddedPulsarPersistenceDirectory(integration_util.IntegrationTestCas
         finished = self._touch(source, "_default_-postprocessing-jobs", self._decode(finished_job_id))
         unknown = self._touch(source, "_default_-active-jobs", "999999999")
         uuid_id = self._touch(source, "_default_-active-jobs", uuid.uuid4().hex)
+        no_handler = self._touch(source, "_default_-active-jobs", self._create_job(model.Job.states.QUEUED, None))
         uuid_job_external_id = self._create_job(model.Job.states.RUNNING, server_name, uuid.uuid4().hex)
         uuid_job = self._touch(source, "_default_-active-jobs", uuid_job_external_id)
         moved_to = os.path.join(source, server_name, "_default_-active-jobs", self._decode(running_job_id))
@@ -112,6 +113,7 @@ class TestEmbeddedPulsarPersistenceDirectory(integration_util.IntegrationTestCas
                 PersistenceEntryMigration(finished, None, "job is ok"),
                 PersistenceEntryMigration(unknown, None, "no Galaxy job with this id"),
                 PersistenceEntryMigration(uuid_id, None, "no Galaxy job with this id"),
+                PersistenceEntryMigration(no_handler, None, "job has no handler"),
             ],
             key=lambda migration: migration.entry,
         )
@@ -124,7 +126,7 @@ class TestEmbeddedPulsarPersistenceDirectory(integration_util.IntegrationTestCas
         assert os.path.exists(moved_to)
         assert os.path.exists(uuid_job_moved_to)
         assert not os.path.exists(running)
-        assert active_job_index_entries(source) == sorted([finished, unknown, uuid_id])
+        assert active_job_index_entries(source) == sorted([finished, unknown, uuid_id, no_handler])
 
         self.dataset_populator.wait_for_job(running_job_id, assert_ok=True)
 
