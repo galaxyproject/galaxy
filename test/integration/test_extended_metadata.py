@@ -506,9 +506,11 @@ class TestExtendedMetadataSecurityIntegration(integration_util.IntegrationTestCa
             victim_elements = self.dataset_populator.get_history_collection_details(
                 other_history_id, content_id=victim["id"]
             )["elements"]
-        victim_collection_id = self._app.model.session.get(
+        victim_hdca = self._app.model.session.get(
             HistoryDatasetCollectionAssociation, self._app.security.decode_id(victim["id"])
-        ).collection_id
+        )
+        assert victim_hdca
+        victim_collection_id = victim_hdca.collection_id
 
         def tamper(archive_dir):
             def rewrite(collections_attrs):
