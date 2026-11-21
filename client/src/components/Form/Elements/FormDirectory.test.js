@@ -18,6 +18,7 @@ const { server, http } = useServerMock();
 setupMockConfig({});
 
 async function init(wrapper, data) {
+    await wrapper.find("#select-btn").trigger("click");
     // the file dialog modal should exist
     const filesDialogComponent = wrapper.findComponent(FilesDialog);
     expect(filesDialogComponent.exists()).toBe(true);
@@ -71,6 +72,12 @@ describe("DirectoryPathEditableBreadcrumb", () => {
         return input;
     };
 
+    async function mountFormDirectory(modelValue) {
+        wrapper?.unmount();
+        wrapper = mount(FormDirectory, { props: { modelValue }, global: localVue, pinia: createPinia() });
+        await flushPromises();
+    }
+
     beforeEach(async () => {
         spyOnUrlSet = vi.spyOn(FormDirectory.methods, "setUrl");
         spyOnAddPath = vi.spyOn(FormDirectory.methods, "addPath");
@@ -82,16 +89,7 @@ describe("DirectoryPathEditableBreadcrumb", () => {
             }),
         );
 
-        const pinia = createPinia();
-
-        wrapper = mount(FormDirectory, {
-            props: {
-                modelValue: null,
-            },
-            global: localVue,
-            pinia,
-        });
-        await flushPromises();
+        await mountFormDirectory(null);
     });
     afterEach(async () => {
         if (wrapper) {
@@ -176,6 +174,36 @@ describe("DirectoryPathEditableBreadcrumb", () => {
         // the init function itself validates that the emits and path display
         // retain special characters in the url
         await init(wrapper, testingDataWithSpecialChars);
+    });
+
+    it("shows the directory it is mounted with, without changing the value", async () => {
+        const value = "gxfiles://directory/sub directory/with%percent";
+        await mountFormDirectory(value);
+
+        const pathChunks = wrapper.findAll("li.breadcrumb-item button.regular-path-chunk");
+        expect(pathChunks.map((chunk) => chunk.text())).toEqual(["directory", "sub directory", "with%percent"]);
+        expect(wrapper.find(".pathname").text()).toBe("gxfiles:");
+        expect(wrapper.emitted("update:modelValue")).toBeUndefined();
+    });
+
+    it("builds paths without an empty folder at a file source root", async () => {
+        await mountFormDirectory("gxftp://");
+        expect(wrapper.findAll("button.regular-path-chunk").length).toBe(0);
+
+        await saveNewChunk(validPath);
+        await flushPromises();
+        await validateLatestEmittedPath(wrapper, `gxftp://${validPath}`);
+    });
+
+    it("clears a value it cannot parse when mounting", async () => {
+        await mountFormDirectory("not a directory uri");
+
+        expect(wrapper.emitted("update:modelValue")).toEqual([[undefined]]);
+        expect(wrapper.find("#select-btn").exists()).toBe(true);
+    });
+
+    it("does not load the files dialog before Select is clicked", () => {
+        expect(wrapper.findComponent(FilesDialog).exists()).toBe(false);
     });
 
     it("should save on blur", async () => {
