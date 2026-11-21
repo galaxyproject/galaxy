@@ -438,7 +438,8 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
                 log.warning(
                     "Pulsar jobs are indexed directly in %s, where no embedded Pulsar app recovers them. Stop all "
                     "job handlers and run scripts/migrate_embedded_pulsar_persistence.py to move them to the "
-                    "per-handler directories.",
+                    "per-handler directories. Entries the script leaves in place belong to no active job and can be "
+                    "deleted.",
                     base_directory,
                 )
             conf["persistence_directory"] = os.path.join(base_directory, SERVER_NAME_PLACEHOLDER)
