@@ -155,16 +155,19 @@ class TabularData(Text):
             return False
 
     def get_chunk(
-        self, trans: "ProvidesAppContext", dataset: HasFileName, offset: int = 0, ck_size: int | None = None
+        self, trans: "ProvidesAppContext", dataset: DatasetProtocol, offset: int = 0, ck_size: int | None = None
     ) -> str:
         ck_data, last_read = self._read_chunk(trans, dataset, offset, ck_size)
         return dumps(
             {
                 "ck_data": util.unicodify(ck_data),
                 "offset": last_read,
-                "data_line_offset": self.data_line_offset,
+                "data_line_offset": self._get_data_line_offset(dataset, offset),
             }
         )
+
+    def _get_data_line_offset(self, dataset: DatasetProtocol, offset: int = 0) -> int:
+        return self.data_line_offset
 
     def _read_chunk(self, trans: "ProvidesAppContext", dataset: HasFileName, offset: int, ck_size: int | None = None):
         with compression_utils.get_fileobj(dataset.get_file_name()) as f:
@@ -310,8 +313,9 @@ class TabularData(Text):
             if columns is None:
                 columns = dataset.metadata.spec.columns.no_value
             columns = min(columns, self.max_peek_columns)
+            data_line_offset = self._get_data_line_offset(dataset)
             for i, line in enumerate(peek.splitlines()):
-                if i >= self.data_line_offset:
+                if i >= data_line_offset:
                     if line.startswith(tuple(skipchars)):
                         out.append(f'<tr><td colspan="100%">{escape(line)}</td></tr>')
                     elif line:
@@ -1488,6 +1492,12 @@ class BaseCSV(TabularData):
         dataset.metadata.columns = max(len(header_row), len(data_row))
         dataset.metadata.column_names = header_row
         dataset.metadata.delimiter = self.dialect.delimiter
+
+    def _get_data_line_offset(self, dataset: DatasetProtocol, offset: int = 0) -> int:
+        # The header row is rendered from column_names, so skip it in the data rows of the first chunk.
+        if offset:
+            return 0
+        return int(bool(dataset.metadata.column_names))
 
 
 @dataproviders.decorators.has_dataproviders
