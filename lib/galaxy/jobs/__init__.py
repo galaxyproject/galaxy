@@ -11,7 +11,6 @@ import json
 import logging
 import os
 import pwd
-import re
 import shlex
 import shutil
 import sys
@@ -97,6 +96,7 @@ from galaxy.model import (
 from galaxy.model.store import copy_dataset_instance_metadata_attributes
 from galaxy.model.store.discover import (
     ensure_job_path_in_job_directory,
+    escape_preserving_wildcards,
     MaxDiscoveredFilesExceededError,
     OutputCollectionSecurityError,
 )
@@ -2941,9 +2941,7 @@ class MinimalJobWrapper(HasResourceParameters):
             if not output or not output.from_work_dir or not dataset or dataset.purged:
                 continue
             source = os.path.join(self.tool_working_directory, output.from_work_dir)
-            # The job script expands ``*`` and ``?`` in from_work_dir, everything else is literal.
-            pattern = "".join(part if part in ("*", "?") else glob.escape(part) for part in re.split(r"([*?])", source))
-            for path in glob.glob(pattern):
+            for path in glob.glob(escape_preserving_wildcards(source, glob.escape)):
                 ensure_job_path_in_job_directory(path, self.working_directory)
 
     def _move_working_directory_output(self, dataset_path: DatasetPath) -> None:

@@ -1,5 +1,4 @@
 import json
-import re
 import shlex
 import typing
 from logging import getLogger
@@ -24,6 +23,7 @@ from galaxy.jobs.runners.util.job_script import (
     write_script,
 )
 from galaxy.model import Dataset
+from galaxy.model.store.discover import escape_preserving_wildcards
 from galaxy.tool_util.deps.container_classes import (
     Container,
     TRAP_KILL_CONTAINER,
@@ -307,12 +307,6 @@ def __handle_metadata(
         commands_builder.append_command(metadata_command)
 
 
-def __quote_preserving_globs(path: str) -> str:
-    # ``*`` and ``?`` stay unquoted so the shell still expands them, everything
-    # else is quoted.
-    return "".join(part if part in ("*", "?") else shlex.quote(part) for part in re.split(r"([*?])", path) if part)
-
-
 def __copy_if_exists_command(work_dir_output: tuple[str, str], job_directory: str) -> str:
     source_file, destination = work_dir_output
     is_directory = True if destination.endswith("_files") else False
@@ -320,7 +314,7 @@ def __copy_if_exists_command(work_dir_output: tuple[str, str], job_directory: st
     recursive_flag = " -r" if is_directory else ""
     message = shlex.quote(f"Not collecting {source_file}: it does not resolve to a path inside the job directory")
     rejected_file = shlex.quote(rejected_work_dir_outputs_file(job_directory))
-    source_file = __quote_preserving_globs(source_file)
+    source_file = escape_preserving_wildcards(source_file, shlex.quote)
     destination = shlex.quote(destination)
     job_directory = shlex.quote(job_directory)
     delete_destination_dir = f" rmdir {destination};" if is_directory else ""

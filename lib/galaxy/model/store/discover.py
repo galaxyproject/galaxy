@@ -9,6 +9,7 @@ corresponding to files in other contexts.
 import abc
 import logging
 import os
+import re
 from collections.abc import (
     Callable,
     Iterable,
@@ -116,6 +117,11 @@ def ensure_job_path_in_job_directory(path: StrPath, job_directory: StrPath) -> N
         os.path.realpath(parent) == real_job_directory for parent in absolute_path.parents
     ):
         ensure_path_in_directory(absolute_path, real_job_directory)
+
+
+def escape_preserving_wildcards(path: str, escape: Callable[[str], str]) -> str:
+    """Escape ``path`` except for ``*`` and ``?``, which job scripts expand in ``from_work_dir``."""
+    return "".join(part if part in ("*", "?") else escape(part) for part in re.split(r"([*?])", path) if part)
 
 
 class ModelPersistenceContext(metaclass=abc.ABCMeta):
