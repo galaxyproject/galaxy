@@ -466,6 +466,7 @@ def set_metadata_portable(
         filename_results_code = tool_job_working_directory / f"metadata/metadata_results_{output_name}"
         override_metadata = tool_job_working_directory / f"metadata/metadata_override_{output_name}"
         dataset_filename_override = output_dict["filename_override"]
+        dataset_filename_fallback = output_dict.get("filename_fallback")
         # Params written before this key existed are for job outputs, which are groomed.
         groom_directory_content = output_dict.get("groom_directory_content", True)
         # Same block as below...
@@ -480,6 +481,19 @@ def set_metadata_portable(
             dataset.metadata_deferred = is_deferred
             if not is_deferred:
                 external_filename = unnamed_id_to_path.get(dataset_instance_id, dataset_filename_override)
+                if dataset_filename_fallback and not os.path.exists(external_filename):
+                    # Same as the from_work_dir copy in the job script: unless exactly
+                    # one file matches, keep what the tool wrote to the output path.
+                    matches = glob.glob(external_filename)
+                    if len(matches) != 1:
+                        if matches:
+                            log.warning(
+                                "%s files matched by output glob '%s', using '%s'",
+                                len(matches),
+                                external_filename,
+                                dataset_filename_fallback,
+                            )
+                        external_filename = dataset_filename_fallback
                 if not os.path.exists(external_filename):
                     matches = glob.glob(external_filename)
                     if matches:
