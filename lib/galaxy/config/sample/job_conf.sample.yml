@@ -351,6 +351,15 @@ runners:
     # by loading a separate file (using pulsar_config).
     #app: {}
     #pulsar_config: path/to/pulsar/app.yml
+    # Every job handler process loading this runner starts its own Pulsar app, and
+    # each app monitors and recovers all jobs recorded in its persistence_directory,
+    # so handlers must not share it. The default is
+    # <data_dir>/pulsar_persisted_data/<server_name>. If the Pulsar app configuration
+    # sets persistence_directory, include {server_name}, which is replaced with the
+    # handler's server name, e.g.:
+    #   persistence_directory: /srv/galaxy/pulsar_persisted_data/{server_name}
+    # scripts/migrate_embedded_pulsar_persistence.py moves jobs recorded in a shared
+    # directory to the per-handler directories.
 
   # Using Pulsar and co-execution to run jobs against a TES service.
   # - https://www.ga4gh.org/product/task-execution-service-tes/
