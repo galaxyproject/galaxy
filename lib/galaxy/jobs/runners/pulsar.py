@@ -443,6 +443,17 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
                     base_directory,
                 )
             conf["persistence_directory"] = os.path.join(base_directory, SERVER_NAME_PLACEHOLDER)
+        elif (
+            isinstance(conf["persistence_directory"], str)
+            and SERVER_NAME_PLACEHOLDER not in conf["persistence_directory"]
+            and conf["persistence_directory"] != "__none__"
+        ):
+            log.info(
+                "Pulsar persistence_directory %s does not contain %s; job handlers sharing it each recover all of "
+                "its jobs.",
+                conf["persistence_directory"],
+                SERVER_NAME_PLACEHOLDER,
+            )
         if isinstance(conf["persistence_directory"], str):
             # Each handler process builds its own Pulsar app, and every app monitors
             # and recovers all jobs indexed in its persistence directory.
