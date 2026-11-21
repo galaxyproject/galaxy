@@ -1087,6 +1087,13 @@ class MinimalJobWrapper(HasResourceParameters):
             tool_dir = os.path.abspath(tool_dir)
         return tool_dir
 
+    def _check_can_add_to_library_folders(self, job: model.Job, import_model_store: store.ModelImportStore) -> None:
+        # The import adds datasets to existing library folders by id, check the job's user may add to them.
+        work_request = WorkRequestContext(self.app, user=job.user, galaxy_session=job.galaxy_session)
+        for library_attrs in import_model_store.library_properties():
+            if library_attrs["model_class"] == "LibraryFolder" and library_attrs.get("id"):
+                self.app.library_folder_manager.get_for_adding(work_request, library_attrs["id"])
+
     @property
     def job_io(self) -> JobIO:
         if self._job_io is None:
@@ -2232,6 +2239,7 @@ class MinimalJobWrapper(HasResourceParameters):
                     # The imported outputs are committed together with the final job state below.
                     commit=False,
                 )
+                self._check_can_add_to_library_folders(job, import_model_store)
                 object_import_tracker = import_model_store.perform_import(history=job.history, job=job)
                 # Datasets discovered by the job are created by the import, without permissions.
                 # Precreated outputs (hdas_by_id) got their permissions when the job was created.

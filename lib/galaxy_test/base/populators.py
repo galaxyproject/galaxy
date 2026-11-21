@@ -3576,9 +3576,14 @@ class LibraryPopulator:
     def setup_fetch_to_folder(self, test_name):
         history_id = self.dataset_populator.new_history()
         library = self.new_private_library(test_name)
-        folder_id = library["root_folder_id"][1:]
-        destination = {"type": "library_folder", "library_folder_id": folder_id}
+        destination = self.fetch_destination_for_library(library)
         return history_id, library, destination
+
+    def fetch_destination_for_library(self, library: dict[str, Any]) -> dict[str, Any]:
+        root_folder_id = library["root_folder_id"]
+        # The libraries API prefixes folder ids with "F", fetch destinations take the bare encoded id.
+        assert root_folder_id.startswith("F"), root_folder_id
+        return {"type": "library_folder", "library_folder_id": root_folder_id[1:]}
 
 
 class BaseDatasetCollectionPopulator:

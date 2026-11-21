@@ -23,6 +23,7 @@ from galaxy_test.base.api_asserts import (
 )
 from galaxy_test.base.populators import (
     DatasetPopulator,
+    LibraryPopulator,
     skip_without_tool,
     WorkflowPopulator,
 )
@@ -37,6 +38,7 @@ class TestLandingApi(ApiTestCase):
         super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
         self.workflow_populator = WorkflowPopulator(self.galaxy_interactor)
+        self.library_populator = LibraryPopulator(self.galaxy_interactor)
 
     @skip_without_tool("cat")
     def test_tool_landing(self):
@@ -54,6 +56,21 @@ class TestLandingApi(ApiTestCase):
         assert response.tool_id == "create_2"
         assert response.state == "claimed"
         assert str(response.origin) == "http://example.localhost/"
+
+    @skip_without_tool("cat1")
+    def test_tool_landing_encodes_dataset_ids(self):
+        history_id = self.dataset_populator.new_history()
+        hda = self.dataset_populator.new_dataset(history_id)
+        request = CreateToolLandingRequestPayload(
+            tool_id="cat1",
+            tool_version=None,
+            request_state={"input1": {"src": "hda", "id": hda["id"]}},
+            public=True,
+        )
+        response = self.dataset_populator.create_tool_landing(request)
+        assert response.request_state == {"input1": {"src": "hda", "id": hda["id"]}}
+        response = self.dataset_populator.use_tool_landing(response.uuid)
+        assert response.request_state == {"input1": {"src": "hda", "id": hda["id"]}}
 
     @skip_without_tool("gx_int")
     def test_tool_landing_invalid(self):
@@ -146,6 +163,27 @@ class TestLandingApi(ApiTestCase):
 
         tool_landing = self.dataset_populator.use_tool_landing(response.uuid)
         assert str(tool_landing.origin) == "http://example.localhost/"
+
+    def test_data_landing_library_destinations_rejected(self):
+        library = self.library_populator.new_private_library("data_landing_library_folder")
+        for destination in (
+            self.library_populator.fetch_destination_for_library(library),
+            {"type": "library", "name": "data_landing_library"},
+        ):
+            payload = {
+                "request_state": {
+                    "targets": [
+                        {
+                            "destination": destination,
+                            "items": [{"src": "url", "url": "base64://eyJ0ZXN0IjogInRlc3QifQ==", "ext": "txt"}],
+                        }
+                    ]
+                },
+                "public": True,
+            }
+            response = self._post("data_landings", payload, json=True, anon=True)
+            assert_status_code_is(response, 400)
+            assert "Data landings cannot target libraries" in response.json()["err_msg"]
 
     def test_file_landing_with_sample_sheet(self):
         """Test that sample sheet metadata is preserved through landing request creation and claiming."""

@@ -31,6 +31,7 @@ from galaxy.model.dataset_collections.types.sample_sheet_util import (
     validate_row,
 )
 from galaxy.model.scoped_session import galaxy_scoped_session
+from galaxy.schema.fetch_data import encode_fetch_request_ids
 from galaxy.schema.schema import (
     ClaimLandingPayload,
     CreateToolLandingRequestPayload,
@@ -50,12 +51,14 @@ from galaxy.structured_app import (
 )
 from galaxy.tool_util.parameters import (
     landing_decode,
+    landing_encode,
     LandingRequestInternalToolState,
     LandingRequestToolState,
 )
 from galaxy.tool_util_models.parameters import (
     DataOrCollectionRequestAdapter,
     DataRequestCollectionUri,
+    ToolParameterBundleModel,
 )
 from galaxy.util import safe_str_cmp
 from .context import ProvidesUserContext
@@ -102,10 +105,14 @@ class LandingRequestManager:
         ref = ToolRunReference(tool_id=tool_id, tool_version=tool_version, tool_uuid=None)
         tool = get_tool_from_toolbox(self.app.toolbox, ref, user=None)
         landing_request_state = LandingRequestToolState(request_state or {})
-        # Okay this is a hack until tool request API commit is merged, tools don't yet have a parameter
-        # schema - so we can't do this properly.
-        if hasattr(tool, "parameters"):
-            internal_landing_request_state = landing_decode(landing_request_state, tool, self.security.decode_id)
+        # __DATA_FETCH__ has no parameter models, its request is validated by the fetch API models.
+        # Tool.parameters is only set when the tool's inputs can be modeled.
+        parameters = getattr(tool, "parameters", None)
+        if parameters is not None:
+            parameter_bundle = ToolParameterBundleModel(parameters=parameters)
+            internal_landing_request_state = landing_decode(
+                landing_request_state, parameter_bundle, self.security.decode_id
+            )
         else:
             assert tool.id == FETCH_TOOL_ID
             # we have validated the payload as part of the API request
@@ -318,12 +325,27 @@ class LandingRequestManager:
         response_model = ToolLandingRequest(
             tool_id=model.tool_id,
             tool_version=model.tool_version,
-            request_state=request_state,
+            request_state=self._encode_tool_request_state(model, request_state),
             uuid=model.uuid,
             state=self._state(model),
             origin=model.origin,
         )
         return response_model
+
+    def _encode_tool_request_state(
+        self, model: ToolLandingRequestModel, request_state: Optional[dict]
+    ) -> Optional[dict]:
+        # The request state is stored with decoded ids (see create_tool_landing_request).
+        if request_state is None:
+            return None
+        ref = ToolRunReference(tool_id=model.tool_id, tool_version=model.tool_version, tool_uuid=None)
+        tool = get_tool_from_toolbox(self.app.toolbox, ref, user=None)
+        parameters = getattr(tool, "parameters", None)
+        if parameters is not None:
+            parameter_bundle = ToolParameterBundleModel(parameters=parameters)
+            internal_state = LandingRequestInternalToolState(request_state)
+            return landing_encode(internal_state, parameter_bundle, self.security.encode_id).input_state
+        return encode_fetch_request_ids(request_state, self.security.encode_id)
 
     def _workflow_response(self, model: WorkflowLandingRequestModel) -> WorkflowLandingRequest:
 
