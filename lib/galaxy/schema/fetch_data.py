@@ -1,4 +1,5 @@
 import json
+from collections.abc import Callable
 from enum import StrEnum
 from typing import (
     Annotated,
@@ -30,6 +31,9 @@ from galaxy.tool_util_models.sample_sheet import (
 from galaxy.util.hash_util import HashFunctionNames
 
 HELP_TERMS = HelpTerms()
+
+# Fetch requests stored as __DATA_FETCH__ job parameters hold these as decoded database ids.
+FETCH_REQUEST_ID_KEYS = ("library_folder_id", "object_id")
 
 
 class FetchBaseModel(Model):
@@ -326,3 +330,19 @@ class CreateFileLandingPayload(Model):
     origin: HttpUrl | None = None
 
     model_config = ConfigDict(extra="forbid")
+
+
+def encode_fetch_request_ids(request: Any, encode_id: Callable[[int], Any]) -> Any:
+    """Return a copy of a stored fetch request with its database ids encoded."""
+    if isinstance(request, dict):
+        return {
+            key: (
+                encode_id(value)
+                if key in FETCH_REQUEST_ID_KEYS and isinstance(value, int)
+                else encode_fetch_request_ids(value, encode_id)
+            )
+            for key, value in request.items()
+        }
+    elif isinstance(request, list):
+        return [encode_fetch_request_ids(value, encode_id) for value in request]
+    return request

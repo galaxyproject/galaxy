@@ -29,6 +29,7 @@ from galaxy.managers.context import (
     ProvidesUserContext,
 )
 from galaxy.managers.jobs import (
+    encode_job_params,
     JobManager,
     summarize_destination_params,
     summarize_job_metrics,
@@ -600,7 +601,10 @@ class FastAPIJobs:
             )
             if job:
                 jobs.append(job)
-        return [EncodedJobDetails(**single_job.to_dict("element")) for single_job in jobs]
+        return [
+            EncodedJobDetails(**encode_job_params(trans.security, single_job, single_job.to_dict("element")))
+            for single_job in jobs
+        ]
 
     @router.get(
         "/api/jobs/{job_id}",
