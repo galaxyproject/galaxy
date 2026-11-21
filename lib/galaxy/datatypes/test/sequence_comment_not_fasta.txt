@@ -1,0 +1,4 @@
+;~ fhr: 0.3
+;~ title: not a FASTA file
+chrom	start	end
+chr1	100	200
