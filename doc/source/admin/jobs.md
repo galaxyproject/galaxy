@@ -20,8 +20,10 @@ tool_evaluation_strategy: remote
 
 The job then builds the tool command where it runs, after Pulsar has staged the
 inputs and config files, so command templates can read them. Galaxy uses
-structured path rewriting for remote evaluation. Deferred inputs are downloaded
-by the remote evaluator instead of being transferred from Galaxy.
+structured path rewriting for remote evaluation and records where each input,
+output and metadata file is for the job, so the evaluator does not need Galaxy's
+object store configuration. Deferred inputs are downloaded by the remote
+evaluator instead of being transferred from Galaxy.
 
 Pulsar needs a matching Galaxy runtime for remote evaluation and metadata
 collection. Remote evaluation works with the `directory` and `extended` metadata

@@ -60,7 +60,10 @@ from galaxy.exceptions import (
 )
 from galaxy.files import ProvidesFileSourcesUserContext
 from galaxy.job_execution.actions.post import ActionBox
-from galaxy.job_execution.compute_environment import SharedComputeEnvironment
+from galaxy.job_execution.compute_environment import (
+    remote_evaluation_paths,
+    SharedComputeEnvironment,
+)
 from galaxy.job_execution.output_collect import (
     collect_extra_files,
     collect_shrinked_content_from_path,
@@ -1473,12 +1476,11 @@ class MinimalJobWrapper(HasResourceParameters):
         if self.remote_command_line:
             os.makedirs(os.path.join(self.working_directory, "metadata", "outputs_new"), exist_ok=True)
             self.job_io.to_json(path=os.path.join(self.working_directory, "metadata", "outputs_new", "job_io.json"))
-            # The evaluator resolves input, output and metadata file paths through the object store.
-            inp_data, out_data, _ = job.io_dicts()
+            # Pulsar rewrites this with the paths it assigns while staging.
             with open(
-                os.path.join(self.working_directory, "metadata", "outputs_new", "object_store_conf.json"), "w"
+                os.path.join(self.working_directory, "metadata", "outputs_new", "compute_environment.json"), "w"
             ) as f:
-                json.dump(self._static_object_store_conf([*inp_data.values(), *out_data.values()]), f)
+                json.dump(remote_evaluation_paths(self.job_io, compute_environment), f)
             self.app.tool_data_tables.to_json(
                 path=os.path.join(self.working_directory, "metadata", "outputs_new", "tool_data_tables.json")
             )
@@ -2892,14 +2894,6 @@ class MinimalJobWrapper(HasResourceParameters):
             return ExpressionContext(meta, job_context)
         return job_context
 
-    def _static_object_store_conf(self, dataset_instances) -> dict[str, Any]:
-        user_object_store_uris = {
-            dataset_instance.dataset.object_store_id
-            for dataset_instance in dataset_instances
-            if dataset_instance is not None and is_user_object_store(dataset_instance.dataset.object_store_id)
-        }
-        return serialize_static_object_store_config(self.object_store, user_object_store_uris)
-
     def setup_external_metadata(
         self,
         exec_dir=None,
@@ -2936,8 +2930,14 @@ class MinimalJobWrapper(HasResourceParameters):
 
         inp_data, out_data, out_collections = job.io_dicts(exclude_implicit_outputs=True)
 
+        required_user_object_store_uris = set()
+        for out_dataset_instance in out_data.values():
+            object_store_id = out_dataset_instance.dataset.object_store_id
+            if is_user_object_store(object_store_id):
+                required_user_object_store_uris.add(object_store_id)
+
         job_metadata = os.path.join(self.tool_working_directory, self.tool.provided_metadata_file)
-        object_store_conf = self._static_object_store_conf(out_data.values())
+        object_store_conf = serialize_static_object_store_config(self.object_store, required_user_object_store_uris)
         command = self.external_output_metadata.setup_external_metadata(
             out_data,
             out_collections,
