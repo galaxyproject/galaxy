@@ -96,6 +96,7 @@ from galaxy.jobs.runners import (
 from galaxy.metadata import (
     get_metadata_compute_strategy,
     job_metadata_directory,
+    REMOTE_COMMAND_LINE_FILE,
 )
 from galaxy.model import (
     Dataset,
@@ -1137,10 +1138,16 @@ class MinimalJobWrapper(HasResourceParameters):
 
     @property
     def remote_command_line(self):
-        use_remote = self.get_destination_configuration("tool_evaluation_strategy") == "remote"
+        if self.get_destination_configuration("tool_evaluation_strategy") != "remote":
+            return False
+        # Interactive tools register their entry points while the command is built, the
+        # metadata tool is Galaxy's own job, and task splitting builds a command per task.
+        assert self.tool
+        if self.tool.tool_type in ("interactive", "set_metadata") or self.__has_tasks:
+            return False
         # It wouldn't be hard to support history export, but we want to do this in task queue workers anyway ...
         stmt = select(model.JobExportHistoryArchive).filter_by(job=self.get_job()).limit(1)
-        return use_remote and self.external_output_metadata.extended and not self.sa_session.scalars(stmt).first()
+        return not self.sa_session.scalars(stmt).first()
 
     def tool_directory(self):
         tool_dir = self.tool and self.tool.tool_dir
@@ -1480,6 +1487,12 @@ class MinimalJobWrapper(HasResourceParameters):
         if self.remote_command_line:
             os.makedirs(os.path.join(self.working_directory, "metadata", "outputs_new"), exist_ok=True)
             self.job_io.to_json(path=os.path.join(self.working_directory, "metadata", "outputs_new", "job_io.json"))
+            # The evaluator resolves input, output and metadata file paths through the object store.
+            inp_data, out_data, _ = job.io_dicts()
+            with open(
+                os.path.join(self.working_directory, "metadata", "outputs_new", "object_store_conf.json"), "w"
+            ) as f:
+                json.dump(self._static_object_store_conf([*inp_data.values(), *out_data.values()]), f)
             self.app.tool_data_tables.to_json(
                 path=os.path.join(self.working_directory, "metadata", "outputs_new", "tool_data_tables.json")
             )
@@ -2496,6 +2509,14 @@ class MinimalJobWrapper(HasResourceParameters):
                 log.exception(f"problem importing job outputs. stdout [{job.stdout}] stderr [{job.stderr}]")
                 return fail(str(e), exception=e)
         else:
+            if self.remote_command_line:
+                # The extended metadata export carries the command line; without it the evaluator leaves it here.
+                command_line_path = os.path.join(
+                    job_metadata_directory(self.working_directory), REMOTE_COMMAND_LINE_FILE
+                )
+                if os.path.exists(command_line_path):
+                    with open(command_line_path) as fh:
+                        job.command_line = fh.read()
             if self.tool.version_string_cmd:
                 version_filename = self.get_version_string_path()
                 self.version_string = collect_shrinked_content_from_path(version_filename)
@@ -2928,6 +2949,14 @@ class MinimalJobWrapper(HasResourceParameters):
             return ExpressionContext(meta, job_context)
         return job_context
 
+    def _static_object_store_conf(self, dataset_instances) -> dict[str, Any]:
+        user_object_store_uris = {
+            dataset_instance.dataset.object_store_id
+            for dataset_instance in dataset_instances
+            if dataset_instance is not None and is_user_object_store(dataset_instance.dataset.object_store_id)
+        }
+        return serialize_static_object_store_config(self.object_store, user_object_store_uris)
+
     def setup_external_metadata(
         self,
         exec_dir=None,
@@ -2964,14 +2993,8 @@ class MinimalJobWrapper(HasResourceParameters):
 
         inp_data, out_data, out_collections = job.io_dicts(exclude_implicit_outputs=True)
 
-        required_user_object_store_uris = set()
-        for out_dataset_instance in out_data.values():
-            object_store_id = out_dataset_instance.dataset.object_store_id
-            if is_user_object_store(object_store_id):
-                required_user_object_store_uris.add(object_store_id)
-
         job_metadata = os.path.join(self.tool_working_directory, self.tool.provided_metadata_file)
-        object_store_conf = serialize_static_object_store_config(self.object_store, required_user_object_store_uris)
+        object_store_conf = self._static_object_store_conf(out_data.values())
         command = self.external_output_metadata.setup_external_metadata(
             out_data,
             out_collections,

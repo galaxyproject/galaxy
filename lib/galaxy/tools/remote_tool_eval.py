@@ -16,9 +16,14 @@ from galaxy.job_execution.compute_environment import (
 )
 from galaxy.job_execution.setup import JobIO
 from galaxy.managers.dbkeys import GenomeBuilds
+from galaxy.metadata import (
+    job_metadata_directory,
+    REMOTE_COMMAND_LINE_FILE,
+)
 from galaxy.metadata.set_metadata import (
     get_metadata_params,
     get_object_store,
+    object_store_from_conf,
     validate_and_load_datatypes_config,
 )
 from galaxy.model import store
@@ -86,7 +91,10 @@ def evaluate_tool(tmpdir: str, working_directory: str, import_store_directory: s
     if not os.path.exists(datatypes_config):
         datatypes_config = os.path.join(working_directory, "configs", datatypes_config)
     datatypes_registry = validate_and_load_datatypes_config(datatypes_config)
-    object_store = get_object_store(working_directory)
+    # Written by the job handler for remote evaluation, whatever the metadata strategy.
+    object_store = get_object_store(
+        working_directory, object_store_from_conf(os.path.join(import_store_directory, "object_store_conf.json"))
+    )
     import_store = store.imported_store_for_metadata(import_store_directory)
     assert isinstance(import_store.sa_session, SessionlessContext)
     # TODO: clean up random places from which we read files in the working directory
@@ -133,6 +141,10 @@ def evaluate_tool(tmpdir: str, working_directory: str, import_store_directory: s
     with open(os.path.join(working_directory, "tool_script.sh"), "a") as out:
         command_line, version_command_line, extra_filenames, environment_variables, *_ = tool_evaluator.build()
         out.write(f"{version_command_line or ''}{command_line}")
+    command_line_path = os.path.join(job_metadata_directory(working_directory), REMOTE_COMMAND_LINE_FILE)
+    os.makedirs(os.path.dirname(command_line_path), exist_ok=True)
+    with open(command_line_path, "w") as out:
+        out.write(command_line or "")
 
 
 def describe_exception_chain(exc: BaseException) -> str:
