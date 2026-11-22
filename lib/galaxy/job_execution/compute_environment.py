@@ -5,6 +5,7 @@ from abc import (
 )
 from typing import (
     Any,
+    TypedDict,
 )
 
 from galaxy.job_execution.datasets import DeferrableObjectsT
@@ -187,6 +188,15 @@ class SharedComputeEnvironment(SimpleComputeEnvironment, ComputeEnvironment):
         return self.job_io.galaxy_url
 
 
+class RemoteEvaluationPaths(TypedDict):
+    """Compute paths of a job's files, the contents of ``compute_environment.json``."""
+
+    datasets: dict[str, str]
+    extra_files: dict[str, str]
+    metadata_files: dict[str, str]
+    unstructured: dict[str, str]
+
+
 class RemoteComputeEnvironment(SharedComputeEnvironment):
     """Resolve job files through the compute paths Galaxy recorded for remote tool evaluation.
 
@@ -194,7 +204,7 @@ class RemoteComputeEnvironment(SharedComputeEnvironment):
     needs no object store.
     """
 
-    def __init__(self, job_io: JobIO, job: Job, paths: "RemoteEvaluationPaths"):
+    def __init__(self, job_io: JobIO, job: Job, paths: RemoteEvaluationPaths):
         super().__init__(job_io, job)
         self.paths = paths
 
@@ -219,9 +229,6 @@ class RemoteComputeEnvironment(SharedComputeEnvironment):
 
     def unstructured_path_rewrite(self, path):
         return self.paths["unstructured"].get(path)
-
-
-RemoteEvaluationPaths = dict[str, dict[str, str]]
 
 
 def metadata_file_key(dataset_instance, metadata_name: str) -> str:
