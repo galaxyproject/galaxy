@@ -6,6 +6,7 @@ from typing import (
     Annotated,
     Any,
     cast,
+    Collection,
     NamedTuple,
     Optional,
     TYPE_CHECKING,
@@ -89,11 +90,14 @@ from galaxy.tools.parameters import (
     visit_input_values,
 )
 from galaxy.tools.parameters.basic import (
+    BaseDataToolParameter,
     DataCollectionToolParameter,
     DataToolParameter,
+    ToolParameter,
 )
 from galaxy.tools.parameters.workflow_utils import (
     ConnectedValue,
+    is_runtime_value,
     RuntimeValue,
     workflow_building_modes,
 )
@@ -1258,6 +1262,39 @@ class WorkflowContentsManager(UsesAnnotations):
         if step_in:
             step_dict["in"] = step_in
 
+    @staticmethod
+    def _tool_form_defaults(
+        module: ToolModule, defaults: dict[Any, Any], connected_input_names: Collection[str]
+    ) -> list[tuple[str, ToolParameter, dict[str, Any], Any]]:
+        """Find the step input defaults that the editor's tool form shows as parameter values.
+
+        These are defaults on parameters that are not data inputs, are not connected, do not change
+        other inputs (as conditional test parameters do) and are not set to a runtime value, and that
+        the parameter can convert. Returns the prefixed name, the parameter, its parent state and
+        the converted default of each.
+        """
+        form_defaults: list[tuple[str, ToolParameter, dict[str, Any], Any]] = []
+        if not defaults or module.tool is None:
+            return form_defaults
+
+        def collect(input, prefixed_name, parent, value, **kwargs):
+            if (
+                prefixed_name not in defaults
+                or prefixed_name in connected_input_names
+                or isinstance(input, BaseDataToolParameter)
+                or input.refresh_on_change
+                or is_runtime_value(value)
+            ):
+                return
+            try:
+                default = input.to_python(defaults[prefixed_name], module.trans.app)
+            except Exception:
+                return
+            form_defaults.append((prefixed_name, input, parent, default))
+
+        visit_input_values(module.tool.inputs, module.state.inputs, collect)
+        return form_defaults
+
     def _workflow_to_dict_editor(
         self,
         trans,
@@ -1300,6 +1337,12 @@ class WorkflowContentsManager(UsesAnnotations):
             version_changes = getattr(module, "version_changes", None)
             if version_changes:
                 upgrade_message_dict[module.get_name()] = "\n".join(version_changes)
+            if isinstance(module, ToolModule):
+                # Show the step input defaults that replace the tool state at run time in the tool form.
+                defaults = {si.name: si.default_value for si in step.inputs if si.default_value_set}
+                connected_input_names = {conn.input_name for conn in step.input_connections}
+                for _, input, parent, default in self._tool_form_defaults(module, defaults, connected_input_names):
+                    parent[input.name] = default
             # Get user annotation.
             config_form = module.get_config_form(step=step)
             annotation_str = self.get_item_annotation_str(trans.sa_session, trans.user, step) or ""
@@ -1928,7 +1971,18 @@ class WorkflowContentsManager(UsesAnnotations):
                     trans.sa_session.add(m)
 
         if "in" in step_dict:
+            changed_in_form = set()
+            if kwds.get("from_tool_form") and isinstance(module, ToolModule):
+                # The editor's tool form shows these defaults, a value the user changed there replaces them.
+                defaults = {name: d["default"] for name, d in step_dict["in"].items() if "default" in d}
+                for name, input, parent, default in self._tool_form_defaults(
+                    module, defaults, step_dict.get("input_connections") or {}
+                ):
+                    if not _same_form_value(parent.get(input.name), default):
+                        changed_in_form.add(name)
             for input_name, input_dict in step_dict["in"].items():
+                if input_name in changed_in_form:
+                    continue
                 # This is just a bug in gxformat? I think the input
                 # defaults should be called input to match the input modules's
                 # input parameter name.
@@ -2290,3 +2344,13 @@ def _get_invocation(session, invocation_id):
 def get_count(session, statement):
     stmt = select(func.count()).select_from(statement.subquery())
     return session.scalar(stmt)
+
+
+def _same_form_value(form_value: Any, default: Any) -> bool:
+    """Compare a tool form value with a step input default, both converted by the parameter's ``to_python``.
+
+    An empty value (``None`` or ``""``) matches the other empty value, as the form may submit either.
+    """
+    if form_value in (None, "") and default in (None, ""):
+        return True
+    return form_value == default
