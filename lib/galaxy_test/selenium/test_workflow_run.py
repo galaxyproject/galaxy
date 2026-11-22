@@ -155,6 +155,29 @@ class TestWorkflowRun(SeleniumTestCase, UsesHistoryItemAssertions, RunsWorkflows
         assert "chr1" in self.dataset_populator.get_history_dataset_content(history_id)
 
     @selenium_test
+    @managed_history
+    def test_dataset_default_location_expanded_form_submit(self):
+        history_id = self.current_history_id()
+        self.dataset_populator.fetch_hdas(
+            history_id, [{"src": "pasted", "paste_content": "alternative", "name": "Alternative metadata"}]
+        )
+        location = self.test_http_server.get_url(
+            remote_url="https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bed",
+            file_path="test-data/1.bed",
+        )
+        self.home()
+        self.workflow_run_open_workflow(WORKFLOW_WITH_DEFAULT_FILE_DATASET_INPUT.format(location=location))
+        self.workflow_run_ensure_expanded()
+        workflow_run = self.components.workflow_run
+        selection = workflow_run.input_data_div(label="default_file_input").wait_for_visible()
+        self.select_set_value(selection, "Alternative metadata")
+        self.select_set_value(selection, "Use default file")
+        assert "Using default file" in workflow_run.default_file_status.wait_for_visible().text
+        self.workflow_run_submit()
+        self.workflow_run_wait_for_ok(hid=3)
+        assert "chr1" in self.dataset_populator.get_history_dataset_content(history_id)
+
+    @selenium_test
     def test_workflow_run_pagination_legacy_form(self):
         """Backend search updates a legacy workflow tool-step dropdown."""
         history_id = self.current_history_id()
