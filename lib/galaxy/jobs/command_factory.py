@@ -15,6 +15,7 @@ from typing import Optional
 from galaxy import util
 from galaxy.job_execution.output_collect import (
     default_exit_code_file,
+    escape_preserving_wildcards,
     rejected_work_dir_outputs_file,
 )
 from galaxy.jobs.runners.util.job_script import (
@@ -23,7 +24,6 @@ from galaxy.jobs.runners.util.job_script import (
     write_script,
 )
 from galaxy.model import Dataset
-from galaxy.model.store.discover import escape_preserving_wildcards
 from galaxy.tool_util.deps.container_classes import (
     Container,
     TRAP_KILL_CONTAINER,

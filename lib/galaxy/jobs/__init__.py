@@ -65,6 +65,7 @@ from galaxy.job_execution.datasets import DatasetPath
 from galaxy.job_execution.output_collect import (
     collect_extra_files,
     collect_shrinked_content_from_path,
+    escape_preserving_wildcards,
     PermissionProvider,
     rejected_work_dir_outputs_file,
 )
@@ -96,7 +97,6 @@ from galaxy.model import (
 from galaxy.model.store import copy_dataset_instance_metadata_attributes
 from galaxy.model.store.discover import (
     ensure_job_path_in_job_directory,
-    escape_preserving_wildcards,
     MaxDiscoveredFilesExceededError,
     OutputCollectionSecurityError,
 )
