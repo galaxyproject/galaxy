@@ -475,7 +475,17 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
 
     @property
     def all_metadata_files(self) -> list[tuple[str, str]]:
-        return self.unsanitized.get_metadata_file_paths_and_extensions() if self else []
+        """``(file_ext, path)`` for each metadata file, with paths as the job sees them."""
+        if not self:
+            return []
+        metadata_files = self.unsanitized.get_metadata_file_paths_and_extensions()
+        compute_environment = self.compute_environment
+        if self.__io_type != "input" or not compute_environment:
+            return metadata_files
+        return [
+            (file_ext, compute_environment.input_metadata_rewrite(self.unsanitized, path) or path)
+            for file_ext, path in metadata_files
+        ]
 
     def serialize(self, invalid_chars: Sequence[str] = ("/",)) -> dict[str, Any]:
         return data_input_to_staging_path_and_source_path(self, invalid_chars=invalid_chars) if self else {}
@@ -777,7 +787,7 @@ class DatasetCollectionWrapper(ToolParameterValueWrapper, HasDatasets):
         return [path for _, _, path, _ in self.element_identifiers_extensions_paths_and_metadata_files]
 
     @property
-    def all_metadata_files(self) -> list[list[str]]:
+    def all_metadata_files(self) -> list[list[tuple[str, str]]]:
         return [
             metadata_files for _, _, _, metadata_files in self.element_identifiers_extensions_paths_and_metadata_files
         ]
@@ -786,13 +796,30 @@ class DatasetCollectionWrapper(ToolParameterValueWrapper, HasDatasets):
     def element_identifiers_extensions_paths_and_metadata_files(
         self,
     ) -> list[list[Any]]:
+        """``[identifiers, extension, path, metadata_files]`` for each dataset, nested collections flattened.
+
+        Built from the element wrappers, so the paths are the ones the job sees, as
+        ``$element`` and ``$element.metadata.<file>`` render them. The model property
+        of the same name gives Galaxy-side paths.
+        """
+        if not self.__input_supplied:
+            return []
         if self._element_identifiers_extensions_paths_and_metadata_files is None:
-            if self.collection:
-                result = self.collection.element_identifiers_extensions_paths_and_metadata_files
-                self._element_identifiers_extensions_paths_and_metadata_files = result
-                return result
-            else:
-                return []
+            result: list[list[Any]] = []
+            for element_identifier, element_wrapper in self.__element_instances.items():
+                if isinstance(element_wrapper, DatasetCollectionWrapper):
+                    for identifiers, *rest in element_wrapper.element_identifiers_extensions_paths_and_metadata_files:
+                        result.append([(element_identifier, *identifiers), *rest])
+                else:
+                    result.append(
+                        [
+                            (element_identifier,),
+                            element_wrapper.unsanitized.extension,
+                            str(element_wrapper),
+                            element_wrapper.all_metadata_files,
+                        ]
+                    )
+            self._element_identifiers_extensions_paths_and_metadata_files = result
         return self._element_identifiers_extensions_paths_and_metadata_files
 
     def get_all_staging_paths(

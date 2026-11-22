@@ -14,7 +14,12 @@ from galaxy.datatypes.data import (
 from galaxy.datatypes.metadata import MetadataSpecCollection
 from galaxy.job_execution.compute_environment import ComputeEnvironment
 from galaxy.job_execution.datasets import DatasetPath
-from galaxy.model import DatasetInstance
+from galaxy.model import (
+    DatasetCollection,
+    DatasetCollectionElement,
+    DatasetInstance,
+    HistoryDatasetCollectionAssociation,
+)
 from galaxy.tools.parameters.basic import (
     BooleanToolParameter,
     DrillDownSelectToolParameter,
@@ -492,3 +497,124 @@ class MockApp:
     def write_test_tool_data(self, name, contents):
         path = os.path.join(self.config.tool_data_path, name)
         open(path, "w").write(contents)
+
+
+class MockDatasetWithMetadataFile(MockDataset):
+    def __init__(self, dataset_id: int):
+        super().__init__()
+        self.id = dataset_id
+
+    def get_file_name(self, sync_cache=True, auth=None):
+        return f"/galaxy/objects/dataset_{self.id}.dat"
+
+    def get_metadata_file_paths_and_extensions(self):
+        return [("bai", f"/galaxy/objects/_metadata_files/metadata_{self.id}.dat")]
+
+
+class JobDirectoryComputeEnvironment(MockComputeEnvironment):
+    """Rewrites every input and metadata file path into ``/job/inputs``."""
+
+    def __init__(self):
+        super().__init__(false_path=None)
+
+    def input_path_rewrite(self, dataset):
+        return f"/job/inputs/{os.path.basename(dataset.get_file_name())}"
+
+    def input_metadata_rewrite(self, dataset, metadata_value):
+        return f"/job/inputs/metadata_{os.path.basename(metadata_value)}"
+
+
+def _leaf_element(identifier: str, dataset_id: int) -> SimpleNamespace:
+    return SimpleNamespace(
+        element_identifier=identifier, element_object=MockDatasetWithMetadataFile(dataset_id), columns=None
+    )
+
+
+def _nested_element(identifier: str, elements: list[SimpleNamespace]) -> Mock:
+    return Mock(
+        spec=DatasetCollectionElement,
+        element_identifier=identifier,
+        element_object=Mock(spec=DatasetCollection),
+        child_collection=SimpleNamespace(elements=elements),
+        columns=None,
+    )
+
+
+def _collection_wrapper(elements, compute_environment=None) -> DatasetCollectionWrapper:
+    registry = Mock(get_datatype_by_extension=Mock(return_value=None))
+    return DatasetCollectionWrapper(
+        None,
+        cast(HistoryDatasetCollectionAssociation, SimpleNamespace(elements=elements)),
+        datatypes_registry=registry,
+        compute_environment=compute_environment,
+    )
+
+
+def test_dataset_wrapper_all_metadata_files_are_compute_side():
+    dataset = cast(DatasetInstance, MockDatasetWithMetadataFile(1))
+    wrapper = DatasetFilenameWrapper(
+        dataset, identifier="1", compute_environment=cast(ComputeEnvironment, JobDirectoryComputeEnvironment())
+    )
+    assert wrapper.all_metadata_files == [("bai", "/job/inputs/metadata_metadata_1.dat")]
+    assert wrapper.serialize()["metadata_files"] == [
+        {"staging_path": "1.bam.bai", "source_path": "/job/inputs/metadata_metadata_1.dat"}
+    ]
+
+
+def test_dataset_wrapper_all_metadata_files_without_compute_environment():
+    wrapper = DatasetFilenameWrapper(cast(DatasetInstance, MockDatasetWithMetadataFile(1)))
+    assert wrapper.all_metadata_files == [("bai", "/galaxy/objects/_metadata_files/metadata_1.dat")]
+
+
+def test_collection_wrapper_paths_are_compute_side():
+    elements = [
+        _nested_element("sample1", [_leaf_element("forward", 1), _leaf_element("reverse", 2)]),
+        _nested_element("sample2", [_leaf_element("forward", 3)]),
+    ]
+    wrapper = _collection_wrapper(elements, cast(ComputeEnvironment, JobDirectoryComputeEnvironment()))
+    assert wrapper.element_identifiers_extensions_paths_and_metadata_files == [
+        [
+            ("sample1", "forward"),
+            "bam",
+            "/job/inputs/dataset_1.dat",
+            [("bai", "/job/inputs/metadata_metadata_1.dat")],
+        ],
+        [
+            ("sample1", "reverse"),
+            "bam",
+            "/job/inputs/dataset_2.dat",
+            [("bai", "/job/inputs/metadata_metadata_2.dat")],
+        ],
+        [
+            ("sample2", "forward"),
+            "bam",
+            "/job/inputs/dataset_3.dat",
+            [("bai", "/job/inputs/metadata_metadata_3.dat")],
+        ],
+    ]
+    # The paths match the ones the element wrappers render, as `#for $e in $input` does.
+    element_paths = [str(leaf) for sample in wrapper for leaf in cast(DatasetCollectionWrapper, sample)]
+    assert wrapper.all_paths == element_paths
+    assert wrapper.all_metadata_files[0] == [("bai", "/job/inputs/metadata_metadata_1.dat")]
+    assert wrapper.get_all_staging_paths() == ["sample1/forward.bam", "sample1/reverse.bam", "sample2/forward.bam"]
+    assert wrapper.serialize()[1] == {
+        "element_identifier": ("sample1", "reverse"),
+        "ext": "bam",
+        "staging_path": "sample1/reverse.bam",
+        "source_path": "/job/inputs/dataset_2.dat",
+        "metadata_files": [
+            {"staging_path": "sample1/reverse.bam.bai", "source_path": "/job/inputs/metadata_metadata_2.dat"}
+        ],
+    }
+
+
+def test_collection_wrapper_paths_without_compute_environment():
+    wrapper = _collection_wrapper([_leaf_element("a", 1)])
+    assert wrapper.all_paths == ["/galaxy/objects/dataset_1.dat"]
+    assert wrapper.all_metadata_files == [[("bai", "/galaxy/objects/_metadata_files/metadata_1.dat")]]
+
+
+def test_collection_wrapper_paths_of_a_missing_optional_input():
+    wrapper = DatasetCollectionWrapper(None, None, datatypes_registry=Mock())
+    assert wrapper.all_paths == []
+    assert wrapper.serialize() == []

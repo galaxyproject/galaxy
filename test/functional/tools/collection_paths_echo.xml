@@ -1,0 +1,31 @@
+<tool id="collection_paths_echo" name="collection_paths_echo" version="0.1.0" profile="24.0">
+    <description>writes the input paths each path accessor gives the tool</description>
+    <command><![CDATA[
+echo 'ALL_PATHS:#for $p in $input1.all_paths# $p#end for#' > '$out' &&
+echo 'FOR_LOOP:#for $e in $input1# $e#end for#' >> '$out' &&
+echo 'COLL_ALL_METADATA_FILES:#for $mfs in $input1.all_metadata_files##for $mf in $mfs# $mf[1]#end for##end for#' >> '$out' &&
+echo 'COLL_FOR_METADATA_PARAM:#for $e in $input1# $e.metadata.bam_index#end for#' >> '$out' &&
+echo 'COLL_SERIALIZE_SOURCE:#for $s in $input1.serialize()# $s["source_path"]#end for#' >> '$out' &&
+echo 'COLL_SERIALIZE_METADATA:#for $s in $input1.serialize()##for $m in $s["metadata_files"]# $m["source_path"]#end for##end for#' >> '$out' &&
+echo 'SINGLE: $single' >> '$out' &&
+echo 'SINGLE_METADATA_PARAM: $single.metadata.bam_index' >> '$out' &&
+echo 'SINGLE_ALL_METADATA_FILES:#for $mf in $single.all_metadata_files# $mf[1]#end for#' >> '$out' &&
+#set $single_serialized = $single.serialize()
+echo 'SINGLE_SERIALIZE_SOURCE: $single_serialized["source_path"]' >> '$out' &&
+echo 'SINGLE_SERIALIZE_METADATA:#for $m in $single_serialized["metadata_files"]# $m["source_path"]#end for#' >> '$out' &&
+printf 'JSON_PATHS_CONFIGFILE: ' >> '$out' &&
+cat '$json_paths' >> '$out' &&
+echo '' >> '$out' &&
+echo "JOB_DIRECTORY: \$(pwd)" >> '$out'
+    ]]></command>
+    <configfiles>
+        <inputs name="json_paths" data_style="paths" />
+    </configfiles>
+    <inputs>
+        <param name="input1" type="data_collection" collection_type="list" format="bam" />
+        <param name="single" type="data" format="bam" />
+    </inputs>
+    <outputs>
+        <data name="out" format="txt" />
+    </outputs>
+</tool>
