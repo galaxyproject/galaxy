@@ -9881,6 +9881,14 @@ class WorkflowStep(Base, RepresentById, UsesCreateAndUpdateTime):
                     break
         return default_value
 
+    def input_defaults_dict(self) -> dict[str, dict[str, Any]]:
+        """Step-level input defaults, as serialized in a step's ``in`` block."""
+        return {
+            step_input.name: {"default": step_input.default_value}
+            for step_input in self.inputs
+            if step_input.default_value_set
+        }
+
     @property
     def input_optional(self):
         tool_state = self.tool_inputs

@@ -1706,12 +1706,7 @@ class WorkflowContentsManager(UsesAnnotations):
                 "when": step.when_expression,
                 "workflow_outputs": [],
             }
-            step_defaults = {
-                step_input.name: {"default": step_input.default_value}
-                for step_input in step.inputs
-                if step_input.default_value_set
-            }
-            if step_defaults:
+            if step_defaults := step.input_defaults_dict():
                 step_dict["in"] = step_defaults
             if tooltip:
                 step_dict["tooltip"] = module.get_tooltip(static_path="/static")
@@ -2073,12 +2068,7 @@ class WorkflowContentsManager(UsesAnnotations):
                 for output in module.get_data_outputs():
                     step_dict["outputs"].append({"name": output["name"], "type": output["extensions"][0]})
 
-            step_in = {}
-            for step_input in step.inputs:
-                if step_input.default_value_set:
-                    step_in[step_input.name] = {"default": step_input.default_value}
-
-            if step_in:
+            if step_in := step.input_defaults_dict():
                 step_dict["in"] = step_in
 
             # Connections
