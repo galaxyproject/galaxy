@@ -7,6 +7,7 @@ underlying TCP socket. ``SSELineListener`` waits for that ``ready`` event before
 thread instead of silently swallowing them.
 """
 
+import json
 import queue
 import socket
 import threading
@@ -212,3 +213,20 @@ def wait_on_events(
             raise TimeoutAssertionError(
                 f"Timed out after {timeout} seconds waiting on {desc} (woken by SSE {event_type} events)."
             )
+
+
+def job_states_for(events: list[dict], job_id: str) -> list[str]:
+    """States of job ``job_id`` across ``job_update`` events, in order."""
+    return [
+        job["state"] for event in events for job in json.loads(event["data"]).get("jobs", []) if job["id"] == job_id
+    ]
+
+
+def invocation_states_for(events: list[dict], invocation_id: str) -> list[str]:
+    """States of invocation ``invocation_id`` across ``invocation_update`` events, in order."""
+    return [
+        invocation["state"]
+        for event in events
+        for invocation in json.loads(event["data"])["invocations"]
+        if invocation["id"] == invocation_id
+    ]

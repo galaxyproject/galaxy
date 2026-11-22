@@ -6,7 +6,6 @@ event was sent.
 """
 
 import json
-from urllib.parse import urljoin
 from uuid import uuid4
 
 from galaxy_test.base.populators import (
@@ -15,10 +14,11 @@ from galaxy_test.base.populators import (
 )
 from galaxy_test.base.sse import (
     DEFAULT_WAIT_TIMEOUT,
-    SSELineListener,
+    invocation_states_for,
+    job_states_for,
 )
 from galaxy_test.base.workflow_fixtures import WORKFLOW_NESTED_SIMPLE
-from galaxy_test.driver.integration_util import IntegrationTestCase
+from galaxy_test.driver.integration_util import SSEIntegrationTestCase
 
 WORKFLOW_WITH_PAUSE = """
 class: GalaxyWorkflow
@@ -66,43 +66,7 @@ steps:
 """
 
 
-def _job_states_for(events: list[dict], job_id: str) -> list[str]:
-    return [
-        job["state"] for event in events for job in json.loads(event["data"]).get("jobs", []) if job["id"] == job_id
-    ]
-
-
-def _states_for(events: list[dict], invocation_id: str) -> list[str]:
-    return [
-        invocation["state"]
-        for event in events
-        for invocation in json.loads(event["data"])["invocations"]
-        if invocation["id"] == invocation_id
-    ]
-
-
-class BaseInvocationSSEIntegrationTestCase(IntegrationTestCase):
-    dataset_populator: DatasetPopulator
-    workflow_populator: WorkflowPopulator
-    framework_tool_and_types = True
-
-    @classmethod
-    def handle_galaxy_config_kwds(cls, config):
-        super().handle_galaxy_config_kwds(config)
-        config["enable_sse_updates"] = True
-
-    def setUp(self):
-        super().setUp()
-        self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
-        self.workflow_populator = WorkflowPopulator(self.galaxy_interactor)
-
-    def _listener(self, api_key: str | None = None) -> SSELineListener:
-        api_key = api_key or self.galaxy_interactor.api_key
-        assert api_key is not None
-        listener = SSELineListener(urljoin(self.url, "api/events/stream"), api_key)
-        listener.start()
-        return listener
-
+class BaseInvocationSSEIntegrationTestCase(SSEIntegrationTestCase):
     def _invocation_state(self, invocation_id: str) -> str:
         return self.workflow_populator.get_invocation(invocation_id)["state"]
 
@@ -143,19 +107,19 @@ class TestInvocationSSEIntegration(BaseInvocationSSEIntegrationTestCase):
                 for completed_id in (invocation_id, subworkflow_invocation_id):
                     owner_listener.wait_for_event_where(
                         "invocation_update",
-                        lambda e: "completed" in _states_for([e], completed_id),  # noqa: B023
+                        lambda e: "completed" in invocation_states_for([e], completed_id),  # noqa: B023
                     )
         finally:
             owner_listener.stop()
             other_listener.stop()
 
         events = owner_listener.get_events("invocation_update")
-        states = _states_for(events, invocation_id)
+        states = invocation_states_for(events, invocation_id)
         assert states[0] == "new", states
         assert "scheduled" in states, states
         assert states.index("scheduled") < states.index("completed"), states
         assert states[-1] == "completed", states
-        subworkflow_states = _states_for(events, subworkflow_invocation_id)
+        subworkflow_states = invocation_states_for(events, subworkflow_invocation_id)
         assert "scheduled" in subworkflow_states, subworkflow_states
         assert subworkflow_states[-1] == "completed", subworkflow_states
         assert other_listener.get_events("invocation_update") == []
@@ -181,13 +145,13 @@ class TestInvocationSSEIntegration(BaseInvocationSSEIntegrationTestCase):
                 self.workflow_populator.cancel_invocation(invocation_id)
                 state = self.workflow_populator.wait_for_invocation(None, invocation_id, assert_ok=False)
                 listener.wait_for_event_where(
-                    "invocation_update", lambda e: "cancelled" in _states_for([e], invocation_id)
+                    "invocation_update", lambda e: "cancelled" in invocation_states_for([e], invocation_id)
                 )
             finally:
                 listener.stop()
 
         assert state == "cancelled"
-        states = _states_for(listener.get_events("invocation_update"), invocation_id)
+        states = invocation_states_for(listener.get_events("invocation_update"), invocation_id)
         # Events for the earlier transitions to new and ready can arrive after the listener started.
         assert states[states.index("cancelling") :] == ["cancelling", "cancelled"], states
 
@@ -211,14 +175,14 @@ class TestInvocationSSEStepChangesIntegration(BaseInvocationSSEIntegrationTestCa
                 invocation_id = summary.invocation_id
                 self.workflow_populator.wait_for_invocation_and_completion(invocation_id)
                 listener.wait_for_event_where(
-                    "invocation_update", lambda e: "completed" in _states_for([e], invocation_id)
+                    "invocation_update", lambda e: "completed" in invocation_states_for([e], invocation_id)
                 )
         finally:
             listener.stop()
 
         # One job per scheduling iteration: the first iteration makes the invocation ready, and the
         # next schedules another step while it stays ready.
-        states = _states_for(listener.get_events("invocation_update"), invocation_id)
+        states = invocation_states_for(listener.get_events("invocation_update"), invocation_id)
         assert states.count("ready") >= 2, states
 
 
@@ -246,8 +210,10 @@ class TestInvocationSSEViewersIntegration(BaseInvocationSSEIntegrationTestCase):
             invocation_id = summary.invocation_id
             self.workflow_populator.wait_for_invocation_and_completion(invocation_id)
             (job,) = self.dataset_populator.invocation_jobs(invocation_id)
-            viewer.wait_for_event_where("invocation_update", lambda e: "completed" in _states_for([e], invocation_id))
-            viewer.wait_for_event_where("job_update", lambda e: "ok" in _job_states_for([e], job["id"]))
+            viewer.wait_for_event_where(
+                "invocation_update", lambda e: "completed" in invocation_states_for([e], invocation_id)
+            )
+            viewer.wait_for_event_where("job_update", lambda e: "ok" in job_states_for([e], job["id"]))
 
             private_job_id = self.dataset_populator.run_tool("job_properties", {}, private_history_id)["jobs"][0]["id"]
             self.dataset_populator.wait_for_job(private_job_id)
@@ -263,7 +229,7 @@ class TestInvocationSSEViewersIntegration(BaseInvocationSSEIntegrationTestCase):
             viewer.stop()
             outsider.stop()
 
-        assert _job_states_for(outsider.get_events("job_update"), private_job_id) == []
+        assert job_states_for(outsider.get_events("job_update"), private_job_id) == []
         assert not any(
             private_history_id in json.loads(e["data"])["history_ids"] for e in outsider.get_events("history_update")
         )
