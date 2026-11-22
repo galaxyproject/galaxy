@@ -75,8 +75,8 @@ class BaseInvocationSSEIntegrationTestCase(SSEIntegrationTestCase):
         _, api_key = self._setup_user_get_key(user["email"])
         return api_key
 
-    def _subscribe_as_viewer(self, api_key: str, history_id: str) -> None:
-        DatasetPopulator(self._get_interactor(api_key=api_key)).subscribe_history_viewer([history_id])
+    def _subscribe_as_viewer(self, api_key: str, *history_ids: str) -> None:
+        DatasetPopulator(self._get_interactor(api_key=api_key)).subscribe_history_viewer(list(history_ids))
 
 
 class TestInvocationSSEIntegration(BaseInvocationSSEIntegrationTestCase):
@@ -197,7 +197,8 @@ class TestInvocationSSEViewersIntegration(BaseInvocationSSEIntegrationTestCase):
         viewer = self._listener(viewer_api_key)
         outsider = self._listener(outsider_api_key)
         try:
-            self._subscribe_as_viewer(viewer_api_key, published_history_id)
+            # A malformed id is skipped without dropping the valid one.
+            self._subscribe_as_viewer(viewer_api_key, "notanid", published_history_id)
             # Skipped: the outsider cannot access the history.
             self._subscribe_as_viewer(outsider_api_key, private_history_id)
 
