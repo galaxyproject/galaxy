@@ -8,7 +8,9 @@ import FilterMenuInput from "./FilterMenuInput.vue";
 
 const NAME_FILTER = { placeholder: "name", type: String, handler: contains("name"), menuItem: true };
 
-function mountInput(props: Record<string, unknown> = {}) {
+type Props = InstanceType<typeof FilterMenuInput>["$props"];
+
+function mountInput(props: Partial<Props> = {}) {
     return mount(FilterMenuInput, {
         props: { name: "name", identifier: "test-list", filter: NAME_FILTER, filters: { name: "old" }, ...props },
         global: getLocalVue(),

@@ -8,7 +8,9 @@ import FilterMenuRanged from "./FilterMenuRanged.vue";
 
 const INDEX_FILTER = { placeholder: "index", type: Number, handler: equals("hid"), isRangeInput: true, menuItem: true };
 
-function mountRanged(props: Record<string, unknown> = {}) {
+type Props = InstanceType<typeof FilterMenuRanged>["$props"];
+
+function mountRanged(props: Partial<Props> = {}) {
     return mount(FilterMenuRanged, {
         props: { name: "hid", identifier: "test-list", filter: INDEX_FILTER, filters: { hid_gt: "2" }, ...props },
         global: getLocalVue(),
