@@ -19,7 +19,6 @@ import requests
 from galaxy.util.wait import (
     timeout_type,
     TimeoutAssertionError,
-    wait_on,
 )
 
 T = TypeVar("T")
@@ -104,13 +103,7 @@ class SSELineListener:
 
     def wait_for_event(self, event_type: str, timeout: int = DEFAULT_WAIT_TIMEOUT) -> list[dict]:
         """Block until at least one event of ``event_type`` has been observed, then return all such events."""
-
-        def _check():
-            self._raise_if_errored()
-            events = self.get_events(event_type)
-            return events if events else None
-
-        return wait_on(_check, f"SSE {event_type} event", timeout=timeout)
+        return self.wait_for_event_where(event_type, lambda event: True, timeout=timeout)
 
     def wait_for_event_where(
         self,
@@ -124,13 +117,11 @@ class SSELineListener:
         callers can still inspect the surrounding stream (e.g. assert what else
         did or didn't appear) after the wait resolves.
         """
-
-        def _check():
-            self._raise_if_errored()
-            events = self.get_events(event_type)
-            return events if any(predicate(e) for e in events) else None
-
-        return wait_on(_check, f"SSE {event_type} matching predicate", timeout=timeout)
+        if not self.wait_for_matching_event_count_above(event_type, predicate, 0, timeout):
+            raise TimeoutAssertionError(
+                f"Timed out after {timeout} seconds waiting on SSE {event_type} matching predicate"
+            )
+        return self.get_events(event_type)
 
     def matching_event_count(self, event_type: str, predicate: Callable[[dict], bool]) -> int:
         """Return how many ``event_type`` events matching ``predicate`` have arrived so far."""
