@@ -209,7 +209,9 @@ class TestCommandFactory(TestCase):
         bin_directory = os.path.join(self.job_dir, "bin")
         os.makedirs(bin_directory)
         for tool in ("cp", "sh"):
-            os.symlink(shutil.which(tool), os.path.join(bin_directory, tool))
+            tool_path = shutil.which(tool)
+            assert tool_path
+            os.symlink(tool_path, os.path.join(bin_directory, tool))
         subprocess.run(["/bin/sh", "-c", self.__command()], cwd=self.job_dir, check=True, env={"PATH": bin_directory})
         assert _read(os.path.join(outputs, "real")) == ""
         assert os.path.exists(rejected_file)
