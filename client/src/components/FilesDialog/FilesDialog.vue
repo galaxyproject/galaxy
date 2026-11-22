@@ -479,7 +479,8 @@ function onSelectAll() {
     // a paginated folder shows one page, so select all toggles that page and keeps the other pages' selection
     const isUnselectAll = isPaginated.value
         ? items.value.some(isRowSelected)
-        : selectionModel.value.pathExists(urlTracker.current.value.url);
+        : isDirectorySelected(urlTracker.current.value) ||
+          selectionModel.value.pathExists(urlTracker.current.value.url);
 
     for (const item of items.value) {
         if (isUnselectAll) {

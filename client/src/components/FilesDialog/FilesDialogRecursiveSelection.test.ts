@@ -121,4 +121,18 @@ describe("FilesDialog, recursive listing without folders", () => {
         expect(rows().filter((item) => item.isLeaf && item._rowVariant !== "success").length).toBeGreaterThan(0);
         expect(dialog().props("selectAllVariant")).not.toBe(SELECTION_STATES.SELECTED);
     });
+
+    it("should unselect all in a folder of empty folders below a selected folder", async () => {
+        recursiveListing = directory1RecursiveResponse.filter((entry) => entry.class === "Directory");
+        await emit("onClick", row(directoryId));
+        await emit("onOpen", row(directoryId));
+        await emit("onOpen", row(subDirectoryId));
+        expect(dialog().props("selectAllVariant")).toBe(SELECTION_STATES.SELECTED);
+
+        await emit("onSelectAll");
+        for (const item of rows()) {
+            expect(item._rowVariant).toBe(SELECTION_STATES.UNSELECTED);
+        }
+        expect(dialog().props("selectAllVariant")).toBe(SELECTION_STATES.UNSELECTED);
+    });
 });
