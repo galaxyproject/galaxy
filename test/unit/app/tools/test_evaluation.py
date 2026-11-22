@@ -108,6 +108,16 @@ class TestToolEvaluator(TestCase, UsesApp):
         command_line = self.evaluator.build()[0]
         assert command_line == "prog1 --thresh=4 --test_param=true"
 
+    def test_job_parameter_does_not_replace_template_macro(self):
+        # A tool that does not check its values keeps every job parameter.
+        self.tool.check_values = False
+        self.tool._template_macro_params = {"macro_text": "text from the template macro"}
+        self.job.parameters.append(JobParameter(name="macro_text", value='"marker"'))
+        self.tool._command_line = "prog1 '$macro_text'"
+        self._set_compute_environment()
+        command_line = self.evaluator.build()[0]
+        assert command_line == "prog1 'text from the template macro'"
+
     def test_evaluation_of_optional_datasets(self):
         # Make sure optional dataset don't cause evaluation to break and
         # evaluate in cheetah templates as 'None'.
@@ -315,6 +325,7 @@ class MockTool:
         self.hooks_called = []
         self.environment_variables = []
         self._config_files = []
+        self._template_macro_params = {}
         self._command_line = "bwa --thresh=$thresh --in=$input1 --out=$output1"
         self._params = {"thresh": self.test_thresh_param()}
         self.options = Bunch(sanitize=False)
@@ -336,7 +347,7 @@ class MockTool:
 
     @property
     def template_macro_params(self):
-        return {}
+        return self._template_macro_params
 
     @property
     def inputs(self):

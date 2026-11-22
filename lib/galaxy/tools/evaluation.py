@@ -246,9 +246,10 @@ class ToolEvaluator:
         if self._history:
             param_dict["__history_id__"] = self.app.security.encode_id(self._history.id)
         param_dict["__galaxy_url__"] = self.compute_environment.galaxy_url()
-        param_dict.update(self.tool.template_macro_params)
         # All parameters go into the param_dict
         param_dict.update(incoming)
+        # Template macros are tool text that is not sanitized, so they take precedence over job parameters.
+        param_dict.update(self.tool.template_macro_params)
 
         self.__populate_wrappers(param_dict, input_datasets, job_working_directory)
         self.__populate_input_dataset_wrappers(param_dict, input_datasets)
