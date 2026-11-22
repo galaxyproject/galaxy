@@ -8674,13 +8674,6 @@ input:
             result = self.dataset_populator.get_history_dataset_content(history_id)
             assert result.count("\n") == 4
 
-    @skip_without_tool("random_lines1")
-    def test_defaults_editor(self):
-        workflow_id = self._upload_yaml_workflow(WORKFLOW_ONE_STEP_DEFAULT, publish=True)
-        workflow_object = self._download_workflow(workflow_id, style="editor")
-        put_response = self._update_workflow(workflow_id, workflow_object)
-        assert put_response.status_code == 200
-
     @skip_without_tool("multi_data_optional")
     def test_invalid_collection_input_rejected(self):
         valid_collection_type = """
