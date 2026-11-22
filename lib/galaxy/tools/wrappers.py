@@ -800,24 +800,27 @@ class DatasetCollectionWrapper(ToolParameterValueWrapper, HasDatasets):
         invalid_chars: Sequence[str] = ("/",),
         include_collection_name: bool = False,
     ) -> list[str]:
+        # The collection name is the top-level directory, once, however deeply an element is nested.
+        top_level = (
+            [filesystem_safe_string(self.name, invalid_chars=invalid_chars)]
+            if include_collection_name and self.name
+            else []
+        )
+        # Identifiers are shortened by the name's length even though the name is its own path
+        # segment; kept so existing staging layouts don't change.
+        name_allowance = len(self.name or "") + 1 if include_collection_name else 0
         safe_element_identifiers = []
         for element_identifiers, extension, *_ in self.element_identifiers_extensions_paths_and_metadata_files:
             datatype = self.datatypes_registry.get_datatype_by_extension(extension)
             if datatype:
                 extension = getattr(datatype, "file_ext_export_alias", extension)
-            current_element_identifiers = []
-            for element_identifier in element_identifiers:
-                max_len = 254 - len(extension)
-                if include_collection_name:
-                    max_len = max_len - (len(self.name or "") + 1)
-                    assert max_len >= 1, "Could not stage element, element identifier is too long"
-                current_element_identifier = filesystem_safe_string(
-                    element_identifier, max_len=max_len, invalid_chars=invalid_chars
-                )
-                if include_collection_name and self.name:
-                    current_element_identifier = f"{filesystem_safe_string(self.name, invalid_chars=invalid_chars)}{os.path.sep}{current_element_identifier}"
-                current_element_identifiers.append(current_element_identifier)
-
+            max_len = 254 - len(extension) - name_allowance
+            if include_collection_name:
+                assert max_len >= 1, "Could not stage element, element identifier is too long"
+            current_element_identifiers = top_level + [
+                filesystem_safe_string(element_identifier, max_len=max_len, invalid_chars=invalid_chars)
+                for element_identifier in element_identifiers
+            ]
             safe_element_identifiers.append(f"{os.path.sep.join(current_element_identifiers)}.{extension}")
         return safe_element_identifiers
 
