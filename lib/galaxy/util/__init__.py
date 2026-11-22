@@ -142,6 +142,7 @@ from .path import (  # noqa: F401
     safe_relpath,
     StrPath,
 )
+from .renamed_temporary_file import RenamedTemporaryFile
 from .rst_to_html import rst_to_html  # noqa: F401
 
 try:
@@ -1664,14 +1665,9 @@ def send_mail(frm, to, subject, body, config, html=None, reply_to=None):
         email_json = json.to_json_string(email_dict)
         if os.path.isdir(path):
             # One file per email, named in sending order, so tests can tell how many were sent.
-            # Write it under a name read_mock_emails skips and rename it once complete, so tests
-            # polling the directory never read a partially written email.
-            fd, tmp_path = tempfile.mkstemp(prefix=f"{time.time_ns()}-", suffix=".json.tmp", dir=path)
-            with os.fdopen(fd, "w") as f:
-                f.write(email_json)
-            os.replace(tmp_path, tmp_path[: -len(".tmp")])
-            return
-        with open(path, "w") as f:
+            path = os.path.join(path, f"{time.time_ns()}-{uuid.uuid4().hex}.json")
+        # Move the email into place once written, so tests polling for it never read a partial one.
+        with RenamedTemporaryFile(path, mode="w") as f:
             f.write(email_json)
         return
 
