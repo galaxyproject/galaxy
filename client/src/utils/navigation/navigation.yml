@@ -1222,6 +1222,10 @@ workflow_run:
     validation_error: ".validation-error"
     expand_form_link: '.workflow-expand-form-link'
     expanded_form: '.workflow-expanded-form'
+    # v-g-tooltip rewrites the button title, so match the label text.
+    simple_form_toggle:
+      type: xpath
+      selector: '//button[contains(., "Simple Form")]'
     current_history_indicator: '[data-description="current history indicator"]'
     not_current_history_indicator: '[data-description="not current history indicator"]'
     history_target_link: '[data-description="switch to history link"]'

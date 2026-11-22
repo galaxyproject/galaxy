@@ -146,7 +146,7 @@ class TestWorkflowRun(SeleniumTestCase, UsesHistoryItemAssertions, RunsWorkflows
         self.select_set_value(selection, "Use default file")
         assert "Using default file" in status.wait_for_visible().text
 
-        self.wait_for_xpath('//button[contains(., "Simple Form")]').click()
+        self.workflow_run_switch_to_simple_form()
         assert "Using default file" in status.wait_for_visible().text
         assert location in status.wait_for_visible().text
         self.screenshot("workflow_run_default_file_location")
@@ -262,12 +262,7 @@ class TestWorkflowRun(SeleniumTestCase, UsesHistoryItemAssertions, RunsWorkflows
         # ``workflow_run_ensure_expanded`` is a no-op when already in legacy
         # mode but waits on ``run_workflow`` and ``expanded_form`` first.
         self.workflow_run_ensure_expanded()
-        # Click the "Simple Form" toggle to switch to ``WorkflowRunFormSimple``.
-        # Use a text-based XPath because ``v-g-tooltip`` rewrites the title
-        # attribute and the button isn't yet in ``navigation.yml`` — and
-        # ``wait_for_xpath`` works on both Selenium and Playwright backends,
-        # unlike ``self.driver.find_element`` which is Selenium-only.
-        self.wait_for_xpath('//button[contains(., "Simple Form")]').click()
+        self.workflow_run_switch_to_simple_form()
         self.sleep_for(self.wait_types.UX_RENDER)
         # The simplified form renders workflow inputs via ``FormDisplay``; the
         # ``input1`` data dropdown lands in a multiselect we can locate by

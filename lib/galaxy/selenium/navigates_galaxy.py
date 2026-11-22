@@ -2433,6 +2433,10 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
             self.move_to_and_click(expand_link)
             workflow_run.expanded_form.wait_for_visible()
 
+    def workflow_run_switch_to_simple_form(self):
+        self.components.workflow_run.simple_form_toggle.wait_for_and_click()
+        self.components.workflow_run.expanded_form.wait_for_absent()
+
     def workflow_create_new(
         self, annotation: str | None = None, clear_placeholder: bool = False, save_workflow: bool = True
     ):
