@@ -46,7 +46,10 @@ from galaxy.tool_util_models.tool_source import (
 )
 from galaxy.tools.actions import determine_output_format
 from galaxy.tools.expressions import do_eval
-from galaxy.tools.job_parameters import is_element_identifier_parameter
+from galaxy.tools.job_parameters import (
+    CHROM_INFO,
+    is_element_identifier_parameter,
+)
 from galaxy.tools.parameters import (
     visit_input_values,
     wrapped_json,
@@ -729,7 +732,7 @@ class ToolEvaluator:
         Note: this method follows the style of the similar populate calls, in that param_dict is modified in-place.
         """
         # chromInfo is a filename, do not sanitize it.
-        skip = ["chromInfo"] + list(self.tool.template_macro_params.keys())
+        skip = [CHROM_INFO] + list(self.tool.template_macro_params.keys())
         if not self.tool or not self.tool.options or self.tool.options.sanitize:
             for key, value in list(param_dict.items()):
                 if key not in skip:

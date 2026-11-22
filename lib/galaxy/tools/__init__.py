@@ -136,7 +136,10 @@ from galaxy.tools.actions.model_operations import ModelOperationToolAction
 from galaxy.tools.evaluation import global_tool_errors
 from galaxy.tools.execution_helpers import ToolExecutionCache
 from galaxy.tools.imp_exp import JobImportHistoryArchiveWrapper
-from galaxy.tools.job_parameters import TEMPLATE_JOB_PARAMETERS
+from galaxy.tools.job_parameters import (
+    EXPORT_TO_URI,
+    TEMPLATE_JOB_PARAMETERS,
+)
 from galaxy.tools.parameters import (
     check_param,
     params_from_strings,
@@ -3540,7 +3543,7 @@ class SetMetadataTool(Tool):
 
 class ExportHistoryTool(Tool):
     tool_type = "export_history"
-    template_job_parameters = Tool.template_job_parameters | {"__EXPORT_TO_URI__"}
+    template_job_parameters = Tool.template_job_parameters | {EXPORT_TO_URI}
 
 
 class ImportHistoryTool(Tool):
