@@ -1462,18 +1462,17 @@ steps:
         self.workflow_editor_open_with_name(name)
         editor = self.components.workflow_editor
         editor.tool_bar.auto_layout.wait_for_and_click()
-        self.sleep_for(self.wait_types.UX_RENDER)
+        self._wait_for_unsaved_changes()
         self.assert_workflow_has_changes_and_save()
         editor.node._(label="nested_workflow").wait_for_and_click()
         editor.upgrade_subworkflow.wait_for_and_click()
-        self.sleep_for(self.wait_types.DATABASE_OPERATION)
-        assert saved_num_lines() == "2"
+        self._wait_on(lambda: saved_num_lines() == "2", "the upgraded sub-workflow to be saved")
 
         editor.tool_bar.changes.wait_for_and_click()
         editor.latest_change.wait_for_and_click()
-        self.sleep_for(self.wait_types.UX_RENDER)
+        self._wait_for_unsaved_changes()
         self.assert_workflow_has_changes_and_save()
-        assert saved_num_lines() == "1"
+        self._wait_on(lambda: saved_num_lines() == "1", "the undone sub-workflow upgrade to be saved")
 
     @selenium_test
     def test_editor_duplicate_node(self):
@@ -1583,6 +1582,10 @@ steps:
         self.assert_workflow_has_changes_and_save()
         workflow = self._download_current_workflow()
         assert len(workflow["steps"]) == 3
+
+    def _wait_for_unsaved_changes(self):
+        save_button = self.components.workflow_editor.save_button
+        self._wait_on(lambda: not save_button.has_class("g-disabled"), "the editor to report unsaved changes")
 
     def _current_collection_type(self):
         workflow = self._download_current_workflow()
