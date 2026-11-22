@@ -6302,6 +6302,10 @@ default_file_input:
             content = self.dataset_populator.get_history_dataset_content(history_id)
             assert "chr1" in content
 
+    def _history_contents_named(self, history_id: str, name: str) -> list[dict]:
+        contents = self.dataset_populator.get_history_contents(history_id)
+        return [c for c in contents if c["name"] == name]
+
     def test_run_subworkflow_step_with_default_file_over_several_passes(self):
         with self.dataset_populator.test_history() as history_id:
             self._run_workflow(
@@ -6351,9 +6355,8 @@ test_data:
                 wait=True,
                 assert_ok=True,
             )
-            contents = self.dataset_populator.get_history_contents(history_id)
-            default_datasets = [c for c in contents if c["name"] == "a file"]
-            assert not default_datasets, contents
+            default_datasets = self._history_contents_named(history_id, "a file")
+            assert not default_datasets, default_datasets
 
     def test_run_delayed_tool_step_with_default_file(self):
         with self.dataset_populator.test_history() as history_id:
@@ -6387,9 +6390,8 @@ test_data:
                 wait=True,
                 assert_ok=True,
             )
-            contents = self.dataset_populator.get_history_contents(history_id)
-            default_datasets = [c for c in contents if c["name"] == "a file"]
-            assert len(default_datasets) == 1, contents
+            default_datasets = self._history_contents_named(history_id, "a file")
+            assert len(default_datasets) == 1, default_datasets
 
     def test_run_tool_step_with_default_file_and_pending_parameter_connection(self):
         with self.dataset_populator.test_history() as history_id:
@@ -6414,9 +6416,8 @@ steps:
                 wait=True,
                 assert_ok=True,
             )
-            contents = self.dataset_populator.get_history_contents(history_id)
-            default_datasets = [c for c in contents if c["name"] == "a file"]
-            assert len(default_datasets) == 1, contents
+            default_datasets = self._history_contents_named(history_id, "a file")
+            assert len(default_datasets) == 1, default_datasets
 
     def test_conditional_skip_on_database_operation_collection_output(self):
         with self.dataset_populator.test_history() as history_id:
