@@ -14,6 +14,7 @@ from galaxy.datatypes.mothur import (
     SffFlow,
     SquareDistanceMatrix,
 )
+from galaxy.datatypes.sniff import FilePrefix
 from .util import MockDataset
 
 
@@ -71,14 +72,14 @@ def test_sff_flow_set_meta_empty_no_warning(tmp_path, caplog):
 def test_pairwise_distance_matrix_sniff_integer_distances(tmp_path):
     path = tmp_path / "input"
     path.write_text("seqA\tseqB\t1\nseqA\tseqC\t2\nseqB\tseqC\t3\n")
-    assert PairwiseDistanceMatrix().sniff(str(path)) is False
+    assert PairwiseDistanceMatrix().sniff_prefix(FilePrefix(str(path))) is False
 
 
 @pytest.mark.parametrize("datatype", [LowerTriangleDistanceMatrix(), SquareDistanceMatrix()])
 def test_distance_matrix_sniff_empty(tmp_path, datatype):
     path = tmp_path / "input"
     path.write_text("")
-    assert datatype.sniff(str(path)) is False
+    assert datatype.sniff_prefix(FilePrefix(str(path))) is False
 
 
 PHYLOTYPE_SABUND = "1\t3\t0\t1\t2\n2\t3\t1\t0\t2\n3\t4\t2\t1\t0\t1\n"
@@ -93,17 +94,17 @@ PHYLOTYPE_LIST = "label\tnumOtus\tOtu1\tOtu2\n1\t2\tseqA,seqB\tseqC\n2\t2\tseqA\
 def test_sniff_phylotype_integer_labels(tmp_path, datatype, content):
     path = tmp_path / "input"
     path.write_text(content)
-    assert datatype.sniff(str(path)) is True
+    assert datatype.sniff_prefix(FilePrefix(str(path))) is True
 
 
 @pytest.mark.parametrize("datatype", [LowerTriangleDistanceMatrix(), SquareDistanceMatrix()])
 def test_distance_matrix_sniff_zero_count(tmp_path, datatype):
     path = tmp_path / "input"
     path.write_text("0\n")
-    assert datatype.sniff(str(path)) is False
+    assert datatype.sniff_prefix(FilePrefix(str(path))) is False
 
 
 def test_sabund_sniff_with_heading_line(tmp_path):
     path = tmp_path / "input"
     path.write_text("label\tnumOtus\tOtu1\tOtu2\nunique\t2\t94\t2\n0.03\t2\t75\t6\n")
-    assert Sabund().sniff(str(path)) is True
+    assert Sabund().sniff_prefix(FilePrefix(str(path))) is True
