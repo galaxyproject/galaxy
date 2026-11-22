@@ -669,7 +669,7 @@ class WorkflowModule:
             for step_input in step.inputs:
                 step_input_name = step_input.name
                 input_in_execution_state = step_input_name not in known_input_names
-                if input_in_execution_state:
+                if input_in_execution_state and step_input_name in step.input_connections_by_name:
                     maybe_collection = progress.replacement_for_connection(
                         step.input_connections_by_name[step_input_name][0]
                     )
@@ -837,7 +837,12 @@ class SubWorkflowModule(WorkflowModule):
         inputs, etc...
         """
         step = invocation_step.workflow_step
-        all_inputs = self.get_all_inputs()
+        # The subworkflow invocation receives only connected inputs, so only those can be mapped over.
+        # Evaluating an unconnected input would materialize its data default into the history on every
+        # scheduling pass while this step is delayed.
+        all_inputs = [
+            input_dict for input_dict in self.get_all_inputs() if input_dict["name"] in step.input_connections_by_name
+        ]
         collection_info = self.compute_collection_info(progress, step, all_inputs)
 
         if collection_info:

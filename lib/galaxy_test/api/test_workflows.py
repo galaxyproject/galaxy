@@ -6302,6 +6302,59 @@ default_file_input:
             content = self.dataset_populator.get_history_dataset_content(history_id)
             assert "chr1" in content
 
+    def test_run_subworkflow_step_with_default_file_over_several_passes(self):
+        with self.dataset_populator.test_history() as history_id:
+            self._run_workflow(
+                """
+class: GalaxyWorkflow
+inputs:
+  outer_input: data
+outputs:
+  out:
+    outputSource: subworkflow/out
+steps:
+  subworkflow:
+    in:
+      inner_input: outer_input
+      inner_data:
+        default:
+          class: File
+          basename: a file
+          format: txt
+          location: https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bed
+    run:
+      class: GalaxyWorkflow
+      inputs:
+        inner_input: data
+        inner_data:
+          type: data
+          optional: true
+      outputs:
+        out:
+          outputSource: cat_list/out_file1
+      steps:
+        split:
+          tool_id: split
+          in:
+            input1: inner_input
+        cat_list:
+          tool_id: cat_list
+          in:
+            input1: split/output
+test_data:
+  outer_input:
+    value: 1.bed
+    type: File
+    file_type: txt
+""",
+                history_id=history_id,
+                wait=True,
+                assert_ok=True,
+            )
+            contents = self.dataset_populator.get_history_contents(history_id)
+            default_datasets = [c for c in contents if c["name"] == "a file"]
+            assert not default_datasets, contents
+
     def test_conditional_skip_on_database_operation_collection_output(self):
         with self.dataset_populator.test_history() as history_id:
             summary = self._run_workflow(
