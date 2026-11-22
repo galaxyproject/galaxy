@@ -524,10 +524,9 @@ def history_update(app: "MinimalManagerApp", **kwargs) -> None:
 
     After owner routing, also fans out to viewer subscriptions so users
     watching histories they don't own (multi-history view of a shared history,
-    published-history page, etc.) receive the same push. Viewer dispatch is
-    additive: the owner gets the event from ``push_to_user`` regardless of
-    whether they happen to be subscribed as a viewer too — duplicate refresh
-    is idempotent on the client and cheaper than maintaining a dedup index.
+    published-history page, etc.) receive the same push. Owners subscribed as
+    viewers of their own history are skipped, as for ``invocation_update`` and
+    ``job_update``.
     """
     payload = cast(HistoryUpdatePayload, kwargs)
     sse_manager = app[SSEConnectionManager]
@@ -536,6 +535,7 @@ def history_update(app: "MinimalManagerApp", **kwargs) -> None:
     # Build (history_id, encoded_event) once per changed history so the viewer
     # fan-out below doesn't redo the JSON serialization.
     events_by_encoded_id: dict[str, SSEEvent] = {}
+    owners_by_encoded_id: dict[str, set[int]] = defaultdict(set)
 
     def event_for(history_id: int) -> SSEEvent:
         encoded = encode(history_id)
@@ -552,10 +552,11 @@ def history_update(app: "MinimalManagerApp", **kwargs) -> None:
         data = json.dumps({"history_ids": encoded_ids})
         event = SSEEvent(event="history_update", data=data, id=event_id)
         sse_manager.push_to_user(user_id, event)
-        for hid in history_ids:
+        for hid, encoded_id in zip(history_ids, encoded_ids):
             # Pre-populate the per-history cache so the viewer fan-out reuses
             # the encoded id without re-running encode_id.
             event_for(hid)
+            owners_by_encoded_id[encoded_id].add(user_id)
     for session_id_str, history_ids in payload.get("session_updates", {}).items():
         session_id = int(session_id_str)
         encoded_ids = [encode(hid) for hid in history_ids]
@@ -567,7 +568,7 @@ def history_update(app: "MinimalManagerApp", **kwargs) -> None:
     # Viewer dispatch — push a single-history event to anyone (user or session)
     # subscribed as a viewer of that history on this worker.
     for encoded_id, viewer_event in events_by_encoded_id.items():
-        sse_manager.push_to_history_viewers(encoded_id, viewer_event)
+        sse_manager.push_to_history_viewers(encoded_id, viewer_event, exclude_user_ids=owners_by_encoded_id[encoded_id])
 
 
 def subscribe_history_viewer(app: "MinimalManagerApp", **kwargs) -> None:

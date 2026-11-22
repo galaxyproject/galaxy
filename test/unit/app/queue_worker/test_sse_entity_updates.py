@@ -3,6 +3,7 @@ import json
 
 from galaxy.managers.sse import SSEConnectionManager
 from galaxy.queue_worker import (
+    history_update,
     invocation_update,
     job_update,
 )
@@ -90,5 +91,20 @@ async def test_invocation_update_reaches_owner_and_viewers():
     invocation_update(app, updates=[{"user_id": 1, "history_id": 10, "invocation_id": 3, "state": "ready"}])
 
     expected = [{"event": "invocation_update", "invocations": [{"id": encode(3), "state": "ready"}]}]
+    assert await _received(owner) == expected
+    assert await _received(viewer) == expected
+
+
+async def test_history_update_skips_owner_subscribed_as_viewer():
+    app = App()
+    encode = app.security.encode_id
+    owner = _connect(app, user_id=1)
+    viewer = _connect(app, user_id=2)
+    app.sse_manager.subscribe_user_viewer(1, encode(10))
+    app.sse_manager.subscribe_user_viewer(2, encode(10))
+
+    history_update(app, user_updates={"1": [10]})
+
+    expected = [{"event": "history_update", "history_ids": [encode(10)]}]
     assert await _received(owner) == expected
     assert await _received(viewer) == expected
