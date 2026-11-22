@@ -1473,16 +1473,16 @@ class MinimalJobWrapper(HasResourceParameters):
                 os.path.join(ensure_configs_directory(self.working_directory), "registry.xml")
             )
         if self.remote_command_line:
-            os.makedirs(os.path.join(self.working_directory, "metadata", "outputs_new"), exist_ok=True)
-            self.job_io.to_json(path=os.path.join(self.working_directory, "metadata", "outputs_new", "job_io.json"))
-            # Pulsar rewrites this with the paths it assigns while staging.
-            with open(
-                os.path.join(self.working_directory, "metadata", "outputs_new", "compute_environment.json"), "w"
-            ) as f:
-                json.dump(remote_evaluation_paths(self.job_io, compute_environment), f)
-            self.app.tool_data_tables.to_json(
-                path=os.path.join(self.working_directory, "metadata", "outputs_new", "tool_data_tables.json")
+            export_directory = os.path.join(self.working_directory, "metadata", "outputs_new")
+            os.makedirs(export_directory, exist_ok=True)
+            with open(os.path.join(export_directory, "job_io.json"), "w") as f:
+                json.dump(compute_environment.remote_evaluation_job_io(self.job_io), f)
+            paths = remote_evaluation_paths(
+                self.job_io, compute_environment, compute_environment.remote_evaluation_unstructured_paths()
             )
+            with open(os.path.join(export_directory, "compute_environment.json"), "w") as f:
+                json.dump(paths, f)
+            self.app.tool_data_tables.to_json(path=os.path.join(export_directory, "tool_data_tables.json"))
         job.dependencies = self.tool.dependencies
         self.sa_session.add(job)
         self.sa_session.commit()

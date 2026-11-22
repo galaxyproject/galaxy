@@ -67,6 +67,14 @@ class ComputeEnvironment(metaclass=ABCMeta):
         """
         return None
 
+    def remote_evaluation_job_io(self, job_io: JobIO):
+        """Contents of ``job_io.json`` for evaluating the tool where the job runs."""
+        return job_io.to_dict()
+
+    def remote_evaluation_unstructured_paths(self) -> dict[str, str]:
+        """Unstructured paths rewritten while Galaxy prepared the job, for remote evaluation."""
+        return {}
+
     @abstractmethod
     def working_directory(self):
         """Job working directory (potentially remote)"""

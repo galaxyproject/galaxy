@@ -5,7 +5,6 @@ More information on Pulsar can be found at https://pulsar.readthedocs.io/ .
 
 import copy
 import errno
-import json
 import logging
 import os
 import re
@@ -48,7 +47,6 @@ from galaxy.exceptions import InsufficientPermissionsException
 from galaxy.job_execution.compute_environment import (
     ComputeEnvironment,
     dataset_path_to_extra_path,
-    remote_evaluation_paths,
 )
 from galaxy.job_metrics.instrumenters.pulsar import PulsarPlugin
 from galaxy.jobs.command_factory import build_command
@@ -729,9 +727,6 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
                 remote_job_directory=remote_job_directory,
                 metadata_container=metadata_container,
             )
-            if remote_command_line:
-                assert compute_environment is not None
-                self._setup_remote_tool_evaluation(job_wrapper, compute_environment, remote_job_config)
         except UnsupportedPulsarException:
             log.exception("failure running job %d, unsupported Pulsar target", job_wrapper.job_id)
             fail_or_resubmit = True
@@ -755,25 +750,6 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
             self.work_queue.put((self.fail_job, job_state))
 
         return command_line, client, remote_job_config, compute_environment, remote_container, dependencies_description
-
-    @staticmethod
-    def _setup_remote_tool_evaluation(job_wrapper, compute_environment, remote_job_config):
-        """Serialize compute paths alongside the model store transferred by Pulsar."""
-        job_io = job_wrapper.job_io
-        paths = remote_evaluation_paths(job_io, compute_environment, compute_environment.path_rewrites_unstructured)
-
-        io_dict = job_io.to_dict()
-        io_dict["working_directory"] = remote_job_config["job_directory"]
-        io_dict["outputs_directory"] = "outputs"
-        io_dict["outputs_to_working_directory"] = False
-        for name in ("tool_directory", "version_path", "home_directory", "tmp_directory", "new_file_path"):
-            io_dict[name] = getattr(compute_environment, name)()
-        io_dict["tool_dir"] = compute_environment.tool_directory()
-        export_directory = os.path.join(job_wrapper.working_directory, "metadata", "outputs_new")
-        with open(os.path.join(export_directory, "job_io.json"), "w") as f:
-            json.dump(io_dict, f)
-        with open(os.path.join(export_directory, "compute_environment.json"), "w") as f:
-            json.dump(paths, f)
 
     @staticmethod
     def _rewrite_container_for_compute_environment(container, compute_environment):
@@ -1501,6 +1477,7 @@ class PulsarComputeEnvironment(ComputeEnvironment):
         # computations, so precalculate these paths.
         self.path_mapper = PathMapper(pulsar_client, remote_job_config, self.local_path_config.working_directory())
         self._config_directory = remote_job_config["configs_directory"]
+        self._job_directory = remote_job_config["job_directory"]
         self._working_directory = remote_job_config["working_directory"]
         self._sep = remote_job_config["system_properties"]["separator"]
         self._tool_dir = remote_job_config["tools_directory"]
@@ -1593,6 +1570,19 @@ class PulsarComputeEnvironment(ComputeEnvironment):
 
     def working_directory(self):
         return self._working_directory
+
+    def remote_evaluation_job_io(self, job_io):
+        io_dict = job_io.to_dict()
+        io_dict["working_directory"] = self._job_directory
+        io_dict["outputs_directory"] = "outputs"
+        io_dict["outputs_to_working_directory"] = False
+        for name in ("tool_directory", "version_path", "home_directory", "tmp_directory", "new_file_path"):
+            io_dict[name] = getattr(self, name)()
+        io_dict["tool_dir"] = self.tool_directory()
+        return io_dict
+
+    def remote_evaluation_unstructured_paths(self):
+        return self.path_rewrites_unstructured
 
     def env_config_directory(self):
         return self.config_directory()
