@@ -15,13 +15,19 @@ async function type(input: Omit<DOMWrapper<Element>, "exists">, value: string) {
 const TRS_SELECTION = { id: "dockstore", label: "Dockstore", link_url: "https://dockstore.org", doc: "" };
 const SEARCH_RESULT = { id: "#workflow/example", name: "example", description: "", organization: "org", versions: [] };
 
-async function mountTrsSearch() {
+async function mountTrsSearch(selection: typeof TRS_SELECTION | null = TRS_SELECTION) {
     const wrapper = mount(TrsSearch as object, {
         global: { ...getLocalVue(), stubs: { TrsServerSelection: true, TrsTool: true, HelpText: true } },
     });
-    wrapper.findComponent(TrsServerSelection).vm.$emit("onTrsSelection", TRS_SELECTION);
+    if (selection) {
+        selectTrsServer(wrapper, selection);
+    }
     await flushPromises();
     return wrapper;
+}
+
+function selectTrsServer(wrapper: ReturnType<typeof mount>, selection: typeof TRS_SELECTION) {
+    wrapper.findComponent(TrsServerSelection).vm.$emit("onTrsSelection", selection);
 }
 
 describe("TrsSearch", () => {
@@ -111,5 +117,61 @@ describe("TrsSearch", () => {
             query: "rna-seq & qc #1 + more",
             trs_server: "dockstore",
         });
+    });
+
+    it("keeps a query typed before the TRS server list loads and searches it on that server", async () => {
+        const wrapper = await mountTrsSearch(null);
+        const input = wrapper.get("input#trs-search-query");
+        await type(input, "organization: iwc-workflows");
+        vi.advanceTimersByTime(500);
+        await flushPromises();
+        // no server is selected yet, so there is nothing to search
+        expect(axiosGet).not.toHaveBeenCalled();
+
+        selectTrsServer(wrapper, TRS_SELECTION);
+        await flushPromises();
+
+        expect((input.element as HTMLInputElement).value).toBe("organization: iwc-workflows");
+        expect(axiosGet).toHaveBeenCalledOnce();
+        const url = new URL(axiosGet.mock.calls[0]![0] as string, "http://localhost");
+        expect(Object.fromEntries(url.searchParams)).toEqual({
+            query: "organization: iwc-workflows",
+            trs_server: "dockstore",
+        });
+    });
+
+    it("clears the query when switching to another TRS server", async () => {
+        const wrapper = await mountTrsSearch();
+        const input = wrapper.get("input#trs-search-query");
+        await type(input, "example");
+        vi.advanceTimersByTime(500);
+        await flushPromises();
+        expect(axiosGet).toHaveBeenCalledOnce();
+
+        selectTrsServer(wrapper, { ...TRS_SELECTION, id: "workflowhub", label: "WorkflowHub" });
+        await flushPromises();
+
+        expect((input.element as HTMLInputElement).value).toBe("");
+        expect(wrapper.text()).toContain("Enter search query to begin search.");
+        expect(axiosGet).toHaveBeenCalledOnce();
+    });
+
+    it("ignores the results of a search that a newer search replaced", async () => {
+        let resolveFirst!: (value: unknown) => void;
+        axiosGet
+            .mockImplementationOnce(() => new Promise((resolve) => (resolveFirst = resolve)))
+            .mockResolvedValueOnce({ data: [{ ...SEARCH_RESULT, name: "newer" }] });
+        const wrapper = await mountTrsSearch();
+        const input = wrapper.get("input#trs-search-query");
+        await input.setValue("first");
+        await input.setValue("second");
+        await flushPromises();
+
+        resolveFirst({ data: [{ ...SEARCH_RESULT, name: "older" }] });
+        await flushPromises();
+
+        expect(axiosGet).toHaveBeenCalledTimes(2);
+        expect(wrapper.text()).toContain("newer");
+        expect(wrapper.text()).not.toContain("older");
     });
 });
