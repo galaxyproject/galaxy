@@ -1,3 +1,4 @@
+import functools
 import os
 import tempfile
 from types import SimpleNamespace
@@ -6,12 +7,14 @@ from unittest.mock import Mock
 
 import pytest
 
+from galaxy import model
 from galaxy.datatypes.data import (
     Directory,
     Text,
     ZarrDirectory,
 )
 from galaxy.datatypes.metadata import MetadataSpecCollection
+from galaxy.datatypes.registry import example_datatype_registry_for_sample
 from galaxy.job_execution.compute_environment import ComputeEnvironment
 from galaxy.job_execution.datasets import DatasetPath
 from galaxy.model import DatasetInstance
@@ -24,6 +27,7 @@ from galaxy.tools.parameters.basic import (
     TextToolParameter,
     ToolParameter,
 )
+from galaxy.tools.parameters.wrapped_json import data_collection_input_to_path
 from galaxy.tools.wrappers import (
     DatasetCollectionWrapper,
     DatasetFilenameWrapper,
@@ -424,6 +428,108 @@ def test_dataset_path_error_reaches_the_command_line_template():
     # The documented guard keeps the template working.
     template = "#if $input.is_deferred\n$input\n#else\n$input.path\n#end if"
     assert fill_template(template, context={"input": wrapper}).strip() == "https://example.org/store.zarr"
+
+
+@functools.cache
+def _sample_datatypes_registry():
+    return example_datatype_registry_for_sample()
+
+
+@pytest.fixture
+def sample_datatypes_registry():
+    model.set_datatypes_registry(_sample_datatypes_registry())
+
+
+def _hda_at(path, ext="bam", metadata_files=()):
+    hda = model.HistoryDatasetAssociation(extension=ext, dataset=model.Dataset(external_filename=path))
+    # Metadata files live in the object store, which these tests don't have.
+    hda.get_metadata_file_paths_and_extensions = lambda: list(metadata_files)  # type: ignore[method-assign]
+    return hda
+
+
+def _list_paired_wrapper(compute_environment=None):
+    pair = model.DatasetCollection(collection_type="paired")
+    forward = _hda_at("/galaxy/forward.dat", metadata_files=[("bai", "/galaxy/forward_bai.dat")])
+    reverse = _hda_at("/galaxy/reverse.dat", ext="txt")
+    model.DatasetCollectionElement(collection=pair, element=forward, element_identifier="forward", element_index=0)
+    model.DatasetCollectionElement(collection=pair, element=reverse, element_identifier="reverse", element_index=1)
+    samples = model.DatasetCollection(collection_type="list:paired")
+    model.DatasetCollectionElement(collection=samples, element=pair, element_identifier="sample1", element_index=0)
+    return _input1_wrapper(samples, compute_environment)
+
+
+def _list_wrapper(*elements):
+    """Wrap a ``list`` of BAM datasets given as ``(element identifier, path)`` pairs."""
+    samples = model.DatasetCollection(collection_type="list")
+    for index, (identifier, path) in enumerate(elements):
+        model.DatasetCollectionElement(
+            collection=samples, element=_hda_at(path), element_identifier=identifier, element_index=index
+        )
+    return _input1_wrapper(samples)
+
+
+def _input1_wrapper(collection, compute_environment=None):
+    hdca = model.HistoryDatasetCollectionAssociation(collection=collection, name="input1")
+    return DatasetCollectionWrapper(
+        None,
+        hdca,
+        datatypes_registry=_sample_datatypes_registry(),
+        compute_environment=compute_environment,
+    )
+
+
+def test_collection_wrapper_path_accessors():
+    wrapper = _list_paired_wrapper()
+    assert wrapper.all_paths == ["/galaxy/forward.dat", "/galaxy/reverse.dat"]
+    assert wrapper.all_paths == [str(element) for element in wrapper.sample1]
+    assert data_collection_input_to_path(wrapper) == wrapper.all_paths
+    assert wrapper.all_metadata_files == [[("bai", "/galaxy/forward_bai.dat")], []]
+    identifiers = [list(i) for i, *_ in wrapper.element_identifiers_extensions_paths_and_metadata_files]
+    assert identifiers == [["sample1", "forward"], ["sample1", "reverse"]]
+    serialized = wrapper.serialize()
+    assert [list(s.pop("element_identifier")) for s in serialized] == identifiers
+    assert serialized == [
+        {
+            "ext": "bam",
+            "staging_path": "sample1/forward.bam",
+            "source_path": "/galaxy/forward.dat",
+            "metadata_files": [{"staging_path": "sample1/forward.bam.bai", "source_path": "/galaxy/forward_bai.dat"}],
+        },
+        {
+            "ext": "txt",
+            "staging_path": "sample1/reverse.txt",
+            "source_path": "/galaxy/reverse.dat",
+            "metadata_files": [],
+        },
+    ]
+
+
+def test_collection_wrapper_path_accessors_without_a_collection():
+    wrapper = DatasetCollectionWrapper(None, None, datatypes_registry=_sample_datatypes_registry())
+    assert wrapper.all_paths == []
+    assert wrapper.all_metadata_files == []
+    assert wrapper.serialize() == []
+
+
+def test_collection_wrapper_path_accessors_keep_elements_with_repeated_identifiers():
+    wrapper = _list_wrapper(("sample", "/galaxy/first.dat"), ("sample", "/galaxy/second.dat"))
+    assert wrapper.all_paths == ["/galaxy/first.dat", "/galaxy/second.dat"]
+    assert [s["source_path"] for s in wrapper.serialize()] == wrapper.all_paths
+
+
+def test_collection_wrapper_staging_paths_with_the_collection_name():
+    wrapper = _list_wrapper(("sample1", "/galaxy/s1.dat"))
+    assert wrapper.get_all_staging_paths(include_collection_name=True) == ["input1/sample1.bam"]
+    assert [s["staging_path"] for s in wrapper.serialize(include_collection_name=True)] == ["input1/sample1.bam"]
+
+
+def test_dataset_wrapper_metadata_file_accessors(sample_datatypes_registry):
+    dataset = _hda_at("/galaxy/single.dat", metadata_files=[("bai", "/galaxy/single_bai.dat")])
+    wrapper = DatasetFilenameWrapper(dataset, identifier="single")
+    assert wrapper.all_metadata_files == [("bai", "/galaxy/single_bai.dat")]
+    serialized = wrapper.serialize()
+    assert serialized["source_path"] == "/galaxy/single.dat"
+    assert serialized["metadata_files"] == [{"staging_path": "single.bam.bai", "source_path": "/galaxy/single_bai.dat"}]
 
 
 def _drilldown_parameter(tool):
