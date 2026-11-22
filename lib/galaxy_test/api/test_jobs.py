@@ -1440,6 +1440,31 @@ steps:
             f"/api/datasets/{dataset_id}/parameters_display", data={"hda_ldda": "hda"}
         )
         self._assert_status_code_is(display_parameters_by_dataset_response, 200)
+        output_id = search_response.json()[0]["outputs"]["out_file1"]["id"]
+        expected_outputs = {"out_file1": [{"src": "hda", "id": output_id}]}
+        assert _output_values(display_parameters_by_job_response.json()) == expected_outputs
+        display_parameters_by_output_response = self._get(
+            f"/api/datasets/{output_id}/parameters_display", data={"hda_ldda": "hda"}
+        )
+        self._assert_status_code_is(display_parameters_by_output_response, 200)
+        assert _output_values(display_parameters_by_output_response.json()) == expected_outputs
+
+    @skip_without_tool("collection_creates_pair")
+    @requires_new_history
+    def test_parameters_display_collection_output(self, history_id):
+        job_id, hdca_id = self._run_collection_only_job(history_id)
+        hdca = self.dataset_populator.get_history_collection_details(history_id, content_id=hdca_id)
+        element_ids = {element["object"]["id"] for element in hdca["elements"]}
+        displayed = self._displayed_output_values(job_id)
+        assert displayed.pop("paired_output") == [{"src": "hdca", "id": hdca_id}]
+        # The other outputs are the collection's element datasets.
+        assert [value["src"] for values in displayed.values() for value in values] == ["hda", "hda"]
+        assert {value["id"] for values in displayed.values() for value in values} == element_ids
+
+    def _displayed_output_values(self, job_id):
+        response = self._get(f"/api/jobs/{job_id}/parameters_display")
+        self._assert_status_code_is(response, 200)
+        return _output_values(response.json())
 
     def _create_and_search_job(self, history_id, inputs, tool_id):
         # create a job
@@ -1567,3 +1592,8 @@ def _mapped_inputs(hdca_id):
 
 def _plain_inputs(hda_id):
     return {"input1": {"src": "hda", "id": hda_id}}
+
+
+def _output_values(parameters_display):
+    """Map each output name in a parameters_display response to its ``{"src", "id"}`` values."""
+    return {name: [output["value"] for output in outputs] for name, outputs in parameters_display["outputs"].items()}
