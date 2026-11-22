@@ -36,7 +36,8 @@ class InvocationUpdate(TypedDict):
 class JobUpdate(TypedDict):
     """A committed job state change.
 
-    Routed to the job's user or, for anonymous jobs, its session, and to the viewers of its history.
+    Routed to the job's user (for anonymous jobs, its history's owner if any, else its session) and to
+    the viewers of its history.
     """
 
     job_id: int

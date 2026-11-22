@@ -72,8 +72,9 @@ Concretely:
      history whenever a transaction that changed the invocation's state,
      steps or messages commits, from whichever process committed it (web,
      workflow handler or Celery worker).
-   - Job updates are sent to a job's user (or, for anonymous jobs, its
-     browser session) whenever a transaction that changed the job's state
+   - Job updates are sent to a job's user (or, for anonymous jobs, the
+     owner of its history once a user logs in, else its browser session)
+     whenever a transaction that changed the job's state
      commits, from whichever process committed it. A transaction that
      changes more than 500 jobs of one user, such as mapping a tool over a
      large collection, sends that user a single resync event instead.
