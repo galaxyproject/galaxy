@@ -88,6 +88,7 @@
   <tool file="metadata.xml" />
   <tool file="metadata_defaults.xml" />
   <tool file="metadata_bam.xml" />
+  <tool file="collection_input_paths.xml" />
   <tool file="discover_metadata_files.xml" />
   <tool file="metadata_bcf.xml" />
   <tool file="metadata_bed.xml" />

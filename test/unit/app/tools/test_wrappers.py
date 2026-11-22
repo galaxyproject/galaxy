@@ -1,6 +1,10 @@
 import functools
 import os
 import tempfile
+from dataclasses import (
+    dataclass,
+    field,
+)
 from types import SimpleNamespace
 from typing import cast
 from unittest.mock import Mock
@@ -530,6 +534,91 @@ def test_dataset_wrapper_metadata_file_accessors(sample_datatypes_registry):
     serialized = wrapper.serialize()
     assert serialized["source_path"] == "/galaxy/single.dat"
     assert serialized["metadata_files"] == [{"staging_path": "single.bam.bai", "source_path": "/galaxy/single_bai.dat"}]
+
+
+@dataclass
+class StagingComputeEnvironment:
+    """Stages every input and metadata file into ``/job/inputs``, as Pulsar does with ``rewrite_parameters``.
+
+    Pulsar transfers each metadata file it is asked to rewrite, so ``metadata_rewrites`` records them.
+    """
+
+    metadata_rewrites: list[str] = field(default_factory=list)
+
+    def input_path_rewrite(self, dataset):
+        return f"/job/inputs/{os.path.basename(dataset.get_file_name())}"
+
+    def input_metadata_rewrite(self, dataset, metadata_value):
+        self.metadata_rewrites.append(metadata_value)
+        return f"/job/inputs/metadata_{os.path.basename(metadata_value)}"
+
+    def output_path_rewrite(self, dataset):
+        return f"/job/outputs/{os.path.basename(dataset.get_file_name())}"
+
+
+def test_collection_wrapper_path_accessors_follow_compute_environment():
+    compute_environment = StagingComputeEnvironment()
+    wrapper = _list_paired_wrapper(cast(ComputeEnvironment, compute_environment))
+    assert wrapper.all_paths == ["/job/inputs/forward.dat", "/job/inputs/reverse.dat"]
+    assert wrapper.all_paths == [str(element) for element in wrapper.sample1]
+    assert data_collection_input_to_path(wrapper) == wrapper.all_paths
+    assert wrapper.get_all_staging_paths() == ["sample1/forward.bam", "sample1/reverse.txt"]
+    # Paths-only accessors must not ask for metadata files a tool never reads.
+    assert compute_environment.metadata_rewrites == []
+    assert wrapper.all_metadata_files == [[("bai", "/job/inputs/metadata_forward_bai.dat")], []]
+    serialized = wrapper.serialize()
+    assert [s["source_path"] for s in serialized] == wrapper.all_paths
+    assert serialized[0]["metadata_files"] == [
+        {"staging_path": "sample1/forward.bam.bai", "source_path": "/job/inputs/metadata_forward_bai.dat"}
+    ]
+
+
+def test_output_dataset_wrapper_metadata_files_are_not_staged():
+    compute_environment = StagingComputeEnvironment()
+    dataset = _hda_at("/galaxy/out.dat", metadata_files=[("bai", "/galaxy/out_bai.dat")])
+    wrapper = DatasetFilenameWrapper(
+        dataset, compute_environment=cast(ComputeEnvironment, compute_environment), io_type="output"
+    )
+    assert wrapper.all_metadata_files == [("bai", "/galaxy/out_bai.dat")]
+    assert compute_environment.metadata_rewrites == []
+
+
+def test_collection_wrapper_metadata_files_are_loaded_and_rewritten_once():
+    compute_environment = StagingComputeEnvironment()
+    wrapper = _list_paired_wrapper(cast(ComputeEnvironment, compute_environment))
+    forward = wrapper.sample1.forward
+    forward.unsanitized.get_metadata_file_paths_and_extensions = Mock(
+        wraps=forward.unsanitized.get_metadata_file_paths_and_extensions
+    )
+    # Path-only accessors don't load metadata files at all.
+    assert len(wrapper.all_paths) == len(wrapper.get_all_staging_paths(include_collection_name=True)) == 2
+    assert forward.unsanitized.get_metadata_file_paths_and_extensions.call_count == 0
+    rewritten = [("bai", "/job/inputs/metadata_forward_bai.dat")]
+    for _ in range(3):
+        assert wrapper.all_metadata_files == [rewritten, []]
+        assert wrapper.element_identifiers_extensions_paths_and_metadata_files[0][3] == rewritten
+        assert wrapper.serialize()[0]["metadata_files"][0]["source_path"] == rewritten[0][1]
+    # Each access would otherwise query every metadata file again, which adds up over a large collection.
+    assert forward.unsanitized.get_metadata_file_paths_and_extensions.call_count == 1
+    assert compute_environment.metadata_rewrites == ["/galaxy/forward_bai.dat"]
+    # A template changing the list it got doesn't change what later accessors return.
+    forward.all_metadata_files.pop()
+    assert forward.all_metadata_files == rewritten
+
+
+def test_collection_wrapper_paths_are_computed_once():
+    wrapper = _list_paired_wrapper()
+    forward = wrapper.sample1.forward
+    forward._path_or_uri = Mock(wraps=forward._path_or_uri)
+    # A template indexing the accessors in a loop asks for them once per element.
+    for _ in range(3):
+        assert wrapper.all_paths == ["/galaxy/forward.dat", "/galaxy/reverse.dat"]
+        assert wrapper.element_identifiers_extensions_paths_and_metadata_files[0][2] == "/galaxy/forward.dat"
+        assert wrapper.serialize()[0]["source_path"] == "/galaxy/forward.dat"
+    assert forward._path_or_uri.call_count == 1
+    # A template changing the list it got doesn't change what later accessors return.
+    wrapper.all_paths.pop()
+    assert len(wrapper.all_paths) == 2
 
 
 def _drilldown_parameter(tool):

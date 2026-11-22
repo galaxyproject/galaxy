@@ -486,15 +486,23 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
 
     @property
     def all_metadata_files(self) -> list[tuple[str, str]]:
-        """``(file extension, path)`` of each metadata file."""
+        """``(file extension, path)`` of each metadata file.
+
+        For inputs, paths are as ``$input.metadata.<name>`` renders them; outputs keep their Galaxy paths.
+        """
         return list(self._job_metadata_files)
 
     @cached_property
     def _job_metadata_files(self) -> tuple[tuple[str, str], ...]:
-        # Cached, so repeated access doesn't reload the metadata files.
+        # Cached, so repeated access neither reloads the metadata files nor repeats their rewrites.
         if not self:
             return ()
-        return tuple(self.unsanitized.get_metadata_file_paths_and_extensions())
+        # Only inputs are staged for the job; an output's metadata files don't exist yet.
+        compute_environment = self.compute_environment if self.__io_type == "input" else None
+        return tuple(
+            (file_ext, _job_metadata_path(compute_environment, self.unsanitized, path))
+            for file_ext, path in self.unsanitized.get_metadata_file_paths_and_extensions()
+        )
 
     def serialize(self, invalid_chars: Sequence[str] = ("/",)) -> dict[str, Any]:
         return data_input_to_staging_path_and_source_path(self, invalid_chars=invalid_chars) if self else {}
@@ -691,7 +699,7 @@ class _DatasetRow(NamedTuple):
     identifiers: tuple[str, ...]
     element: DatasetFilenameWrapper
     path: str
-    """Where Galaxy stores the dataset."""
+    """``str(element)``: the path the job sees."""
 
 
 class DatasetCollectionWrapper(ToolParameterValueWrapper, HasDatasets):
@@ -805,6 +813,7 @@ class DatasetCollectionWrapper(ToolParameterValueWrapper, HasDatasets):
 
     @property
     def all_paths(self) -> list[str]:
+        """Each dataset's path as the job sees it, the same as ``#for $e in $collection`` renders ``$e``."""
         return [row.path for row in self._dataset_rows]
 
     @property
@@ -834,7 +843,7 @@ class DatasetCollectionWrapper(ToolParameterValueWrapper, HasDatasets):
                     _DatasetRow((identifier, *row.identifiers), row.element, row.path) for row in element._dataset_rows
                 )
             else:
-                rows.append(_DatasetRow((identifier,), element, element.unsanitized.get_file_name()))
+                rows.append(_DatasetRow((identifier,), element, str(element)))
         return tuple(rows)
 
     def get_all_staging_paths(
