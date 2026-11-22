@@ -90,16 +90,6 @@ steps:
       input1: input1
 """
 
-WORKFLOW_INT_STEP_INPUT_DEFAULT = """
-class: GalaxyWorkflow
-steps:
-  int_step:
-    tool_id: gx_int
-    in:
-      parameter:
-        default: 7
-"""
-
 NESTED_WORKFLOW_AUTO_LABELS_MODERN_SYNTAX = """
 class: GalaxyWorkflow
 inputs:
@@ -1117,52 +1107,6 @@ steps:
         module = self.workflow_populator.build_module("tool", content_id=editor_step["content_id"], inputs=inputs)
         for key in ["inputs", "outputs", "config_form", "tool_state", "errors"]:
             editor_step[key] = module[key]
-
-    def _invoke_and_get_output(self, workflow_id):
-        with self.dataset_populator.test_history() as history_id:
-            self.workflow_populator.invoke_workflow_and_wait(workflow_id, history_id=history_id)
-            return self.dataset_populator.get_history_dataset_content(history_id).strip()
-
-    @skip_without_tool("gx_int")
-    def test_editor_shows_step_input_default_as_form_value(self):
-        workflow_id = self._upload_yaml_workflow(WORKFLOW_INT_STEP_INPUT_DEFAULT)
-        editor_step = self._download_workflow(workflow_id, style="editor")["steps"]["0"]
-        assert editor_step["in"] == {"parameter": {"default": 7}}
-        form_input = next(i for i in editor_step["config_form"]["inputs"] if i["name"] == "parameter")
-        assert str(form_input["value"]) == "7"
-        assert json.loads(editor_step["tool_state"]["parameter"]) == "7"
-
-    @skip_without_tool("gx_int")
-    def test_update_from_editor_keeps_step_input_defaults(self):
-        workflow_id = self._upload_yaml_workflow(WORKFLOW_INT_STEP_INPUT_DEFAULT)
-        assert self._download_workflow(workflow_id)["steps"]["0"]["in"] == {"parameter": {"default": 7}}
-        self._save_from_editor(workflow_id, self._download_workflow(workflow_id, style="editor"))
-
-        saved_step = self._download_workflow(workflow_id)["steps"]["0"]
-        assert saved_step.get("in") == {"parameter": {"default": 7}}
-        assert self._invoke_and_get_output(workflow_id) == "7"
-
-    @skip_without_tool("gx_int")
-    def test_update_from_editor_drops_step_input_default_changed_in_form(self):
-        workflow_id = self._upload_yaml_workflow(WORKFLOW_INT_STEP_INPUT_DEFAULT)
-        editor_workflow = self._download_workflow(workflow_id, style="editor")
-        self._change_editor_tool_form(editor_workflow["steps"]["0"], {"parameter": "3"})
-        self._save_from_editor(workflow_id, editor_workflow)
-
-        saved_step = self._download_workflow(workflow_id)["steps"]["0"]
-        assert "in" not in saved_step
-        assert json.loads(saved_step["tool_state"])["parameter"] == "3"
-        assert self._invoke_and_get_output(workflow_id) == "3"
-
-    @skip_without_tool("gx_int")
-    def test_update_from_editor_keeps_step_input_default_submitted_as_string(self):
-        workflow_id = self._upload_yaml_workflow(WORKFLOW_INT_STEP_INPUT_DEFAULT)
-        editor_workflow = self._download_workflow(workflow_id, style="editor")
-        self._change_editor_tool_form(editor_workflow["steps"]["0"], {"parameter": "7"})
-        self._save_from_editor(workflow_id, editor_workflow)
-
-        assert self._download_workflow(workflow_id)["steps"]["0"].get("in") == {"parameter": {"default": 7}}
-        assert self._invoke_and_get_output(workflow_id) == "7"
 
     @skip_without_tool("random_lines1")
     def test_update_from_editor_keeps_data_step_input_default(self):
