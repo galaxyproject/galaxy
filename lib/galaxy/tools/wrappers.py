@@ -719,6 +719,8 @@ class DatasetCollectionWrapper(ToolParameterValueWrapper, HasDatasets):
         element_instances: dict[str, DatasetCollectionElementWrapper] = {}
 
         element_instance_list: list[DatasetCollectionElementWrapper] = []
+        # Parallel to element_instance_list; element_instances keeps only the last of repeated identifiers.
+        element_identifiers: list[str] = []
         rows: dict[str, SampleSheetRow | None] = {}
         for dataset_collection_element in elements:
             element_object = dataset_collection_element.element_object
@@ -738,10 +740,12 @@ class DatasetCollectionWrapper(ToolParameterValueWrapper, HasDatasets):
 
             element_instances[element_identifier] = element_wrapper
             element_instance_list.append(element_wrapper)
+            element_identifiers.append(element_identifier)
 
         self.__rows = rows
         self.__element_instances = element_instances
         self.__element_instance_list = element_instance_list
+        self.__element_identifiers = element_identifiers
 
     def sample_sheet_row(self, element_identifier: str) -> SampleSheetRow | None:
         return self.__rows[element_identifier]
@@ -805,7 +809,7 @@ class DatasetCollectionWrapper(ToolParameterValueWrapper, HasDatasets):
             return []
         if self._element_identifiers_extensions_paths_and_metadata_files is None:
             result: list[list[Any]] = []
-            for element_identifier, element_wrapper in self.__element_instances.items():
+            for element_identifier, element_wrapper in zip(self.__element_identifiers, self.__element_instance_list):
                 if isinstance(element_wrapper, DatasetCollectionWrapper):
                     for identifiers, *rest in element_wrapper.element_identifiers_extensions_paths_and_metadata_files:
                         result.append([(element_identifier, *identifiers), *rest])

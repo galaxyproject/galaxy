@@ -618,3 +618,9 @@ def test_collection_wrapper_paths_of_a_missing_optional_input():
     wrapper = DatasetCollectionWrapper(None, None, datatypes_registry=Mock())
     assert wrapper.all_paths == []
     assert wrapper.serialize() == []
+
+
+def test_collection_wrapper_paths_keep_elements_with_repeated_identifiers():
+    # The database doesn't enforce unique element identifiers; every element still reaches the tool.
+    wrapper = _collection_wrapper([_leaf_element("a", 1), _leaf_element("a", 2)])
+    assert wrapper.all_paths == ["/galaxy/objects/dataset_1.dat", "/galaxy/objects/dataset_2.dat"]
