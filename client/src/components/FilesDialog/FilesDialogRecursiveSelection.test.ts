@@ -107,7 +107,7 @@ describe("FilesDialog, recursive listing without folders", () => {
         await emit("onClick", row(directoryId));
         await emit("onOpen", row(directoryId));
         await emit("onClick", row(subDirectoryId));
-        expect(row(subDirectoryId)._rowVariant).not.toBe(SELECTION_STATES.SELECTED);
+        expect(row(subDirectoryId)._rowVariant).toBe(SELECTION_STATES.UNSELECTED);
 
         await goBack();
         expect(row(directoryId)._rowVariant).toBe(SELECTION_STATES.MIXED);
@@ -118,8 +118,12 @@ describe("FilesDialog, recursive listing without folders", () => {
         await emit("onClick", row(directoryId));
         await emit("onOpen", row(directoryId));
 
-        expect(rows().filter((item) => item.isLeaf && item._rowVariant !== "success").length).toBeGreaterThan(0);
-        expect(dialog().props("selectAllVariant")).not.toBe(SELECTION_STATES.SELECTED);
+        const [omitted] = filesOnly;
+        for (const item of rows().filter((item) => item.isLeaf)) {
+            const expected = item.id === omitted!.uri ? SELECTION_STATES.UNSELECTED : SELECTION_STATES.SELECTED;
+            expect(item._rowVariant).toBe(expected);
+        }
+        expect(dialog().props("selectAllVariant")).toBe(SELECTION_STATES.MIXED);
     });
 
     it("should unselect all in a folder of empty folders below a selected folder", async () => {
