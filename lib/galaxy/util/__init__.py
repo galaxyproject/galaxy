@@ -1664,8 +1664,13 @@ def send_mail(frm, to, subject, body, config, html=None, reply_to=None):
         email_json = json.to_json_string(email_dict)
         if os.path.isdir(path):
             # One file per email, named in sending order, so tests can tell how many were sent.
-            fd, path = tempfile.mkstemp(prefix=f"{time.time_ns()}-", suffix=".json", dir=path)
-            os.close(fd)
+            # Write it under a name read_mock_emails skips and rename it once complete, so tests
+            # polling the directory never read a partially written email.
+            fd, tmp_path = tempfile.mkstemp(prefix=f"{time.time_ns()}-", suffix=".json.tmp", dir=path)
+            with os.fdopen(fd, "w") as f:
+                f.write(email_json)
+            os.replace(tmp_path, tmp_path[: -len(".tmp")])
+            return
         with open(path, "w") as f:
             f.write(email_json)
         return
