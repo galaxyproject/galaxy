@@ -12,10 +12,15 @@ import sys
 import threading
 import time
 from collections import defaultdict
+from collections.abc import (
+    Callable,
+    Iterable,
+)
 from inspect import ismodule
 from typing import (
     Any,
     cast,
+    NamedTuple,
     TYPE_CHECKING,
     TypedDict,
 )
@@ -605,84 +610,102 @@ def entry_point_update(app: "MinimalManagerApp", **kwargs) -> None:
     sse_manager.push_to_user(int(payload["user_id"]), event)
 
 
+class RoutedItem(NamedTuple):
+    """An item of an entity event with the ids it is routed by."""
+
+    item: dict[str, str]
+    user_id: int | None
+    session_id: int | None
+    history_id: int | None
+
+
+def _push_routed_items(
+    sse_manager: SSEConnectionManager,
+    encode: Callable[[int], str],
+    event: str,
+    list_key: str,
+    routed: Iterable[RoutedItem],
+    event_id: str | None,
+) -> None:
+    """Push one ``event`` per recipient, carrying ``{list_key: [items]}``.
+
+    An item goes to its user or, without one, its session, and to the viewers of its history other
+    than the users it already reached as owner. Viewers receive only the items for that history.
+    """
+
+    def event_for(items: list[dict[str, str]]) -> SSEEvent:
+        return SSEEvent(event=event, data=json.dumps({list_key: items}), id=event_id)
+
+    by_user: dict[int, list[dict[str, str]]] = defaultdict(list)
+    by_session: dict[int, list[dict[str, str]]] = defaultdict(list)
+    by_history: dict[int, list[dict[str, str]]] = defaultdict(list)
+    owners_by_history: dict[int, set[int]] = defaultdict(set)
+    for item, user_id, session_id, history_id in routed:
+        if user_id is not None:
+            by_user[user_id].append(item)
+        elif session_id is not None:
+            by_session[session_id].append(item)
+        if history_id is not None:
+            by_history[history_id].append(item)
+            if user_id is not None:
+                owners_by_history[history_id].add(user_id)
+    for user_id, items in by_user.items():
+        sse_manager.push_to_user(user_id, event_for(items))
+    for session_id, items in by_session.items():
+        sse_manager.push_to_session(session_id, event_for(items))
+    for history_id, items in by_history.items():
+        sse_manager.push_to_history_viewers(
+            encode(history_id), event_for(items), exclude_user_ids=owners_by_history[history_id]
+        )
+
+
 def invocation_update(app: "MinimalManagerApp", **kwargs) -> None:
     """Push ``invocation_update`` SSE events to the owners and history viewers connected to this worker.
 
     The event data is ``{"invocations": [{"id": <encoded id>, "state": <state>}, ...]}``. An entry
-    means the invocation's state, steps or messages changed; ``state`` is its current state. Viewers
-    of a history receive only the entries for that history.
+    means the invocation's state, steps or messages changed; ``state`` is its current state.
     """
     payload = cast(InvocationUpdatePayload, kwargs)
-    sse_manager = app[SSEConnectionManager]
     encode = app.security.encode_id
-    event_id = payload.get("event_id")
-
-    def event_for(invocations: list[dict[str, str]]) -> SSEEvent:
-        return SSEEvent(event="invocation_update", data=json.dumps({"invocations": invocations}), id=event_id)
-
-    by_user: dict[int, list[dict[str, str]]] = defaultdict(list)
-    by_history: dict[int, list[dict[str, str]]] = defaultdict(list)
-    owners_by_history: dict[int, set[int]] = defaultdict(set)
-    for update in payload["updates"]:
-        invocation = {"id": encode(update["invocation_id"]), "state": update["state"]}
-        user_id, history_id = update["user_id"], update["history_id"]
-        if user_id is not None:
-            by_user[user_id].append(invocation)
-        if history_id is not None:
-            by_history[history_id].append(invocation)
-            if user_id is not None:
-                owners_by_history[history_id].add(user_id)
-    for user_id, invocations in by_user.items():
-        sse_manager.push_to_user(user_id, event_for(invocations))
-    for history_id, invocations in by_history.items():
-        sse_manager.push_to_history_viewers(
-            encode(history_id), event_for(invocations), exclude_user_ids=owners_by_history[history_id]
+    routed = (
+        RoutedItem(
+            {"id": encode(update["invocation_id"]), "state": update["state"]},
+            update["user_id"],
+            None,
+            update["history_id"],
         )
+        for update in payload["updates"]
+    )
+    _push_routed_items(
+        app[SSEConnectionManager], encode, "invocation_update", "invocations", routed, payload.get("event_id")
+    )
 
 
 def job_update(app: "MinimalManagerApp", **kwargs) -> None:
     """Push ``job_update`` SSE events to the users, sessions and history viewers connected to this worker.
 
     The event data is ``{"jobs": [{"id": <encoded id>, "state": <state>}, ...]}``, or
-    ``{"resync": true}`` for a recipient whose changes did not fit one event. Viewers of a history
-    receive only the entries for that history.
+    ``{"resync": true}`` for a recipient whose changes did not fit one event.
     """
     payload = cast(JobUpdatePayload, kwargs)
     sse_manager = app[SSEConnectionManager]
     encode = app.security.encode_id
     event_id = payload.get("event_id")
-
-    def event_for(jobs: list[dict[str, str]]) -> SSEEvent:
-        return SSEEvent(event="job_update", data=json.dumps({"jobs": jobs}), id=event_id)
-
-    by_user: dict[int, list[dict[str, str]]] = defaultdict(list)
-    by_session: dict[int, list[dict[str, str]]] = defaultdict(list)
-    by_history: dict[int, list[dict[str, str]]] = defaultdict(list)
-    owners_by_history: dict[int, set[int]] = defaultdict(set)
-    for update in payload["updates"]:
-        job = {"id": encode(update["job_id"]), "state": update["state"]}
-        user_id, history_id = update["user_id"], update["history_id"]
-        if user_id is not None:
-            by_user[user_id].append(job)
-        elif update["session_id"] is not None:
-            by_session[update["session_id"]].append(job)
-        if history_id is not None:
-            by_history[history_id].append(job)
-            if user_id is not None:
-                owners_by_history[history_id].add(user_id)
+    routed = (
+        RoutedItem(
+            {"id": encode(update["job_id"]), "state": update["state"]},
+            update["user_id"],
+            update["session_id"],
+            update["history_id"],
+        )
+        for update in payload["updates"]
+    )
+    _push_routed_items(sse_manager, encode, "job_update", "jobs", routed, event_id)
     resync = SSEEvent(event="job_update", data=json.dumps({"resync": True}), id=event_id)
-    for user_id, jobs in by_user.items():
-        sse_manager.push_to_user(user_id, event_for(jobs))
     for user_id in payload.get("resync_user_ids", []):
         sse_manager.push_to_user(user_id, resync)
-    for galaxy_session_id, jobs in by_session.items():
-        sse_manager.push_to_session(galaxy_session_id, event_for(jobs))
     for galaxy_session_id in payload.get("resync_session_ids", []):
         sse_manager.push_to_session(galaxy_session_id, resync)
-    for history_id, jobs in by_history.items():
-        sse_manager.push_to_history_viewers(
-            encode(history_id), event_for(jobs), exclude_user_ids=owners_by_history[history_id]
-        )
     for history_id in payload.get("resync_history_ids", []):
         sse_manager.push_to_history_viewers(encode(history_id), resync)
 
