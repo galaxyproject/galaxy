@@ -633,11 +633,9 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
                 job_directory_files.append(tool_script)
                 config_files.append(tool_script)
             assert job_wrapper.tool is not None
-            for name in job_wrapper.tool.job_directory_files:
-                # Registered as config files too, so paths in them are rewritten like in tool_script.sh.
-                job_directory_file = os.path.join(job_wrapper.working_directory, name)
-                job_directory_files.append(job_directory_file)
-                config_files.append(job_directory_file)
+            for name in job_wrapper.tool.job_config_files:
+                # Pulsar stages config files to the remote configs/ directory and rewrites paths in them.
+                config_files.append(os.path.join(job_wrapper.working_directory, "configs", name))
             # Following is job destination environment variables
             env = client.env
             # extend it with tool defined environment variables

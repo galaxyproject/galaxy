@@ -1273,9 +1273,9 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
     default_tool_action = DefaultToolAction
     tool_action: ToolAction
     tool_type_local = False
-    # Files the tool writes to the job directory while the job is prepared; runners
-    # that stage the job elsewhere (Pulsar) transfer them with the job.
-    job_directory_files: tuple[str, ...] = ()
+    # Files the tool writes to the job's configs/ directory while the job is prepared; runners
+    # that stage the job elsewhere (Pulsar) transfer them to the remote configs/ directory.
+    job_config_files: tuple[str, ...] = ()
     dict_collection_visible_keys = ["id", "name", "version", "description", "labels"]
     _conf_tool_shed_repository: ToolConfRepository | None = None
     job_search: "JobSearch"
@@ -3471,7 +3471,7 @@ class ExpressionTool(Tool):
     tool_type = "expression"
     tool_type_local = True
     EXPRESSION_INPUTS_NAME = "_expression_inputs_.json"
-    job_directory_files = (expressions.EXPRESSION_SCRIPT_NAME, EXPRESSION_INPUTS_NAME)
+    job_config_files = (expressions.EXPRESSION_SCRIPT_NAME, EXPRESSION_INPUTS_NAME)
 
     def parse(self, tool_source: ToolSource, guid: str | None = None, dynamic: bool = False) -> None:
         super().parse(tool_source, guid, dynamic)
