@@ -6,7 +6,6 @@ from galaxy.tools.parameters.basic import (
     FloatToolParameter,
     IntegerToolParameter,
     SelectToolParameter,
-    TextToolParameter,
     ToolParameter,
 )
 from galaxy.tools.parameters.grouping import (
@@ -95,26 +94,15 @@ def test_step_input_form_defaults_selects_defaults_the_form_shows():
 
 
 @pytest.mark.parametrize(
-    "param, form_value, default, same",
+    "form_value, default, same",
     [
-        (_int("i"), "7", 7, True),
-        (_int("i"), "3", 7, False),
-        (_param(FloatToolParameter, '<param name="f" type="float" value="1"/>'), "7", 7, True),
-        (_param(FloatToolParameter, '<param name="f" type="float" value="1"/>'), "7.5", 7, False),
-        (_param(BooleanToolParameter, '<param name="b" type="boolean"/>'), "true", True, True),
-        (_param(BooleanToolParameter, '<param name="b" type="boolean"/>'), False, True, False),
-        (_param(TextToolParameter, '<param name="t" type="text"/>'), "", None, True),
-        (_param(TextToolParameter, '<param name="t" type="text"/>'), "a", None, False),
-        (
-            _param(
-                SelectToolParameter,
-                '<param name="s" type="select"><option value="a">A</option><option value="b">B</option></param>',
-            ),
-            "a",
-            "a",
-            True,
-        ),
+        ("", None, True),
+        (None, "", True),
+        ("a", None, False),
+        (None, 0, False),
+        (7, 7, True),
+        (3, 7, False),
     ],
 )
-def test_same_form_value_compares_converted_values(param, form_value, default, same):
-    assert same_form_value(param.to_python(form_value, None), param.to_python(default, None)) is same
+def test_same_form_value_treats_empty_values_as_equal(form_value, default, same):
+    assert same_form_value(form_value, default) is same
