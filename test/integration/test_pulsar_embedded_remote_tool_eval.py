@@ -48,32 +48,12 @@ class TestPulsarRemoteToolEvaluation(integration_util.IntegrationTestCase):
         self._run_tool_test(tool_id)
 
     def test_command_line_recorded(self):
-        populator = DatasetPopulator(self.galaxy_interactor)
-        with populator.test_history() as history_id:
-            dataset = populator.new_dataset(history_id, content="abc", ext="txt", wait=True)
-            response = populator.run_tool(
-                "command_reads_input_size",
-                inputs={"input1": {"src": "hda", "id": dataset["id"]}},
-                history_id=history_id,
-            )
-            job_id = response["jobs"][0]["id"]
-            populator.wait_for_job(job_id, assert_ok=True)
-            command_line = populator.get_job_details(job_id, full=True).json()["command_line"]
-            assert re.search(r"echo '(\d+) \1' > '", command_line)
+        job = self._run_input_size_job()
+        assert job.command_line
+        assert re.search(r"echo '(\d+) \1' > '", job.command_line)
 
     def test_object_store_configuration_not_sent(self):
-        populator = DatasetPopulator(self.galaxy_interactor)
-        with populator.test_history() as history_id:
-            dataset = populator.new_dataset(history_id, content="abc", ext="txt", wait=True)
-            response = populator.run_tool(
-                "command_reads_input_size",
-                inputs={"input1": {"src": "hda", "id": dataset["id"]}},
-                history_id=history_id,
-            )
-            job_id = response["jobs"][0]["id"]
-            populator.wait_for_job(job_id, assert_ok=True)
-        job = self._app.model.session.get(Job, self._app.security.decode_id(job_id))
-        assert job is not None
+        job = self._run_input_size_job()
         galaxy_job_directory = JobWorkingDirectory(job, self._app.object_store).resolve()
         pulsar_job_directory = os.path.join(self._app.config.data_dir, "pulsar_staging", str(job.id))
         for job_directory in (galaxy_job_directory, pulsar_job_directory):
@@ -107,6 +87,21 @@ class TestPulsarRemoteToolEvaluation(integration_util.IntegrationTestCase):
             assert job.command_line
             assert galaxy_job_directory not in job.command_line
             assert populator.get_history_dataset_details(history_id, dataset_id=dataset["id"])["state"] == "deferred"
+
+    def _run_input_size_job(self) -> Job:
+        populator = DatasetPopulator(self.galaxy_interactor)
+        with populator.test_history() as history_id:
+            dataset = populator.new_dataset(history_id, content="abc", ext="txt", wait=True)
+            response = populator.run_tool(
+                "command_reads_input_size",
+                inputs={"input1": {"src": "hda", "id": dataset["id"]}},
+                history_id=history_id,
+            )
+            job_id = response["jobs"][0]["id"]
+            populator.wait_for_job(job_id, assert_ok=True)
+        job = self._app.model.session.get(Job, self._app.security.decode_id(job_id))
+        assert job is not None
+        return job
 
 
 class TestPulsarRemoteToolEvaluationDirectoryMetadata(TestPulsarRemoteToolEvaluation):
