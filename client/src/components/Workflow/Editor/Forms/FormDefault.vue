@@ -92,6 +92,7 @@ import { useWorkflowStores } from "@/composables/workflowStores";
 import { useRefreshFromStore } from "@/stores/refreshFromStore";
 import type { Step } from "@/stores/workflowStepStore";
 
+import { useStepActions } from "../Actions/stepActions";
 import { useStepProps } from "../composables/useStepProps";
 import { useUniqueLabelError } from "../composables/useUniqueLabelError";
 import { defaultFileLocation, withDefaultFileLocation } from "../modules/defaultFile";
@@ -121,7 +122,8 @@ const emit = defineEmits([
 const stepRef = toRef(props, "step");
 const { stepId, contentId, annotation, label, name, type, configForm, stepInputs, postJobActions } =
     useStepProps(stepRef);
-const { stepStore } = useWorkflowStores();
+const { stepStore, undoRedoStore, stateStore, connectionStore } = useWorkflowStores();
+const { setInputDefaults } = useStepActions(stepStore, undoRedoStore, stateStore, connectionStore);
 const uniqueErrorLabel = useUniqueLabelError(stepStore, label.value);
 const stepTitle = computed(() => {
     if (isSubworkflow.value) {
@@ -136,7 +138,8 @@ const isSubworkflow = computed(() => type.value === "subworkflow");
 const defaultLocation = computed(() => defaultFileLocation(props.step.in));
 
 function onDefaultLocation(value: unknown) {
-    emit("onUpdateStep", stepId.value, { in: withDefaultFileLocation(props.step.in, String(value ?? "")) });
+    // Lazy action: consecutive keystrokes merge into one undo entry.
+    setInputDefaults(props.step, withDefaultFileLocation(props.step.in, String(value ?? "")));
 }
 
 function onAnnotation(newAnnotation: string) {

@@ -635,6 +635,15 @@ export function useStepActions(
         });
     }
 
+    function setInputDefaults(step: Step, stepIn: Step["in"]) {
+        changeValueOrCreateAction({
+            step,
+            key: "in",
+            value: stepIn,
+            name: `edit input defaults of step "${step.id + 1}: ${step.label ?? step.name}"`,
+        });
+    }
+
     function setOutputLabel(
         step: Step,
         workflowOutputs: Step["workflow_outputs"],
@@ -718,6 +727,7 @@ export function useStepActions(
         setLabel,
         setData,
         setOutputLabel,
+        setInputDefaults,
         removeStep,
         updateStep,
         copyStep,
