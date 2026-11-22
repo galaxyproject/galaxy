@@ -799,8 +799,7 @@ class DatasetCollectionWrapper(ToolParameterValueWrapper, HasDatasets):
         """``[identifiers, extension, path, metadata_files]`` for each dataset, nested collections flattened.
 
         Built from the element wrappers, so the paths are the ones the job sees, as
-        ``$element`` and ``$element.metadata.<file>`` render them. The model property
-        of the same name gives Galaxy-side paths.
+        ``$element`` and ``$element.metadata.<file>`` render them.
         """
         if not self.__input_supplied:
             return []
