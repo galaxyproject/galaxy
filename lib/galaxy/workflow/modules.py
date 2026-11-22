@@ -2389,10 +2389,9 @@ class ToolModule(WorkflowModule):
         tool_state = step.state
         assert tool_state is not None
         tool_inputs = tool.inputs.copy()
-        # Not strictly needed - but keep Tool state clean by stripping runtime
-        # metadata parameters from it.
-        if RUNTIME_STEP_META_STATE_KEY in tool_state.inputs:
-            del tool_state.inputs[RUNTIME_STEP_META_STATE_KEY]
+        # Only tool inputs become job parameters. The stored step state can hold other
+        # keys, e.g. inputs of another version of the tool, and the runtime step metadata.
+        tool_state.inputs = {name: value for name, value in tool_state.inputs.items() if name in tool_inputs}
 
         all_inputs = self.get_all_inputs()
 
