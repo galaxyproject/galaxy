@@ -1,11 +1,5 @@
-from typing import cast
-
 import pytest
 
-from galaxy.managers.workflows import (
-    _same_form_value,
-    WorkflowContentsManager,
-)
 from galaxy.tools.parameters.basic import (
     BooleanToolParameter,
     DataToolParameter,
@@ -23,8 +17,10 @@ from galaxy.tools.parameters.grouping import (
 )
 from galaxy.tools.parameters.workflow_utils import RuntimeValue
 from galaxy.util import XML
-from galaxy.util.bunch import Bunch
-from galaxy.workflow.modules import ToolModule
+from galaxy.workflow.modules import (
+    same_form_value,
+    step_input_form_defaults,
+)
 
 
 def _param(cls, xml: str) -> ToolParameter:
@@ -35,11 +31,7 @@ def _int(name: str) -> ToolParameter:
     return _param(IntegerToolParameter, f'<param name="{name}" type="integer" value="1"/>')
 
 
-def _module(inputs, state) -> ToolModule:
-    return cast(ToolModule, Bunch(tool=Bunch(inputs=inputs), state=Bunch(inputs=state), trans=Bunch(app=None)))
-
-
-def test_tool_form_defaults_selects_defaults_the_form_shows():
+def test_step_input_form_defaults_selects_defaults_the_form_shows():
     conditional = Conditional("cond")
     conditional.test_param = _param(
         SelectToolParameter,
@@ -90,17 +82,16 @@ def test_tool_form_defaults_selects_defaults_the_form_shows():
         "rep_1|r": 3,
     }
 
-    form_defaults = WorkflowContentsManager._tool_form_defaults(_module(inputs, state), defaults, {"connected"})
+    form_defaults = step_input_form_defaults(inputs, state, defaults, {"connected"}, None)
 
-    assert [(name, default) for name, _, _, default in form_defaults] == [
+    assert [(form_default.name, form_default.value) for form_default in form_defaults] == [
         ("i", 7),
         ("cond|x", 8),
         ("rep_0|r", 2.0),
         ("sec|b", True),
     ]
-    _, x_param, x_parent, _ = form_defaults[1]
-    assert x_param is case_a.inputs["x"]
-    assert x_parent is state["cond"]
+    assert form_defaults[1].param is case_a.inputs["x"]
+    assert form_defaults[1].parent is state["cond"]
 
 
 @pytest.mark.parametrize(
@@ -126,4 +117,4 @@ def test_tool_form_defaults_selects_defaults_the_form_shows():
     ],
 )
 def test_same_form_value_compares_converted_values(param, form_value, default, same):
-    assert _same_form_value(param.to_python(form_value, None), param.to_python(default, None)) is same
+    assert same_form_value(param.to_python(form_value, None), param.to_python(default, None)) is same

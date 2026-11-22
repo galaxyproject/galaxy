@@ -7,11 +7,15 @@ import logging
 import math
 import re
 from collections import defaultdict
-from collections.abc import Iterable
+from collections.abc import (
+    Collection,
+    Iterable,
+)
 from typing import (
     Any,
     cast,
     get_args,
+    NamedTuple,
     Optional,
     TYPE_CHECKING,
     Union,
@@ -99,6 +103,7 @@ from galaxy.tools.parameters.basic import (
     raw_to_galaxy,
     SelectToolParameter,
     TextToolParameter,
+    ToolParameter,
 )
 from galaxy.tools.parameters.grouping import (
     Conditional,
@@ -1928,6 +1933,57 @@ class PauseModule(WorkflowModule):
         return bool(action)
 
 
+class StepInputFormDefault(NamedTuple):
+    """A step input default that the editor's tool form shows as a parameter value."""
+
+    name: str
+    param: ToolParameter
+    parent: dict[str, Any]
+    value: Any
+
+
+def step_input_form_defaults(
+    inputs, state_inputs, defaults: dict[Any, Any], connected_input_names: Collection[str], app
+) -> list[StepInputFormDefault]:
+    """Find the step input defaults that the editor's tool form shows as parameter values.
+
+    These are defaults on parameters that are not data inputs, are not connected, do not change
+    other inputs (as conditional test parameters do) and are not set to a runtime value, and that
+    the parameter can convert. ``value`` is the default converted by the parameter's ``to_python``.
+    """
+    form_defaults: list[StepInputFormDefault] = []
+    if not defaults:
+        return form_defaults
+
+    def collect(input, prefixed_name, parent, value, **kwargs):
+        if (
+            prefixed_name not in defaults
+            or prefixed_name in connected_input_names
+            or isinstance(input, BaseDataToolParameter)
+            or input.refresh_on_change
+            or is_runtime_value(value)
+        ):
+            return
+        try:
+            default = input.to_python(defaults[prefixed_name], app)
+        except Exception:
+            return
+        form_defaults.append(StepInputFormDefault(prefixed_name, input, parent, default))
+
+    visit_input_values(inputs, state_inputs, collect)
+    return form_defaults
+
+
+def same_form_value(form_value: Any, default: Any) -> bool:
+    """Compare a tool form value with a step input default, both converted by the parameter's ``to_python``.
+
+    An empty value (``None`` or ``""``) matches the other empty value, as the form may submit either.
+    """
+    if form_value in (None, "") and default in (None, ""):
+        return True
+    return form_value == default
+
+
 class ToolModule(WorkflowModule):
     type = "tool"
     name = "Tool"
@@ -2332,6 +2388,29 @@ class ToolModule(WorkflowModule):
 
     def get_runtime_inputs(self, step, connections: Optional[Iterable[WorkflowStepConnection]] = None):
         return self.get_inputs()
+
+    def show_step_input_defaults(self, defaults: dict[Any, Any], connected_input_names: Collection[str]) -> None:
+        """Write the step input defaults that replace the tool state at run time into the tool form state."""
+        if self.tool is None:
+            return
+        for form_default in step_input_form_defaults(
+            self.tool.inputs, self.state.inputs, defaults, connected_input_names, self.trans.app
+        ):
+            form_default.parent[form_default.param.name] = form_default.value
+
+    def step_input_defaults_changed_in_form(
+        self, defaults: dict[Any, Any], connected_input_names: Collection[str]
+    ) -> set[str]:
+        """Return the names of the step input defaults whose tool form value the user changed."""
+        if self.tool is None:
+            return set()
+        return {
+            form_default.name
+            for form_default in step_input_form_defaults(
+                self.tool.inputs, self.state.inputs, defaults, connected_input_names, self.trans.app
+            )
+            if not same_form_value(form_default.parent.get(form_default.param.name), form_default.value)
+        }
 
     def compute_runtime_state(self, trans, step=None, step_updates=None, replace_default_values=False):
         # Warning: This method destructively modifies existing step state.
