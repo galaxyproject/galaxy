@@ -141,6 +141,14 @@ describe("WorkflowRunForm", () => {
         expect(wrapper.emitted("submissionSuccess")).toEqual([[[{ id: "invocation_id" }]]]);
     });
 
+    it("omits unset data inputs but keeps cleared parameter inputs", async () => {
+        const wrapper = mountForm();
+        findStep(wrapper, "0").vm.$emit("onChange", "0", { input: null });
+        findStep(wrapper, "4").vm.$emit("onChange", "4", { input: null });
+        await run(wrapper);
+        expect(vi.mocked(invokeWorkflow).mock.calls[0]![1].inputs).toEqual({ 4: null });
+    });
+
     it("sends results to a new history when requested", async () => {
         const wrapper = mountForm(false);
         const button = wrapper.findComponent({ name: "ButtonSpinner" });

@@ -91,7 +91,7 @@
                 :model="step"
                 :validation-scroll-to="getValidationScrollTo(step.index)"
                 :history-id="currentHistoryId"
-                @onChange="onDefaultStepInputs"
+                @onChange="(stepId: string, data: FormData) => onDefaultStepInputs(stepId, data, step.step_type)"
                 @onValidation="onValidation" />
         </div>
     </div>
@@ -105,10 +105,12 @@ import { computed, ref } from "vue";
 import type { WorkflowInvocation } from "@/api/invocations";
 import type { ServiceCredentialsDefinition } from "@/api/userCredentials";
 import type { FormData, FormInputNode } from "@/components/Form/composables/useFormState";
+import { omitUnsetWorkflowInput } from "@/components/Workflow/constants";
 import { useUserMultiToolCredentials } from "@/composables/userMultiToolCredentials";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useToolsServiceCredentialsDefinitionsStore } from "@/stores/toolsServiceCredentialsDefinitionsStore";
 import { useUserStore } from "@/stores/userStore";
+import type { Step } from "@/stores/workflowStepStore";
 
 import { getReplacements } from "./model";
 import { invokeWorkflow } from "./services";
@@ -271,8 +273,8 @@ function getValidationScrollTo(stepId: string): ValidationScrollTo {
     return [];
 }
 
-function onDefaultStepInputs(stepId: string, data: FormData) {
-    if (data.input == null) {
+function onDefaultStepInputs(stepId: string, data: FormData, stepType: Step["type"]) {
+    if (omitUnsetWorkflowInput(stepType, data.input)) {
         delete inputs[stepId];
     } else {
         inputs[stepId] = data.input;
