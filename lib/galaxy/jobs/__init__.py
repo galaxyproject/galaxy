@@ -7,6 +7,7 @@ import copy
 import datetime
 import errno
 import functools
+import glob
 import json
 import logging
 import os
@@ -62,10 +63,13 @@ from galaxy.exceptions import (
 from galaxy.files import ProvidesFileSourcesUserContext
 from galaxy.job_execution.actions.post import ActionBox
 from galaxy.job_execution.compute_environment import SharedComputeEnvironment
+from galaxy.job_execution.datasets import DatasetPath
 from galaxy.job_execution.output_collect import (
     collect_extra_files,
     collect_shrinked_content_from_path,
+    escape_preserving_wildcards,
     PermissionProvider,
+    rejected_work_dir_outputs_file,
 )
 from galaxy.job_execution.setup import (
     ensure_configs_directory,
@@ -105,6 +109,7 @@ from galaxy.model import (
 from galaxy.model.metadata import MetadataTempFilePathError
 from galaxy.model.store import copy_dataset_instance_metadata_attributes
 from galaxy.model.store.discover import (
+    ensure_job_path_in_job_directory,
     MaxDiscoveredFilesExceededError,
     OutputCollectionSecurityError,
 )
@@ -1642,10 +1647,12 @@ class MinimalJobWrapper(HasResourceParameters):
                 if self.outputs_to_working_directory and not self.__link_file_check() and working_directory_exists:
                     for dataset_path in self.job_io.get_output_fnames():
                         try:
-                            shutil.move(dataset_path.false_path, dataset_path.real_path)
+                            self._move_working_directory_output(dataset_path)
                             log.debug("fail(): Moved %s to %s", dataset_path.false_path, dataset_path.real_path)
                         except FileNotFoundError as e:
                             log.warning("fail(): Missing output file in working directory: %s", unicodify(e))
+                        except OutputCollectionSecurityError as e:
+                            log.warning("fail(): Not moving %s: %s", dataset_path.false_path, e)
             except Exception as e:
                 log.exception(str(e))
             # finish() sets the total size of the outputs in the same transaction that charges them to the user,
@@ -2396,12 +2403,30 @@ class MinimalJobWrapper(HasResourceParameters):
         else:
             final_job_state = job.states.ERROR
 
-        if not extended_metadata and self.outputs_to_working_directory and not self.__link_file_check():
+        output_collection_security_error = None
+        try:
+            self._ensure_outputs_in_job_directory(job)
+        except OutputCollectionSecurityError as e:
+            log.warning("Job %s failed output collection: %s", job.id, e)
+            output_collection_security_error = e
+            final_job_state = job.states.ERROR
+
+        if (
+            output_collection_security_error is None
+            and not extended_metadata
+            and self.outputs_to_working_directory
+            and not self.__link_file_check()
+        ):
             # output will be moved by job if metadata_strategy is extended_metadata, so skip moving here
             for dataset_path in self.job_io.get_output_fnames():
                 try:
-                    shutil.move(dataset_path.false_path, dataset_path.real_path)
+                    self._move_working_directory_output(dataset_path)
                     log.debug(f"finish(): Moved {dataset_path.false_path} to {dataset_path.real_path}")
+                except OutputCollectionSecurityError as e:
+                    log.warning("Job %s failed output collection: %s", job.id, e)
+                    output_collection_security_error = e
+                    final_job_state = job.states.ERROR
+                    break
                 except OSError:
                     # this can happen if Galaxy is restarted during the job's
                     # finish method - the false_path file has already moved,
@@ -2545,6 +2570,21 @@ class MinimalJobWrapper(HasResourceParameters):
                 ):
                     # We don't set datsets in error state to OK because discover_outputs may have already set the state to error
                     dataset_assoc.dataset.dataset.state = Dataset.states.OK
+
+        if output_collection_security_error:
+            # Importing job outputs and output discovery replace the job's messages, so add this one afterwards.
+            # Extended metadata may already have recorded the same rejection.
+            message = {
+                "type": "output_collection_security",
+                "desc": str(output_collection_security_error),
+                "error_level": StdioErrorLevel.FATAL,
+            }
+            job_messages = job.job_messages or []
+            if not any(
+                existing.get("type") == message["type"] and existing.get("desc") == message["desc"]
+                for existing in job_messages
+            ):
+                job.job_messages = [*job_messages, message]
 
         if job.states.ERROR == final_job_state:
             for dataset_assoc in output_dataset_associations:
@@ -3088,6 +3128,38 @@ class MinimalJobWrapper(HasResourceParameters):
                     dataset.full_delete(user=hda.user)
                 except ObjectNotFound:
                     pass
+
+    def _ensure_outputs_in_job_directory(self, job: Job) -> None:
+        """Reject outputs and ``from_work_dir`` sources that resolve outside the job directory."""
+        for dataset_path in self.job_io.get_output_fnames():
+            if dataset_path.false_path:
+                ensure_job_path_in_job_directory(dataset_path.false_path, self.working_directory)
+        # Only check existence, the file is writable by the tool.
+        if os.path.lexists(rejected_work_dir_outputs_file(self.working_directory)):
+            raise OutputCollectionSecurityError(
+                "The job script refused to collect a from_work_dir output "
+                "that does not resolve to a path inside the job directory."
+            )
+        if not self.tool:
+            return
+        for dataset_assoc in job.output_datasets + job.output_library_datasets:
+            output = self.tool.find_output_def(dataset_assoc.name)
+            dataset = dataset_assoc.dataset.dataset
+            if not output or not output.from_work_dir or not dataset or dataset.purged:
+                continue
+            source = os.path.join(self.tool_working_directory, output.from_work_dir)
+            for path in glob.glob(escape_preserving_wildcards(source, glob.escape)):
+                ensure_job_path_in_job_directory(path, self.working_directory)
+
+    def _move_working_directory_output(self, dataset_path: DatasetPath) -> None:
+        false_path = dataset_path.false_path
+        assert false_path
+        ensure_job_path_in_job_directory(false_path, self.working_directory)
+        if os.path.islink(false_path):
+            # Copy the target, the link itself would dangle once the job directory is cleaned up.
+            shutil.copyfile(false_path, dataset_path.real_path)
+        else:
+            shutil.move(false_path, dataset_path.real_path)
 
     def __link_file_check(self):
         """outputs_to_working_directory breaks library uploads where data is

@@ -1,0 +1,15 @@
+<tool id="output_symlink_containment_timeout" name="output_symlink_containment_timeout" version="1.0.0" profile="26.1">
+    <requirements>
+        <resource type="timelimit">1</resource>
+    </requirements>
+    <command><![CDATA[
+sentinel="\$PWD/\$(mktemp ../../output_symlink_sentinel.XXXXXX)" &&
+echo 'outside job directory sentinel' > "\$sentinel" &&
+ln -sf "\$sentinel" '$output' &&
+sleep 120
+    ]]></command>
+    <inputs />
+    <outputs>
+        <data name="output" format="txt" />
+    </outputs>
+</tool>

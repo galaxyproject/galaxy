@@ -59,6 +59,7 @@ from galaxy.model.custom_types import total_size
 from galaxy.model.metadata import MetadataTempFile
 from galaxy.model.store import SessionlessContext
 from galaxy.model.store.discover import (
+    ensure_job_path_in_job_directory,
     ensure_path_in_directory,
     MaxDiscoveredFilesExceededError,
     OutputCollectionSecurityError,
@@ -362,6 +363,9 @@ def set_metadata_portable(
     output_collection_security_error = None
     try:
         unnamed_outputs = validate_unnamed_outputs(job_context)
+        for output_dict in outputs.values():
+            if output_dict["filename_override"]:
+                ensure_job_path_in_job_directory(output_dict["filename_override"], tool_job_working_directory)
     except OutputCollectionSecurityError as e:
         output_collection_security_error = e
         unnamed_outputs = []
