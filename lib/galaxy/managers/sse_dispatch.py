@@ -20,11 +20,13 @@ from cachetools import TTLCache
 from kombu.entity import Queue
 
 from galaxy.managers.sse import make_event_id
+from galaxy.model.pending_changes import (
+    InvocationUpdate,
+    JobUpdate,
+)
 from galaxy.queue_worker import (
     ControlTask,
     GalaxyQueueWorker,
-    InvocationUpdate,
-    JobUpdate,
 )
 from galaxy.queues import (
     all_control_queues_for_declare,

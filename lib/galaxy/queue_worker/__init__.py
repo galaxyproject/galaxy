@@ -34,6 +34,10 @@ from galaxy.managers.sse import (
     SSEEvent,
 )
 from galaxy.model import User
+from galaxy.model.pending_changes import (
+    InvocationUpdate,
+    JobUpdate,
+)
 from galaxy.structured_app import StructuredApp
 from galaxy.tools import ToolBox
 from galaxy.tools.cached_toolbox import CachedToolBox
@@ -85,18 +89,6 @@ class EntryPointUpdatePayload(TypedDict, total=False):
     event_id: str | None
 
 
-class InvocationUpdate(TypedDict):
-    """A committed change to a workflow invocation's state, steps or messages.
-
-    Routed to the owner of the invocation's history and to that history's viewers.
-    """
-
-    user_id: int | None
-    history_id: int | None
-    invocation_id: int
-    state: str
-
-
 class InvocationUpdatePayload(TypedDict, total=False):
     """Wire contract for the ``invocation_update`` control-task kwargs.
 
@@ -105,19 +97,6 @@ class InvocationUpdatePayload(TypedDict, total=False):
 
     updates: list[InvocationUpdate]
     event_id: str | None
-
-
-class JobUpdate(TypedDict):
-    """A committed job state change.
-
-    Routed to the job's user or, for anonymous jobs, its session, and to the viewers of its history.
-    """
-
-    job_id: int
-    state: str
-    user_id: int | None
-    session_id: int | None
-    history_id: int | None
 
 
 class JobUpdatePayload(TypedDict, total=False):

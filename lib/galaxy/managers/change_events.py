@@ -42,20 +42,17 @@ from galaxy.managers.sse_dispatch import SSEEventDispatcher
 from galaxy.model import (
     Job,
     JobStateHistory,
-    record_invocation_change,
     WorkflowInvocation,
     WorkflowInvocationMessage,
     WorkflowInvocationStep,
 )
 from galaxy.model.pending_changes import (
+    JobUpdate,
     PENDING_CHANGES,
     pending_changes,
     PendingChanges,
+    record_invocation_change,
     record_job_change,
-)
-from galaxy.queue_worker import (
-    InvocationUpdate,
-    JobUpdate,
 )
 
 log = logging.getLogger(__name__)
@@ -138,9 +135,9 @@ class ChangeEventPublisher:
 
     def _send_invocation_updates(self, pending: PendingChanges) -> None:
         updates = [
-            InvocationUpdate(user_id=user_id, history_id=history_id, invocation_id=invocation_id, state=state)
-            for invocation_id, (user_id, history_id, state) in pending.invocations.items()
-            if user_id is not None or history_id is not None
+            update
+            for update in pending.invocations.values()
+            if update["user_id"] is not None or update["history_id"] is not None
         ]
         if not updates:
             return
@@ -153,28 +150,23 @@ class ChangeEventPublisher:
             )
 
     def _send_job_updates(self, pending: PendingChanges) -> None:
-        # Jobs grouped by the user, or for anonymous jobs the session, they are routed to.
-        by_owner: dict[tuple[str, int] | None, list[JobUpdate]] = defaultdict(list)
-        for job_id, (user_id, galaxy_session_id, history_id, state) in pending.jobs.items():
-            update = JobUpdate(
-                job_id=job_id, state=state, user_id=user_id, session_id=galaxy_session_id, history_id=history_id
-            )
-            if user_id is not None:
-                by_owner[("user", user_id)].append(update)
-            elif galaxy_session_id is not None:
-                by_owner[("session", galaxy_session_id)].append(update)
-            else:
-                by_owner[None].append(update)
+        # Jobs grouped by (user_id, session_id) of the recipient; anonymous jobs route to their session.
+        by_owner: dict[tuple[int | None, int | None], list[JobUpdate]] = defaultdict(list)
+        for update in pending.jobs.values():
+            user_id = update["user_id"]
+            by_owner[(user_id, update["session_id"] if user_id is None else None)].append(update)
         updates: list[JobUpdate] = []
         resync_user_ids: list[int] = []
         resync_session_ids: list[int] = []
         resync_history_ids: set[int] = set()
-        for owner, owner_updates in by_owner.items():
-            if owner is None or len(owner_updates) <= MAX_JOBS_PER_EVENT:
+        for (user_id, session_id), owner_updates in by_owner.items():
+            if len(owner_updates) <= MAX_JOBS_PER_EVENT or (user_id is None and session_id is None):
                 updates.extend(owner_updates)
                 continue
-            kind, owner_id = owner
-            (resync_user_ids if kind == "user" else resync_session_ids).append(owner_id)
+            if user_id is not None:
+                resync_user_ids.append(user_id)
+            elif session_id is not None:
+                resync_session_ids.append(session_id)
             resync_history_ids.update(u["history_id"] for u in owner_updates if u["history_id"] is not None)
         if not (updates or resync_user_ids or resync_session_ids):
             return
@@ -191,7 +183,14 @@ class ChangeEventPublisher:
 
 def _record_job(session: Session, job: Job) -> None:
     if job.state is not None:
-        record_job_change(session, job.id, job.user_id, job.session_id, job.history_id, job.state)
+        record_job_change(
+            session,
+            job_id=job.id,
+            user_id=job.user_id,
+            session_id=job.session_id,
+            history_id=job.history_id,
+            state=job.state,
+        )
 
 
 def _record_current_state(session: Session, invocation: WorkflowInvocation) -> None:

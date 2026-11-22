@@ -184,6 +184,7 @@ from galaxy.model.item_attrs import (
 from galaxy.model.orm.util import add_object_to_object_session
 from galaxy.model.pending_changes import (
     pending_changes,
+    record_invocation_change,
     record_job_change,
 )
 from galaxy.model.tag_filter import build_tag_filter
@@ -10377,14 +10378,6 @@ class InputToMaterialize:
     ]
 
 
-def record_invocation_change(session: Session, invocation: "WorkflowInvocation", state: str) -> None:
-    pending = pending_changes(session)
-    if pending is None:
-        return
-    history = invocation.history
-    pending.invocations[invocation.id] = (history.user_id if history else None, invocation.history_id, str(state))
-
-
 class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializable):
     __tablename__ = "workflow_invocation"
 
@@ -10652,7 +10645,14 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
         for job_id, user_id, galaxy_session_id, history_id in sa_session.execute(
             statement.returning(Job.id, Job.user_id, Job.session_id, Job.history_id)
         ):
-            record_job_change(sa_session, job_id, user_id, galaxy_session_id, history_id, Job.states.DELETING)
+            record_job_change(
+                sa_session,
+                job_id=job_id,
+                user_id=user_id,
+                session_id=galaxy_session_id,
+                history_id=history_id,
+                state=Job.states.DELETING,
+            )
 
     def mark_cancelled(self):
         self.state = WorkflowInvocation.states.CANCELLED

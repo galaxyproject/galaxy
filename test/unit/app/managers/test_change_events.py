@@ -4,7 +4,7 @@ from galaxy import model
 from galaxy.managers import change_events
 from galaxy.managers.change_events import ChangeEventPublisher
 from galaxy.model import mapping
-from galaxy.queue_worker import (
+from galaxy.model.pending_changes import (
     InvocationUpdate,
     JobUpdate,
 )
