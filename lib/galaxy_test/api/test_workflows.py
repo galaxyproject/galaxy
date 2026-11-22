@@ -6306,10 +6306,16 @@ default_file_input:
         contents = self.dataset_populator.get_history_contents(history_id)
         return [c for c in contents if c["name"] == name]
 
-    def test_run_subworkflow_step_with_default_file_over_several_passes(self):
+    def _default_file_location(self, mock_http_server) -> str:
+        return mock_http_server.get_url(
+            remote_url="https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bed",
+            body="chr1\t147962192\t147962580\tCCDS989.1_cds_0_0_chr1_147962193_r\t0\t-\n",
+        )
+
+    def test_run_subworkflow_step_with_default_file_over_several_passes(self, mock_http_server):
         with self.dataset_populator.test_history() as history_id:
             self._run_workflow(
-                """
+                f"""
 class: GalaxyWorkflow
 inputs:
   outer_input: data
@@ -6325,7 +6331,7 @@ steps:
           class: File
           basename: a file
           format: txt
-          location: https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bed
+          location: {self._default_file_location(mock_http_server)}
     run:
       class: GalaxyWorkflow
       inputs:
@@ -6358,10 +6364,10 @@ test_data:
             default_datasets = self._history_contents_named(history_id, "a file")
             assert not default_datasets, default_datasets
 
-    def test_run_delayed_tool_step_with_default_file(self):
+    def test_run_delayed_tool_step_with_default_file(self, mock_http_server):
         with self.dataset_populator.test_history() as history_id:
             self._run_workflow(
-                """
+                f"""
 class: GalaxyWorkflow
 inputs:
   outer_input: data
@@ -6379,7 +6385,7 @@ steps:
           class: File
           basename: a file
           format: txt
-          location: https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bed
+          location: {self._default_file_location(mock_http_server)}
 test_data:
   outer_input:
     value: 1.bed
@@ -6393,10 +6399,10 @@ test_data:
             default_datasets = self._history_contents_named(history_id, "a file")
             assert len(default_datasets) == 1, default_datasets
 
-    def test_run_tool_step_with_default_file_and_pending_parameter_connection(self):
+    def test_run_tool_step_with_default_file_and_pending_parameter_connection(self, mock_http_server):
         with self.dataset_populator.test_history() as history_id:
             self._run_workflow(
-                """
+                f"""
 class: GalaxyWorkflow
 steps:
   forty_two:
@@ -6410,7 +6416,7 @@ steps:
           class: File
           basename: a file
           format: txt
-          location: https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bed
+          location: {self._default_file_location(mock_http_server)}
 """,
                 history_id=history_id,
                 wait=True,
