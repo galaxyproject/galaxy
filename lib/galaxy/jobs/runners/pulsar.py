@@ -464,6 +464,8 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
         if not command_line:
             return
 
+        # Runs a query on each access.
+        remote_command_line = job_wrapper.remote_command_line
         pulsar_version = PulsarJobRunner.pulsar_version(remote_job_config)
         PulsarPlugin.write_version_target(
             _job_metrics_directory(job_wrapper),
@@ -484,7 +486,7 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
                 deferred_dataset_ids = {
                     ds.dataset.id
                     for ds in job_wrapper.job_io.get_input_datasets()
-                    if job_wrapper.remote_command_line and ds.state == model.Dataset.states.DEFERRED and ds.dataset
+                    if remote_command_line and ds.state == model.Dataset.states.DEFERRED and ds.dataset
                 }
                 for input_dataset_wrapper in job_wrapper.job_io.get_input_paths(
                     compute_environment.materialized_objects
@@ -556,7 +558,7 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
                     config_files.append(job_directory_path)
             assert job_wrapper.tool is not None
             tool_directory_required_files = job_wrapper.tool.required_files
-            if job_wrapper.remote_command_line and tool_directory_required_files is None:
+            if remote_command_line and tool_directory_required_files is None:
                 # Templates have not been evaluated, so Pulsar cannot discover
                 # which supporting files will be referenced by the command.
                 tool_directory_required_files = RequiredFiles.from_dict(
@@ -622,7 +624,9 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
             assert job_wrapper.tool is not None
             tool = job_wrapper.tool
             remote_job_config = client.setup(tool.id, tool.version, tool.requires_galaxy_python_environment)
-            if job_wrapper.remote_command_line:
+            # Runs a query on each access.
+            remote_command_line = job_wrapper.remote_command_line
+            if remote_command_line:
                 # Remote evaluation needs structured path mapping: the command and
                 # config files do not exist until after Pulsar has staged the job.
                 client.destination_params["rewrite_parameters"] = True
@@ -702,7 +706,7 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
                 dependency_resolution=dependency_resolution,
                 pulsar_version=pulsar_version,
             )
-            if job_wrapper.remote_command_line:
+            if remote_command_line:
                 assert compute_environment is not None
                 remote_command_params["version_path"] = compute_environment.version_path()
             rewrite_paths = not PulsarJobRunner.__rewrite_parameters(client)
@@ -725,7 +729,7 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
                 remote_job_directory=remote_job_directory,
                 metadata_container=metadata_container,
             )
-            if job_wrapper.remote_command_line:
+            if remote_command_line:
                 assert compute_environment is not None
                 self._setup_remote_tool_evaluation(job_wrapper, compute_environment, remote_job_config)
         except UnsupportedPulsarException:
