@@ -130,4 +130,43 @@ describe("FormDefault", () => {
         expect(inputWrapper.emitted("onUpdateStep")[1][1].in).toEqual({ other: { default: 5 } });
         inputWrapper.unmount();
     });
+
+    it("drops metadata describing the previous file when the location changes", () => {
+        const step = {
+            id: 0,
+            content_id: null,
+            annotation: "",
+            label: "input",
+            name: "Input dataset",
+            type: "data_input",
+            config_form: { inputs: [] },
+            inputs: [],
+            outputs: [],
+            tool_state: {},
+            in: {
+                input: {
+                    default: {
+                        class: "File",
+                        location: "https://example.org/old",
+                        format: "tabular",
+                        basename: "old.tsv",
+                        MD5: "d41d8cd98f00b204e9800998ecf8427e",
+                    },
+                },
+            },
+        };
+        const inputWrapper = mount(FormDefault, {
+            propsData: { datatypes: [], step },
+            global: { ...localVue, provide: { workflowId: "mock-workflow" } },
+            pinia: createTestingPinia({ createSpy: vi.fn, stubActions: false }),
+        });
+        const field = inputWrapper
+            .findAllComponents(FormElement)
+            .find((component) => component.props("id") === "__default_location");
+        field.vm.$emit("update:modelValue", "https://example.org/new");
+        expect(inputWrapper.emitted("onUpdateStep")[0][1].in).toEqual({
+            input: { default: { class: "File", location: "https://example.org/new", format: "tabular" } },
+        });
+        inputWrapper.unmount();
+    });
 });

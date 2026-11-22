@@ -132,6 +132,8 @@ const stepTitle = computed(() => {
 const nodeIcon = computed(() => WorkflowIcons[type.value]);
 const formDisplayId = computed(() => stepId.value.toString());
 const isSubworkflow = computed(() => type.value === "subworkflow");
+const LOCATION_BOUND_FILE_KEYS = ["basename", "created_from_basename", "MD5", "SHA-1", "SHA-256", "SHA-512"];
+
 const defaultLocation = computed(() => {
     const value = props.step.in?.input?.default;
     return value && typeof value === "object" && "location" in value && typeof value.location === "string"
@@ -144,10 +146,16 @@ function onDefaultLocation(value: unknown) {
     const location = typeof value === "string" ? value.trim() : "";
     if (location) {
         const previous = inputs.input?.default;
-        const file =
+        const file: Record<string, unknown> =
             previous && typeof previous === "object" && "class" in previous && previous.class === "File"
-                ? previous
+                ? { ...previous }
                 : {};
+        if (file.location !== location) {
+            // These keys describe the file at the previous location (dataset name, checksums).
+            for (const key of LOCATION_BOUND_FILE_KEYS) {
+                delete file[key];
+            }
+        }
         inputs.input = { ...inputs.input, default: { ...file, class: "File", location } };
     } else if (inputs.input) {
         const { default: _default, ...rest } = inputs.input;
