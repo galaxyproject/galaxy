@@ -119,6 +119,25 @@ class TestHistoryPanel(SeleniumTestCase, UsesUploadActivity):
 
     @selenium_test
     @managed_history
+    def test_advanced_filter_index_range(self):
+        self._show_history_of_datasets(4)
+
+        history_panel = self.components.history_panel
+        history_panel.advanced_search_toggle.wait_for_and_click()
+        history_panel.advanced_search_input(filter="hid_gt").wait_for_and_send_keys("1")
+        lower_than = history_panel.advanced_search_input(filter="hid_lt")
+        lower_than.wait_for_and_send_keys("4")
+        self.screenshot("history_panel_advanced_filter_index_range")
+        lower_than.wait_for_and_send_enter()
+
+        self.history_panel_wait_for_hid_visible(2)
+        self.history_panel_wait_for_hid_visible(3)
+        self.history_panel_wait_for_hid_hidden(1)
+        self.history_panel_wait_for_hid_hidden(4)
+        self.screenshot("history_panel_advanced_filter_index_range_applied")
+
+    @selenium_test
+    @managed_history
     def test_unhide_item_with_include_hidden(self):
         history_id = self.current_history_id()
         self.dataset_populator.new_dataset(history_id, content="1\n", wait=True)
