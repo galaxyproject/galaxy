@@ -1456,6 +1456,39 @@ steps:
         node.wait_for_and_click()
 
     @selenium_test
+    def test_undo_subworkflow_upgrade(self):
+        workflow_populator = self.workflow_populator
+        name = self._get_random_name()
+        workflow_id = workflow_populator.upload_yaml_workflow(WORKFLOW_NESTED_SIMPLE, name=name)
+        nested_content_id = workflow_populator.download_workflow(workflow_id, style="editor")["steps"]["2"][
+            "content_id"
+        ]
+        nested_workflow = workflow_populator._get(f"workflows/{nested_content_id}", data={"instance": True}).json()
+        with workflow_populator.export_for_update(nested_workflow["id"]) as nested_dict:
+            tool_state = json.loads(nested_dict["steps"]["1"]["tool_state"])
+            tool_state["num_lines"] = "2"
+            nested_dict["steps"]["1"]["tool_state"] = json.dumps(tool_state)
+
+        def saved_num_lines():
+            saved = workflow_populator.download_workflow(workflow_id)
+            return json.loads(saved["steps"]["2"]["subworkflow"]["steps"]["1"]["tool_state"])["num_lines"]
+
+        self.workflow_editor_open_with_name(name)
+        editor = self.components.workflow_editor
+        editor.tool_bar.auto_layout.wait_for_and_click()
+        self._wait_for_unsaved_changes()
+        self.assert_workflow_has_changes_and_save()
+        editor.node._(label="nested_workflow").wait_for_and_click()
+        editor.upgrade_subworkflow.wait_for_and_click()
+        self._wait_on(lambda: saved_num_lines() == "2", "the upgraded sub-workflow to be saved")
+
+        editor.tool_bar.changes.wait_for_and_click()
+        editor.latest_change.wait_for_and_click()
+        self._wait_for_unsaved_changes()
+        self.assert_workflow_has_changes_and_save()
+        self._wait_on(lambda: saved_num_lines() == "1", "the undone sub-workflow upgrade to be saved")
+
+    @selenium_test
     def test_editor_duplicate_node(self):
         workflow_id = self.workflow_populator.upload_yaml_workflow(WORKFLOW_SIMPLE_CAT_TWICE)
         self.workflow_index_open()
@@ -1563,6 +1596,10 @@ steps:
         self.assert_workflow_has_changes_and_save()
         workflow = self._download_current_workflow()
         assert len(workflow["steps"]) == 3
+
+    def _wait_for_unsaved_changes(self):
+        save_button = self.components.workflow_editor.save_button
+        self._wait_on(lambda: not save_button.has_class("g-disabled"), "the editor to report unsaved changes")
 
     def _current_collection_type(self):
         workflow = self._download_current_workflow()

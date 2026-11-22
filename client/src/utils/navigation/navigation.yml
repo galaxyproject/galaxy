@@ -1350,6 +1350,8 @@ workflow_editor:
     connect_icon: 'div.ui-form-element[id="form-element-${name}"] [data-connected]'
     collapse_icon: 'div.ui-form-element[id="form-element-${name}"] [data-collapsible]'
     edit_subworkflow: 'button[title="Edit this Subworkflow. You will need to upgrade this Workflow Step afterwards."]'
+    upgrade_subworkflow: 'button[title="Upgrade this Workflow Step to latest Subworkflow version."]'
+    latest_change: '.undo-redo-stack .action.past'
     node_title:
       type: xpath
       selector: '//span[@class="node-title" and text()="${title}"]'
