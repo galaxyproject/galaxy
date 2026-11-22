@@ -46,6 +46,7 @@ from galaxy.tool_util_models.tool_source import (
 )
 from galaxy.tools.actions import determine_output_format
 from galaxy.tools.expressions import do_eval
+from galaxy.tools.job_parameters import is_element_identifier_parameter
 from galaxy.tools.parameters import (
     visit_input_values,
     wrapped_json,
@@ -169,6 +170,7 @@ class ToolEvaluator:
         incoming = self.tool.params_from_strings(incoming)
         if "__use_cached_job__" in incoming:
             self.use_cached_job = bool(incoming["__use_cached_job__"])
+        incoming = self._template_job_parameters(incoming)
 
         self.file_sources_dict = compute_environment.get_file_sources_dict()
 
@@ -217,6 +219,28 @@ class ToolEvaluator:
                 out_data,
                 output_collections=out_collections,
             )
+
+    def _template_job_parameters(self, incoming: dict) -> dict:
+        """Keep the job parameters that are tool inputs or that the tool's templates read."""
+        tool = self.tool
+        if tool.keeps_undeclared_job_parameters:
+            return incoming
+        # Job parameters are keyed by top-level input name. params_from_strings rebuilt the
+        # values of conditionals, sections and repeats from their declared inputs.
+        template_parameters = {}
+        other_parameters = []
+        for name, value in incoming.items():
+            if name in tool.inputs or name in tool.template_job_parameters or is_element_identifier_parameter(name):
+                template_parameters[name] = value
+            else:
+                other_parameters.append(name)
+        if other_parameters:
+            log.debug(
+                "Job parameters %s of tool '%s' are not tool inputs, not passing them to the templates.",
+                other_parameters,
+                tool.id,
+            )
+        return template_parameters
 
     def execute_tool_hooks(self, inp_data, out_data, incoming):
         # Certain tools require tasks to be completed prior to job execution

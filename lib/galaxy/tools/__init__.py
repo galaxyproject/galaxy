@@ -136,6 +136,7 @@ from galaxy.tools.actions.model_operations import ModelOperationToolAction
 from galaxy.tools.evaluation import global_tool_errors
 from galaxy.tools.execution_helpers import ToolExecutionCache
 from galaxy.tools.imp_exp import JobImportHistoryArchiveWrapper
+from galaxy.tools.job_parameters import TEMPLATE_JOB_PARAMETERS
 from galaxy.tools.parameters import (
     check_param,
     params_from_strings,
@@ -1019,6 +1020,8 @@ class Tool(UsesDictVisibleKeys):
     dict_collection_visible_keys = ["id", "name", "version", "description", "labels"]
     job_search: "JobSearch"
     version: str
+    # Job parameters that are not tool inputs and that the tool's templates read.
+    template_job_parameters: frozenset[str] = TEMPLATE_JOB_PARAMETERS
 
     def __init__(
         self,
@@ -2036,6 +2039,15 @@ class Tool(UsesDictVisibleKeys):
             return collection_def.outputs.get(part, None)
         else:
             return self.outputs.get(name, None)
+
+    @property
+    def keeps_undeclared_job_parameters(self) -> bool:
+        """Pass job parameters that are not tool inputs to the templates.
+
+        Tools that do not check their values (data source tools) take the request
+        parameters as they are sent.
+        """
+        return not self.check_values
 
     @property
     def is_workflow_compatible(self):
@@ -3528,6 +3540,7 @@ class SetMetadataTool(Tool):
 
 class ExportHistoryTool(Tool):
     tool_type = "export_history"
+    template_job_parameters = Tool.template_job_parameters | {"__EXPORT_TO_URI__"}
 
 
 class ImportHistoryTool(Tool):
