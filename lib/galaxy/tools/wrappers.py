@@ -300,6 +300,15 @@ class SelectToolParameterWrapper(ToolParameterValueWrapper):
         return self.value.__iter__()
 
 
+def _job_metadata_path(compute_environment: Optional["ComputeEnvironment"], dataset: DatasetInstance, path: str) -> str:
+    """Where the job finds ``dataset``'s metadata file stored at ``path``."""
+    if compute_environment:
+        rewrite: str | None = compute_environment.input_metadata_rewrite(dataset, path)
+        if rewrite is not None:
+            return rewrite
+    return path
+
+
 class DatasetFilenameWrapper(ToolParameterValueWrapper):
     """
     Wraps a dataset so that __str__ returns the filename, but all other
@@ -332,10 +341,8 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
                 metadata_param = self.metadata.spec[name].param
 
                 rval = metadata_param.to_safe_string(rval)
-                if isinstance(metadata_param, FileParameter) and self.compute_environment:
-                    rewrite = self.compute_environment.input_metadata_rewrite(self.dataset, rval)
-                    if rewrite is not None:
-                        rval = rewrite
+                if isinstance(metadata_param, FileParameter):
+                    rval = _job_metadata_path(self.compute_environment, self.dataset, rval)
 
                 # Store this value, so we don't need to recalculate if needed
                 # again
