@@ -1140,8 +1140,7 @@ class MinimalJobWrapper(HasResourceParameters):
             return False
         # Interactive tools register their entry points while the command is built, the
         # metadata tool is Galaxy's own job, and task splitting builds a command per task.
-        assert self.tool
-        if self.tool.tool_type in ("interactive", "set_metadata") or self.__has_tasks:
+        if self.tool is None or self.tool.tool_type in ("interactive", "set_metadata") or self.__has_tasks:
             return False
         # It wouldn't be hard to support history export, but we want to do this in task queue workers anyway ...
         stmt = select(model.JobExportHistoryArchive).filter_by(job=self.get_job()).limit(1)
