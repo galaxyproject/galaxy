@@ -8,6 +8,7 @@ import errno
 import logging
 import os
 import re
+import shutil
 import subprocess
 from dataclasses import dataclass
 from time import sleep
@@ -40,7 +41,9 @@ from pulsar.client.staging.models import (
     PulsarOutputs,
 )
 from pulsar.client.staging.up import submit_job as pulsar_submit_job
+from pulsar.managers.stateful import ACTIVE_STATUS_DIRECTORIES
 from sqlalchemy import select
+from sqlalchemy.orm import scoped_session
 
 from galaxy import model
 from galaxy.exceptions import InsufficientPermissionsException
@@ -274,6 +277,68 @@ PULSAR_PARAM_SPECS = dict(
 )
 
 
+EMBEDDED_PULSAR_PERSISTENCE_DIRECTORY = "pulsar_persisted_data"
+SERVER_NAME_PLACEHOLDER = "{server_name}"
+ACTIVE_JOB_INDEX_SUFFIXES = tuple(f"-{name}" for name in ACTIVE_STATUS_DIRECTORIES.values())
+
+
+def active_job_index_entries(directory: str) -> list[str]:
+    """Paths of the Pulsar active job index entries (``<manager>-<status>/<job id>``) directly in ``directory``."""
+    if not os.path.isdir(directory):
+        return []
+    entries: list[str] = []
+    for name in sorted(os.listdir(directory)):
+        index_directory = os.path.join(directory, name)
+        if name.endswith(ACTIVE_JOB_INDEX_SUFFIXES) and os.path.isdir(index_directory):
+            entries.extend(os.path.join(index_directory, job_id) for job_id in sorted(os.listdir(index_directory)))
+    return entries
+
+
+@dataclass
+class PersistenceEntryMigration:
+    entry: str
+    destination: str | None
+    reason: str | None = None
+
+
+def _job_for_pulsar_job_id(session: scoped_session, pulsar_job_id: str) -> model.Job | None:
+    """Galaxy job for a Pulsar job id assigned with ``assign_ids`` ``galaxy`` (the default) or ``uuid``."""
+    if pulsar_job_id.isdigit():
+        return session.get(model.Job, int(pulsar_job_id))
+    stmt = select(model.Job).filter(model.Job.job_runner_external_id == pulsar_job_id).limit(1)
+    return session.execute(stmt).scalar_one_or_none()
+
+
+def migrate_embedded_pulsar_persistence(
+    session: scoped_session, source: str, target: str, dry_run: bool = False
+) -> list[PersistenceEntryMigration]:
+    """Move the Pulsar active job index entries in ``source`` to the directory of each job's handler.
+
+    ``target`` contains ``{server_name}``, which is replaced with the handler of the entry's Galaxy job.
+    Entries whose job does not exist, has no handler or is in a terminal state are left in place.
+    """
+    if SERVER_NAME_PLACEHOLDER not in target:
+        raise ValueError(f"Target directory [{target}] must contain {SERVER_NAME_PLACEHOLDER}")
+    migrations = []
+    for entry in active_job_index_entries(source):
+        job_id = os.path.basename(entry)
+        job = _job_for_pulsar_job_id(session, job_id)
+        if job is None:
+            migrations.append(PersistenceEntryMigration(entry, None, "no Galaxy job with this id"))
+        elif not job.handler:
+            migrations.append(PersistenceEntryMigration(entry, None, "job has no handler"))
+        elif job.state in model.Job.terminal_states:
+            migrations.append(PersistenceEntryMigration(entry, None, f"job is {job.state}"))
+        else:
+            index_name = os.path.basename(os.path.dirname(entry))
+            destination = os.path.join(target.replace(SERVER_NAME_PLACEHOLDER, job.handler), index_name, job_id)
+            if not dry_run:
+                os.makedirs(os.path.dirname(destination), exist_ok=True)
+                shutil.move(entry, destination)
+            migrations.append(PersistenceEntryMigration(entry, destination))
+    return migrations
+
+
 PARAMETER_SPECIFICATION_REQUIRED = object()
 PARAMETER_SPECIFICATION_IGNORED = object()
 
@@ -368,7 +433,33 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
         if "staging_directory" not in conf:
             conf["staging_directory"] = os.path.join(self.app.config.data_dir, "pulsar_staging")
         if "persistence_directory" not in conf:
-            conf["persistence_directory"] = os.path.join(self.app.config.data_dir, "pulsar_persisted_data")
+            base_directory = os.path.join(self.app.config.data_dir, EMBEDDED_PULSAR_PERSISTENCE_DIRECTORY)
+            if active_job_index_entries(base_directory):
+                log.warning(
+                    "Pulsar jobs are indexed directly in %s, where no embedded Pulsar app recovers them. Stop all "
+                    "job handlers and run scripts/migrate_embedded_pulsar_persistence.py to move them to the "
+                    "per-handler directories. Entries the script leaves in place belong to no active job and can be "
+                    "deleted.",
+                    base_directory,
+                )
+            conf["persistence_directory"] = os.path.join(base_directory, SERVER_NAME_PLACEHOLDER)
+        elif (
+            isinstance(conf["persistence_directory"], str)
+            and SERVER_NAME_PLACEHOLDER not in conf["persistence_directory"]
+            and conf["persistence_directory"] != "__none__"
+        ):
+            log.info(
+                "Pulsar persistence_directory %s does not contain %s; job handlers sharing it each recover all of "
+                "its jobs.",
+                conf["persistence_directory"],
+                SERVER_NAME_PLACEHOLDER,
+            )
+        if isinstance(conf["persistence_directory"], str):
+            # Each handler process builds its own Pulsar app, and every app monitors
+            # and recovers all jobs indexed in its persistence directory.
+            conf["persistence_directory"] = conf["persistence_directory"].replace(
+                SERVER_NAME_PLACEHOLDER, self.app.config.server_name
+            )
         if "galaxy_home" not in conf:
             conf["galaxy_home"] = galaxy_directory()
         self.pulsar_app = pulsar.core.PulsarApp(**conf)
