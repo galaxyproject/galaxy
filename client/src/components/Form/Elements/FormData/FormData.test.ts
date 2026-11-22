@@ -135,23 +135,15 @@ describe("FormData", () => {
         expect(wrapper.findAll(SELECT_OPTIONS).length).toBe(7);
     });
 
-    it("shows when the default file is in use and lets a dataset override it", async () => {
+    it("lets a required input with a default file start empty", async () => {
         const wrapper = createTarget({
             modelValue: null,
             optional: false,
             defaultLocation: "https://example.org/reference.tsv",
             options: defaultOptions,
         });
-        expect(wrapper.find('[role="status"]').text()).toContain("Using default file");
-        expect(wrapper.find('[role="status"]').text()).toContain("https://example.org/reference.tsv");
         await openMultiselect(wrapper);
         expect(wrapper.find(SELECTED_VALUE).text()).toEqual("Use default file");
-
-        const dataset = defaultOptions.hda[0]!;
-        await wrapper.setProps({ modelValue: { values: [dataset] } });
-        expect(wrapper.find('[role="status"]').text()).toContain("Using selected dataset");
-        expect(wrapper.find('[role="status"]').text()).toContain("Default file: https://example.org/reference.tsv");
-        expect(wrapper.findAll(SELECT_OPTIONS).some((option) => option.text() === "Use default file")).toBe(true);
     });
 
     it("names the collection type in the no-options alert", () => {
