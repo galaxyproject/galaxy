@@ -6,6 +6,7 @@ from galaxy.datatypes.sequence import (
     FastqSolexa,
     PearsonFasta,
 )
+from galaxy.datatypes.sniff import FilePrefix
 from .util import (
     get_dataset,
     MockDatasetDataset,
@@ -61,7 +62,7 @@ def test_pearson_fasta_set_meta():
 def test_pearson_fasta_sniff(tmp_path, content, expected):
     path = tmp_path / "input"
     path.write_bytes(content)
-    assert PearsonFasta().sniff(str(path)) is expected
+    assert PearsonFasta().sniff_prefix(FilePrefix(str(path))) is expected
 
 
 @pytest.mark.parametrize(
