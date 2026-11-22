@@ -438,9 +438,6 @@ PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
     def _scroll_to_end_of_table(self):
         rule_builder = self.components.rule_builder
         table_elem = rule_builder.table.wait_for_visible()
-        # handsontable
-        # first_cell = table_elem.find_elements(By.CSS_SELECTOR, "td")[0]
-        # aggrid
         first_cell = table_elem.find_elements(By.CSS_SELECTOR, ".ag-cell")[0]
         self.move_to_and_click(first_cell)
         self.send_keys_to_page(Keys.ARROW_RIGHT * 15)

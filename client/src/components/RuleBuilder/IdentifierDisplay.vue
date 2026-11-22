@@ -1,5 +1,5 @@
 <template>
-    <li class="rule" @mouseover="$emit('mouseover', $event)" @mouseout="$emit('mouseout', $event)">
+    <li class="rule" @mouseenter="$emit('mouseenter', $event)" @mouseleave="$emit('mouseleave', $event)">
         <span v-g-tooltip.hover :title="help">Set {{ columnsLabel }} as {{ typeDisplay }}</span>
         <span v-g-tooltip.hover :title="titleEdit" class="fa fa-edit" @click="edit"></span>
         <span v-g-tooltip.hover :title="titleRemove" class="fa fa-times" @click="remove"></span>
@@ -30,7 +30,7 @@ export default {
     // The rule builder highlights columns on these hover events. They're declared
     // so the template's re-emit is the only path; undeclared, they'd also fall through
     // to the <li> and the parent would get each one twice.
-    emits: ["remove", "edit", "mouseover", "mouseout"],
+    emits: ["remove", "edit", "mouseenter", "mouseleave"],
     computed: {
         typeDisplay() {
             return MAPPING_TARGETS[this.type].label;
