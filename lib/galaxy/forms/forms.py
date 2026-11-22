@@ -2,6 +2,11 @@
 FormDefinition and field factories
 """
 
+from typing import (
+    Any,
+    TYPE_CHECKING,
+)
+
 # TODO: A FormDefinitionField is closely linked to a form_builder result.
 # Can this functionality be further abstracted and merged with form_builder?
 from galaxy.model import (
@@ -10,22 +15,34 @@ from galaxy.model import (
 )
 from galaxy.util import string_as_bool
 
+if TYPE_CHECKING:
+    from galaxy.util import Element
+
 FORM_TYPES = {f_type.lower(): f_descript for f_type, f_descript in FormDefinition.types.__members__.items()}
 
 
 class FormDefinitionFactory:
-    def __init__(self, form_types, field_type_factories):
+    def __init__(
+        self, form_types: dict[str, FormDefinition.types], field_type_factories: dict[str, "FormDefinitionFieldFactory"]
+    ) -> None:
         self.form_types = form_types
         self.field_type_factories = field_type_factories
 
-    def new(self, form_type, name, description=None, fields=None, layout=None, form_definition_current=None):
+    def new(
+        self,
+        form_type: str,
+        name: str,
+        description: str | None = None,
+        fields: list[dict[str, Any]] | None = None,
+        layout: list[str] | None = None,
+        form_definition_current: FormDefinitionCurrent | None = None,
+    ) -> FormDefinition:
         """
         Return new FormDefinition.
         """
         assert (
             form_type in self.form_types
         ), f"Invalid FormDefinition type ( {form_type} not in {self.form_types.keys()} )"
-        assert name, "FormDefinition requires a name"
         if description is None:
             description = ""
         if layout is None:
@@ -46,22 +63,26 @@ class FormDefinitionFactory:
         form_definition_current.latest_form = rval
         return rval
 
-    def from_elem(self, elem, form_definition_current=None):
+    def from_elem(
+        self, elem: "Element", form_definition_current: FormDefinitionCurrent | None = None
+    ) -> FormDefinition:
         """
         Return FormDefinition created from an xml element.
         """
         name = elem.get("name", None)
+        assert name, "FormDefinition requires a name"
         description = elem.get("description", None)
         form_type = elem.get("type", None)
+        assert form_type, "FormDefinition requires a type"
         # load layout
-        layout = []
-        if layouts_elem := elem.find("layout"):
+        layout: list[str] = []
+        if (layouts_elem := elem.find("layout")) is not None:
             for layout_elem in layouts_elem.findall("grid"):
                 layout_name = layout_elem.get("name", None)
                 assert layout_name and layout_name not in layout, "Layout grid element requires a unique name."
                 layout.append(layout_name)
         # load fields
-        fields = []
+        fields: list[dict[str, Any]] = []
         if (fields_elem := elem.find("fields")) is not None:
             for field_elem in fields_elem.findall("field"):
                 field_type = field_elem.get("type")
@@ -386,7 +407,7 @@ class FormDefinitionSelectFieldFactory(FormDefinitionFieldFactory):
         return rval
 
 
-field_type_factories = {
+field_type_factories: dict[str, FormDefinitionFieldFactory] = {
     field.type: field()
     for field in (
         FormDefinitionTextFieldFactory,
