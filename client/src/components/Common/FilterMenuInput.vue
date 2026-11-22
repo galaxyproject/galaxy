@@ -11,23 +11,20 @@ import GFormInput from "../BaseComponents/Form/GFormInput.vue";
 import GButton from "../BaseComponents/GButton.vue";
 import GModal from "../BaseComponents/GModal.vue";
 
-type FilterType = string | boolean | undefined;
-
 interface Props {
     name: string;
     identifier: any;
     error?: string;
     filter: ValidFilter<any>;
-    filters: {
-        [k: string]: FilterType;
-    };
+    /** Text values only: `FilterMenu` routes Boolean filters to `FilterMenuBoolean` */
+    filters: Record<string, string | undefined>;
     disabled?: boolean;
 }
 
 const props = defineProps<Props>();
 
 const emit = defineEmits<{
-    (e: "change", name: string, value: FilterType): void;
+    (e: "change", name: string, value: string | undefined): void;
     (e: "on-enter"): void;
     (e: "on-esc"): void;
 }>();
@@ -35,14 +32,6 @@ const emit = defineEmits<{
 const propValue = computed(() => props.filters[props.name]);
 
 const localValue = ref(propValue.value);
-
-// GFormInput holds text, while the filters dict also types its values as boolean
-const inputValue = computed({
-    get: () => (localValue.value === undefined ? null : String(localValue.value)),
-    set: (value: string | null) => {
-        localValue.value = value ?? undefined;
-    },
-});
 
 const helpToggle = ref(false);
 const modalTitle = `${capitalizeFirstLetter(props.filter.placeholder || "")} Help`;
@@ -79,7 +68,7 @@ watch(
             <GFormInput
                 :id="`${identifier}-advanced-filter-${props.name}`"
                 ref="filterMenuInput"
-                v-model="inputValue"
+                v-model="localValue"
                 v-g-tooltip.focus.v-danger="props.error"
                 class="mw-100"
                 size="small"
