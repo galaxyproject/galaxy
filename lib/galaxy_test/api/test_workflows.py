@@ -9235,14 +9235,14 @@ data_input:
         workflow_id = self._upload_yaml_workflow(WORKFLOW_WITH_DEFAULT_FILE_DATASET_INPUT.format(location=location))
         editor = self._download_workflow(workflow_id, style="editor")
         input_step = next(step for step in editor["steps"].values() if step["type"] == "data_input")
-        assert input_step["in"]["input"]["default"]["location"] == location
-        # Exercise the same update made by the editor and preserve an optional input.
-        input_step["in"]["input"]["default"] = {"class": "File", "location": location}
+        original_default = {"class": "File", "basename": "a file", "format": "txt", "location": location}
+        assert input_step["in"]["input"]["default"] == original_default
+        # Saving the editor dict unchanged must keep the whole default, metadata included.
         input_step["tool_state"]["optional"] = "true"
         self._assert_status_code_is(self._update_workflow(workflow_id, editor), 200)
         reopened = self._download_workflow(workflow_id, style="editor")
         reopened_input = next(step for step in reopened["steps"].values() if step["type"] == "data_input")
-        assert reopened_input["in"]["input"]["default"] == {"class": "File", "location": location}
+        assert reopened_input["in"]["input"]["default"] == original_default
         with self.dataset_populator.test_history() as history_id:
             self.dataset_populator.new_dataset(history_id, content="alternative input", file_type="txt", wait=True)
             run_model = self._download_workflow(workflow_id, style="run", history_id=history_id)
@@ -9259,6 +9259,18 @@ data_input:
         cleared = self._download_workflow(workflow_id, style="editor")
         cleared_input = next(step for step in cleared["steps"].values() if step["type"] == "data_input")
         assert not cleared_input.get("in")
+
+    def test_tool_step_default_file_survives_editor_round_trip(self, test_http_server):
+        location = _default_file_location(test_http_server)
+        workflow_id = self._upload_yaml_workflow(
+            WORKFLOW_WITH_STEP_DEFAULT_FILE_DATASET_INPUT.format(location=location)
+        )
+        editor = self._download_workflow(workflow_id, style="editor")
+        original_in = next(step for step in editor["steps"].values() if step["type"] == "tool")["in"]
+        assert original_in["input1"]["default"]["location"] == location
+        self._assert_status_code_is(self._update_workflow(workflow_id, editor), 200)
+        reopened = self._download_workflow(workflow_id, style="editor")
+        assert next(step for step in reopened["steps"].values() if step["type"] == "tool")["in"] == original_in
 
     def test_run_with_default_file_dataset_input_and_explicit_input(self, test_http_server):
         with self.dataset_populator.test_history() as history_id:
