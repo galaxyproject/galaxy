@@ -509,7 +509,7 @@ class BasePopulator(metaclass=ABCMeta):
             return wait_on_events(listener, event_type, predicate, function, desc, timeout)
         finally:
             if viewed_history_id is not None:
-                self._delete("events/history-subscriptions", {"history_ids": [viewed_history_id]}, json=True)
+                self.unsubscribe_history_viewer([viewed_history_id])
             listener.stop()
 
     def _subscribe_to_history_owned_by_others(self, history_id: str) -> str | None:
@@ -520,9 +520,16 @@ class BasePopulator(metaclass=ABCMeta):
         """
         if self._get(f"histories/{history_id}", {"keys": "user_id"}).json()["user_id"] == self._current_user_id():
             return None
-        response = self._post("events/history-subscriptions", {"history_ids": [history_id]}, json=True)
-        api_asserts.assert_status_code_is(response, 204)
+        self.subscribe_history_viewer([history_id])
         return history_id
+
+    def subscribe_history_viewer(self, history_ids: list[str]) -> None:
+        response = self._post("events/history-subscriptions", {"history_ids": history_ids}, json=True)
+        api_asserts.assert_status_code_is(response, 204)
+
+    def unsubscribe_history_viewer(self, history_ids: list[str]) -> None:
+        response = self._delete("events/history-subscriptions", {"history_ids": history_ids}, json=True)
+        api_asserts.assert_status_code_is(response, 204)
 
     def _current_user_id(self) -> str:
         response = self._get("users/current")

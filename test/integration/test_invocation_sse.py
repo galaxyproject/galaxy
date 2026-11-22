@@ -112,10 +112,7 @@ class BaseInvocationSSEIntegrationTestCase(IntegrationTestCase):
         return api_key
 
     def _subscribe_as_viewer(self, api_key: str, history_id: str) -> None:
-        response = self._get_interactor(api_key=api_key).post(
-            "events/history-subscriptions", {"history_ids": [history_id]}, json=True
-        )
-        self._assert_status_code_is(response, 204)
+        DatasetPopulator(self._get_interactor(api_key=api_key)).subscribe_history_viewer([history_id])
 
 
 class TestInvocationSSEIntegration(BaseInvocationSSEIntegrationTestCase):

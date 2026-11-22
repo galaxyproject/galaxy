@@ -74,12 +74,7 @@ class TestHistorySSEIntegration(IntegrationTestCase):
         listener.start()
         try:
             # User A subscribes as a viewer for User B's history.
-            sub_resp = self._post(
-                "events/history-subscriptions",
-                data={"history_ids": [user_b_history_id]},
-                json=True,
-            )
-            self._assert_status_code_is(sub_resp, 204)
+            self.dataset_populator.subscribe_history_viewer([user_b_history_id])
 
             # User B mutates their own history. A must see the SSE event for it.
             user_b_populator.new_dataset(user_b_history_id, content="viewer test", wait=False)
@@ -92,12 +87,7 @@ class TestHistorySSEIntegration(IntegrationTestCase):
             ), f"Viewer subscription did not deliver history_update: {history_events}"
 
             # Unsubscribe and confirm subsequent mutations no longer arrive.
-            unsub_resp = self._delete(
-                "events/history-subscriptions",
-                data={"history_ids": [user_b_history_id]},
-                json=True,
-            )
-            self._assert_status_code_is(unsub_resp, 204)
+            self.dataset_populator.unsubscribe_history_viewer([user_b_history_id])
 
             # The unsubscribe is applied asynchronously by the control queue,
             # whose single consumer can lag by seconds (e.g. while it runs the
