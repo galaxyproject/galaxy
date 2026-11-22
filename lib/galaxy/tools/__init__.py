@@ -2287,6 +2287,9 @@ class Tool(UsesDictVisibleKeys):
 
             for _, hdca in execution_tracker.output_collections:
                 tag_handler.apply_item_tags(user=trans.user, item=hdca, tags_str=",".join(tags), flush=False)
+
+            for hdca in execution_tracker.implicit_collections.values():
+                tag_handler.apply_item_tags(user=trans.user, item=hdca, tags_str=",".join(tags), flush=False)
             trans.sa_session.commit()
 
         # Raise an exception if there were jobs to execute and none of them were submitted,
