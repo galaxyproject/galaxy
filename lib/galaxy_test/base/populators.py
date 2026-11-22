@@ -490,7 +490,7 @@ class BasePopulator(metaclass=ABCMeta):
         function: Callable[[], T | None],
         desc: str,
         timeout: timeout_type,
-        history_id: Callable[[], str] | None = None,
+        history_id: Callable[[], str | None] | None = None,
     ) -> T:
         """Wait for ``function`` to return a value, re-running it on matching SSE events.
 
@@ -504,8 +504,8 @@ class BasePopulator(metaclass=ABCMeta):
             return wait_on(function, desc, timeout=timeout)
         viewed_history_id = None
         try:
-            if history_id is not None:
-                viewed_history_id = self._subscribe_to_history_owned_by_others(history_id())
+            if history_id is not None and (watched_history_id := history_id()) is not None:
+                viewed_history_id = self._subscribe_to_history_owned_by_others(watched_history_id)
             return wait_on_events(listener, event_type, predicate, function, desc, timeout)
         finally:
             if viewed_history_id is not None:
@@ -543,7 +543,7 @@ class BasePopulator(metaclass=ABCMeta):
             data = json.loads(event["data"])
             return "resync" in data or job_id is None or any(job["id"] == job_id for job in data["jobs"])
 
-        def job_history_id() -> str:
+        def job_history_id() -> str | None:
             if job_id is None:
                 assert history_id is not None
                 return history_id
@@ -2594,6 +2594,19 @@ class BaseDatasetPopulator(BasePopulator):
 class GalaxyInteractorHttpMixin:
     galaxy_interactor: ApiTestInteractor
     _sse_updates_enabled: bool | None = None
+    _user_ids_by_api_key: dict[str, str] | None = None
+
+    def _current_user_id(self) -> str:
+        # Tests switch users by swapping the interactor's API key, so cache per key.
+        if self._user_ids_by_api_key is None:
+            self._user_ids_by_api_key = {}
+        api_key = self.galaxy_interactor.api_key
+        assert api_key is not None, "anonymous waits poll"
+        if api_key not in self._user_ids_by_api_key:
+            response = self._get("users/current")
+            response.raise_for_status()
+            self._user_ids_by_api_key[api_key] = response.json()["id"]
+        return self._user_ids_by_api_key[api_key]
 
     def _sse_listener(self) -> SSELineListener | None:
         if self._sse_updates_enabled is None:
