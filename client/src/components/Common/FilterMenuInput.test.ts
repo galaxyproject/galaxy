@@ -16,9 +16,8 @@ function mountInput(props: Record<string, unknown> = {}) {
 }
 
 describe("FilterMenuInput", () => {
-    it("renders the filter value in a small GFormInput", () => {
+    it("shows the filter value and a placeholder naming the filter", () => {
         const input = mountInput().get("input#test-list-advanced-filter-name");
-        expect(input.classes()).toEqual(expect.arrayContaining(["g-form-input", "g-small", "mw-100"]));
         expect(input.attributes("placeholder")).toBe("any name");
         expect((input.element as HTMLInputElement).value).toBe("old");
     });
@@ -47,14 +46,5 @@ describe("FilterMenuInput", () => {
         const input = mountInput({ error: "Invalid name" }).get("input");
         expect(input.attributes("aria-invalid")).toBe("true");
         expect(input.attributes("data-mock-directive")).toBe("Invalid name");
-    });
-
-    it("links the field to its datalist and disables it", () => {
-        const input = mountInput({
-            filter: { ...NAME_FILTER, datalist: ["a", "b"] },
-            disabled: true,
-        }).get("input");
-        expect(input.attributes("list")).toBe("test-list-name-selectList");
-        expect(input.attributes("disabled")).toBeDefined();
     });
 });

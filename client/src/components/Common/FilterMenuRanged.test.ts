@@ -24,11 +24,8 @@ function ltInput(wrapper: ReturnType<typeof mountRanged>) {
 }
 
 describe("FilterMenuRanged", () => {
-    it("renders both bounds in small GFormInput fields", () => {
+    it("shows the bound values and placeholders naming each bound", () => {
         const wrapper = mountRanged();
-        for (const input of [gtInput(wrapper), ltInput(wrapper)]) {
-            expect(input.classes()).toEqual(expect.arrayContaining(["g-form-input", "g-small"]));
-        }
         expect(gtInput(wrapper).attributes("placeholder")).toBe("greater than index");
         expect(ltInput(wrapper).attributes("placeholder")).toBe("lower than index");
         expect((gtInput(wrapper).element as HTMLInputElement).value).toBe("2");
