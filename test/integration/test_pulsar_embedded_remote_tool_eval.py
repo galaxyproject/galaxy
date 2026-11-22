@@ -1,7 +1,7 @@
 """Remote tool evaluation with separate Galaxy and Pulsar job directories."""
 
+import json
 import os
-import re
 
 import pytest
 
@@ -50,7 +50,18 @@ class TestPulsarRemoteToolEvaluation(integration_util.IntegrationTestCase):
     def test_command_line_recorded(self):
         job = self._run_input_size_job()
         assert job.command_line
-        assert re.search(r"echo '(\d+) \1' > '", job.command_line)
+        # Upload appends a newline to "abc".
+        assert "echo '4 4' > '" in job.command_line
+
+    def test_evaluated_with_staged_input_paths(self):
+        job = self._run_input_size_job()
+        pulsar_job_directory = os.path.join(self._app.config.data_dir, "pulsar_staging", str(job.id))
+        with open(os.path.join(pulsar_job_directory, "metadata", "outputs_new", "compute_environment.json")) as fh:
+            paths = json.load(fh)
+        input_dataset = job.input_datasets[0].dataset.dataset
+        staged_path = paths["datasets"][str(input_dataset.id)]
+        assert staged_path.startswith(os.path.join(pulsar_job_directory, "inputs") + os.sep)
+        assert staged_path != input_dataset.get_file_name()
 
     def test_object_store_configuration_not_sent(self):
         job = self._run_input_size_job()
