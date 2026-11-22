@@ -2,18 +2,22 @@
 
 ## Debugging Galaxy unit & integration tests in VS code
 
-The following instructions assume that you have cloned your Galaxy fork into ~/galaxy directory.
+The following instructions assume that you have cloned your Galaxy fork into a local directory (referred to as `<galaxy_dir>` below) and created the `.venv` virtual environment inside it (e.g. by running `./scripts/common_startup.sh`).
 
 1. Start VS Code
-2. Install the Python extension for VS Code: select Extensions on Activity Bar, on the far left-hand side
-3. Create a VS Code workspace by selecting 'File -> Add Folder to Workspace...' from menu and adding the `~/galaxy` directory
-4. Optionally, save the workspace by selecting 'File -> Save Workspace As...' and save as 'galaxy.code-workspace' in the `~/galaxy` directory
-5. Add the following snippet to `~/galaxy/.vscode/settings.json` (create the file if it does not already exist)
+2. Install the Python extension for VS Code: select Extensions on the Activity Bar, on the far left-hand side
+3. Open the Galaxy directory by selecting 'File -> Open Folder...' from the menu (or by running `code <galaxy_dir>`).
+   To open a single file from the command line, pass the Galaxy directory before the file, e.g. `code <galaxy_dir> <galaxy_dir>/lib/galaxy/config/__init__.py`, which opens the file in a window for the Galaxy directory (reusing it if already open).
+   Running just `code <galaxy_dir>/lib/galaxy/config/__init__.py` could instead open the file outside of the Galaxy workspace folder, where the workspace settings and the virtual environment below are ignored.
+4. Add the following snippet to `<galaxy_dir>/.vscode/settings.json` (create the file if it does not already exist)
 
    ```json
    {
+     "python.analysis.extraPaths": [
+       "lib"
+     ],
+     "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
      "python.testing.unittestEnabled": false,
-     "python.testing.nosetestsEnabled": false,
      "python.testing.pytestEnabled": true,
      "python.testing.pytestArgs": [
        "test/",
@@ -21,17 +25,18 @@ The following instructions assume that you have cloned your Galaxy fork into ~/g
        "--ignore=test/functional",
        "--ignore=test/unit/shed_unit/test_shed_index.py",
        "packages/test_api/"
-     ],
-     "python.pythonPath": ".venv/bin/python3",
-     "pythonTestExplorer.testFramework": "pytest"
+     ]
    }
    ```
 
-6. Re-start VS Code
-7. Choose the .venv Python as your Python Interpreter. First `Ctrl+Shift+P` then `>Python: Select Interpreter`. +![VS Code Python Interpreter](select_python_interpreter.png)
-8. Select Test on Activity Bar, on the far left hand side. You should see unit and integration tests under 'Python' (as shown in the image below). It may take a few seconds for the tests to load up. If they do not, click the 'Discover Tests' icon and wait for the tests to load.
+   `python.analysis.extraPaths` lets the language server resolve Galaxy's own packages, which live in the `lib/` directory and are not installed in the virtual environment.
+   `.vscode/settings.json` is ignored by Git, so if you use [Git worktrees](https://git-scm.com/docs/git-worktree), copy it into each new worktree and open the worktree directory itself.
+5. Reload the window (`Ctrl+Shift+P` then `>Developer: Reload Window`)
+6. Check that the `.venv` Python is used as your Python interpreter: open a Python file from the Galaxy directory and look at the Python version in the status bar, at the bottom right. If a different interpreter is shown, select the right one with `Ctrl+Shift+P` then `>Python: Select Interpreter`.
+   ![VS Code Python Interpreter](select_python_interpreter.png)
+7. Select Testing on the Activity Bar, on the far left-hand side. You should see unit and integration tests under 'Python' (as shown in the image below). It may take a few seconds for the tests to load up. If they do not, click the 'Refresh Tests' icon and wait for the tests to load.
    ![VS Code Tests](tests.png)
-9. Expand integration/unit tests, select a test to display its source code in editor, add a breakpoint, and start the debugger by clicking on the debug icon (next to test name)
+8. Expand integration/unit tests, select a test to display its source code in the editor, add a breakpoint, and start the debugger by clicking on the debug icon (next to the test name)
 
 ## Debugging tests within GitHub actions
 
