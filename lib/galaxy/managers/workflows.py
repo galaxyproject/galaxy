@@ -1248,6 +1248,16 @@ class WorkflowContentsManager(UsesAnnotations):
         """Get workflow scheduling resource parameters for this user and workflow or None if not configured."""
         return self._resource_mapper_function(trans=trans, stored_workflow=stored, workflow=workflow)
 
+    @staticmethod
+    def _add_step_in(step: model.WorkflowStep, step_dict: dict[str, Any]) -> None:
+        """Serialize step input defaults as the ``in`` block that ``__module_from_dict`` reads back."""
+        step_in = {}
+        for step_input in step.inputs:
+            if step_input.default_value_set:
+                step_in[step_input.name] = {"default": step_input.default_value}
+        if step_in:
+            step_dict["in"] = step_in
+
     def _workflow_to_dict_editor(
         self,
         trans,
@@ -1311,6 +1321,7 @@ class WorkflowContentsManager(UsesAnnotations):
                 "when": step.when_expression,
                 "workflow_outputs": [],
             }
+            self._add_step_in(step, step_dict)
             if tooltip:
                 step_dict["tooltip"] = module.get_tooltip(static_path="/static")
             # Connections
@@ -1645,13 +1656,7 @@ class WorkflowContentsManager(UsesAnnotations):
                 for output in module.get_data_outputs():
                     step_dict["outputs"].append({"name": output["name"], "type": output["extensions"][0]})
 
-            step_in = {}
-            for step_input in step.inputs:
-                if step_input.default_value_set:
-                    step_in[step_input.name] = {"default": step_input.default_value}
-
-            if step_in:
-                step_dict["in"] = step_in
+            self._add_step_in(step, step_dict)
 
             # Connections
             input_connections = step.input_connections

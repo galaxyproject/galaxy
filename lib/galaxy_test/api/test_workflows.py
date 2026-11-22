@@ -1092,6 +1092,35 @@ steps:
         # Make sure the positions have been updated.
         map(tweak_step, updated_workflow_content["steps"].items())
 
+    @skip_without_tool("gx_int")
+    def test_update_from_editor_keeps_step_input_defaults(self):
+        workflow_id = self._upload_yaml_workflow(
+            """
+class: GalaxyWorkflow
+steps:
+  int_step:
+    tool_id: gx_int
+    in:
+      parameter:
+        default: 7
+"""
+        )
+        assert self._download_workflow(workflow_id)["steps"]["0"]["in"] == {"parameter": {"default": 7}}
+        editor_workflow = self._download_workflow(workflow_id, style="editor")
+        client_keys = ["steps", "report", "license", "creator", "annotation", "name", "comments", "tags"]
+        client_keys += ["readme", "help", "logo_url", "doi"]
+        put_response = self.workflow_populator.update_workflow_fields(
+            workflow_id,
+            {"workflow": {key: editor_workflow.get(key) for key in client_keys}, "from_tool_form": True},
+        )
+        self._assert_status_code_is(put_response, 200)
+
+        saved_step = self._download_workflow(workflow_id)["steps"]["0"]
+        assert saved_step.get("in") == {"parameter": {"default": 7}}
+        with self.dataset_populator.test_history() as history_id:
+            self.workflow_populator.invoke_workflow_and_wait(workflow_id, history_id=history_id)
+            assert self.dataset_populator.get_history_dataset_content(history_id).strip() == "7"
+
     def test_update_tags(self):
         workflow_object = self.workflow_populator.load_workflow(name="test_import")
         workflow_id = self.__test_upload(workflow=workflow_object).json()["id"]
