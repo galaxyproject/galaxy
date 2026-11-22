@@ -6355,6 +6355,69 @@ test_data:
             default_datasets = [c for c in contents if c["name"] == "a file"]
             assert not default_datasets, contents
 
+    def test_run_delayed_tool_step_with_default_file(self):
+        with self.dataset_populator.test_history() as history_id:
+            self._run_workflow(
+                """
+class: GalaxyWorkflow
+inputs:
+  outer_input: data
+steps:
+  split:
+    tool_id: split
+    in:
+      input1: outer_input
+  create_10:
+    tool_id: create_10
+    in:
+      input1: split/output
+      input2:
+        default:
+          class: File
+          basename: a file
+          format: txt
+          location: https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bed
+test_data:
+  outer_input:
+    value: 1.bed
+    type: File
+    file_type: txt
+""",
+                history_id=history_id,
+                wait=True,
+                assert_ok=True,
+            )
+            contents = self.dataset_populator.get_history_contents(history_id)
+            default_datasets = [c for c in contents if c["name"] == "a file"]
+            assert len(default_datasets) == 1, contents
+
+    def test_run_tool_step_with_default_file_and_pending_parameter_connection(self):
+        with self.dataset_populator.test_history() as history_id:
+            self._run_workflow(
+                """
+class: GalaxyWorkflow
+steps:
+  forty_two:
+    tool_id: expression_forty_two
+  cat:
+    tool_id: cat_data_and_sleep
+    in:
+      sleep_time: forty_two/out1
+      input1:
+        default:
+          class: File
+          basename: a file
+          format: txt
+          location: https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bed
+""",
+                history_id=history_id,
+                wait=True,
+                assert_ok=True,
+            )
+            contents = self.dataset_populator.get_history_contents(history_id)
+            default_datasets = [c for c in contents if c["name"] == "a file"]
+            assert len(default_datasets) == 1, contents
+
     def test_conditional_skip_on_database_operation_collection_output(self):
         with self.dataset_populator.test_history() as history_id:
             summary = self._run_workflow(

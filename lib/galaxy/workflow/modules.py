@@ -2387,6 +2387,12 @@ class ToolModule(WorkflowModule):
             # TODO: why do we even create an invocation, seems like something we could check on submit?
             message = f"Specified tool [{tool.id}] in step {step.order_index + 1} is not workflow-compatible."
             raise exceptions.MessageException(message)
+        if any(step_input.default_value_set for step_input in step.inputs):
+            # Replacing default values creates a history dataset for each data default. A delayed step
+            # runs again on the next scheduling pass, so delay before that while connected inputs are not ready.
+            for input_dict in self.get_all_inputs():
+                if input_dict["name"] in step.input_connections_by_name:
+                    progress.replacement_for_input(trans, step, input_dict)
         self.state, _ = self.compute_runtime_state(
             trans, step, step_updates=progress.param_map.get(step.id), replace_default_values=True
         )
