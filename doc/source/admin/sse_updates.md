@@ -81,7 +81,10 @@ Concretely:
      history: users or sessions that subscribed to it through
      `POST /api/events/history-subscriptions`, such as a page showing a
      history someone else owns. Only histories the requester can access are
-     subscribed.
+     subscribed. Access is checked when subscribing only: a viewer keeps
+     receiving events for a history made private later until it unsubscribes
+     or disconnects. Events carry only ids and states, and refetching them is
+     still access controlled.
    - Notifications dispatch SSE events from `NotificationManager` whenever
      a notification or broadcast is created.
 4. **Cross-process fan-out.** Producers don't know which worker holds the
