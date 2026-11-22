@@ -1,4 +1,5 @@
 import pytest
+from sqlalchemy import event
 
 from galaxy import model
 from galaxy.managers import change_events
@@ -335,5 +336,45 @@ def test_too_many_job_changes_for_one_recipient_become_a_resync(session, dispatc
             [busy_user.id],
             [],
             [busy_history.id],
+        )
+    ]
+
+
+@pytest.mark.parametrize("update_returning", [True, False])
+def test_cancelled_invocation_steps_publish_their_jobs_deleting(
+    galaxy_model, session, dispatcher, monkeypatch, update_returning
+):
+    monkeypatch.setattr(galaxy_model.engine.dialect, "update_returning", update_returning)
+    user = _user(session)
+    invocation = _invocation(session, user)
+    job = _job(session, user, history=invocation.history)
+    step = model.WorkflowInvocationStep()
+    step.workflow_invocation = invocation
+    step.workflow_step = model.WorkflowStep()
+    step.workflow_step.workflow = invocation.workflow
+    step.workflow_step.order_index = 0
+    step.job = job
+    session.add(step)
+    session.commit()
+    dispatcher.job_calls.clear()
+    statements: list[str] = []
+    event.listen(galaxy_model.engine, "before_cursor_execute", lambda *args: statements.append(args[2]))
+
+    invocation.cancel_invocation_steps()
+    assert any("RETURNING" in statement for statement in statements) == update_returning
+    assert dispatcher.job_calls == [
+        (
+            [
+                {
+                    "job_id": job.id,
+                    "state": "deleting",
+                    "user_id": user.id,
+                    "session_id": None,
+                    "history_id": invocation.history_id,
+                }
+            ],
+            [],
+            [],
+            [],
         )
     ]

@@ -10642,9 +10642,14 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
             sa_session.execute(statement)
             return
         # The bulk UPDATE bypasses the unit of work, so it records the changed jobs itself.
-        for job_id, user_id, galaxy_session_id, history_id in sa_session.execute(
-            statement.returning(Job.id, Job.user_id, Job.session_id, Job.history_id)
-        ):
+        columns = (Job.id, Job.user_id, Job.session_id, Job.history_id)
+        if sa_session.get_bind().dialect.update_returning:
+            rows = sa_session.execute(statement.returning(*columns)).all()
+        else:
+            # SQLite before 3.35 has no RETURNING.
+            rows = sa_session.execute(select(*columns).where(statement.whereclause)).all()
+            sa_session.execute(statement)
+        for job_id, user_id, galaxy_session_id, history_id in rows:
             record_job_change(
                 sa_session,
                 job_id=job_id,
