@@ -354,6 +354,10 @@ GALAXY_LIB_TOOLS_VERSIONED = {
 REQUIRE_FULL_DIRECTORY = {
     "includes": [{"path": "**", "path_type": "glob"}],
 }
+# Main script at the top level, helper modules imported from utils/
+REQUIRE_PY_SCRIPTS_AND_UTILS = {
+    "includes": [{"path": "*.py", "path_type": "glob"}, {"path": "utils/*", "path_type": "glob"}],
+}
 IMPLICITLY_REQUIRED_TOOL_FILES: dict[str, dict] = {
     "deseq2": {
         "version": parse_version("2.11.40.6"),
@@ -365,18 +369,19 @@ IMPLICITLY_REQUIRED_TOOL_FILES: dict[str, dict] = {
     "circos": {"required": REQUIRE_FULL_DIRECTORY},
     "cp_image_math": {"required": {"includes": [{"path": "*.py", "path_type": "glob"}]}},
     "enumerate_charges": {"required": REQUIRE_FULL_DIRECTORY},
-    "fasta_compute_length": {"required": {"includes": [{"path": "utils/*", "path_type": "glob"}]}},
-    "fasta_concatenate0": {"required": {"includes": [{"path": "utils/*", "path_type": "glob"}]}},
+    "fasta_compute_length": {"required": REQUIRE_PY_SCRIPTS_AND_UTILS},
+    "fasta_concatenate0": {"required": REQUIRE_PY_SCRIPTS_AND_UTILS},
     "filter_tabular": {"required": {"includes": [{"path": "*.py", "path_type": "glob"}]}},
-    "flanking_features_1": {"required": {"includes": [{"path": "utils/*", "path_type": "glob"}]}},
-    "gops_intersect_1": {"required": {"includes": [{"path": "utils/*", "path_type": "glob"}]}},
-    "gops_subtract_1": {"required": {"includes": [{"path": "utils/*", "path_type": "glob"}]}},
+    "flanking_features_1": {"required": REQUIRE_PY_SCRIPTS_AND_UTILS},
+    "gops_intersect_1": {"required": REQUIRE_PY_SCRIPTS_AND_UTILS},
+    "gops_subtract_1": {"required": REQUIRE_PY_SCRIPTS_AND_UTILS},
     "maxquant": {"required": {"includes": [{"path": "*.py", "path_type": "glob"}]}},
     "maxquant_mqpar": {"required": {"includes": [{"path": "*.py", "path_type": "glob"}]}},
     "query_tabular": {"required": {"includes": [{"path": "*.py", "path_type": "glob"}]}},
     "shasta": {"required": {"includes": [{"path": "configs/*", "path_type": "glob"}]}},
     "sqlite_to_tabular": {"required": {"includes": [{"path": "*.py", "path_type": "glob"}]}},
     "sucos_max_score": {"required": {"includes": [{"path": "*.py", "path_type": "glob"}]}},
+    "translate_bed": {"required": {"includes": [{"path": "*.py", "path_type": "glob"}]}},
 }
 
 

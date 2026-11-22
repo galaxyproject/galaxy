@@ -128,6 +128,28 @@ class TestJobsApi(ApiTestCase, TestsTools):
         assert today_job_id not in map(itemgetter("id"), jobs)
 
     @pytest.mark.require_new_history
+    def test_index_date_filter_with_timezone(self, history_id):
+        plus_five = datetime.timezone(datetime.timedelta(hours=5))
+        before = datetime.datetime.now(datetime.timezone.utc)
+        self.__history_with_new_dataset(history_id)
+        after = datetime.datetime.now(datetime.timezone.utc)
+        jobs = self.__jobs_index(data={"history_id": history_id})
+        assert len(jobs) == 1
+        job_id = jobs[0]["id"]
+
+        # The same instants as before/after, written with a +05:00 offset.
+        min_plus_five = before.astimezone(plus_five).isoformat()
+        max_plus_five = after.astimezone(plus_five).isoformat()
+        jobs = self.__jobs_index(data={"date_range_min": min_plus_five, "date_range_max": max_plus_five})
+        assert job_id in map(itemgetter("id"), jobs), f"min: {min_plus_five}, max: {max_plus_five}"
+
+        # The UTC wall-clock time with a +05:00 suffix is 5 hours earlier and must not match.
+        min_shifted = before.replace(tzinfo=plus_five).isoformat()
+        max_shifted = after.replace(tzinfo=plus_five).isoformat()
+        jobs = self.__jobs_index(data={"date_range_min": min_shifted, "date_range_max": max_shifted})
+        assert job_id not in map(itemgetter("id"), jobs), f"min: {min_shifted}, max: {max_shifted}"
+
+    @pytest.mark.require_new_history
     def test_index_history(self, history_id):
         self.__history_with_new_dataset(history_id)
         jobs = self.__jobs_index(data={"history_id": history_id})
