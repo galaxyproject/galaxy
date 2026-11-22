@@ -33,6 +33,12 @@ files. Declare supporting tool files with `<required_files>` to limit transfers;
 when it is absent, remote evaluation stages the tool directory with the standard
 exclusions for test data, tool data, and Mercurial metadata.
 
+Paths a command takes from data tables or select options (for example
+`$reference.fields.path`) are not staged with remote evaluation, because Galaxy
+only learns them while evaluating the template. They must be readable at the
+same path where the job runs, for example from CVMFS or a shared reference data
+mount.
+
 ## job_conf.xml Syntax
 
 The root element is `<job_conf>`.
