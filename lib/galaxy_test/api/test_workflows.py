@@ -9230,35 +9230,41 @@ data_input:
             assert dataset_details["file_ext"] == "txt"
             assert "chr1" in dataset_details["peek"]
 
-    def test_default_file_location_editor_round_trip_and_run(self, test_http_server):
+    def _editor_data_input_step(self, workflow_id: str) -> tuple[dict[str, Any], dict[str, Any]]:
+        editor = self._download_workflow(workflow_id, style="editor")
+        return editor, next(step for step in editor["steps"].values() if step["type"] == "data_input")
+
+    def test_default_file_location_editor_round_trip(self, test_http_server):
         location = _default_file_location(test_http_server)
         workflow_id = self._upload_yaml_workflow(WORKFLOW_WITH_DEFAULT_FILE_DATASET_INPUT.format(location=location))
-        editor = self._download_workflow(workflow_id, style="editor")
-        input_step = next(step for step in editor["steps"].values() if step["type"] == "data_input")
+        editor, input_step = self._editor_data_input_step(workflow_id)
         original_default = {"class": "File", "basename": "a file", "format": "txt", "location": location}
         assert input_step["in"]["input"]["default"] == original_default
         # Saving the editor dict unchanged must keep the whole default, metadata included.
-        input_step["tool_state"]["optional"] = "true"
         self._assert_status_code_is(self._update_workflow(workflow_id, editor), 200)
-        reopened = self._download_workflow(workflow_id, style="editor")
-        reopened_input = next(step for step in reopened["steps"].values() if step["type"] == "data_input")
+        reopened, reopened_input = self._editor_data_input_step(workflow_id)
         assert reopened_input["in"]["input"]["default"] == original_default
-        with self.dataset_populator.test_history() as history_id:
-            self.dataset_populator.new_dataset(history_id, content="alternative input", file_type="txt", wait=True)
-            run_model = self._download_workflow(workflow_id, style="run", history_id=history_id)
-            run_input = next(step for step in run_model["steps"] if step["step_type"] == "data_input")
-            assert run_input["inputs"][0]["optional"] is False
-            assert run_input["inputs"][0]["value"] is None
-            assert run_input["inputs"][0]["default_location"] == location
-            self.workflow_populator.invoke_workflow_and_wait(workflow_id, history_id=history_id, inputs={})
-            content = self.dataset_populator.get_history_dataset_content(history_id)
-            assert "chr1" in content
 
         del reopened_input["in"]["input"]
         self._assert_status_code_is(self._update_workflow(workflow_id, reopened), 200)
-        cleared = self._download_workflow(workflow_id, style="editor")
-        cleared_input = next(step for step in cleared["steps"].values() if step["type"] == "data_input")
+        _, cleared_input = self._editor_data_input_step(workflow_id)
         assert not cleared_input.get("in")
+
+    def test_optional_data_input_with_default_file_location_runs(self, test_http_server):
+        location = _default_file_location(test_http_server)
+        workflow_id = self._upload_yaml_workflow(WORKFLOW_WITH_DEFAULT_FILE_DATASET_INPUT.format(location=location))
+        editor, input_step = self._editor_data_input_step(workflow_id)
+        # A data parameter cannot be both optional and have a default; the run form must still build.
+        input_step["tool_state"]["optional"] = "true"
+        self._assert_status_code_is(self._update_workflow(workflow_id, editor), 200)
+        with self.dataset_populator.test_history() as history_id:
+            self.dataset_populator.new_dataset(history_id, content="alternative input", file_type="txt", wait=True)
+            run_model = self._download_workflow(workflow_id, style="run", history_id=history_id)
+            run_input = next(step for step in run_model["steps"] if step["step_type"] == "data_input")["inputs"][0]
+            assert run_input["value"] is None
+            assert run_input["default_location"] == location
+            self.workflow_populator.invoke_workflow_and_wait(workflow_id, history_id=history_id, inputs={})
+            assert "chr1" in self.dataset_populator.get_history_dataset_content(history_id)
 
     def test_tool_step_default_file_survives_editor_round_trip(self, test_http_server):
         location = _default_file_location(test_http_server)
