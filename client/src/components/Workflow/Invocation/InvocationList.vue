@@ -1,0 +1,757 @@
+<script setup lang="ts">
+import {
+    faCheckCircle,
+    faCompress,
+    faExclamationTriangle,
+    faEye,
+    faPlus,
+    faRedo,
+    faSpinner,
+    faStopCircle,
+} from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { useElementSize, useSessionStorage } from "@vueuse/core";
+import { storeToRefs } from "pinia";
+import { computed, onMounted, ref, watch } from "vue";
+import { useRouter } from "vue-router";
+
+import { isRegisteredUser } from "@/api";
+import type { WorkflowInvocation } from "@/api/invocations";
+import type { TableField } from "@/components/Common/GTable.types";
+import { CUSTOM_TIME_RANGE } from "@/components/Common/TimeRangeFilter.types";
+import { type ColumnFilterField, useColumnFilters } from "@/components/Grid/useColumnFilters";
+import {
+    historyColumnFilter,
+    INVOCATION_TIME_RANGES,
+    invocationFilterParams,
+    invocationsFiltering,
+    type InvocationStateGroup,
+    MAX_COLUMN_FILTER_PICKS,
+    workflowColumnFilter,
+} from "@/components/Workflow/Invocation/invocationFilters";
+import {
+    fetchHistoriesAndWorkflows,
+    fetchInvocations,
+    type InvocationsQuery,
+} from "@/components/Workflow/Invocation/invocationsIndex";
+import { useInvocationListItemActions } from "@/components/Workflow/Invocation/useInvocationListItemActions";
+import { useFilterTextValidation } from "@/composables/filterTextValidation";
+import { Toast } from "@/composables/toast";
+import { useInvocationStore } from "@/stores/invocationStore";
+import { useUserStore } from "@/stores/userStore";
+import { useWorkflowStore } from "@/stores/workflowStore";
+import localize from "@/utils/localization";
+import { withPrefix } from "@/utils/redirect";
+
+import GAlert from "@/components/BaseComponents/GAlert.vue";
+import GBadge from "@/components/BaseComponents/GBadge.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
+import GLink from "@/components/BaseComponents/GLink.vue";
+import GModal from "@/components/BaseComponents/GModal.vue";
+import GPagination from "@/components/BaseComponents/GPagination.vue";
+import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
+import FilterMenu from "@/components/Common/FilterMenu.vue";
+import GTable from "@/components/Common/GTable.vue";
+import Heading from "@/components/Common/Heading.vue";
+import LoadingOverlay from "@/components/Common/LoadingOverlay.vue";
+import StatusGroupFilter, { type StatusGroup } from "@/components/Common/StatusGroupFilter.vue";
+import TimeRangeFilter from "@/components/Common/TimeRangeFilter.vue";
+import GridColumnFilter from "@/components/Grid/GridColumnFilter.vue";
+import GridColumnFilterChips from "@/components/Grid/GridColumnFilterChips.vue";
+import GridExpand from "@/components/Grid/GridElements/GridExpand.vue";
+import HelpText from "@/components/Help/HelpText.vue";
+import SwitchToHistoryLink from "@/components/History/SwitchToHistoryLink.vue";
+import UtcDate from "@/components/UtcDate.vue";
+import InvocationRowSummary from "@/components/Workflow/Invocation/InvocationRowSummary.vue";
+import WorkflowPublished from "@/components/Workflow/Published/WorkflowPublished.vue";
+import WorkflowPublishedButtons from "@/components/Workflow/Published/WorkflowPublishedButtons.vue";
+import WorkflowInvocationState from "@/components/WorkflowInvocationState/WorkflowInvocationState.vue";
+
+const LIMIT = 25;
+const TITLE = "Workflow Invocations";
+/** Seconds the header message stays up */
+const HEADER_MESSAGE_SECONDS = 5;
+/** Narrower than this, the column filter chips get their own row under the filter bar */
+const INLINE_CHIPS_MIN_WIDTH = 768;
+/** At most this many rows stay expanded, since each expanded invocation polls while it runs */
+const MAX_EXPANDED = 3;
+
+/** The status buttons, one per `InvocationStateGroup`, in display order */
+const STATUS_GROUPS = [
+    { key: "active", label: "Active", icon: faSpinner, color: "yellow" },
+    { key: "finished", label: "Finished", icon: faCheckCircle, color: "green" },
+    { key: "problem", label: "Problem", icon: faExclamationTriangle, color: "red" },
+    { key: "inactive", label: "Inactive", icon: faStopCircle, color: "grey" },
+] as const satisfies (StatusGroup & { key: InvocationStateGroup })[];
+
+/** Typed Invoked time filters, which make the time range picker show "Custom range" */
+const TYPED_TIME_FILTERS = ["create_time", "create_time_gt", "create_time_lt"];
+
+interface Props {
+    /** List every user's invocations that are still being scheduled, without search or column filters */
+    admin?: boolean;
+    /** Shown above the list when it opens, then hidden */
+    headerMessage?: string;
+    /** Shown when there are no invocations and no filters */
+    noDataMessage?: string;
+    /** List only the user's invocations in this history */
+    historyId?: string;
+    /** List only the user's invocations of this stored workflow */
+    workflowId?: string;
+    /** List exactly these invocations, as a batch run returns them, without paging or sorting */
+    invocations?: WorkflowInvocation[];
+}
+
+const props = withDefaults(defineProps<Props>(), {
+    admin: false,
+    headerMessage: "",
+    noDataMessage: "No Workflow Invocations to display",
+    historyId: undefined,
+    workflowId: undefined,
+    invocations: undefined,
+});
+
+const router = useRouter();
+const workflowStore = useWorkflowStore();
+const { currentUser } = storeToRefs(useUserStore());
+
+/** Scoped to one history or workflow: no heading, search or column filters */
+const scoped = !!(props.historyId || props.workflowId);
+/** A batch run's invocations: no heading, filters, paging, sorting or Workflow column */
+const batch = !!props.invocations;
+// the admin list covers every user, but the filter lookups only cover the admin's own workflows and histories
+const filterable = !props.admin && !scoped && !batch;
+
+const batchColumns: (ColumnFilterField & { sortable?: boolean })[] = [
+    { key: "expand", title: null },
+    { key: "view", title: "View" },
+    { key: "history_id", title: "History" },
+    { key: "create_time", title: "Invoked" },
+    { key: "state", title: "State" },
+];
+
+const listColumns: (ColumnFilterField & { sortable?: boolean })[] = [
+    { key: "expand", title: null },
+    props.workflowId
+        ? { key: "view", title: "View" }
+        : { key: "workflow_id", title: "Workflow", filter: filterable ? workflowColumnFilter : undefined },
+    ...(props.historyId
+        ? []
+        : [{ key: "history_id", title: "History", filter: filterable ? historyColumnFilter : undefined }]),
+    { key: "create_time", title: "Invoked", sortable: true },
+    { key: "state", title: "State" },
+];
+const columns = batch ? batchColumns : listColumns;
+const fields: TableField[] = columns.map(({ key, title, sortable }) => ({ key, label: title ?? "", sortable }));
+
+/** The listed invocations; a batch run's are copies, so updating their state leaves the run's page as it was */
+const listedInvocations = ref<WorkflowInvocation[]>(props.invocations?.map((invocation) => ({ ...invocation })) ?? []);
+const totalRows = ref(0);
+const currentPage = ref(1);
+const sortBy = ref("create_time");
+const sortDesc = ref(true);
+const errorMessage = ref("");
+const initDataLoading = ref(true);
+const resultsLoading = ref(false);
+
+/** The expanded invocations, kept for the browser tab's session so they show expanded again on coming back */
+const expandedIds = useSessionStorage<string[]>("invocation-list-expanded-ids", []);
+
+const filterText = ref("");
+const showAdvanced = ref(false);
+
+const filterBar = ref<HTMLElement>();
+const { width: filterBarWidth } = useElementSize(filterBar);
+// the list's own width, since its panel can be narrow in a wide window
+const narrowFilterBar = computed(() => filterBarWidth.value > 0 && filterBarWidth.value < INLINE_CHIPS_MIN_WIDTH);
+const { rawFilters, invalidFilters, hasInvalidFilters, validatedFilterText } = useFilterTextValidation(
+    invocationsFiltering,
+    filterText,
+    false,
+);
+const {
+    hasColumnFilters,
+    columnFilterSelection,
+    activeColumnFilters,
+    reachedColumnFilterLimit,
+    onColumnFilter,
+    removeColumnFilterOption,
+    clearColumnFilters,
+} = useColumnFilters(columns, invocationsFiltering, filterText, rawFilters, MAX_COLUMN_FILTER_PICKS);
+
+/** The active `status` quick-filter value, or `undefined` if none is toggled on. */
+const activeStatusFilter = computed(() => invocationsFiltering.getFilterValue(filterText.value, "status") || undefined);
+
+/**
+ * Toggles a `StatusGroupFilter` quick-filter button.
+ *
+ * Setting a `status` filter also clears any manually-picked `state`, since `disablesFilters` can't do
+ * this for `status` the other way around (it's not a `FilterMenu` field, so no dropdown-change event
+ * exists to trigger it from that side).
+ */
+function setActiveStatusFilter(group: string | undefined) {
+    let newText = invocationsFiltering.applyFiltersToText({ state: "" }, filterText.value, true);
+    newText = group
+        ? invocationsFiltering.applyFiltersToText({ status: group }, newText)
+        : invocationsFiltering.applyFiltersToText({ status: "" }, newText, true);
+    filterText.value = newText;
+}
+
+/**
+ * The active quick-pick time range, "custom" for a typed `create_time` filter, or `undefined` for "Anytime".
+ */
+const activeTimeRange = computed(() => {
+    if (TYPED_TIME_FILTERS.some((key) => invocationsFiltering.getFilterValue(filterText.value, key))) {
+        return CUSTOM_TIME_RANGE;
+    }
+    const invoked = invocationsFiltering.getFilterValue(filterText.value, "invoked");
+    return INVOCATION_TIME_RANGES.find(({ key }) => key === invoked)?.key;
+});
+
+/** Sets the `TimeRangeFilter` quick pick as the `invoked` filter, replacing any typed time filter */
+function setActiveTimeRange(range: string | undefined) {
+    const cleared = Object.fromEntries([...TYPED_TIME_FILTERS, "invoked"].map((key) => [key, ""]));
+    const newText = invocationsFiltering.applyFiltersToText(cleared, filterText.value, true);
+    filterText.value = range ? invocationsFiltering.applyFiltersToText({ invoked: range }, newText) : newText;
+}
+
+const isAvailable = computed(() => !initDataLoading.value && totalRows.value > 0);
+// column filters stay reachable when the current filters match nothing
+const showTable = computed(
+    () => !hasInvalidFilters.value && (isAvailable.value || (hasColumnFilters.value && !!filterText.value)),
+);
+
+// only the newest request may update the list
+let latestRequest = 0;
+
+async function load() {
+    if (props.invocations) {
+        // a batch run's invocations are given, so only their workflows and histories need loading
+        fetchHistoriesAndWorkflows(listedInvocations.value);
+        totalRows.value = listedInvocations.value.length;
+        selectedIds.value = [];
+        initDataLoading.value = false;
+        return;
+    }
+    const requestId = ++latestRequest;
+    resultsLoading.value = true;
+    if (hasInvalidFilters.value) {
+        initDataLoading.value = false;
+        resultsLoading.value = false;
+        return;
+    }
+    try {
+        const query: InvocationsQuery = {
+            limit: LIMIT,
+            offset: LIMIT * (currentPage.value - 1),
+            sort_by: sortBy.value as InvocationsQuery["sort_by"],
+            sort_desc: sortDesc.value,
+            // a workflow's list has always included its subworkflow invocations
+            include_nested_invocations: props.workflowId ? undefined : false,
+            ...(filterable ? invocationFilterParams(validatedFilterText()) : {}),
+            history_id: props.historyId,
+            workflow_id: props.workflowId,
+        };
+        // a quick pick's window slides with the time of each load, not the time it was picked
+        if (props.admin) {
+            query.include_terminal = false;
+        } else if (isRegisteredUser(currentUser.value)) {
+            query.user_id = currentUser.value.id;
+        }
+        const [data, total] = await fetchInvocations(query);
+        if (requestId === latestRequest) {
+            listedInvocations.value = data;
+            selectedIds.value = [];
+            totalRows.value = total;
+            errorMessage.value = "";
+        }
+    } catch (e) {
+        if (requestId === latestRequest) {
+            errorMessage.value = `Failed to obtain grid data: ${e}`;
+        }
+    } finally {
+        if (requestId === latestRequest) {
+            initDataLoading.value = false;
+            resultsLoading.value = false;
+        }
+    }
+}
+
+function onSort(newSortBy: string, newSortDesc: boolean) {
+    sortBy.value = newSortBy;
+    sortDesc.value = newSortDesc;
+}
+
+const invocationStore = useInvocationStore();
+
+/** Expanded rows take the state their expanded view polls when it's newer, so the row stays current */
+watch(
+    () =>
+        listedInvocations.value
+            .filter((invocation) => expandedIds.value.includes(invocation.id))
+            .map((invocation) => [invocation, invocationStore.getInvocationById(invocation.id)] as const),
+    (rows) => {
+        for (const [row, polled] of rows) {
+            // the store can still hold an older copy from an earlier visit
+            if (polled && polled.update_time > row.update_time) {
+                row.state = polled.state;
+                row.update_time = polled.update_time;
+            }
+        }
+    },
+);
+
+/** Whether any listed invocation is expanded */
+const anyListedExpanded = computed(() =>
+    listedInvocations.value.some((invocation) => expandedIds.value.includes(invocation.id)),
+);
+
+/**
+ * Expands or collapses the invocation's row, collapsing the earliest expanded one past `MAX_EXPANDED`.
+ * Only listed rows count, so expanding a row forgets expanded invocations that aren't listed.
+ */
+function onShowDetails(invocation: WorkflowInvocation) {
+    if (expandedIds.value.includes(invocation.id)) {
+        expandedIds.value = expandedIds.value.filter((id) => id !== invocation.id);
+        return;
+    }
+    const listed = expandedIds.value.filter((id) => listedInvocations.value.some((row) => row.id === id));
+    const kept = listed.slice(-(MAX_EXPANDED - 1));
+    if (kept.length < listed.length) {
+        Toast.info(`Only ${MAX_EXPANDED} invocations can be expanded at once, so the earliest one was collapsed.`);
+    }
+    expandedIds.value = [...kept, invocation.id];
+}
+
+function collapseAll() {
+    expandedIds.value = [];
+}
+
+/** The invocation's workflow version as the editor numbers it (from 1), once its workflow has loaded */
+function workflowVersion(invocation: WorkflowInvocation) {
+    const workflow = storedWorkflow(invocation);
+    return typeof workflow?.version === "number" ? workflow.version + 1 : undefined;
+}
+
+/** Opens the invocation; a batch list opens it in a new tab, to keep the run's results page */
+function viewInvocation(invocation: WorkflowInvocation) {
+    if (batch) {
+        window.open(withPrefix(`/workflows/invocations/${invocation.id}`), "_blank");
+    } else {
+        router.push(`/workflows/invocations/${invocation.id}`);
+    }
+}
+
+const workflowPublished = ref<InstanceType<typeof WorkflowPublished>>();
+
+const {
+    invocationListItemActions,
+    storedWorkflow,
+    workflowPreview,
+    isCancellableInvocation,
+    cancelInvocations,
+    rerunBlockedReason,
+    rerunInvocation,
+} = useInvocationListItemActions({
+    viewInvocation,
+    refreshList: load,
+    admin: props.admin,
+});
+
+/** Ids of the selected invocations; cleared whenever the list's rows change */
+const selectedIds = ref<string[]>([]);
+const selectedIndices = computed(() =>
+    listedInvocations.value.flatMap((invocation, index) => (selectedIds.value.includes(invocation.id) ? [index] : [])),
+);
+const selectedCancellable = computed(() =>
+    listedInvocations.value.filter(
+        (invocation) => selectedIds.value.includes(invocation.id) && isCancellableInvocation(invocation),
+    ),
+);
+const bulkCancelling = ref(false);
+
+function onRowSelect({ item, selected }: { item: WorkflowInvocation; selected: boolean }) {
+    selectedIds.value = selected ? [...selectedIds.value, item.id] : selectedIds.value.filter((id) => id !== item.id);
+}
+
+function onSelectAll(selected: boolean) {
+    selectedIds.value = selected ? listedInvocations.value.map((invocation) => invocation.id) : [];
+}
+
+async function onBulkCancel() {
+    bulkCancelling.value = true;
+    try {
+        await cancelInvocations(selectedCancellable.value);
+    } finally {
+        bulkCancelling.value = false;
+    }
+}
+
+onMounted(load);
+
+watch([currentPage, filterText, sortBy, sortDesc], ([page], [oldPage]) => {
+    // a new filter or sort starts from the first page, which loads through this watch again
+    if (page === oldPage && page !== 1) {
+        currentPage.value = 1;
+    } else {
+        load();
+    }
+});
+</script>
+
+<template>
+    <div v-if="isRegisteredUser(currentUser)" id="invocations-grid" class="d-flex flex-column h-100">
+        <GAlert v-if="!!errorMessage" variant="danger" show>{{ errorMessage }}</GAlert>
+        <GAlert v-if="props.headerMessage" variant="success" fade :show="HEADER_MESSAGE_SECONDS">
+            {{ props.headerMessage }}
+        </GAlert>
+        <div v-if="!scoped && !batch" class="flex-shrink-0 mb-2">
+            <BreadcrumbHeading :items="[{ title: TITLE }]">
+                <GButton
+                    size="small"
+                    color="blue"
+                    outline
+                    data-description="grid action import invocation"
+                    @click="router.push('/workflows/invocations/import')">
+                    <FontAwesomeIcon :icon="faPlus" />
+                    <span v-localize>Import Invocation</span>
+                </GButton>
+            </BreadcrumbHeading>
+            <FilterMenu
+                v-if="filterable"
+                v-model:filter-text="filterText"
+                v-model:show-advanced="showAdvanced"
+                :name="TITLE"
+                :placeholder="`search ${TITLE.toLowerCase()}`"
+                :filter-class="invocationsFiltering"
+                :loading="initDataLoading || resultsLoading"
+                has-help
+                view="compact">
+                <template v-slot:menu-help-text>
+                    <p>Text without a key matches workflow names. These filters can also be used:</p>
+                    <dl>
+                        <dt><code>workflow:____</code>, <code>history:____</code></dt>
+                        <dd>
+                            Workflow or history names containing the text. Quote it for an exact name, e.g.
+                            <code>workflow:'RNA-seq'</code>.
+                        </dd>
+                        <dt><code>state:____</code></dt>
+                        <dd>
+                            Invocations in one state, e.g. <code>state:failed</code> or <code>state:scheduled</code>.
+                        </dd>
+                        <dt><code>create_time:____</code></dt>
+                        <dd>Invocations invoked on a day, e.g. <code>create_time:2026-01-31</code>.</dd>
+                        <dt><code>create_time&gt;____</code>, <code>create_time&lt;____</code></dt>
+                        <dd>
+                            Invocations invoked after or before a date, e.g. <code>create_time&gt;2026-01-31</code>.
+                        </dd>
+                    </dl>
+                    <GAlert variant="warning">
+                        <strong>Note:</strong>
+                        A <code>scheduled</code> invocation can still have jobs running, so it is listed as active;
+                        cancel it from its own page, which shows whether any jobs are left. Invocations run before
+                        Galaxy 26.0 may show as <code>scheduled</code> even if all their jobs have finished.
+                    </GAlert>
+                </template>
+            </FilterMenu>
+            <div
+                v-if="filterable && !showAdvanced"
+                ref="filterBar"
+                class="invocation-filter-bar d-flex align-items-center mt-2">
+                <div>
+                    <StatusGroupFilter
+                        :groups="STATUS_GROUPS"
+                        noun="invocations"
+                        show-labels
+                        :active-group="activeStatusFilter"
+                        @update:active-group="setActiveStatusFilter" />
+                </div>
+                <GridColumnFilterChips
+                    v-if="!narrowFilterBar"
+                    class="invocation-filter-chips"
+                    inline
+                    :chips="activeColumnFilters"
+                    @remove="removeColumnFilterOption"
+                    @clear="clearColumnFilters" />
+                <TimeRangeFilter
+                    class="ml-auto"
+                    :ranges="INVOCATION_TIME_RANGES"
+                    noun="invocations"
+                    :active-range="activeTimeRange"
+                    @update:active-range="setActiveTimeRange" />
+            </div>
+            <GridColumnFilterChips
+                v-if="filterable && (showAdvanced || narrowFilterBar)"
+                class="mt-2"
+                :chips="activeColumnFilters"
+                @remove="removeColumnFilterOption" />
+        </div>
+
+        <div class="invocation-list-content flex-grow-1 overflow-auto">
+            <div v-if="initDataLoading" class="position-relative h-100" data-description="grid initial loading">
+                <LoadingOverlay />
+            </div>
+            <span v-if="!initDataLoading && (!isAvailable || hasInvalidFilters)">
+                <GAlert v-if="!hasInvalidFilters" variant="info" show>
+                    <span v-if="filterText">
+                        <span v-localize>Nothing found with:</span>
+                        <b>{{ filterText }}</b>
+                    </span>
+                    <span v-else v-localize>{{ props.noDataMessage }}</span>
+                </GAlert>
+                <GAlert v-else-if="invalidFilters" variant="danger" show>
+                    <Heading h4 inline size="sm" class="flex-grow-1 mb-2">Invalid filters in query:</Heading>
+                    <ul>
+                        <li v-for="[invalidKey, value] in Object.entries(invalidFilters)" :key="invalidKey">
+                            <b>{{ invalidKey }}</b>
+                            : {{ value }}
+                        </li>
+                    </ul>
+                    <GLink @click="filterText = validatedFilterText()">Remove invalid filters from query</GLink>
+                </GAlert>
+            </span>
+
+            <GTable
+                v-if="!initDataLoading && showTable"
+                id="invocations-table"
+                :fields="fields"
+                :items="listedInvocations"
+                :sort-by="sortBy"
+                :sort-desc="sortDesc"
+                :local-sorting="false"
+                :overlay-loading="resultsLoading"
+                :actions="invocationListItemActions"
+                :row-details-shown="(item) => expandedIds.includes(item.id)"
+                selectable
+                no-select-on-click
+                show-select-all
+                :selected-items="selectedIndices"
+                select-checkbox-title="Select this invocation"
+                @row-select="onRowSelect"
+                @select-all="onSelectAll"
+                @sort-changed="onSort">
+                <template v-if="filterable" v-slot:head(workflow_id)="{ field }">
+                    <span>{{ field.label }}</span>
+                    <GridColumnFilter
+                        :filter="workflowColumnFilter"
+                        :title="field.label ?? field.key"
+                        :selected="columnFilterSelection(workflowColumnFilter)"
+                        :reached-limit="reachedColumnFilterLimit"
+                        @update:selected="onColumnFilter(workflowColumnFilter, $event)" />
+                </template>
+                <template v-if="filterable" v-slot:head(history_id)="{ field }">
+                    <span>{{ field.label }}</span>
+                    <GridColumnFilter
+                        :filter="historyColumnFilter"
+                        :title="field.label ?? field.key"
+                        :selected="columnFilterSelection(historyColumnFilter)"
+                        :reached-limit="reachedColumnFilterLimit"
+                        @update:selected="onColumnFilter(historyColumnFilter, $event)" />
+                </template>
+
+                <template v-slot:head(expand)>
+                    <GLink
+                        v-if="anyListedExpanded"
+                        tooltip
+                        title="Collapse all invocations"
+                        data-description="collapse all invocations"
+                        @click="collapseAll">
+                        <FontAwesomeIcon :icon="faCompress" />
+                    </GLink>
+                </template>
+                <template v-slot:cell(expand)="{ item }">
+                    <GridExpand :details-showing="expandedIds.includes(item.id)" @show-details="onShowDetails(item)" />
+                </template>
+                <template v-slot:cell(view)="{ item }">
+                    <GButton color="blue" :title="localize('View')" @click="viewInvocation(item)">
+                        <FontAwesomeIcon :icon="faEye" />
+                    </GButton>
+                </template>
+                <template v-slot:cell(workflow_id)="{ item }">
+                    <div class="invocation-workflow">
+                        <GLink
+                            class="invocation-workflow-name"
+                            :to="`/workflows/invocations/${item.id}`"
+                            :title="localize('View this invocation')">
+                            {{ workflowStore.getStoredWorkflowNameByInstanceId(item.workflow_id) }}
+                        </GLink>
+                        <GBadge
+                            v-if="workflowVersion(item) !== undefined"
+                            class="invocation-workflow-version"
+                            variant="light"
+                            pill
+                            :title="localize('Workflow version')">
+                            v{{ workflowVersion(item) }}
+                        </GBadge>
+                    </div>
+                </template>
+                <template v-slot:cell(history_id)="{ item }">
+                    <span v-if="!item.history_id" v-localize> No history found </span>
+                    <div v-else class="invocation-history">
+                        <SwitchToHistoryLink :history-id="item.history_id" inline />
+                    </div>
+                </template>
+                <template v-slot:cell(create_time)="{ item }">
+                    <UtcDate :date="item.create_time" mode="elapsed" />
+                </template>
+                <template v-slot:cell(state)="{ item }">
+                    <HelpText :uri="`galaxy.invocations.states.${item.state}`" :text="item.state" />
+                </template>
+
+                <template v-slot:row-details="{ item }">
+                    <div :key="item.id" class="card p-2 invocation-row-details" data-description="grid expanded row">
+                        <div class="invocation-row-layout">
+                            <InvocationRowSummary :invocation="item">
+                                <template v-slot:actions>
+                                    <GButton
+                                        size="small"
+                                        color="blue"
+                                        data-description="view invocation button"
+                                        @click="viewInvocation(item)">
+                                        <FontAwesomeIcon :icon="faEye" />
+                                        {{ localize("View invocation") }}
+                                    </GButton>
+                                    <GButton
+                                        size="small"
+                                        color="blue"
+                                        outline
+                                        :disabled="!!rerunBlockedReason(item)"
+                                        :disabled-title="rerunBlockedReason(item)"
+                                        title="Rerun this workflow with the same inputs"
+                                        @click="rerunInvocation(item)">
+                                        <FontAwesomeIcon :icon="faRedo" />
+                                        {{ localize("Rerun") }}
+                                    </GButton>
+                                </template>
+                            </InvocationRowSummary>
+                            <WorkflowInvocationState class="invocation-row-graph" :invocation-id="item.id" />
+                        </div>
+                    </div>
+                </template>
+            </GTable>
+        </div>
+
+        <div class="flex-shrink-0">
+            <div v-if="(isAvailable && !batch) || selectedIds.length" class="d-flex align-items-center pt-3">
+                <GButton
+                    v-if="selectedIds.length"
+                    id="invocation-list-footer-bulk-cancel-button"
+                    tooltip
+                    size="small"
+                    color="blue"
+                    :disabled="!selectedCancellable.length || bulkCancelling"
+                    :title="
+                        selectedCancellable.length
+                            ? 'Cancel the selected invocations that are still being scheduled'
+                            : 'None of the selected invocations are still being scheduled'
+                    "
+                    @click="onBulkCancel">
+                    <FontAwesomeIcon :icon="faStopCircle" />
+                    {{ localize("Cancel Selected") }} ({{ selectedCancellable.length }})
+                </GButton>
+                <GPagination
+                    v-if="isAvailable && !batch"
+                    v-model="currentPage"
+                    class="ml-auto"
+                    :total-rows="totalRows"
+                    :per-page="LIMIT"
+                    size="small"
+                    data-description="invocation list pager" />
+            </div>
+        </div>
+
+        <GModal
+            :show="!!workflowPreview"
+            size="large"
+            title="Workflow Preview"
+            fixed-height
+            class="invocation-workflow-preview-modal"
+            @close="workflowPreview = null">
+            <template v-slot:header>
+                <WorkflowPublishedButtons
+                    v-if="workflowPreview && workflowPublished?.workflowInfo"
+                    :id="workflowPreview.id"
+                    :workflow-info="workflowPublished.workflowInfo" />
+            </template>
+            <WorkflowPublished
+                v-if="workflowPreview"
+                :id="workflowPreview.id"
+                ref="workflowPublished"
+                :version="workflowPreview.version"
+                :show-heading="false"
+                :show-buttons="false"
+                quick-view />
+        </GModal>
+    </div>
+</template>
+
+<style scoped lang="scss">
+// only the list scrolls; the header and pager stay put
+.invocation-list-content {
+    min-height: 0;
+}
+
+.invocation-workflow {
+    text-align: left;
+    overflow-wrap: anywhere;
+
+    .invocation-workflow-version {
+        margin-left: 0.4rem;
+        vertical-align: baseline;
+        font-variant-numeric: tabular-nums;
+    }
+}
+
+.invocation-history :deep(.history-link-click) {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    overflow: hidden;
+    overflow-wrap: anywhere;
+    text-align: left;
+}
+
+.invocation-row-details {
+    container-type: inline-size;
+}
+
+// summary beside the graph when the row is wide enough, above it otherwise
+.invocation-row-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+@container (min-width: 48rem) {
+    .invocation-row-layout {
+        flex-direction: row;
+        align-items: stretch;
+
+        .invocation-row-summary {
+            flex: 0 0 20rem;
+        }
+
+        .invocation-row-graph {
+            flex: 1 1 0;
+            min-width: 0;
+        }
+    }
+}
+
+// as wide as the workflow list's preview modal
+.invocation-workflow-preview-modal {
+    max-width: min(1400px, calc(100% - 200px));
+}
+
+// status buttons, then the column filter chips filling the space up to the time range
+.invocation-filter-bar {
+    gap: 0.5rem;
+
+    .invocation-filter-chips {
+        flex: 1 1 0;
+        padding-left: 0.5rem;
+        border-left: 1px solid var(--color-grey-300);
+    }
+}
+</style>

@@ -5,6 +5,10 @@ import json
 import os
 import shutil
 import time
+from datetime import (
+    date,
+    timedelta,
+)
 from json import dumps
 from tempfile import mkdtemp
 from typing import (
@@ -165,6 +169,16 @@ steps:
     state:
       sel_mult: AA
       sel: CC
+"""
+
+# no steps, so an invocation of it is scheduled and completed straight away
+WORKFLOW_OPTIONAL_INPUT_NO_STEPS = """
+class: GalaxyWorkflow
+inputs:
+  input:
+    type: data
+    optional: true
+steps: []
 """
 
 
@@ -12326,22 +12340,86 @@ steps: []
         self._assert_status_code_is(response, 200)
         assert response.json() == []
 
-    def test_invocation_filtering_by_histories_in_any_state(self):
-        workflow = """
+    def test_invocation_filtering_by_create_time_range(self):
+        with self._different_user_history(email=f"{uuid4()}@test.com"):
+            history_id = self.dataset_populator.new_history()
+            first = self._run_workflow(WORKFLOW_OPTIONAL_INPUT_NO_STEPS, history_id=history_id, wait=False)
+            second = self._run_workflow(WORKFLOW_OPTIONAL_INPUT_NO_STEPS, history_id=history_id, wait=False)
+
+            def created(invocation_id):
+                response = self._get(f"invocations/{invocation_id}")
+                self._assert_status_code_is(response, 200)
+                return response.json()["create_time"]
+
+            first_created, second_created = created(first.invocation_id), created(second.invocation_id)
+            assert first_created < second_created
+            # create times are UTC, so compare against the UTC day they were created on
+            created_day = date.fromisoformat(first_created[:10])
+
+            both = {first.invocation_id, second.invocation_id}
+            assert self._listed_invocation_ids(date_range_min=first_created) == both
+            assert self._listed_invocation_ids(date_range_min=second_created) == {second.invocation_id}
+            assert self._listed_invocation_ids(date_range_max=first_created) == {first.invocation_id}
+            assert self._listed_invocation_ids(date_range_min=first_created, date_range_max=first_created) == {
+                first.invocation_id
+            }
+            # a date without a time compares as that day's midnight
+            assert self._listed_invocation_ids(date_range_min=str(created_day)) == both
+            assert self._listed_invocation_ids(date_range_min=str(created_day + timedelta(days=2))) == set()
+            assert self._listed_invocation_ids(date_range_max=str(created_day)) == set()
+            # the workflow's own invocations route takes the same range
+            workflow_route = f"workflows/{second.workflow_id}/invocations"
+            assert self._listed_invocation_ids(workflow_route, date_range_min=second_created) == {second.invocation_id}
+            assert self._listed_invocation_ids(workflow_route, date_range_max=first_created) == set()
+
+            response = self._get("invocations", data={"date_range_min": "not-a-date"})
+            self._assert_status_code_is(response, 400)
+
+    def test_invocation_filtering_by_state(self):
+        # waits at its pause step, so it can't finish before it's cancelled
+        paused_workflow = """
 class: GalaxyWorkflow
 inputs:
-  input:
-    type: data
-    optional: true
-steps: []
+  input: data
+steps:
+  the_pause:
+    type: pause
+    in:
+      input: input
 """
+        with self._different_user_history(email=f"{uuid4()}@test.com"):
+            history_id = self.dataset_populator.new_history()
+            scheduled = self._run_workflow(WORKFLOW_OPTIONAL_INPUT_NO_STEPS, history_id=history_id, wait=True)
+            cancelled = self._run_workflow(
+                paused_workflow, test_data={"input": "1 2 3"}, history_id=history_id, wait=False
+            )
+            self.workflow_populator.cancel_invocation(cancelled.invocation_id)
+            assert self._wait_for_invocation_state(cancelled.workflow_id, cancelled.invocation_id, "cancelled")
+
+            # the completion monitor may still move the scheduled invocation on, so match both of its states
+            done_states = ["scheduled", "completed"]
+            cancel_states = ["cancelled"]
+            both = {scheduled.invocation_id, cancelled.invocation_id}
+            assert self._listed_invocation_ids() == both
+            assert self._listed_invocation_ids(state=done_states) == {scheduled.invocation_id}
+            assert self._listed_invocation_ids(state=cancel_states) == {cancelled.invocation_id}
+            assert self._listed_invocation_ids(state=done_states + cancel_states) == both
+            assert self._listed_invocation_ids(state=["failed"]) == set()
+            # the workflow's own invocations route takes the same filter
+            workflow_route = f"workflows/{cancelled.workflow_id}/invocations"
+            assert self._listed_invocation_ids(workflow_route, state=cancel_states) == {cancelled.invocation_id}
+
+            response = self._get("invocations", data={"state": "not-a-state"})
+            self._assert_status_code_is(response, 400)
+
+    def test_invocation_filtering_by_histories_in_any_state(self):
         with self._different_user_history(email=f"{uuid4()}@test.com") as active_id:
             archived_id = self.dataset_populator.new_history()
             deleted_id = self.dataset_populator.new_history()
             purged_id = self.dataset_populator.new_history()
             history_ids = [active_id, archived_id, deleted_id, purged_id]
             invocation_ids = {
-                self._run_workflow(workflow, history_id=history_id, wait=False).invocation_id
+                self._run_workflow(WORKFLOW_OPTIONAL_INPUT_NO_STEPS, history_id=history_id, wait=False).invocation_id
                 for history_id in history_ids
             }
             self.dataset_populator.archive_history(archived_id).raise_for_status()
@@ -12352,6 +12430,14 @@ steps: []
             response = self._get("invocations", data={"search": search})
             self._assert_status_code_is(response, 200)
             assert {invocation["id"] for invocation in response.json()} == invocation_ids
+
+    def _listed_invocation_ids(self, route="invocations", **query) -> set[str]:
+        """The ids of the invocations an index route lists for the query, checking its `total_matches` header"""
+        response = self._get(route, data=query)
+        self._assert_status_code_is(response, 200)
+        matches = {invocation["id"] for invocation in response.json()}
+        assert response.headers["total_matches"] == str(len(matches))
+        return matches
 
     def _assert_invocation_for_url_is(self, route, target_invocation=None):
         response = self._get(route)

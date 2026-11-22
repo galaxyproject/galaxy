@@ -6,20 +6,13 @@ import { BBadge, BNav, BNavItem } from "bootstrap-vue";
 import { computed, onUnmounted, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 
-import { type InvocationStep, isWorkflowInvocationElementView } from "@/api/invocations";
+import { isWorkflowInvocationElementView } from "@/api/invocations";
 import { usePersistentToggle } from "@/composables/persistentToggle";
 import { useInvocationStore } from "@/stores/invocationStore";
 import { useWorkflowStore } from "@/stores/workflowStore";
 import { errorMessageAsString } from "@/utils/simple-error";
 
-import {
-    errorCount as jobStatesSummaryErrorCount,
-    isTerminal,
-    jobCount as jobStatesSummaryJobCount,
-    numTerminal,
-    okCount as jobStatesSummaryOkCount,
-    runningCount as jobStatesSummaryRunningCount,
-} from "./util";
+import { useInvocationProgress } from "./useInvocationProgress";
 
 import GButton from "../BaseComponents/GButton.vue";
 import HistoryPageView from "../PageEditor/HistoryPageView.vue";
@@ -47,19 +40,13 @@ type InvocationViewTab = "steps" | "inputs" | "outputs" | "report" | "reports" |
 interface Props {
     invocationId: string;
     tab?: InvocationViewTab;
-    isSubworkflow?: boolean;
     isFullPage?: boolean;
     success?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
     tab: undefined,
-    isSubworkflow: false,
 });
-
-const emit = defineEmits<{
-    (e: "invocation-cancelled"): void;
-}>();
 
 const route = useRoute();
 
@@ -125,30 +112,18 @@ const invocation = computed(() => {
         return null;
     }
 });
-const invocationState = computed(() => invocation.value?.state || "new");
-const invocationAndJobTerminal = computed(() => invocationSchedulingTerminal.value && jobStatesTerminal.value);
-const invocationSchedulingTerminal = computed(() => {
-    return (
-        invocationState.value == "scheduled" ||
-        invocationState.value == "cancelled" ||
-        invocationState.value == "failed" ||
-        invocationState.value == "completed"
-    );
-});
-const jobStatesTerminal = computed(() => {
-    // If the job states summary is null, we haven't fetched it yet
-    // If the `populated_state` for the summary is `new`, we haven't finished scheduling all jobs
-    if (jobStatesSummary.value === null || jobStatesSummary.value.populated_state === "new") {
-        return false;
-    }
-
-    if (invocationSchedulingTerminal.value && jobCount.value === 0) {
-        // no jobs for this invocation (think it has just subworkflows/inputs)
-        return true;
-    }
-    return isTerminal(jobStatesSummary.value);
-});
-const jobStatesSummary = computed(() => invocationStore.getInvocationJobsSummaryById(props.invocationId));
+const {
+    invocationState,
+    invocationSchedulingTerminal,
+    invocationAndJobTerminal,
+    jobStatesTerminal,
+    jobCount,
+    stateCounts,
+    jobStatesStr,
+    stepStates,
+    stepCount,
+    stepStatesStr,
+} = useInvocationProgress(() => props.invocationId, invocation);
 
 /** The job summary for each step in the invocation */
 const stepsJobsSummary = computed(() => {
@@ -168,66 +143,6 @@ const canSubmitFeedback = computed(
         invocationAndJobTerminal.value &&
         (invocationState.value === "failed" || Boolean(stateCounts.value?.errorCount)),
 );
-
-type StepStateType = { [state: string]: number };
-
-const stepStates = computed<StepStateType>(() => {
-    const stepStates: StepStateType = {};
-    const steps: InvocationStep[] = invocation.value?.steps || [];
-    for (const step of steps) {
-        if (!step) {
-            continue;
-        }
-        // the API defined state here allowing null and undefined is odd...
-        const stepState: string = step.state || "unknown";
-        if (!stepStates[stepState]) {
-            stepStates[stepState] = 1;
-        } else {
-            stepStates[stepState] += 1;
-        }
-    }
-    return stepStates;
-});
-
-const stepCount = computed<number>(() => {
-    return invocation.value?.steps.length || 0;
-});
-
-const stepStatesStr = computed<string>(() => {
-    return `${stepStates.value?.scheduled || 0} of ${stepCount.value} steps successfully scheduled.`;
-});
-
-const stateCounts = computed<{
-    okCount: number;
-    errorCount: number;
-    runningCount: number;
-    newCount: number;
-} | null>(() => {
-    if (jobStatesSummary.value === null) {
-        return null;
-    }
-    const okCount = jobStatesSummaryOkCount(jobStatesSummary.value);
-    const errorCount = jobStatesSummaryErrorCount(jobStatesSummary.value);
-    const runningCount = jobStatesSummaryRunningCount(jobStatesSummary.value);
-    const newCount = jobCount.value - okCount - runningCount - errorCount;
-    return { okCount, errorCount, runningCount, newCount };
-});
-
-const jobCount = computed<number>(() => {
-    return jobStatesSummaryJobCount(jobStatesSummary.value);
-});
-
-const jobStatesStr = computed(() => {
-    if (jobStatesSummary.value === null) {
-        return "No jobs summary available yet.";
-    }
-
-    let jobStr = `${numTerminal(jobStatesSummary.value) || 0} of ${jobCount.value} jobs complete`;
-    if (!invocationSchedulingTerminal.value) {
-        jobStr += " (total number of jobs will change until all steps fully scheduled)";
-    }
-    return `${jobStr}.`;
-});
 
 watch(
     () => props.invocationId,
@@ -310,7 +225,6 @@ async function onCancel() {
     } catch (e) {
         onError(e);
     } finally {
-        emit("invocation-cancelled");
         cancellingInvocation.value = false;
     }
 }
@@ -477,7 +391,10 @@ async function onCancel() {
             </li>
         </BNav>
 
-        <div ref="tabContent" class="mt-1 d-flex flex-column overflow-auto tab-content-container">
+        <div
+            ref="tabContent"
+            class="d-flex flex-column overflow-auto tab-content-container"
+            :class="{ 'mt-1': props.isFullPage }">
             <div v-if="onOverviewTab" :class="{ 'overview-tab-content': fitOverviewToTab }">
                 <WorkflowInvocationOverview
                     class="invocation-overview"
@@ -485,15 +402,11 @@ async function onCancel() {
                     :steps-jobs-summary="stepsJobsSummary || undefined"
                     :is-full-page="props.isFullPage"
                     :fit-to-page="fitOverviewToTab"
-                    :is-subworkflow="isSubworkflow"
                     :invocation-messages="uniqueMessages" />
             </div>
             <div v-if="props.tab === 'steps'" class="steps-tab-content">
-                <GAlert v-if="isSubworkflow" variant="info" show>
-                    <span v-localize>Subworkflow steps are not available.</span>
-                </GAlert>
                 <WorkflowInvocationSteps
-                    v-else-if="invocation && stepsJobsSummary"
+                    v-if="invocation && stepsJobsSummary"
                     :invocation="invocation"
                     :steps-jobs-summary="stepsJobsSummary"
                     :is-full-page="props.isFullPage" />
@@ -504,11 +417,8 @@ async function onCancel() {
                 :terminal="invocationAndJobTerminal"
                 :tab="props.tab" />
             <div v-if="props.tab === 'report' || props.tab === 'reports'" class="steps-tab-content">
-                <GAlert v-if="isSubworkflow" variant="info" show>
-                    <span v-localize>Report is not available for subworkflow.</span>
-                </GAlert>
                 <TabsDisabledAlert
-                    v-else-if="tabsDisabled"
+                    v-if="tabsDisabled"
                     :invocation-id="props.invocationId"
                     :tooltip="disabledTabTooltip" />
                 <InvocationReport

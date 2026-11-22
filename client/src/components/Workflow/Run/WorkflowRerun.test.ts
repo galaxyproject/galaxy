@@ -12,8 +12,18 @@ import WorkflowRerun from "./WorkflowRerun.vue";
 import WorkflowRun from "./WorkflowRun.vue";
 import GAlert from "@/components/BaseComponents/GAlert.vue";
 
+vi.mock("@/composables/toast");
+
 const localVue = getLocalVue();
 const { server, http } = useServerMock();
+const errorToast = vi.mocked(Toast.error);
+const successToast = vi.mocked(Toast.success);
+
+/** Makes the given history current; the store only reports a current history it has loaded */
+function selectHistory(historyStore: ReturnType<typeof useHistoryStore>, id: string) {
+    historyStore.setHistory({ id, name: id } as Parameters<typeof historyStore.setHistory>[0]);
+    historyStore.setCurrentHistoryId(id);
+}
 
 describe("WorkflowRerun", () => {
     let wrapper: VueWrapper | undefined;
@@ -23,11 +33,13 @@ describe("WorkflowRerun", () => {
         wrapper = undefined;
         vi.useRealTimers();
         vi.restoreAllMocks();
+        vi.clearAllMocks();
     });
 
     it("switches to the original history before rendering the run form", async () => {
         const pinia = createPinia();
         const historyStore = useHistoryStore(pinia);
+        selectHistory(historyStore, "other-history-id");
         let finishSwitch!: () => void;
         const switchHistory = vi.spyOn(historyStore, "setCurrentHistory").mockImplementation(
             () =>
@@ -41,7 +53,6 @@ describe("WorkflowRerun", () => {
                     };
                 }),
         );
-        const toast = vi.spyOn(Toast, "error");
         server.use(
             http.get("/api/invocations/{invocation_id}/request", ({ response }) =>
                 response.untyped(
@@ -73,7 +84,57 @@ describe("WorkflowRerun", () => {
             requestState: { "0": { id: "dataset-id", src: "hda" } },
             simpleFormUseJobCache: true,
         });
-        expect(toast).not.toHaveBeenCalled();
+        expect(errorToast).not.toHaveBeenCalled();
+        expect(successToast).toHaveBeenCalledExactlyOnceWith(
+            "Switched to the history with the original workflow inputs.",
+        );
+    });
+
+    it("skips the switch and its toast when already in the original history", async () => {
+        const pinia = createPinia();
+        const historyStore = useHistoryStore(pinia);
+        selectHistory(historyStore, "history-id");
+        const switchHistory = vi.spyOn(historyStore, "setCurrentHistory");
+        server.use(
+            http.get("/api/invocations/{invocation_id}/request", ({ response }) =>
+                response.untyped(
+                    HttpResponse.json({ history_id: "history-id", workflow_id: "workflow-id", instance: true }),
+                ),
+            ),
+        );
+        wrapper = shallowMount(WorkflowRerun as object, {
+            propsData: { invocationId: "invocation-id" },
+            localVue,
+            pinia,
+        });
+        await flushPromises();
+        expect(switchHistory).not.toHaveBeenCalled();
+        expect(successToast).not.toHaveBeenCalled();
+        expect(wrapper.findComponent(WorkflowRun).exists()).toBe(true);
+    });
+
+    it("still switches when a queued history change may replace the original history", async () => {
+        const pinia = createPinia();
+        const historyStore = useHistoryStore(pinia);
+        selectHistory(historyStore, "history-id");
+        historyStore.changingCurrentHistory = true;
+        const switchHistory = vi.spyOn(historyStore, "setCurrentHistory").mockResolvedValue();
+        server.use(
+            http.get("/api/invocations/{invocation_id}/request", ({ response }) =>
+                response.untyped(
+                    HttpResponse.json({ history_id: "history-id", workflow_id: "workflow-id", instance: true }),
+                ),
+            ),
+        );
+        wrapper = shallowMount(WorkflowRerun as object, {
+            propsData: { invocationId: "invocation-id" },
+            localVue,
+            pinia,
+        });
+        await flushPromises();
+        expect(switchHistory).toHaveBeenCalledWith("history-id");
+        expect(successToast).not.toHaveBeenCalled();
+        expect(wrapper.findComponent(WorkflowRun).exists()).toBe(true);
     });
 
     it("shows an alert when rerun data is unavailable", async () => {
@@ -95,7 +156,6 @@ describe("WorkflowRerun", () => {
     it("warns when the history switch returns without selecting the original history", async () => {
         const pinia = createPinia();
         vi.spyOn(useHistoryStore(pinia), "setCurrentHistory").mockResolvedValue();
-        const toast = vi.spyOn(Toast, "error");
         server.use(
             http.get("/api/invocations/{invocation_id}/request", ({ response }) =>
                 response.untyped(
@@ -109,7 +169,7 @@ describe("WorkflowRerun", () => {
             pinia,
         });
         await flushPromises();
-        expect(toast).toHaveBeenCalledExactlyOnceWith(
+        expect(errorToast).toHaveBeenCalledExactlyOnceWith(
             "Unable to switch to the history with the original workflow inputs.",
         );
         expect(wrapper.findComponent(WorkflowRun).exists()).toBe(true);
@@ -134,7 +194,6 @@ describe("WorkflowRerun", () => {
     });
 
     it("renders the run form after failing to switch to the original history", async () => {
-        const toast = vi.spyOn(Toast, "error");
         server.use(
             http.get("/api/invocations/{invocation_id}/request", ({ response }) =>
                 response.untyped(
@@ -153,7 +212,7 @@ describe("WorkflowRerun", () => {
         await flushPromises();
         expect(wrapper.find("loading-span-stub").exists()).toBe(false);
         expect(wrapper.findComponent(WorkflowRun).exists()).toBe(true);
-        expect(toast).toHaveBeenCalledExactlyOnceWith(
+        expect(errorToast).toHaveBeenCalledExactlyOnceWith(
             "Unable to switch to the history with the original workflow inputs. unavailable",
         );
     });

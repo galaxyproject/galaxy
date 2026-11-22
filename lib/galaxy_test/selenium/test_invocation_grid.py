@@ -1,4 +1,7 @@
-from galaxy_test.base.workflow_fixtures import WORKFLOW_RENAME_ON_INPUT
+from galaxy_test.base.workflow_fixtures import (
+    WORKFLOW_RENAME_ON_INPUT,
+    WORKFLOW_RUNTIME_PARAMETER_AFTER_PAUSE,
+)
 from .framework import (
     retry_assertion_during_transitions,
     selenium_test,
@@ -116,6 +119,138 @@ class TestInvocationGridSelenium(SeleniumTestCase, TestsGalaxyPagers):
         self.published_grid_search_for("workflow:no-such-workflow")
         self._assert_showing_n_invocations(0)
         invocations.column_filter_toggle(key="workflow_id").wait_for_visible()
+
+    @selenium_test
+    def test_column_filter_chip_overflow(self):
+        history_ids = [
+            self.dataset_populator.new_history(name=self._get_random_name(prefix="a long history name to overflow "))
+            for _ in range(6)
+        ]
+        # a listed invocation, so the list and its column filters show
+        self.workflow_populator.run_workflow(WORKFLOW_RENAME_ON_INPUT, history_id=history_ids[0], wait=True)
+        self.navigate_to_invocations_grid()
+        invocations = self.components.invocations
+        # chips only overflow into a menu while they sit inline, which needs a wide list, so close the activity panel
+        invocations.activity.wait_for_and_click()
+        self._assert_showing_n_invocations(1)
+
+        invocations.column_filter_toggle(key="history_id").wait_for_and_click()
+        for history_id in history_ids:
+            invocations.column_filter_option(key="history_id", id=history_id).wait_for_and_click()
+        self.send_escape()
+
+        # the chips that don't fit on the filter bar's line move to a "+N more" menu
+        invocations.hidden_column_filters_toggle.wait_for_and_click()
+        hidden = invocations.hidden_column_filters(key="history_id").all()
+        assert hidden, "expected some history chips in the overflow menu"
+        self.screenshot("invocations_column_filter_chip_overflow")
+        removed_id = hidden[0].get_attribute("data-option-id")
+        hidden[0].click()
+        self._assert_filter_text_excludes(f"history_id:{removed_id}")
+        self._assert_n_chips("history_id", 5)
+
+    @selenium_test
+    def test_filter_by_status(self):
+        history_id = self.dataset_populator.new_history()
+        self.workflow_populator.run_workflow(WORKFLOW_RENAME_ON_INPUT, history_id=history_id, wait=True)
+        cancelled = self.workflow_populator.run_workflow(WORKFLOW_RENAME_ON_INPUT, history_id=history_id, wait=False)
+        self.workflow_populator.cancel_invocation(cancelled.invocation_id)
+        self.navigate_to_invocations_grid()
+        invocations = self.components.invocations
+        self._assert_showing_n_invocations(2)
+
+        invocations.status_group_button(group="inactive").wait_for_and_click()
+        self._assert_showing_n_invocations(1)
+        self.screenshot("invocations_status_filter_inactive")
+        invocations.status_group_button(group="problem").wait_for_and_click()
+        self._assert_showing_n_invocations(0)
+        # clicking the active button again clears the filter
+        invocations.status_group_button(group="problem").wait_for_and_click()
+        self._assert_showing_n_invocations(2)
+
+    @selenium_test
+    def test_expanded_row(self):
+        history_id = self.dataset_populator.new_history()
+        self.workflow_populator.run_workflow(WORKFLOW_RENAME_ON_INPUT, history_id=history_id, wait=True)
+        self.navigate_to_invocations_grid()
+        invocations = self.components.invocations
+        self._assert_showing_n_invocations(1)
+        invocations.toggle_row_details.wait_for_and_click()
+        invocations.expanded_row_summary.wait_for_visible()
+        timeout = self.wait_length(self.wait_types.JOB_COMPLETION)
+        invocations.graph_node_state(label="first_cat", state="ok").wait_for_present(timeout=timeout)
+        # the summary grows as the invocation's details load, moving the graph below it
+        self._assert_expanded_row_summary_contains("1 ok")
+        self.screenshot("invocations_expanded_row")
+
+        # a clicked graph step opens in a modal, and closing it deselects the step so it can open again
+        for _ in range(2):
+            self.components.workflow_editor.node._(label="first_cat").title.wait_for_and_click()
+            invocations.step_card_modal.wait_for_visible()
+            invocations.step_card_modal_close.wait_for_and_click()
+            invocations.step_card_modal.wait_for_absent()
+
+        # the row is still expanded after viewing the invocation and coming back
+        invocations.expanded_row_view_button.wait_for_and_click()
+        invocations.state_details.wait_for_visible()
+        self.execute_script("window.history.back();")
+        invocations.expanded_row_summary.wait_for_visible()
+
+    @selenium_test
+    def test_cancel_from_list(self):
+        history_id = self.dataset_populator.new_history()
+        # each waits at its pause step, so it stays active until cancelled
+        for _ in range(2):
+            self.workflow_populator.run_workflow(
+                WORKFLOW_RUNTIME_PARAMETER_AFTER_PAUSE,
+                history_id=history_id,
+                test_data={"input1": "1 2 3"},
+                wait=False,
+            )
+        self.navigate_to_invocations_grid()
+        invocations = self.components.invocations
+        self._assert_showing_n_invocations(2)
+
+        invocations.row_actions_toggle(index=0).wait_for_and_click()
+        invocations.row_action(index=0, action="cancel-invocation").wait_for_and_click()
+        self.components.confirm_dialog.ok_button.wait_for_and_click()
+        self._assert_row_contains(0, "cancel")
+
+        invocations.row_select(index=1).wait_for_and_click()
+        invocations.bulk_cancel_button.wait_for_and_click()
+        self.components.confirm_dialog.ok_button.wait_for_and_click()
+        self._assert_row_contains(1, "cancel")
+        self.screenshot("invocations_cancelled_from_list")
+
+    @selenium_test
+    def test_rerun_from_list(self):
+        history_id = self.dataset_populator.new_history()
+        self.workflow_populator.run_workflow(WORKFLOW_RENAME_ON_INPUT, history_id=history_id, wait=True)
+        self.navigate_to_invocations_grid()
+        invocations = self.components.invocations
+        self._assert_showing_n_invocations(1)
+
+        invocations.row_actions_toggle(index=0).wait_for_and_click()
+        invocations.row_action(index=0, action="rerun-invocation").wait_for_and_click()
+        self.components.workflow_run.form_element._(index=0).wait_for_visible()
+
+    @retry_assertion_during_transitions
+    def _assert_row_contains(self, index, text):
+        assert text in self.components.invocations.row(index=index).wait_for_visible().text
+
+    @retry_assertion_during_transitions
+    def _assert_expanded_row_summary_contains(self, text):
+        assert text in self.components.invocations.expanded_row_summary.wait_for_visible().text
+
+    @retry_assertion_during_transitions
+    def _assert_filter_text_excludes(self, text):
+        assert text not in self.components.grids.free_text_search.wait_for_visible().get_attribute("value")
+
+    def _assert_n_chips(self, key, n):
+        invocations = self.components.invocations
+        shown = len(invocations.active_column_filters(key=key).all())
+        hidden = len(invocations.hidden_column_filters(key=key).all())
+        assert shown + hidden == n
 
     @retry_assertion_during_transitions
     def _assert_n_elements(self, component, n):

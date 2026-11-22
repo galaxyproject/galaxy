@@ -1,28 +1,22 @@
 <script setup lang="ts">
-import { faCaretDown, faCaretUp, faShieldAlt, faTimes } from "@fortawesome/free-solid-svg-icons";
+import { faCaretDown, faCaretUp, faShieldAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useDebounceFn, useEventBus } from "@vueuse/core";
-import { BCard, BPagination } from "bootstrap-vue";
+import { BCard } from "bootstrap-vue";
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 
+import { useFilterTextValidation } from "@/composables/filterTextValidation";
 import localize from "@/utils/localization";
 
-import type {
-    BatchOperation,
-    FieldEntry,
-    FieldFilter,
-    FieldHandler,
-    FilterOption,
-    GridConfig,
-    Operation,
-    RowData,
-} from "./configs/types";
+import type { BatchOperation, FieldEntry, FieldHandler, GridConfig, Operation, RowData } from "./configs/types";
+import { useColumnFilters } from "./useColumnFilters";
 
 import LoadingOverlay from "../Common/LoadingOverlay.vue";
 import HelpText from "../Help/HelpText.vue";
 import SwitchToHistoryLink from "../History/SwitchToHistoryLink.vue";
 import GridColumnFilter from "./GridColumnFilter.vue";
+import GridColumnFilterChips from "./GridColumnFilterChips.vue";
 import GridBoolean from "./GridElements/GridBoolean.vue";
 import GridExpand from "./GridElements/GridExpand.vue";
 import GridLink from "./GridElements/GridLink.vue";
@@ -31,6 +25,7 @@ import GridText from "./GridElements/GridText.vue";
 import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GCheckbox from "@/components/BaseComponents/GCheckbox.vue";
+import GPagination from "@/components/BaseComponents/GPagination.vue";
 import FilterMenu from "@/components/Common/FilterMenu.vue";
 import Heading from "@/components/Common/Heading.vue";
 import SharingIndicators from "@/components/Indices/SharingIndicators.vue";
@@ -104,18 +99,28 @@ const sortDesc = ref(props.gridConfig ? props.gridConfig.sortDesc : false);
 const filterText = ref("");
 const showAdvanced = ref(false);
 const filterClass = props.gridConfig.filtering;
-const rawFilters = computed(() =>
-    Object.fromEntries(filterClass?.getFiltersForText(filterText.value, true, false) || []),
+const { rawFilters, invalidFilters, hasInvalidFilters, validatedFilterText } = useFilterTextValidation(
+    filterClass,
+    filterText,
+    false,
 );
-const validFilters = computed(() => filterClass?.getValidFilters(rawFilters.value, true).validFilters);
-const invalidFilters = computed(() => filterClass?.getValidFilters(rawFilters.value, true).invalidFilters);
-const isSurroundedByQuotes = computed(() => /^["'].*["']$/.test(filterText.value));
-const hasInvalidFilters = computed(
-    () => !isSurroundedByQuotes.value && Object.keys(invalidFilters.value || {}).length > 0,
+
+const {
+    hasColumnFilters,
+    columnFilterSelection,
+    activeColumnFilters,
+    reachedColumnFilterLimit,
+    onColumnFilter,
+    removeColumnFilterOption,
+} = useColumnFilters(
+    () => props.gridConfig.fields.map((fieldEntry) => ({ ...fieldEntry, title: fieldTitle(fieldEntry) })),
+    filterClass,
+    filterText,
+    rawFilters,
+    () => props.gridConfig.maxColumnFilterPicks,
 );
 
 // column filters stay reachable when the current filters match nothing
-const hasColumnFilters = computed(() => props.gridConfig.fields.some((fieldEntry) => fieldEntry.filter));
 const showTable = computed(
     () => !hasInvalidFilters.value && (isAvailable.value || (hasColumnFilters.value && !!filterText.value)),
 );
@@ -134,75 +139,6 @@ function applyFilter(filter: string, value: string | boolean, quoted = false) {
     if (filtering) {
         filterText.value = filtering.setFilterValue(filterText.value, filter, quotedValue.toString()) || "";
     }
-}
-
-/**
- * Set or remove (`undefined` value) several filters in the filter text at once
- */
-function setFilters(filters: Record<string, string | string[] | undefined>) {
-    if (!filterClass) {
-        return;
-    }
-    const toRemove = Object.fromEntries(Object.entries(filters).filter(([, value]) => value === undefined));
-    const toSet = Object.fromEntries(Object.entries(filters).filter(([, value]) => value !== undefined));
-    let text = filterText.value;
-    if (Object.keys(toRemove).length > 0) {
-        text = filterClass.applyFiltersToText(toRemove, text, true);
-    }
-    if (Object.keys(toSet).length > 0) {
-        text = filterClass.applyFiltersToText(toSet, text);
-    }
-    filterText.value = text;
-}
-
-// names of the items picked in column filter dropdowns, by filter key and id
-const columnFilterNames = ref<Record<string, Record<string, FilterOption>>>({});
-
-/**
- * Items currently selected in a column filter, read from the repeated `key:<id>` filter terms
- */
-function columnFilterSelection(filter: FieldFilter): FilterOption[] {
-    const ids = rawFilters.value[filter.key];
-    if (!Array.isArray(ids)) {
-        return [];
-    }
-    const known = columnFilterNames.value[filter.key] ?? {};
-    return ids.map((id: string) => known[id] ?? { id, name: id });
-}
-
-const activeColumnFilters = computed(() =>
-    props.gridConfig.fields.flatMap((fieldEntry) => {
-        const filter = fieldEntry.filter;
-        if (!filter) {
-            return [];
-        }
-        return columnFilterSelection(filter).map((option) => ({ title: fieldTitle(fieldEntry), filter, option }));
-    }),
-);
-
-const reachedColumnFilterLimit = computed(() => {
-    const limit = props.gridConfig.maxColumnFilterPicks;
-    return limit !== undefined && activeColumnFilters.value.length >= limit ? limit : undefined;
-});
-
-function onColumnFilter(filter: FieldFilter, options: FilterOption[]) {
-    columnFilterNames.value = {
-        ...columnFilterNames.value,
-        [filter.key]: {
-            ...columnFilterNames.value[filter.key],
-            ...Object.fromEntries(options.map((option) => [option.id, option])),
-        },
-    };
-    const cleared = Object.fromEntries((filter.clears ?? []).map((key) => [key, undefined]));
-    const value = options.length > 0 ? options.map((option) => option.id) : undefined;
-    setFilters({ ...cleared, [filter.key]: value });
-}
-
-function removeColumnFilterOption(filter: FieldFilter, option: FilterOption) {
-    onColumnFilter(
-        filter,
-        columnFilterSelection(filter).filter((selectedOption) => selectedOption.id !== option.id),
-    );
 }
 
 /**
@@ -376,21 +312,6 @@ function showDetails(rowData: RowData, show: boolean) {
 }
 
 /**
- * A valid filter/query for the backend
- */
-function validatedFilterText() {
-    if (isSurroundedByQuotes.value) {
-        // the filterText is surrounded by quotes, remove them
-        return filterText.value.slice(1, -1);
-    } else if (Object.keys(rawFilters.value).length === 0) {
-        // there are no filters derived from the `filterText`
-        return filterText.value;
-    }
-    // there are valid filters derived from the `filterText`
-    return filterClass?.getFilterText(validFilters.value || {}, false, filterText.value) || "";
-}
-
-/**
  * Initialize grid data
  */
 onMounted(() => {
@@ -453,25 +374,7 @@ watch(operationMessage, () => {
                 :filter-class="filterClass"
                 :loading="initDataLoading || resultsLoading"
                 view="compact" />
-            <div
-                v-if="activeColumnFilters.length > 0"
-                class="d-flex flex-wrap align-items-center"
-                data-description="grid active column filters">
-                <GButton
-                    v-for="chip in activeColumnFilters"
-                    :key="`${chip.filter.key}-${chip.option.id}`"
-                    class="mr-1 mb-1"
-                    size="small"
-                    outline
-                    color="blue"
-                    :title="localize('Remove this filter')"
-                    :data-description="`grid active column filter ${chip.filter.key}`"
-                    :data-option-id="chip.option.id"
-                    @click="removeColumnFilterOption(chip.filter, chip.option)">
-                    <span>{{ chip.title }}: {{ chip.option.name }}</span>
-                    <FontAwesomeIcon :icon="faTimes" class="ml-1" />
-                </GButton>
-            </div>
+            <GridColumnFilterChips :chips="activeColumnFilters" @remove="removeColumnFilterOption" />
         </div>
         <div v-if="initDataLoading" class="position-relative h-100" data-description="grid initial loading">
             <LoadingOverlay />
@@ -657,18 +560,12 @@ watch(operationMessage, () => {
                         </GButton>
                     </div>
                 </div>
-                <BPagination
+                <GPagination
                     v-model="currentPage"
                     :total-rows="totalRows"
                     :per-page="limit"
-                    class="m-0"
-                    size="sm"
-                    data-description="grid pager"
-                    next-class="gx-grid-pager-next"
-                    prev-class="gx-grid-pager-prev"
-                    first-class="gx-grid-pager-first"
-                    last-class="gx-grid-pager-last"
-                    page-class="gx-grid-pager-page" />
+                    size="small"
+                    data-description="grid pager" />
             </div>
         </div>
     </div>

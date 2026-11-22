@@ -8,7 +8,6 @@ import { useWorkflowInstance } from "@/composables/useWorkflowInstance";
 import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
 
 import InvocationGraph from "../Workflow/Invocation/Graph/InvocationGraph.vue";
-import SubworkflowAlert from "./SubworkflowAlert.vue";
 import WorkflowInvocationError from "./WorkflowInvocationError.vue";
 import GAlert from "@/components/BaseComponents/GAlert.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
@@ -19,7 +18,6 @@ interface Props {
     isFullPage?: boolean;
     /** Fit the graph and step details to the page height instead of scrolling */
     fitToPage?: boolean;
-    isSubworkflow?: boolean;
     invocationMessages?: InvocationMessage[];
 }
 
@@ -53,8 +51,7 @@ function showSubworkflowInvocation(invocationId: string, stepId: number) {
 </script>
 
 <template>
-    <div :class="props.fitToPage ? 'fit-to-page' : 'mb-3'">
-        <SubworkflowAlert v-if="isSubworkflow" :invocation-id="props.invocation.id" :state="props.invocation.state" />
+    <div :class="props.fitToPage ? 'fit-to-page' : { 'mb-3': props.isFullPage }">
         <div v-if="props.invocationMessages?.length" class="d-flex align-items-center">
             <WorkflowInvocationError
                 v-for="message in props.invocationMessages"
@@ -73,16 +70,18 @@ function showSubworkflowInvocation(invocationId: string, stepId: number) {
         <GAlert v-else-if="error" variant="danger" show>
             {{ error }}
         </GAlert>
-        <div v-else-if="workflow && !isSubworkflow" class="invocation-graph-container">
+        <div v-else-if="workflow" class="invocation-graph-container">
             <InvocationGraph
                 ref="invocationGraph"
-                class="mt-1"
+                :class="{ 'mt-1': isFullPage }"
                 data-description="workflow invocation graph"
                 :invocation="invocation"
                 :steps-jobs-summary="props.stepsJobsSummary"
                 :workflow="workflow"
                 :fit-to-page="props.fitToPage"
-                :show-minimap="isFullPage" />
+                :show-minimap="isFullPage"
+                :step-modal="!isFullPage"
+                :graph-height="isFullPage ? undefined : '16rem'" />
         </div>
         <GAlert v-else-if="!workflow" variant="info" show> No workflow found for this invocation. </GAlert>
     </div>

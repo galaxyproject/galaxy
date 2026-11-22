@@ -44869,6 +44869,12 @@ export interface operations {
                 include_nested_invocations?: boolean;
                 /** @description Return only invocations matching every term. `workflow:<name>` and `history:<name>` match the name of the invocation's workflow or history, as a substring or, when the name is quoted, exactly. Text without a key matches the workflow name. `workflow_id:<id>` and `history_id:<id>` can repeat, and match any of the given ids. At most 10 keyed or quoted terms are used. */
                 search?: string | null;
+                /** @description Return only invocations created on or after this date or time (e.g. '2014-01-01'). A date without a time means 00:00 UTC on that day. */
+                date_range_min?: string | null;
+                /** @description Return only invocations created on or before this date or time (e.g. '2014-01-31T23:59:59'). A date without a time means 00:00 UTC on that day, so the rest of that day is left out. */
+                date_range_max?: string | null;
+                /** @description Return only invocations in one of these states. Repeat the parameter for several states. With `include_terminal=false`, only the non-terminal states given here can match. */
+                state?: components["schemas"]["InvocationState"][] | null;
             };
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
@@ -56541,6 +56547,12 @@ export interface operations {
                 view?: string | null;
                 /** @description Include details for individual invocation steps and populate a steps attribute in the resulting dictionary. */
                 step_details?: boolean;
+                /** @description Return only invocations created on or after this date or time (e.g. '2014-01-01'). A date without a time means 00:00 UTC on that day. */
+                date_range_min?: string | null;
+                /** @description Return only invocations created on or before this date or time (e.g. '2014-01-31T23:59:59'). A date without a time means 00:00 UTC on that day, so the rest of that day is left out. */
+                date_range_max?: string | null;
+                /** @description Return only invocations in one of these states. Repeat the parameter for several states. With `include_terminal=false`, only the non-terminal states given here can match. */
+                state?: components["schemas"]["InvocationState"][] | null;
             };
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
@@ -57645,6 +57657,12 @@ export interface operations {
                 view?: string | null;
                 /** @description Include details for individual invocation steps and populate a steps attribute in the resulting dictionary. */
                 step_details?: boolean;
+                /** @description Return only invocations created on or after this date or time (e.g. '2014-01-01'). A date without a time means 00:00 UTC on that day. */
+                date_range_min?: string | null;
+                /** @description Return only invocations created on or before this date or time (e.g. '2014-01-31T23:59:59'). A date without a time means 00:00 UTC on that day, so the rest of that day is left out. */
+                date_range_max?: string | null;
+                /** @description Return only invocations in one of these states. Repeat the parameter for several states. With `include_terminal=false`, only the non-terminal states given here can match. */
+                state?: components["schemas"]["InvocationState"][] | null;
             };
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */

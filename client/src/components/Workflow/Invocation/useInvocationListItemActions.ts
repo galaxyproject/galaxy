@@ -1,0 +1,205 @@
+import { faEye, faHdd, faLink, faRedo, faSitemap, faStopCircle } from "@fortawesome/free-solid-svg-icons";
+import { storeToRefs } from "pinia";
+import { ref } from "vue";
+import { useRouter } from "vue-router";
+
+import { userOwnsHistory } from "@/api";
+import type { WorkflowInvocation } from "@/api/invocations";
+import { getFullAppUrl } from "@/app/utils";
+import type { TableAction } from "@/components/Common/GTable.types";
+import { useConfirmDialog } from "@/composables/confirmDialog";
+import { Toast } from "@/composables/toast";
+import { useHistoryStore } from "@/stores/historyStore";
+import { useInvocationStore } from "@/stores/invocationStore";
+import { useUserStore } from "@/stores/userStore";
+import { useWorkflowStore } from "@/stores/workflowStore";
+import { copy } from "@/utils/clipboard";
+import localize from "@/utils/localization";
+import { describeFailures, settleEach } from "@/utils/settleEach";
+import { pluralize } from "@/utils/strings";
+
+import { INVOCATION_STATE_GROUP } from "./invocationFilters";
+
+interface Options {
+    /** Opens an invocation, as the list does (e.g. in a new tab for a batch run) */
+    viewInvocation: (invocation: WorkflowInvocation) => void;
+    /** Reloads the list, e.g. to show a cancelled invocation's new state */
+    refreshList: () => Promise<void>;
+    /** Lists every user's invocations, so cancelling may stop other users' runs */
+    admin?: boolean;
+}
+
+/**
+ * The options at the end of each `InvocationList` row, grouped by what they act on, with Cancel apart.
+ * They only read workflows and histories the list has already loaded.
+ */
+export function useInvocationListItemActions({ viewInvocation, refreshList, admin = false }: Options) {
+    const router = useRouter();
+    const { confirm } = useConfirmDialog();
+    const workflowStore = useWorkflowStore();
+    const historyStore = useHistoryStore();
+    const userStore = useUserStore();
+    const { currentUser } = storeToRefs(userStore);
+
+    /** The workflow version the invocation ran, once the list has loaded it */
+    function storedWorkflow(invocation: WorkflowInvocation) {
+        return workflowStore.getStoredWorkflowByInstanceId(invocation.workflow_id);
+    }
+
+    /**
+     * Why the invocation can't be rerun, if it can't: rerunning switches to its history, then runs its workflow,
+     * so both must be usable. A workflow the user can't access never loads.
+     */
+    function rerunBlockedReason(invocation: WorkflowInvocation) {
+        const workflow = storedWorkflow(invocation);
+        const history = historyStore.getHistoryById(invocation.history_id, false);
+        if (!workflow) {
+            return "This workflow isn't available to you, so it can't be run again";
+        } else if (workflow.deleted) {
+            return "This workflow has been deleted, so it can't be run again";
+        } else if (!history || !ownsHistory(invocation)) {
+            return "Rerunning switches to this invocation's history, which isn't yours";
+        } else if (history.purged || history.archived) {
+            return `Rerunning switches to this invocation's history, which is ${history.purged ? "purged" : "archived"}`;
+        }
+        return undefined;
+    }
+
+    function ownsHistory(invocation: WorkflowInvocation) {
+        const history = historyStore.getHistoryById(invocation.history_id, false);
+        return !!history && !!currentUser.value && userOwnsHistory(currentUser.value, history);
+    }
+
+    /** The workflow version to preview in the list's modal, as the workflow list's cards do */
+    const workflowPreview = ref<{ id: string; version?: number } | null>(null);
+
+    /** Previews the exact workflow version the invocation ran, read-only */
+    function viewWorkflow(invocation: WorkflowInvocation) {
+        const workflow = storedWorkflow(invocation);
+        if (workflow) {
+            workflowPreview.value = { id: workflow.id, version: workflow.version ?? undefined };
+        }
+    }
+
+    /**
+     * Whether the list offers to cancel the invocation: only while it's still being scheduled. A `scheduled`
+     * invocation may have nothing left to cancel, which only its own page can tell from its jobs.
+     */
+    function isCancellableInvocation(invocation: WorkflowInvocation) {
+        return invocation.state !== "scheduled" && INVOCATION_STATE_GROUP[invocation.state] === "active";
+    }
+
+    /**
+     * Cancels the given invocations that can still be cancelled, after confirming, then reloads the list.
+     * Cancels them one by one, so one failure doesn't stop the rest.
+     */
+    async function cancelInvocations(invocations: WorkflowInvocation[]) {
+        const active = invocations.filter(isCancellableInvocation);
+        const count = active.length;
+        const noun = pluralize(count, "invocation");
+        const message = admin
+            ? `Cancel ${count} ${noun}? They may belong to other users, and their jobs that haven't finished are stopped too.`
+            : `Cancel ${count} ${noun}? Their jobs that haven't finished are stopped too.`;
+        const confirmed = await confirm(message, {
+            title: `Cancel ${noun}`,
+            okText: `Cancel ${noun}`,
+            okColor: "red",
+            okIcon: faStopCircle,
+        });
+        if (!confirmed) {
+            return;
+        }
+        const invocationStore = useInvocationStore();
+        const failures = await settleEach(active, async (invocation) => {
+            const updated = await invocationStore.cancelWorkflowScheduling(invocation.id);
+            // the row shows its new state right away, also in a batch list that has nothing to reload
+            invocation.state = updated.state;
+            invocation.update_time = updated.update_time;
+        });
+        const cancelled = count - failures.length;
+        if (cancelled > 0) {
+            Toast.success(`Cancelling ${cancelled} ${pluralize(cancelled, "invocation")}.`);
+        }
+        if (failures.length) {
+            Toast.error(
+                describeFailures(failures, (invocation) =>
+                    workflowStore.getStoredWorkflowNameByInstanceId(invocation.workflow_id),
+                ),
+                localize(`Failed to cancel ${failures.length} ${pluralize(failures.length, "invocation")}`),
+            );
+        }
+        await refreshList();
+    }
+
+    const invocationListItemActions: TableAction<WorkflowInvocation>[] = [
+        {
+            id: "rerun-invocation",
+            groupId: "invocation",
+            label: "Rerun",
+            title: (invocation) => rerunBlockedReason(invocation) ?? "Rerun this workflow with the same inputs",
+            icon: faRedo,
+            disabled: (invocation) => !!rerunBlockedReason(invocation),
+            handler: rerunInvocation,
+        },
+        {
+            id: "view-invocation",
+            groupId: "invocation",
+            label: "View invocation",
+            title: "View this invocation",
+            icon: faEye,
+            handler: viewInvocation,
+        },
+        {
+            id: "copy-invocation-link",
+            groupId: "invocation",
+            label: "Copy link",
+            title: "Copy a link to this invocation",
+            icon: faLink,
+            handler: (invocation) =>
+                copy(getFullAppUrl(`workflows/invocations/${invocation.id}`), "Link to invocation copied"),
+        },
+        {
+            id: "view-workflow",
+            groupId: "workflow",
+            label: "View workflow",
+            title: "View the workflow version this invocation ran",
+            icon: faSitemap,
+            visible: (invocation) => !!storedWorkflow(invocation),
+            handler: viewWorkflow,
+        },
+        {
+            id: "view-history",
+            groupId: "history",
+            label: "View history",
+            title: "View this invocation's history without switching to it",
+            icon: faHdd,
+            visible: ownsHistory,
+            handler: (invocation) => router.push(`/histories/view?id=${invocation.history_id}`),
+        },
+        {
+            id: "cancel-invocation",
+            groupId: "stop",
+            label: "Cancel",
+            title: "Cancel this invocation",
+            icon: faStopCircle,
+            visible: isCancellableInvocation,
+            // confirms first, like the bulk Cancel
+            handler: (invocation) => cancelInvocations([invocation]),
+        },
+    ];
+
+    /** Opens the rerun form with the invocation's inputs */
+    function rerunInvocation(invocation: WorkflowInvocation) {
+        router.push(`/workflows/rerun?invocation_id=${invocation.id}`);
+    }
+
+    return {
+        invocationListItemActions,
+        storedWorkflow,
+        workflowPreview,
+        isCancellableInvocation,
+        cancelInvocations,
+        rerunBlockedReason,
+        rerunInvocation,
+    };
+}
