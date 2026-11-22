@@ -1,3 +1,8 @@
+from dataclasses import (
+    dataclass,
+    field,
+)
+
 import pytest
 from sqlalchemy import event
 
@@ -14,27 +19,45 @@ from galaxy.schema.invocation import InvocationCancellationUserRequest
 States = model.WorkflowInvocation.states
 
 
+@dataclass
+class JobDispatch:
+    updates: list[JobUpdate]
+    resync_user_ids: list[int] = field(default_factory=list)
+    resync_session_ids: list[int] = field(default_factory=list)
+    resync_history_ids: list[int] = field(default_factory=list)
+
+
 class RecordingDispatcher:
     def __init__(self) -> None:
         self.calls: list[list[InvocationUpdate]] = []
-        self.job_calls: list[tuple[list[JobUpdate], list[int] | None, list[int] | None, list[int] | None]] = []
+        self.job_calls: list[JobDispatch] = []
 
-    def invocation_update(self, updates: list[InvocationUpdate], event_id: str | None = None) -> None:
+    def invocation_update(self, updates: list[InvocationUpdate]) -> None:
         self.calls.append(updates)
 
     def job_update(
-        self, updates, resync_user_ids=None, resync_session_ids=None, resync_history_ids=None, event_id=None
+        self,
+        updates: list[JobUpdate],
+        resync_user_ids: list[int] | None = None,
+        resync_session_ids: list[int] | None = None,
+        resync_history_ids: list[int] | None = None,
     ) -> None:
-        self.job_calls.append((updates, resync_user_ids, resync_session_ids, resync_history_ids))
+        self.job_calls.append(
+            JobDispatch(updates, resync_user_ids or [], resync_session_ids or [], resync_history_ids or [])
+        )
 
 
 class BrokenDispatcher:
-    def invocation_update(self, updates, event_id=None):
+    def invocation_update(self, updates: list[InvocationUpdate]) -> None:
         raise RuntimeError("broker down")
 
     def job_update(
-        self, updates, resync_user_ids=None, resync_session_ids=None, resync_history_ids=None, event_id=None
-    ):
+        self,
+        updates: list[JobUpdate],
+        resync_user_ids: list[int] | None = None,
+        resync_session_ids: list[int] | None = None,
+        resync_history_ids: list[int] | None = None,
+    ) -> None:
         raise RuntimeError("broker down")
 
 
@@ -46,7 +69,7 @@ def galaxy_model():
 @pytest.fixture
 def dispatcher(galaxy_model) -> RecordingDispatcher:
     dispatcher = RecordingDispatcher()
-    ChangeEventPublisher(dispatcher).register(galaxy_model.session)  # type: ignore[arg-type]
+    ChangeEventPublisher(dispatcher).register(galaxy_model.session)
     return dispatcher
 
 
@@ -204,7 +227,7 @@ def test_invocation_in_an_ownerless_history_is_published_for_its_viewers(session
 
 
 def test_dispatch_failure_does_not_fail_commit(galaxy_model):
-    ChangeEventPublisher(BrokenDispatcher()).register(galaxy_model.session)  # type: ignore[arg-type]
+    ChangeEventPublisher(BrokenDispatcher()).register(galaxy_model.session)
     session = galaxy_model.session
     invocation = _invocation(session, _user(session))
     invocation.set_state(States.SCHEDULED)
@@ -236,7 +259,7 @@ def test_job_state_change_is_published_only_once_committed(session, dispatcher):
     assert dispatcher.job_calls == []
     session.commit()
     assert dispatcher.job_calls == [
-        (
+        JobDispatch(
             [{"job_id": job.id, "state": "queued", "user_id": user.id, "session_id": None, "history_id": None}],
             [],
             [],
@@ -248,11 +271,8 @@ def test_job_state_change_is_published_only_once_committed(session, dispatcher):
     job.set_state(model.Job.states.RUNNING)
     session.commit()
     assert dispatcher.job_calls == [
-        (
-            [{"job_id": job.id, "state": "running", "user_id": user.id, "session_id": None, "history_id": None}],
-            [],
-            [],
-            [],
+        JobDispatch(
+            [{"job_id": job.id, "state": "running", "user_id": user.id, "session_id": None, "history_id": None}]
         )
     ]
 
@@ -267,11 +287,8 @@ def test_job_state_assignment_is_published_with_the_state_at_commit(session, dis
     job.mark_deleted()
     session.commit()
     assert dispatcher.job_calls == [
-        (
-            [{"job_id": job.id, "state": "deleted", "user_id": user.id, "session_id": None, "history_id": None}],
-            [],
-            [],
-            [],
+        JobDispatch(
+            [{"job_id": job.id, "state": "deleted", "user_id": user.id, "session_id": None, "history_id": None}]
         )
     ]
 
@@ -280,11 +297,8 @@ def test_job_state_assignment_is_published_with_the_state_at_commit(session, dis
     skipped.state = model.Job.states.SKIPPED
     session.commit()
     assert dispatcher.job_calls == [
-        (
-            [{"job_id": skipped.id, "state": "skipped", "user_id": user.id, "session_id": None, "history_id": None}],
-            [],
-            [],
-            [],
+        JobDispatch(
+            [{"job_id": skipped.id, "state": "skipped", "user_id": user.id, "session_id": None, "history_id": None}]
         )
     ]
 
@@ -296,7 +310,7 @@ def test_anonymous_job_is_routed_to_its_session(session, dispatcher):
     job = _job(session, galaxy_session=galaxy_session)
     session.commit()
     assert dispatcher.job_calls == [
-        (
+        JobDispatch(
             [
                 {
                     "job_id": job.id,
@@ -305,10 +319,7 @@ def test_anonymous_job_is_routed_to_its_session(session, dispatcher):
                     "session_id": galaxy_session.id,
                     "history_id": None,
                 }
-            ],
-            [],
-            [],
-            [],
+            ]
         )
     ]
 
@@ -327,7 +338,7 @@ def test_anonymous_job_follows_its_history_to_the_user_who_logs_in(session, disp
     job.set_state(model.Job.states.RUNNING)
     session.commit()
     assert dispatcher.job_calls == [
-        (
+        JobDispatch(
             [
                 {
                     "job_id": job.id,
@@ -336,10 +347,7 @@ def test_anonymous_job_follows_its_history_to_the_user_who_logs_in(session, disp
                     "session_id": galaxy_session.id,
                     "history_id": history.id,
                 }
-            ],
-            [],
-            [],
-            [],
+            ]
         )
     ]
 
@@ -354,7 +362,7 @@ def test_too_many_job_changes_for_one_recipient_become_a_resync(session, dispatc
     other_job = _job(session, other_user)
     session.commit()
     assert dispatcher.job_calls == [
-        (
+        JobDispatch(
             [
                 {
                     "job_id": other_job.id,
@@ -364,9 +372,8 @@ def test_too_many_job_changes_for_one_recipient_become_a_resync(session, dispatc
                     "history_id": None,
                 }
             ],
-            [busy_user.id],
-            [],
-            [busy_history.id],
+            resync_user_ids=[busy_user.id],
+            resync_history_ids=[busy_history.id],
         )
     ]
 
@@ -394,7 +401,7 @@ def test_cancelled_invocation_steps_publish_their_jobs_deleting(
     invocation.cancel_invocation_steps()
     assert any("RETURNING" in statement for statement in statements) == update_returning
     assert dispatcher.job_calls == [
-        (
+        JobDispatch(
             [
                 {
                     "job_id": job.id,
@@ -403,9 +410,6 @@ def test_cancelled_invocation_steps_publish_their_jobs_deleting(
                     "session_id": None,
                     "history_id": invocation.history_id,
                 }
-            ],
-            [],
-            [],
-            [],
+            ]
         )
     ]

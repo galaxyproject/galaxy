@@ -26,6 +26,7 @@ sources are:
 import logging
 from collections import defaultdict
 from itertools import chain
+from typing import Protocol
 
 from sqlalchemy import (
     event,
@@ -38,7 +39,6 @@ from sqlalchemy.orm import (
 )
 from sqlalchemy.orm.scoping import scoped_session
 
-from galaxy.managers.sse_dispatch import SSEEventDispatcher
 from galaxy.model import (
     Job,
     JobStateHistory,
@@ -47,6 +47,7 @@ from galaxy.model import (
     WorkflowInvocationStep,
 )
 from galaxy.model.pending_changes import (
+    InvocationUpdate,
     JobUpdate,
     PENDING_CHANGES,
     pending_changes,
@@ -69,8 +70,22 @@ SAVEPOINT_SNAPSHOTS = "galaxy.pending_changes_savepoint_snapshots"
 MAX_JOBS_PER_EVENT = 500
 
 
+class ChangeEventDispatcher(Protocol):
+    """What the publisher sends committed changes through; ``SSEEventDispatcher`` in Galaxy."""
+
+    def invocation_update(self, updates: list[InvocationUpdate]) -> None: ...
+
+    def job_update(
+        self,
+        updates: list[JobUpdate],
+        resync_user_ids: list[int] | None = None,
+        resync_session_ids: list[int] | None = None,
+        resync_history_ids: list[int] | None = None,
+    ) -> None: ...
+
+
 class ChangeEventPublisher:
-    def __init__(self, dispatcher: SSEEventDispatcher) -> None:
+    def __init__(self, dispatcher: ChangeEventDispatcher) -> None:
         self._dispatcher = dispatcher
 
     def register(self, session_factory: scoped_session[Session]) -> None:
