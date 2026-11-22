@@ -182,15 +182,20 @@ class ChangeEventPublisher:
 
 
 def _record_job(session: Session, job: Job) -> None:
-    if job.state is not None:
-        record_job_change(
-            session,
-            job_id=job.id,
-            user_id=job.user_id,
-            session_id=job.session_id,
-            history_id=job.history_id,
-            state=job.state,
-        )
+    if job.state is None:
+        return
+    user_id = job.user_id
+    if user_id is None and job.history is not None:
+        # An anonymous history passes to the user who logs in; route like history_update does.
+        user_id = job.history.user_id
+    record_job_change(
+        session,
+        job_id=job.id,
+        user_id=user_id,
+        session_id=job.session_id,
+        history_id=job.history_id,
+        state=job.state,
+    )
 
 
 def _record_current_state(session: Session, invocation: WorkflowInvocation) -> None:

@@ -313,6 +313,37 @@ def test_anonymous_job_is_routed_to_its_session(session, dispatcher):
     ]
 
 
+def test_anonymous_job_follows_its_history_to_the_user_who_logs_in(session, dispatcher):
+    galaxy_session = model.GalaxySession()
+    history = model.History()
+    session.add_all([galaxy_session, history])
+    job = _job(session, galaxy_session=galaxy_session, history=history)
+    session.commit()
+    user = _user(session)
+    history.user = user
+    session.commit()
+    dispatcher.job_calls.clear()
+
+    job.set_state(model.Job.states.RUNNING)
+    session.commit()
+    assert dispatcher.job_calls == [
+        (
+            [
+                {
+                    "job_id": job.id,
+                    "state": "running",
+                    "user_id": user.id,
+                    "session_id": galaxy_session.id,
+                    "history_id": history.id,
+                }
+            ],
+            [],
+            [],
+            [],
+        )
+    ]
+
+
 def test_too_many_job_changes_for_one_recipient_become_a_resync(session, dispatcher, monkeypatch):
     monkeypatch.setattr(change_events, "MAX_JOBS_PER_EVENT", 2)
     busy_user = _user(session)
