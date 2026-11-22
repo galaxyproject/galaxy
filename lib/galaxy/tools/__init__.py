@@ -348,8 +348,12 @@ IMPLICITLY_REQUIRED_TOOL_FILES: dict[str, dict] = {
     # minimum example:
     # "foobar": {"required": REQUIRE_FULL_DIRECTORY}
     # if no version is specified, all versions without explicit RequiredFiles will be selected
+    # charts.r sources the module script named by -m from the -w tool directory
+    "charts": {"required": {"includes": [{"path": "*.r", "path_type": "glob"}]}},
     "circos": {"required": REQUIRE_FULL_DIRECTORY},
     "cp_image_math": {"required": {"includes": [{"path": "*.py", "path_type": "glob"}]}},
+    # the script path sits in \'...\' inside a $'...' parallel argument
+    "docking": {"required": {"includes": [{"path": "*.py", "path_type": "glob"}]}},
     "enumerate_charges": {"required": REQUIRE_FULL_DIRECTORY},
     "fasta_compute_length": {"required": REQUIRE_PY_SCRIPTS_AND_UTILS},
     "fasta_concatenate0": {"required": REQUIRE_PY_SCRIPTS_AND_UTILS},
@@ -360,9 +364,13 @@ IMPLICITLY_REQUIRED_TOOL_FILES: dict[str, dict] = {
     "maxquant": {"required": {"includes": [{"path": "*.py", "path_type": "glob"}]}},
     "maxquant_mqpar": {"required": {"includes": [{"path": "*.py", "path_type": "glob"}]}},
     "query_tabular": {"required": {"includes": [{"path": "*.py", "path_type": "glob"}]}},
+    # the script path sits in \"...\" inside an Rscript -e argument
+    "seurat": {"required": {"includes": [{"path": "*.R", "path_type": "glob"}]}},
     "shasta": {"required": {"includes": [{"path": "configs/*", "path_type": "glob"}]}},
     "sqlite_to_tabular": {"required": {"includes": [{"path": "*.py", "path_type": "glob"}]}},
     "sucos_max_score": {"required": {"includes": [{"path": "*.py", "path_type": "glob"}]}},
+    # transformation_wrapper.R sources transformation_script.R from its own directory
+    "Transformation": {"required": {"includes": [{"path": "*.R", "path_type": "glob"}]}},
     "translate_bed": {"required": {"includes": [{"path": "*.py", "path_type": "glob"}]}},
 }
 
