@@ -47,8 +47,11 @@ class RecordingDispatcher:
         )
 
 
-class BrokenDispatcher:
+class BrokenDispatcher(RecordingDispatcher):
+    """Records each dispatch, then fails it."""
+
     def invocation_update(self, updates: list[InvocationUpdate]) -> None:
+        super().invocation_update(updates)
         raise RuntimeError("broker down")
 
     def job_update(
@@ -58,6 +61,7 @@ class BrokenDispatcher:
         resync_session_ids: list[int] | None = None,
         resync_history_ids: list[int] | None = None,
     ) -> None:
+        super().job_update(updates, resync_user_ids, resync_session_ids, resync_history_ids)
         raise RuntimeError("broker down")
 
 
@@ -227,13 +231,22 @@ def test_invocation_in_an_ownerless_history_is_published_for_its_viewers(session
 
 
 def test_dispatch_failure_does_not_fail_commit(galaxy_model):
-    ChangeEventPublisher(BrokenDispatcher()).register(galaxy_model.session)
+    dispatcher = BrokenDispatcher()
+    ChangeEventPublisher(dispatcher).register(galaxy_model.session)
     session = galaxy_model.session
-    invocation = _invocation(session, _user(session))
+    user = _user(session)
+    invocation = _invocation(session, user)
+    dispatcher.calls.clear()
     invocation.set_state(States.SCHEDULED)
+    job = _job(session, user)
     session.commit()
+    # The job dispatch is still attempted after the invocation dispatch failed.
+    assert len(dispatcher.calls) == 1
+    assert [dispatch.updates[0]["job_id"] for dispatch in dispatcher.job_calls] == [job.id]
     session.refresh(invocation)
+    session.refresh(job)
     assert invocation.state == States.SCHEDULED
+    assert job.state == model.Job.states.QUEUED
 
 
 def _job(
