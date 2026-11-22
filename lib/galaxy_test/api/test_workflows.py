@@ -1109,9 +1109,13 @@ steps:
             editor_step[key] = module[key]
 
     @skip_without_tool("random_lines1")
-    def test_update_from_editor_keeps_data_step_input_default(self):
+    def test_update_from_editor_keeps_data_step_input_default(self, mock_http_server):
+        location = mock_http_server.get_url(
+            remote_url="https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bed",
+            body="chr1\t147962192\t147962580\tCCDS989.1_cds_0_0_chr1_147962193_r\t0\t-\n",
+        )
         workflow_id = self._upload_yaml_workflow(
-            """
+            f"""
 class: GalaxyWorkflow
 steps:
   random_lines:
@@ -1122,7 +1126,7 @@ steps:
           class: File
           basename: a file
           format: txt
-          location: https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bed
+          location: {location}
       num_lines:
         default: 2
 """
