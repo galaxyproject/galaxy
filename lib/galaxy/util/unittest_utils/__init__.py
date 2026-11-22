@@ -42,7 +42,7 @@ def is_site_up(url: str) -> bool:
 
 def read_mock_emails(directory: Union[str, Path]) -> List[Dict[str, Any]]:
     """Emails sent with ``smtp_server`` set to ``mock_emails_to_path://<directory>``, oldest first."""
-    return [json.loads(path.read_text()) for path in sorted(Path(directory).iterdir())]
+    return [json.loads(path.read_text()) for path in sorted(Path(directory).glob("*.json"))]
 
 
 P = ParamSpec("P")
