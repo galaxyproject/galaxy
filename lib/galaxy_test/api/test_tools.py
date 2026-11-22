@@ -379,6 +379,19 @@ class TestToolsApi(ApiTestCase, TestsTools):
             assert meta["offset"] == 50
             assert meta["has_more"] is False
 
+    @skip_without_tool("cat_default")
+    def test_build_data_input_with_default_location(self):
+        """A data parameter with a File default exposes its location to the form."""
+        with self.dataset_populator.test_history() as history_id:
+            self.dataset_populator.new_dataset(history_id, content="chr1\t1\t2", file_type="bed", wait=True)
+            response = self.dataset_populator._post(
+                "tools/cat_default/build", data={"history_id": history_id}, json=True
+            )
+            response.raise_for_status()
+            input_param = next(i for i in response.json()["inputs"] if i["name"] == "input1")
+            assert input_param["optional"] is False
+            assert input_param["default_location"].endswith("/test-data/1.bed")
+
     @skip_without_tool("cat1")
     def test_build_data_options_limit_clamped(self):
         """Server clamps requested ``limit`` to 500."""

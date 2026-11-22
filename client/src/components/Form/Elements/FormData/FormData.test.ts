@@ -138,7 +138,7 @@ describe("FormData", () => {
     it("shows when the default file is in use and lets a dataset override it", async () => {
         const wrapper = createTarget({
             modelValue: null,
-            optional: true,
+            optional: false,
             defaultLocation: "https://example.org/reference.tsv",
             options: defaultOptions,
         });

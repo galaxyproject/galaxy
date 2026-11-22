@@ -110,6 +110,9 @@ const props = withDefaults(
 const eventStore = useEventStore();
 const { datatypesMapper } = useDatatypesMapper();
 
+/** An empty selection is valid for optional inputs and for inputs with a default file. */
+const acceptsEmpty = computed(() => props.optional || Boolean(props.defaultLocation));
+
 const $emit = defineEmits(["update:modelValue", "alert", "focus", "load-more", "search-change"]);
 
 /** Active backend search query for this parameter. Updated when the user types
@@ -187,7 +190,7 @@ const currentValue = computed({
                 return value;
             }
         }
-        if (!currentVariant.value?.multiple && !props.optional && formattedOptions.value.length > 0) {
+        if (!currentVariant.value?.multiple && !acceptsEmpty.value && formattedOptions.value.length > 0) {
             const firstEntry = formattedOptions.value && formattedOptions.value[0];
             if (firstEntry && firstEntry.value) {
                 value.push(firstEntry.value);
@@ -315,7 +318,7 @@ const formattedOptions = computed(() => {
             }
         });
         // Add optional entry
-        if (!currentVariant.value?.multiple && props.optional) {
+        if (!currentVariant.value?.multiple && acceptsEmpty.value) {
             result.unshift({
                 label: props.defaultLocation ? "Use default file" : "Nothing selected",
                 value: null,
@@ -1197,7 +1200,7 @@ const noOptionsWarningMessage = computed(() => {
                         'align-self-start': !props.workflowRun,
                     }"
                     :multiple="currentVariant.multiple"
-                    :optional="currentVariant.multiple || optional"
+                    :optional="currentVariant.multiple || acceptsEmpty"
                     :options="formattedOptions"
                     :placeholder="`Select a ${placeholder}`"
                     @search-change="onSearchChange">

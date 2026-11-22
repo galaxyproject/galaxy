@@ -9247,7 +9247,7 @@ data_input:
             self.dataset_populator.new_dataset(history_id, content="alternative input", file_type="txt", wait=True)
             run_model = self._download_workflow(workflow_id, style="run", history_id=history_id)
             run_input = next(step for step in run_model["steps"] if step["step_type"] == "data_input")
-            assert run_input["inputs"][0]["optional"] is True
+            assert run_input["inputs"][0]["optional"] is False
             assert run_input["inputs"][0]["value"] is None
             assert run_input["inputs"][0]["default_location"] == location
             self.workflow_populator.invoke_workflow_and_wait(workflow_id, history_id=history_id, inputs={})

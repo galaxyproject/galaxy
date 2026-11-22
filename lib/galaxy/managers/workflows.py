@@ -1455,14 +1455,9 @@ class WorkflowContentsManager(UsesAnnotations):
                     if isinstance(input, (DataToolParameter, DataCollectionToolParameter)):
                         accepted = input._acceptable_extensions()
                         input_dict["acceptable_extensions"] = sorted(accepted) if accepted else []
-                    if step.type == "data_input":
-                        default = step.get_input_default_value(None)
-                        if isinstance(default, dict) and default.get("class") == "File" and default.get("location"):
-                            input_dict["optional"] = True
-                            # Data parameters normally preselect a history dataset. An
-                            # input with a default must instead start with no selection.
-                            input_dict["value"] = None
-                            input_dict["default_location"] = default["location"]
+                    if step.type == "data_input" and input_dict.get("default_location"):
+                        # Start with no selection so the default is used unless a dataset is picked.
+                        input_dict["value"] = None
                     input_dicts.append(input_dict)
                 step_model = {"inputs": input_dicts}
             step_model["when"] = step.when_expression

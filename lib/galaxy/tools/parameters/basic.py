@@ -2363,6 +2363,14 @@ class BaseDataToolParameter(ToolParameter):
             return True
         return False
 
+    @property
+    def default_location(self) -> str | None:
+        """Location of a ``File`` default, used when no dataset is selected."""
+        default = getattr(self, "default_object", None)
+        if isinstance(default, dict) and default.get("class") == "File":
+            return default.get("location") or None
+        return None
+
     def get_initial_value(self, trans: "ProvidesHistoryContext | None", other_values):
         assert trans is not None
         if trans.workflow_building_mode is workflow_building_modes.ENABLED or trans.app.name == "tool_shed":
@@ -2888,6 +2896,8 @@ class DataToolParameter(BaseDataToolParameter):
         other_values = other_values or {}
         d = super().to_dict(trans)
         self._fill_to_dict_static(d)
+        if default_location := self.default_location:
+            d["default_location"] = default_location
 
         builder = DataOptionsBuilder(trans.security, pagination)
         builder.write_into(d)

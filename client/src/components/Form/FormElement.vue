@@ -253,7 +253,8 @@ const isEmpty = computed(() => {
     return false;
 });
 
-const isRequired = computed(() => attrs.value["optional"] === false);
+// A data input with a default file may be left empty.
+const isRequired = computed(() => attrs.value["optional"] === false && !attrs.value["default_location"]);
 const isRequiredType = computed(() => props.type !== "boolean");
 const isOptional = computed(() => !isRequired.value && attrs.value["optional"] !== undefined);
 const formAlert = ref<string>();
