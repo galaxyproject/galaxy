@@ -11,7 +11,7 @@ import { getShortToolId } from "@/utils/tool";
 
 import { createTopicUrl, type HelpForumPost, type HelpForumTopic, useHelpURLs } from "./helpForumUrls";
 
-import Alert from "@/components/Alert.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import Heading from "@/components/Common/Heading.vue";
 import ExternalLink from "@/components/ExternalLink.vue";
@@ -70,7 +70,7 @@ const configStore = useConfigStore();
     <div ref="root" class="tool-help-forum mt-2 mb-4">
         <Heading h2 separator bold size="sm">Help Forum</Heading>
 
-        <Alert v-if="errorMessage" variant="warning" :message="errorMessage" />
+        <GAlert v-if="errorMessage" variant="warning">{{ errorMessage }}</GAlert>
 
         <p v-if="helpAvailable">
             Following questions on the
