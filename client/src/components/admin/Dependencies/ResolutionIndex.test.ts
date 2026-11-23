@@ -31,7 +31,33 @@ function headerBox(wrapper: Awaited<ReturnType<typeof mountIndex>>) {
     return wrapper.find("#requirements-table thead input[type='checkbox']").element as HTMLInputElement;
 }
 
+function rowBoxStates(wrapper: Awaited<ReturnType<typeof mountIndex>>) {
+    const boxes = wrapper.element.querySelectorAll<HTMLInputElement>(
+        "#requirements-table tbody input[type='checkbox']",
+    );
+    return Array.from(boxes).map((box) => box.checked);
+}
+
+const TWO_REQUIREMENTS = [
+    ...REQUIREMENTS,
+    { requirements: [{ name: "samtools", version: "1.9" }], status: [], tool_ids: ["samtools_tool"] },
+];
+
 describe("ResolutionIndex", () => {
+    it("clears the header select-all box when a filter empties the table and the rows come back", async () => {
+        const wrapper = await mountIndex(TWO_REQUIREMENTS);
+        await wrapper.find("#requirements-table thead input[type='checkbox']").setChecked(true);
+        expect(headerBox(wrapper).checked).toBe(true);
+
+        await wrapper.setData({ filterResolution: "resolved" });
+        expect(rowBoxStates(wrapper)).toEqual([]);
+        expect(headerBox(wrapper).checked).toBe(false);
+
+        await wrapper.setData({ filterResolution: null });
+        expect(rowBoxStates(wrapper)).toEqual([false, false]);
+        expect(headerBox(wrapper).checked).toBe(false);
+    });
+
     it("disables the header select-all box while there are no requirements", async () => {
         const wrapper = await mountIndex([]);
         expect(headerBox(wrapper).disabled).toBe(true);
