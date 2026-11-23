@@ -1279,3 +1279,7 @@ class RemoteToolEvaluator(ToolEvaluator):
             self.environment_variables,
             self.interactivetools,
         )
+
+
+class RemoteUserToolEvaluator(RemoteToolEvaluator, UserToolEvaluator):
+    """RemoteToolEvaluator for tools that declare ``base_command`` or ``shell_command``."""
