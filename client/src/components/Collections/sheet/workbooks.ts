@@ -2,6 +2,7 @@ import { GalaxyApi, type SampleSheetColumnDefinition, type SampleSheetColumnDefi
 import { createWorkbook, createWorkbookForCollection, type SampleSheetCollectionType } from "@/api/datasetCollections";
 import { stripExtension } from "@/components/Collections/common/stripExtension";
 import type { PrefixColumnsType } from "@/components/Collections/wizard/types";
+import { urlWithoutUserinfo } from "@/utils/url";
 
 export async function downloadWorkbook(
     columnDefinitions: SampleSheetColumnDefinitions,
@@ -80,13 +81,28 @@ export function parseWorkbook(
     });
 }
 
+export function guessUriFilename(uri: string): string {
+    // A pathless or nested URL ends in its authority, which may hold userinfo.
+    const nameSource = urlWithoutUserinfo(uri);
+    const parts = nameSource.split("/");
+    const last_part = parts[parts.length - 1] ?? nameSource;
+    if (last_part.indexOf("?") !== -1) {
+        // remove the query string
+        return last_part.split("?")[0] as string;
+    } else {
+        return last_part;
+    }
+}
+
 export function withAutoListIdentifiers(rows: string[][]): string[][] {
     const seenBasenames = new Map<string, number>();
     return rows.map((row) => {
         console.log(row);
         if (row.length === 1 && row[0]) {
             const uri = row[0];
-            let basename = uri.split("/").pop() || uri;
+            // A pathless or nested URL ends in its authority, which may hold userinfo.
+            const nameSource = urlWithoutUserinfo(uri);
+            let basename = nameSource.split("/").pop() || nameSource;
 
             if (seenBasenames.has(basename)) {
                 const count = seenBasenames.get(basename)! + 1;

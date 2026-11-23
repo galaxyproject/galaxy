@@ -1,6 +1,7 @@
 from galaxy.model.dataset_collections.auto_identifiers import (
     fill_in_identifiers,
     FillIdentifiers,
+    guess_filename_from_url,
 )
 
 
@@ -42,3 +43,18 @@ def run_fill_on_dict(uris):
     for uri, identifier in zip(uris.keys(), new_ids):
         new_uris[uri] = identifier
     return new_uris
+
+
+def test_guess_filename_from_url_leaves_out_nested_userinfo():
+    assert guess_filename_from_url("https://example.org/ftp://user:secret@inner") == "inner"
+    assert guess_filename_from_url("https://example.org/ftp://user:secret@inner/a.bed") == "a.bed"
+
+
+def test_guess_filename_from_url_leaves_out_userinfo_of_pathless_url():
+    assert "secret" not in guess_filename_from_url("https://user:secret@example.org")
+
+
+def test_fill_in_identifiers_leaves_out_nested_userinfo():
+    uri = "https://example.org/ftp://user:secret@inner.fastq.gz"
+    new_map = run_fill_on_dict({uri: None})
+    assert new_map[uri] == "inner"
