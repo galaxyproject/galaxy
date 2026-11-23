@@ -591,3 +591,25 @@ def test_adapt_collection_gives_nested_collection_tags_as_text():
 def test_adapt_collection_gives_mapped_over_subcollection_tags_as_text():
     runtime = _adapt_tagged_collection("dce")
     assert runtime["tags"] == ["name:s1"]
+
+
+def test_adapt_collection_gives_an_empty_nested_collection_no_tags():
+    inner = DatasetCollection(collection_type="list")
+    inner.id = 3
+    outer = DatasetCollection(collection_type="list:list")
+    outer.id = 4
+    DatasetCollectionElement(collection=outer, element_identifier="o1", element_index=0, element=inner)
+    hdca = HistoryDatasetCollectionAssociation(collection=outer, name="samples")
+    hdca.id = 5
+    registry = example_datatype_registry_for_sample()
+    _, _, adapt_collection = setup_for_runtimeify(
+        cast(Any, DatatypesApp(registry)),
+        cast(Any, RewritingComputeEnvironment()),
+        {},
+        {"input": hdca},
+    )
+    runtime = adapt_collection(DataCollectionRequestInternal(src="hdca", id=hdca.id), "list:list", ["txt"]).model_dump(
+        by_alias=True
+    )
+    assert runtime["elements"][0]["tags"] == []
+    assert runtime["elements"][0]["elements"] == []

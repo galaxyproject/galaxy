@@ -9166,7 +9166,8 @@ class DatasetCollectionElement(Base, Dictifiable, Serializable):
     def first_dataset_instance(self):
         element_object = self.element_object
         if isinstance(element_object, DatasetCollection):
-            return element_object.dataset_instances[0]
+            dataset_instances = element_object.dataset_instances
+            return dataset_instances[0] if dataset_instances else None
         else:
             return element_object
 
