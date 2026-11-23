@@ -52,6 +52,7 @@
                     <GCheckbox
                         v-model="toggleState"
                         aria-label="Select all requirements"
+                        :disabled="!items.length"
                         @update:model-value="toggleSelectAll" />
                 </template>
 
@@ -236,6 +237,10 @@ export default {
         },
     },
     watch: {
+        items() {
+            // Rebuilt rows all start unticked, so the header must too
+            this.toggleState = false;
+        },
         resolverType: function (val) {
             this.load();
         },
