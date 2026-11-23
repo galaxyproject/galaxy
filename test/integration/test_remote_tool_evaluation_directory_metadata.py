@@ -39,10 +39,10 @@ USER_TOOL = {
 USER_TOOL_APIS = ["tools", "tool_request"]
 
 
-def run_user_defined_tool(app, populator: DatasetPopulator, api: str) -> Job:
+def run_user_defined_tool(app, populator: DatasetPopulator, api: str, content: str = "abc\n") -> Job:
     with populator.test_history() as history_id, populator.user_tool_execute_permissions():
         dynamic_tool = populator.create_unprivileged_tool(UserToolSource(**USER_TOOL))
-        dataset = populator.new_dataset(history_id, content="abc", ext="txt", wait=True)
+        dataset = populator.new_dataset(history_id, content=content, ext="txt", wait=True)
         inputs = {"input": {"src": "hda", "id": dataset["id"]}}
         if api == "tools":
             response = populator.run_tool_raw(None, inputs, history_id, tool_uuid=dynamic_tool["uuid"])
@@ -56,7 +56,7 @@ def run_user_defined_tool(app, populator: DatasetPopulator, api: str) -> Job:
             job_id = populator.galaxy_interactor.jobs_for_tool_request(tool_request_id)[0]["id"]
         populator.wait_for_job(job_id, assert_ok=True)
         output = populator.get_history_dataset_details(history_id)
-        assert populator.get_history_dataset_content(history_id, dataset_id=output["id"]) == "abc\n2\n"
+        assert populator.get_history_dataset_content(history_id, dataset_id=output["id"]) == f"{content}2\n"
     job = app.model.session.get(Job, app.security.decode_id(job_id))
     assert job is not None
     assert bool(job.tool_state) == (api == "tool_request")
@@ -97,6 +97,10 @@ class TestRemoteToolEvaluationDirectoryMetadata(integration_util.IntegrationTest
         input_hda = job.input_datasets[0].dataset
         assert input_hda
         assert job.command_line == f"cat '{input_hda.get_file_name()}' > output.txt && echo '2' >> output.txt"
+
+    @pytest.mark.parametrize("api", USER_TOOL_APIS)
+    def test_user_defined_tool_empty_input(self, api):
+        run_user_defined_tool(self._app, DatasetPopulator(self.galaxy_interactor), api, content="")
 
     @pytest.mark.parametrize("tool_id", TOOL_IDS)
     def test_tool_evaluation(self, tool_id):
