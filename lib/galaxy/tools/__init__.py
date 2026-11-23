@@ -1368,6 +1368,11 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
         return self.tool_source.is_yaml_origin()
 
     @property
+    def uses_user_tool_evaluator(self) -> bool:
+        """Whether the command comes from ``shell_command`` or ``base_command`` rather than a Cheetah ``command``."""
+        return bool(self.base_command or self.shell_command)
+
+    @property
     def sa_session(self):
         """Returns a SQLAlchemy session"""
         return self.app.model.context

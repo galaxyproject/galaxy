@@ -115,11 +115,8 @@ def evaluate_tool(tmpdir: str, working_directory: str, import_store_directory: s
         tool_dir=job_io.tool_dir,
         tool_source_class=job_io.tool_source_class,
     )
-    # Same choice as MinimalJobWrapper._get_tool_evaluator makes for local evaluation.
     evaluator_class = (
-        evaluation.RemoteUserToolEvaluator
-        if tool.base_command or tool.shell_command
-        else evaluation.RemoteToolEvaluator
+        evaluation.RemoteUserToolEvaluator if tool.uses_user_tool_evaluator else evaluation.RemoteToolEvaluator
     )
     tool_evaluator = evaluator_class(app=app, tool=tool, job=job_io.job, local_working_directory=working_directory)
     with open(os.path.join(import_store_directory, "compute_environment.json")) as f:
