@@ -52,7 +52,7 @@ function itemsForToolIds(toolIds: string[]): PaletteItem[] {
  */
 async function ensureHydrated(): Promise<void> {
     const toolStore = useToolStore();
-    if (Object.keys(toolStore.toolsById).length === 0) {
+    if (!toolStore.allToolsLoaded) {
         await toolStore.fetchTools();
     }
 }

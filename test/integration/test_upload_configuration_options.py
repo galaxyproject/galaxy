@@ -179,6 +179,11 @@ class TestNonAdminsCannotPasteFilePath(BaseUploadContentConfigurationTestCase):
         self._assert_status_code_is(response, 403)
         assert os.path.exists(path)
 
+    def test_disallowed_for_history_import(self) -> None:
+        import_data = {"archive_source": f"{TEST_DATA_DIRECTORY}/exports/1901_two_datasets.tgz", "archive_type": "file"}
+        response = self._post("histories", data=import_data)
+        self._assert_status_code_is(response, 403)
+
     def test_disallowed_for_fetch_urls(self, history_id: str) -> None:
         path = os.path.join(TEST_DATA_DIRECTORY, "1.txt")
         assert os.path.exists(path)
@@ -284,6 +289,13 @@ class TestAdminsCanPasteFilePaths(BaseUploadContentConfigurationTestCase):
         response = self.fetch_target(target, history_id)
         self._assert_status_code_is(response, 200)
         assert os.path.exists(path)
+
+    def test_admin_history_import_from_path(self) -> None:
+        archive = os.path.join(TEST_DATA_DIRECTORY, "exports", "1901_two_datasets.tgz")
+        response = self._post("histories", data={"archive_source": archive, "archive_type": "file"})
+        self._assert_status_code_is(response, 200)
+        self.dataset_populator.wait_for_job(response.json()["id"], assert_ok=True)
+        assert os.path.exists(archive)
 
     def test_admin_fetch_file_url(self, history_id: str) -> None:
         path = os.path.join(TEST_DATA_DIRECTORY, "1.txt")

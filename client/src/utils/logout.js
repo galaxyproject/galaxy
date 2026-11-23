@@ -18,8 +18,8 @@ function userLogoutUrl(sessionCsrfToken, logoutAll) {
     });
 }
 
-function authnzLogoutUrl(provider, logoutAll) {
-    const params = logoutAllParams(logoutAll);
+function authnzLogoutUrl(sessionCsrfToken, provider, logoutAll) {
+    const params = { session_csrf_token: sessionCsrfToken, ...logoutAllParams(logoutAll) };
     if (provider) {
         params.provider = provider;
     }
@@ -40,7 +40,7 @@ export function userLogout(logoutAll = false) {
     const session_csrf_token = Galaxy.session_csrf_token;
     const provider = localStorage.getItem("galaxy-provider");
     const logoutRequest = Galaxy.config.enable_oidc
-        ? axios.get(authnzLogoutUrl(provider, logoutAll)).then((response) => {
+        ? axios.get(authnzLogoutUrl(session_csrf_token, provider, logoutAll)).then((response) => {
               if (hasAuthnzLogoutResponse(response)) {
                   return response;
               }

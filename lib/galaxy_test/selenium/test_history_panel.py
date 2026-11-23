@@ -13,6 +13,9 @@ HISTORY_PANEL_AXE_IMPACT_LEVEL = "moderate"
 # the heading is now nested in `ClickToEdit`, and it conditionally replaces the label for the input
 HISTORY_PANEL_VIOLATION_EXCEPTIONS = ["heading-order", "label"]
 
+OPEN_DIALOG = "dialog.g-dialog[open]"
+TAG_OPTIONS = f"{OPEN_DIALOG} .headless-multiselect__options"
+
 
 class TestHistoryPanel(SeleniumTestCase, UsesUploadActivity):
     ensure_registered = True
@@ -53,11 +56,7 @@ class TestHistoryPanel(SeleniumTestCase, UsesUploadActivity):
     @selenium_test
     @managed_history
     def test_delete_undelete_and_purge_items(self):
-        history_id = self.current_history_id()
-        for content in ("1\n", "2\n", "3\n", "4\n"):
-            self.dataset_populator.new_dataset(history_id, content=content, wait=True)
-        self.home()
-        self.history_panel_wait_for_hid_ok(4)
+        history_id = self._show_history_of_datasets(4)
 
         self.history_panel_item_delete(1)
         self.history_panel_wait_for_hid_hidden(1)
@@ -120,6 +119,25 @@ class TestHistoryPanel(SeleniumTestCase, UsesUploadActivity):
 
     @selenium_test
     @managed_history
+    def test_advanced_filter_index_range(self):
+        self._show_history_of_datasets(4)
+
+        history_panel = self.components.history_panel
+        history_panel.advanced_search_toggle.wait_for_and_click()
+        history_panel.advanced_search_input(filter="hid_gt").wait_for_and_send_keys("1")
+        lower_than = history_panel.advanced_search_input(filter="hid_lt")
+        lower_than.wait_for_and_send_keys("4")
+        self.screenshot("history_panel_advanced_filter_index_range")
+        lower_than.wait_for_and_send_enter()
+
+        self.history_panel_wait_for_hid_visible(2)
+        self.history_panel_wait_for_hid_visible(3)
+        self.history_panel_wait_for_hid_hidden(1)
+        self.history_panel_wait_for_hid_hidden(4)
+        self.screenshot("history_panel_advanced_filter_index_range_applied")
+
+    @selenium_test
+    @managed_history
     def test_unhide_item_with_include_hidden(self):
         history_id = self.current_history_id()
         self.dataset_populator.new_dataset(history_id, content="1\n", wait=True)
@@ -148,11 +166,7 @@ class TestHistoryPanel(SeleniumTestCase, UsesUploadActivity):
     @selenium_test
     @managed_history
     def test_hide_and_unhide_items(self) -> None:
-        history_id = self.current_history_id()
-        for content in ("1\n", "2\n", "3\n"):
-            self.dataset_populator.new_dataset(history_id, content=content, wait=True)
-        self.home()
-        self.history_panel_wait_for_hid_ok(3)
+        history_id = self._show_history_of_datasets(3)
 
         self.history_panel_wait_for_and_select([1, 2])
         self.history_panel_hide_selected()
@@ -239,6 +253,26 @@ class TestHistoryPanel(SeleniumTestCase, UsesUploadActivity):
 
         assert_switched()
         self.screenshot("history_panel_switched_history")
+
+    @selenium_test
+    @managed_history
+    def test_item_name_tag_propagates_to_tool_output(self):
+        history_id = self.current_history_id()
+        hda = self.dataset_populator.new_dataset(history_id, content="chr1\t10\t20\n", file_type="bed", wait=True)
+        hid = hda["hid"]
+        self.home()
+        self.history_panel_wait_for_hid_ok(hid)
+        self.history_panel_item_add_tags(hid, ["#plus"])
+        self._wait_on(
+            lambda: self.dataset_populator.get_history_dataset_details(history_id, hid=hid)["tags"] == ["name:plus"],
+            f"hid {hid} to be tagged name:plus",
+        )
+
+        run_response = self.dataset_populator.run_tool("cat1", {"input1": {"src": "hda", "id": hda["id"]}}, history_id)
+        output_hid = run_response["outputs"][0]["hid"]
+        self.history_panel_wait_for_hid_ok(output_hid)
+        assert self.history_panel_item_get_tags(output_hid) == ["#plus"]
+        self.screenshot("history_panel_item_name_tag_propagated")
 
     @selenium_test
     def test_history_panel_tags_change(self):
@@ -392,10 +426,37 @@ class TestHistoryPanel(SeleniumTestCase, UsesUploadActivity):
         self.history_panel_wait_for_hid_ok(cat_hid)
         self.screenshot("history_panel_resumed_job")
 
+    @selenium_test
+    def test_escape_in_bulk_add_tags_dialog_closes_tag_list_first(self):
+        history_id = self.current_history_id()
+        hids = [self.dataset_populator.new_dataset(history_id, content=f"{i}", wait=True)["hid"] for i in range(2)]
+        self.history_panel_wait_for_and_select(hids)
+        self.use_bootstrap_dropdown(option="add tags", menu="selected content menu")
+
+        self.wait_for_and_click_selector(f"{OPEN_DIALOG} .headless-multiselect .toggle-button")
+        tag_input = self.wait_for_selector_visible(f"{OPEN_DIALOG} .headless-multiselect input")
+        tag_input.send_keys("escape_test")
+        self.wait_for_selector_visible(TAG_OPTIONS)
+
+        self.send_escape(tag_input)
+        self.wait_for_selector_absent(TAG_OPTIONS)
+        self.wait_for_selector_visible(OPEN_DIALOG)
+
+        self.send_escape()
+        self.wait_for_selector_absent(OPEN_DIALOG)
+
     @retry_assertion_during_transitions
     def assert_name_changed(self):
         name = self.history_panel_name()
         assert name == NEW_HISTORY_NAME
+
+    def _show_history_of_datasets(self, count: int) -> str:
+        history_id = self.current_history_id()
+        for index in range(1, count + 1):
+            self.dataset_populator.new_dataset(history_id, content=f"{index}\n", wait=True)
+        self.home()
+        self.history_panel_wait_for_hid_ok(count)
+        return history_id
 
     def _select_two_of_three_datasets(self):
         history_id = self.current_history_id()

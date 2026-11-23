@@ -13,6 +13,7 @@ from galaxy.managers import base
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.markdown_util import weasyprint_available
 from galaxy.schema import SerializationParams
+from galaxy.short_term_storage import effective_storage_duration
 from galaxy.structured_app import StructuredApp
 
 log = logging.getLogger(__name__)
@@ -131,6 +132,7 @@ class ConfigSerializer(base.ModelSerializer):
             "logo_src": _use_config,
             "logo_src_secondary": _use_config,
             "subdomain_switcher": _use_config,
+            "another_galaxy_servers": _use_config,
             "terms_url": _use_config,
             "wiki_url": _use_config,
             "screencasts_url": _use_config,
@@ -219,6 +221,9 @@ class ConfigSerializer(base.ModelSerializer):
             "expose_user_email": _use_config,
             "enable_tool_source_display": _use_config,
             "enable_celery_tasks": _use_config,
+            "short_term_storage_effective_duration": lambda item, key, **context: effective_storage_duration(
+                item.short_term_storage_default_duration, item.short_term_storage_maximum_duration
+            ),
             "enable_tool_requests": _use_config,
             "quota_source_labels": lambda item, key, **context: list(
                 object_store.get_quota_source_map().get_quota_source_labels()

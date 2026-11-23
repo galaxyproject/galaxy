@@ -44,6 +44,8 @@ const props = withDefaults(
         disabled?: boolean;
         /** Lazy render menu content */
         lazy?: boolean;
+        /** CSS selector of a menu element to focus when opened, after positioning */
+        initialFocus?: string;
         /** Accessible name of the toggle, which also names the menu; for toggles without visible text */
         ariaLabel?: string;
     }>(),
@@ -63,6 +65,7 @@ const props = withDefaults(
         disabled: false,
         lazy: false,
         ariaLabel: undefined,
+        initialFocus: undefined,
     },
 );
 
@@ -121,6 +124,9 @@ function show() {
     isOpen.value = true;
     hasBeenOpened.value = true;
     emit("show");
+    if (props.initialFocus) {
+        focusInitialElement();
+    }
     nextTick(() => {
         // An unmount before this tick has already removed the listeners
         if (isOpen.value && !unmounted) {
@@ -194,13 +200,21 @@ function focusMenuItem(index: number) {
     }
 }
 
+async function focusInitialElement() {
+    await nextTick();
+    await whenPositioned();
+    if (isOpen.value && props.initialFocus) {
+        menuEl.value?.querySelector<HTMLElement>(props.initialFocus)?.focus();
+    }
+}
+
 async function openAndFocusMenuItem(index: number) {
     show();
     // Focus scrolls to the item, so it waits for the menu to be placed and possibly flipped;
     // the tick lets the post-flush watcher start tracking the newly opened menu
     await nextTick();
     await whenPositioned();
-    if (isOpen.value) {
+    if (isOpen.value && !props.initialFocus) {
         focusMenuItem(index);
     }
 }
@@ -220,7 +234,16 @@ function onKeydown(event: KeyboardEvent) {
     const inMenuNavigation = onMenuItem || target === menuEl.value;
     let handled = true;
 
-    if (event.key === "ArrowDown" && onToggle) {
+    // A search field focused on open sits before the items; an initially focused item is just an item
+    const initialFocusEl = props.initialFocus ? menuEl.value?.querySelector<HTMLElement>(props.initialFocus) : null;
+    const searchEl = initialFocusEl?.getAttribute("role") === "menuitem" ? null : initialFocusEl;
+
+    if (event.key === "ArrowDown" && searchEl && target === searchEl) {
+        focusMenuItem(0);
+    } else if (event.key === "ArrowUp" && searchEl && onMenuItem && getMenuItems().indexOf(target) === 0) {
+        // Back up from the first item to the search field it was reached from
+        searchEl.focus();
+    } else if (event.key === "ArrowDown" && onToggle) {
         openAndFocusMenuItem(0);
     } else if (event.key === "ArrowUp" && onToggle) {
         openAndFocusMenuItem(-1);
@@ -346,6 +369,7 @@ defineExpose({
 
         <!-- Toggle button -->
         <button
+            v-bind="toggleLabelAttrs"
             :id="toggleId"
             ref="toggleEl"
             type="button"
@@ -355,7 +379,6 @@ defineExpose({
             aria-haspopup="menu"
             :aria-expanded="isOpen ? 'true' : 'false'"
             :aria-controls="shouldRenderMenu ? menuId : undefined"
-            v-bind="toggleLabelAttrs"
             @click="onToggleClick"
             @keydown="onKeydown">
             <template v-if="!split">
@@ -382,6 +405,8 @@ defineExpose({
 </template>
 
 <style scoped lang="scss">
+@use "../styles/focus-ring" as *;
+
 .dropdown-toggle-no-caret::after {
     display: none !important;
 }
@@ -399,10 +424,9 @@ defineExpose({
     border: 0;
 }
 
-// Bootstrap's translucent focus shadow is below 3:1 against white
+// The halo replaces a consumer's translucent button focus shadow, which is below 3:1 against white
 .dropdown-toggle:focus-visible {
-    outline: 2px solid var(--color-blue-600);
-    outline-offset: 2px;
+    @include focus-ring;
 }
 </style>
 

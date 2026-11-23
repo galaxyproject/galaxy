@@ -30,29 +30,18 @@ beforeEach(() => {
     });
 });
 
-const mockRouter = (query: object) => ({
-    currentRoute: {
-        query,
-    },
-});
-
-function shallowMountRegister(routerQuery: object = {}) {
+function shallowMountRegister() {
     const pinia = createTestingPinia({ createSpy: vi.fn });
 
     return shallowMount(Register as object, {
         global: localVue,
         pinia,
-        mocks: {
-            $router: mockRouter(routerQuery),
-        },
     });
 }
 
 describe("Register", () => {
     it("Register component prop matching", async () => {
-        const wrapper = shallowMountRegister({
-            redirect: "redirect_url",
-        });
+        const wrapper = shallowMountRegister();
 
         const props = wrapper.findComponent(RegisterForm).props();
 

@@ -242,8 +242,7 @@ onMounted(() => {
                         icon: faGear,
                         handler: () => openUrl('/user'),
                     },
-                ]"
-                @click="user" />
+                ]" />
         </BNavbarNav>
         <FontAwesomeIcon v-else :icon="faSpinner" class="fa-spin mr-2 text-light" />
     </BNavbar>

@@ -1,7 +1,7 @@
 import json
 from datetime import (
     datetime,
-    timezone,
+    UTC,
 )
 from typing import Any
 
@@ -32,14 +32,14 @@ NEWEST_FILE = RemoteFile(
     uri="elabftw://elabftw/experiments/1/1",
     path="/experiments/1/1",
     size=5,
-    ctime=datetime(2025, 1, 15, tzinfo=timezone.utc),
+    ctime=datetime(2025, 1, 15, tzinfo=UTC),
 )
 LARGEST_FILE = RemoteFile(
     name="b.txt",
     uri="elabftw://elabftw/experiments/1/2",
     path="/experiments/1/2",
     size=10,
-    ctime=datetime(2024, 1, 15, tzinfo=timezone.utc),
+    ctime=datetime(2024, 1, 15, tzinfo=UTC),
 )
 UNDATED_FILE = RemoteFile(name="a.txt", uri="elabftw://elabftw/experiments/1/3", path="/experiments/1/3", size=1)
 EXPERIMENT = RemoteDirectory(name="m", uri="elabftw://elabftw/experiments/9", path="/experiments/9")
@@ -80,7 +80,7 @@ def test_list_attachments(test_http_server, monkeypatch, non_utc_local_time):
         "b.txt",
         "/experiments/1/2",
         10,
-        datetime(2024, 1, 15, 10, tzinfo=timezone.utc),
+        datetime(2024, 1, 15, 10, tzinfo=UTC),
     )
 
 

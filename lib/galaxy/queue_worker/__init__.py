@@ -11,10 +11,16 @@ import socket
 import sys
 import threading
 import time
+from collections import defaultdict
+from collections.abc import (
+    Callable,
+    Iterable,
+)
 from inspect import ismodule
 from typing import (
     Any,
     cast,
+    NamedTuple,
     TYPE_CHECKING,
     TypedDict,
 )
@@ -33,6 +39,10 @@ from galaxy.managers.sse import (
     SSEEvent,
 )
 from galaxy.model import User
+from galaxy.model.pending_changes import (
+    InvocationUpdate,
+    JobUpdate,
+)
 from galaxy.structured_app import StructuredApp
 from galaxy.tools import ToolBox
 from galaxy.tools.cached_toolbox import CachedToolBox
@@ -89,6 +99,31 @@ class UserQuotaUpdatePayload(TypedDict, total=False):
 
     user_ids: list[int]
     broadcast: bool
+    event_id: str | None
+
+
+class InvocationUpdatePayload(TypedDict, total=False):
+    """Wire contract for the ``invocation_update`` control-task kwargs.
+
+    ``invocation_id`` values are unencoded; the consuming worker encodes them.
+    """
+
+    updates: list[InvocationUpdate]
+    event_id: str | None
+
+
+class JobUpdatePayload(TypedDict, total=False):
+    """Wire contract for the ``job_update`` control-task kwargs.
+
+    ``job_id`` values are unencoded; the consuming worker encodes them. Recipients listed in
+    ``resync_user_ids`` / ``resync_session_ids`` had too many changes for one event and get a
+    resync event instead, as do the viewers of the histories in ``resync_history_ids``.
+    """
+
+    updates: list[JobUpdate]
+    resync_user_ids: list[int]
+    resync_session_ids: list[int]
+    resync_history_ids: list[int]
     event_id: str | None
 
 
@@ -497,10 +532,9 @@ def history_update(app: "MinimalManagerApp", **kwargs) -> None:
 
     After owner routing, also fans out to viewer subscriptions so users
     watching histories they don't own (multi-history view of a shared history,
-    published-history page, etc.) receive the same push. Viewer dispatch is
-    additive: the owner gets the event from ``push_to_user`` regardless of
-    whether they happen to be subscribed as a viewer too — duplicate refresh
-    is idempotent on the client and cheaper than maintaining a dedup index.
+    published-history page, etc.) receive the same push. Owners subscribed as
+    viewers of their own history are skipped, as for ``invocation_update`` and
+    ``job_update``.
     """
     payload = cast(HistoryUpdatePayload, kwargs)
     sse_manager = app[SSEConnectionManager]
@@ -509,6 +543,7 @@ def history_update(app: "MinimalManagerApp", **kwargs) -> None:
     # Build (history_id, encoded_event) once per changed history so the viewer
     # fan-out below doesn't redo the JSON serialization.
     events_by_encoded_id: dict[str, SSEEvent] = {}
+    owners_by_encoded_id: dict[str, set[int]] = defaultdict(set)
 
     def event_for(history_id: int) -> SSEEvent:
         encoded = encode(history_id)
@@ -525,10 +560,11 @@ def history_update(app: "MinimalManagerApp", **kwargs) -> None:
         data = json.dumps({"history_ids": encoded_ids})
         event = SSEEvent(event="history_update", data=data, id=event_id)
         sse_manager.push_to_user(user_id, event)
-        for hid in history_ids:
+        for hid, encoded_id in zip(history_ids, encoded_ids):
             # Pre-populate the per-history cache so the viewer fan-out reuses
             # the encoded id without re-running encode_id.
             event_for(hid)
+            owners_by_encoded_id[encoded_id].add(user_id)
     for session_id_str, history_ids in payload.get("session_updates", {}).items():
         session_id = int(session_id_str)
         encoded_ids = [encode(hid) for hid in history_ids]
@@ -540,7 +576,7 @@ def history_update(app: "MinimalManagerApp", **kwargs) -> None:
     # Viewer dispatch — push a single-history event to anyone (user or session)
     # subscribed as a viewer of that history on this worker.
     for encoded_id, viewer_event in events_by_encoded_id.items():
-        sse_manager.push_to_history_viewers(encoded_id, viewer_event)
+        sse_manager.push_to_history_viewers(encoded_id, viewer_event, exclude_user_ids=owners_by_encoded_id[encoded_id])
 
 
 def subscribe_history_viewer(app: "MinimalManagerApp", **kwargs) -> None:
@@ -599,6 +635,106 @@ def user_quota_update(app: "MinimalManagerApp", **kwargs) -> None:
         sse_manager.push_to_user(user_id, event)
 
 
+class RoutedItem(NamedTuple):
+    """An item of an entity event with the ids it is routed by."""
+
+    item: dict[str, str]
+    user_id: int | None
+    session_id: int | None
+    history_id: int | None
+
+
+def _push_routed_items(
+    sse_manager: SSEConnectionManager,
+    encode: Callable[[int], str],
+    event: str,
+    list_key: str,
+    routed: Iterable[RoutedItem],
+    event_id: str | None,
+) -> None:
+    """Push one ``event`` per recipient, carrying ``{list_key: [items]}``.
+
+    An item goes to its user or, without one, its session, and to the viewers of its history other
+    than the users it already reached as owner. Viewers receive only the items for that history.
+    """
+
+    def event_for(items: list[dict[str, str]]) -> SSEEvent:
+        return SSEEvent(event=event, data=json.dumps({list_key: items}), id=event_id)
+
+    by_user: dict[int, list[dict[str, str]]] = defaultdict(list)
+    by_session: dict[int, list[dict[str, str]]] = defaultdict(list)
+    by_history: dict[int, list[dict[str, str]]] = defaultdict(list)
+    owners_by_history: dict[int, set[int]] = defaultdict(set)
+    for item, user_id, session_id, history_id in routed:
+        if user_id is not None:
+            by_user[user_id].append(item)
+        elif session_id is not None:
+            by_session[session_id].append(item)
+        if history_id is not None:
+            by_history[history_id].append(item)
+            if user_id is not None:
+                owners_by_history[history_id].add(user_id)
+    for user_id, items in by_user.items():
+        sse_manager.push_to_user(user_id, event_for(items))
+    for session_id, items in by_session.items():
+        sse_manager.push_to_session(session_id, event_for(items))
+    for history_id, items in by_history.items():
+        sse_manager.push_to_history_viewers(
+            encode(history_id), event_for(items), exclude_user_ids=owners_by_history[history_id]
+        )
+
+
+def invocation_update(app: "MinimalManagerApp", **kwargs) -> None:
+    """Push ``invocation_update`` SSE events to the owners and history viewers connected to this worker.
+
+    The event data is ``{"invocations": [{"id": <encoded id>, "state": <state>}, ...]}``. An entry
+    means the invocation's state, steps or messages changed; ``state`` is its current state.
+    """
+    payload = cast(InvocationUpdatePayload, kwargs)
+    encode = app.security.encode_id
+    routed = (
+        RoutedItem(
+            {"id": encode(update["invocation_id"]), "state": update["state"]},
+            update["user_id"],
+            None,
+            update["history_id"],
+        )
+        for update in payload["updates"]
+    )
+    _push_routed_items(
+        app[SSEConnectionManager], encode, "invocation_update", "invocations", routed, payload.get("event_id")
+    )
+
+
+def job_update(app: "MinimalManagerApp", **kwargs) -> None:
+    """Push ``job_update`` SSE events to the users, sessions and history viewers connected to this worker.
+
+    The event data is ``{"jobs": [{"id": <encoded id>, "state": <state>}, ...]}``, or
+    ``{"resync": true}`` for a recipient whose changes did not fit one event.
+    """
+    payload = cast(JobUpdatePayload, kwargs)
+    sse_manager = app[SSEConnectionManager]
+    encode = app.security.encode_id
+    event_id = payload.get("event_id")
+    routed = (
+        RoutedItem(
+            {"id": encode(update["job_id"]), "state": update["state"]},
+            update["user_id"],
+            update["session_id"],
+            update["history_id"],
+        )
+        for update in payload["updates"]
+    )
+    _push_routed_items(sse_manager, encode, "job_update", "jobs", routed, event_id)
+    resync = SSEEvent(event="job_update", data=json.dumps({"resync": True}), id=event_id)
+    for user_id in payload.get("resync_user_ids", []):
+        sse_manager.push_to_user(user_id, resync)
+    for galaxy_session_id in payload.get("resync_session_ids", []):
+        sse_manager.push_to_session(galaxy_session_id, resync)
+    for history_id in payload.get("resync_history_ids", []):
+        sse_manager.push_to_history_viewers(encode(history_id), resync)
+
+
 control_message_to_task = {
     "create_panel_section": create_panel_section,
     "reload_tool": reload_tool,
@@ -619,6 +755,8 @@ control_message_to_task = {
     "history_update": history_update,
     "entry_point_update": entry_point_update,
     "user_quota_update": user_quota_update,
+    "invocation_update": invocation_update,
+    "job_update": job_update,
     "subscribe_history_viewer": subscribe_history_viewer,
     "unsubscribe_history_viewer": unsubscribe_history_viewer,
     "reload_tool_source_cache": reload_tool_source_cache,

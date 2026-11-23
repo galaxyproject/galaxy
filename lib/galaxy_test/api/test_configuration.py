@@ -16,8 +16,14 @@ TEST_KEYS_FOR_ALL_USERS = [
     "terms_url",
     "allow_user_dataset_purge",
     "subdomain_switcher",
+    "another_galaxy_servers",
     "enable_command_palette",
     "command_palette_disabled_providers",
+]
+DEFAULT_ANOTHER_GALAXY_SERVERS = [
+    {"label": "usegalaxy.eu", "url": "https://usegalaxy.eu"},
+    {"label": "usegalaxy.org", "url": "https://usegalaxy.org"},
+    {"label": "usegalaxy.org.au", "url": "https://usegalaxy.org.au"},
 ]
 TEST_KEYS_FOR_ADMIN_ONLY = [
     "library_import_dir",
@@ -39,18 +45,27 @@ class TestConfigurationApi(ApiTestCase):
         assert_has_keys(config, *TEST_KEYS_FOR_ALL_USERS)
         assert_not_has_keys(config, *TEST_KEYS_FOR_ADMIN_ONLY)
         assert config["subdomain_switcher"] == []
+        assert config["another_galaxy_servers"] == DEFAULT_ANOTHER_GALAXY_SERVERS
 
     def test_anonymous_user_configuration(self):
         with self._different_user(anon=True):
             config = self._get_configuration()
-        assert_has_keys(config, "subdomain_switcher")
+        assert_has_keys(config, "subdomain_switcher", "another_galaxy_servers")
         assert config["subdomain_switcher"] == []
+        assert config["another_galaxy_servers"] == DEFAULT_ANOTHER_GALAXY_SERVERS
 
     @requires_admin
     def test_admin_user_configuration(self):
         config = self._get_configuration(admin=True)
         assert_has_keys(config, *TEST_KEYS_FOR_ALL_USERS)
         assert_has_keys(config, *TEST_KEYS_FOR_ADMIN_ONLY)
+
+    def test_short_term_storage_effective_duration(self):
+        config = self._get_configuration()
+        assert config["short_term_storage_effective_duration"] == 86400
+        with self._different_user(anon=True):
+            config = self._get_configuration()
+        assert config["short_term_storage_effective_duration"] == 86400
 
     def test_normal_user_decode_id(self):
         decode_response = self._get("configuration/decode/badhombre", admin=False)

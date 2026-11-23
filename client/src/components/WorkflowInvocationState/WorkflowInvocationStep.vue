@@ -277,7 +277,7 @@ onUnmounted(() => {
                                             <span v-localize>{{ jobsTabTitle }}</span>
                                         </template>
 
-                                        <div class="invocation-step-job-details" :open="inGraphView">
+                                        <div class="invocation-step-job-details">
                                             <JobStep
                                                 v-if="stepDetails.jobs?.length"
                                                 class="mt-1"

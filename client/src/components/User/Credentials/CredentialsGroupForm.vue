@@ -22,7 +22,7 @@
  *   :service-definition="serviceDefinition" />
  */
 
-import { BFormGroup, BFormInput, BInputGroup, BInputGroupAppend } from "bootstrap-vue";
+import { BFormGroup, BInputGroup, BInputGroupAppend } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
 import type {
@@ -33,6 +33,7 @@ import type {
 } from "@/api/userCredentials";
 import { SECRET_PLACEHOLDER } from "@/stores/userToolsServiceCredentialsStore";
 
+import GFormInput from "@/components/BaseComponents/Form/GFormInput.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 
 type SecretField = ServiceCredentialGroupPayload["secrets"][number];
@@ -199,7 +200,7 @@ function isVariableOptional(name: string, type: CredentialType): boolean {
  * @returns {boolean | null} Validation state - true if valid, false if invalid, null if neutral
  */
 function getFieldState(value: string | null | undefined, name: string, type: CredentialType): boolean | null {
-    const isTouched = touchedFields.value.secrets.has(name);
+    const isTouched = touchedFields.value[type === "secret" ? "secrets" : "variables"].has(name);
     if (!isTouched) {
         return null;
     }
@@ -289,12 +290,15 @@ watch(
     <div class="p-2">
         <BFormGroup
             :id="`${props.groupData.groupId}-name`"
+            data-description="credentials group name"
             label="Group Name"
             description="Enter a unique name for this group"
-            :invalid-feedback="getGroupNameErrorMessage()">
-            <BFormInput
+            :invalid-feedback="getGroupNameErrorMessage()"
+            :state="getGroupNameState()">
+            <GFormInput
                 :id="`${props.groupData.groupId}-name-input`"
                 v-model="groupName"
+                data-description="credentials group name input"
                 type="text"
                 :state="getGroupNameState()"
                 placeholder="Enter group name"
@@ -308,7 +312,7 @@ watch(
                 :id="getFieldId(variable.name, 'variable')"
                 :label="getVariableTitle(variable.name, 'variable')"
                 :description="getVariableDescription(variable.name, 'variable')">
-                <BFormInput
+                <GFormInput
                     :id="getInputId(variable.name, 'variable')"
                     v-model="variable.value"
                     type="text"
@@ -329,7 +333,7 @@ watch(
                 :label="getVariableTitle(secret.name, 'secret')"
                 :description="getVariableDescription(secret.name, 'secret')">
                 <BInputGroup class="mb-2">
-                    <BFormInput
+                    <GFormInput
                         :id="getInputId(secret.name, 'secret')"
                         v-model="secret.value"
                         type="password"

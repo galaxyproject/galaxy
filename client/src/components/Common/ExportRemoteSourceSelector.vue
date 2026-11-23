@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { BFormGroup, BFormInput } from "bootstrap-vue";
+import { BFormGroup } from "bootstrap-vue";
 
 import type { FilterFileSourcesOptions } from "@/api/remoteFiles";
 import { useFileSources } from "@/composables/fileSources";
 import localize from "@/utils/localization";
 
+import GFormInput from "@/components/BaseComponents/Form/GFormInput.vue";
 import FilesInput from "@/components/FilesDialog/FilesInput.vue";
 
 interface Props {
@@ -45,12 +46,12 @@ const fileNameDescription = localize("Give the exported file a name.");
             <BFormGroup id="fieldset-directory" label-for="directory" :description="directoryDescription" class="mt-3">
                 <FilesInput
                     id="directory"
-                    :value="props.directory"
+                    :model-value="props.directory"
                     mode="directory"
                     :require-writable="true"
                     :filter-options="props.filterOptions"
                     data-test-id="export-destination-input"
-                    @input="emit('update:directory', $event)"
+                    @update:model-value="emit('update:directory', $event)"
                     @navigated="emit('navigated')" />
             </BFormGroup>
 
@@ -61,13 +62,13 @@ const fileNameDescription = localize("Give the exported file a name.");
                 :description="fileNameDescription"
                 class="mt-3">
                 <div class="d-flex align-items-center">
-                    <BFormInput
+                    <GFormInput
                         id="name"
-                        :value="props.fileName"
+                        :model-value="props.fileName"
                         placeholder="Name"
                         required
                         data-test-id="export-file-name-input"
-                        @input="emit('update:file-name', $event)" />
+                        @update:model-value="emit('update:file-name', $event ?? '')" />
                     <span v-if="props.fileExtension" class="ml-2 text-muted">.{{ props.fileExtension }}</span>
                 </div>
             </BFormGroup>

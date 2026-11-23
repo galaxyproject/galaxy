@@ -32,6 +32,7 @@ export default {
             required: true,
         },
     },
+    emits: ["edit", "remove"],
     computed: {
         title() {
             const ruleType = this.rule.type;

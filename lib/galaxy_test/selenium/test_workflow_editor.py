@@ -65,6 +65,18 @@ CHIPSEQ_COLUMNS = [
 ]
 
 
+WORKFLOW_WITH_MISSING_DEFAULTS = """
+class: GalaxyWorkflow
+inputs:
+  input1: data
+steps:
+  lines:
+    tool_id: random_lines1
+    in:
+      input: input1
+"""
+
+
 class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows, UsesWorkflowAssertions):
     ensure_registered = True
 
@@ -319,6 +331,35 @@ class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows, UsesWorkflowAssertions
         assert annotation == "my cool annotation", annotation
         self.workflow_editor_remove_node("input1")
         self.screenshot("workflow_editor_data_input_deleted")
+
+    @selenium_test
+    def test_data_input_default_location(self):
+        name = self._get_random_name()
+        workflow_id = self.workflow_populator.upload_yaml_workflow(
+            """class: GalaxyWorkflow
+inputs:
+  input1: data
+steps: []
+""",
+            name=name,
+        )
+        self.workflow_editor_open_with_name(name)
+        editor = self.components.workflow_editor
+        editor.node._(label="input1").title.wait_for_and_click()
+        location = "https://example.org/reference.tsv"
+        editor.default_location_input.wait_for_and_clear_and_send_keys(location)
+        self.save_after_node_form_changes()
+
+        workflow = self.workflow_populator.download_workflow(workflow_id, style="editor")
+        assert workflow["steps"]["0"]["in"]["input"]["default"] == {"class": "File", "location": location}
+
+        self.workflow_editor_open_with_name(name)
+        editor.node._(label="input1").title.wait_for_and_click()
+        assert editor.default_location_input.wait_for_value() == location
+        editor.default_location_input.wait_for_visible().clear()
+        self.save_after_node_form_changes()
+        workflow = self.workflow_populator.download_workflow(workflow_id, style="editor")
+        assert not workflow["steps"]["0"].get("in")
 
     @selenium_test
     def test_collection_input(self):
@@ -1219,8 +1260,22 @@ steps:
         self.sleep_for(self.wait_types.UX_RENDER)
         self.screenshot("workflow_editor_edit_menu")
 
-        self.components.workflow_editor.save_as_activity.wait_for_and_click()
-        self.components.workflow_editor.save_as_modal_close.wait_for_and_click()
+        editor = self.components.workflow_editor
+        editor.save_as_activity.wait_for_and_click()
+        editor.save_as_modal_close.wait_for_and_click()
+
+        # Enter must save in-page; a native form submit reloads the page and saves nothing.
+        new_name = self._get_random_name(prefix="saved_as_")
+        editor.save_as_activity.wait_for_and_click()
+        editor.save_as_name_input.wait_for_and_send_keys(new_name)
+        editor.save_as_name_input.wait_for_and_send_enter()
+        self.components.toast.message_with_text(text=f"Created new workflow '{new_name}'").wait_for_visible()
+        editor.save_as_name_input.wait_for_absent_or_hidden()
+
+        workflows = self.workflow_populator._get("workflows").json()
+        new_ids = [w["id"] for w in workflows if w["name"] == new_name]
+        assert len(new_ids) == 1, f"Expected one workflow named '{new_name}', found {len(new_ids)}"
+        assert f"id={new_ids[0]}" in self.current_url
 
     @selenium_test
     def test_editor_tool_upgrade(self):
@@ -1430,6 +1485,39 @@ steps:
         node.wait_for_and_click()
 
     @selenium_test
+    def test_undo_subworkflow_upgrade(self):
+        workflow_populator = self.workflow_populator
+        name = self._get_random_name()
+        workflow_id = workflow_populator.upload_yaml_workflow(WORKFLOW_NESTED_SIMPLE, name=name)
+        nested_content_id = workflow_populator.download_workflow(workflow_id, style="editor")["steps"]["2"][
+            "content_id"
+        ]
+        nested_workflow = workflow_populator._get(f"workflows/{nested_content_id}", data={"instance": True}).json()
+        with workflow_populator.export_for_update(nested_workflow["id"]) as nested_dict:
+            tool_state = json.loads(nested_dict["steps"]["1"]["tool_state"])
+            tool_state["num_lines"] = "2"
+            nested_dict["steps"]["1"]["tool_state"] = json.dumps(tool_state)
+
+        def saved_num_lines():
+            saved = workflow_populator.download_workflow(workflow_id)
+            return json.loads(saved["steps"]["2"]["subworkflow"]["steps"]["1"]["tool_state"])["num_lines"]
+
+        self.workflow_editor_open_with_name(name)
+        editor = self.components.workflow_editor
+        editor.tool_bar.auto_layout.wait_for_and_click()
+        self._wait_for_unsaved_changes()
+        self.assert_workflow_has_changes_and_save()
+        editor.node._(label="nested_workflow").wait_for_and_click()
+        editor.upgrade_subworkflow.wait_for_and_click()
+        self._wait_on(lambda: saved_num_lines() == "2", "the upgraded sub-workflow to be saved")
+
+        editor.tool_bar.changes.wait_for_and_click()
+        editor.latest_change.wait_for_and_click()
+        self._wait_for_unsaved_changes()
+        self.assert_workflow_has_changes_and_save()
+        self._wait_on(lambda: saved_num_lines() == "1", "the undone sub-workflow upgrade to be saved")
+
+    @selenium_test
     def test_editor_duplicate_node(self):
         workflow_id = self.workflow_populator.upload_yaml_workflow(WORKFLOW_SIMPLE_CAT_TWICE)
         self.workflow_index_open()
@@ -1537,6 +1625,10 @@ steps:
         self.assert_workflow_has_changes_and_save()
         workflow = self._download_current_workflow()
         assert len(workflow["steps"]) == 3
+
+    def _wait_for_unsaved_changes(self):
+        save_button = self.components.workflow_editor.save_button
+        self._wait_on(lambda: not save_button.has_class("g-disabled"), "the editor to report unsaved changes")
 
     def _current_collection_type(self):
         workflow = self._download_current_workflow()
@@ -1839,10 +1931,10 @@ steps:
         editor.configure_output(output="output").wait_for_visible()
         editor.email_notification.assert_absent()
         editor.output_cleanup.assert_absent()
-        # A tool step does run a job, so it still gets both.
+        # Tool steps still offer cleanup, but email actions have been retired.
         editor.node._(label="branch_a").wait_for_and_click()
-        editor.email_notification.wait_for_visible()
         editor.output_cleanup.wait_for_visible()
+        editor.email_notification.assert_absent()
 
     @selenium_test
     def test_pick_value_compact_on_disconnect(self):
@@ -1990,6 +2082,34 @@ steps:
         self.assert_modal_has_text("Using default: '1'")
         self.screenshot("workflow_editor_invalid_state")
         self.workflow_editor_dismiss_state_upgrade_modal()
+
+    @selenium_test
+    def test_editor_filled_defaults_note(self):
+        self._open_workflow_with_missing_defaults()
+        editor = self.components.workflow_editor
+        self.assert_modal_has_text("Galaxy filled in")
+        editor.state_upgrade_filled_defaults_toggle.wait_for_and_click()
+        self.assert_modal_has_text("Default for 'Randomly select': '1'.")
+        self.screenshot("workflow_editor_filled_defaults")
+        # the note alone is not a change to save
+        editor.save_button.wait_for_present()
+        assert editor.save_button.has_class("g-disabled")
+        editor.state_upgrade_modal_ok.wait_for_and_click()
+        editor.state_upgrade_modal.wait_for_absent_or_hidden()
+        self.assert_workflow_has_changes_and_save()
+        # the saved workflow stores the defaults, so reopening it shows no note
+        self.workflow_index_open()
+        self.components.workflows.edit_button.wait_for_and_click()
+        editor.canvas_body.wait_for_visible()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        editor.state_upgrade_modal.assert_absent_or_hidden()
+
+    def _open_workflow_with_missing_defaults(self):
+        self.workflow_populator.upload_yaml_workflow(
+            WORKFLOW_WITH_MISSING_DEFAULTS, client_convert=False, fill_defaults=False
+        )
+        self.workflow_index_open()
+        self.components.workflows.edit_button.wait_for_and_click()
 
     @selenium_test
     def test_missing_tools(self):

@@ -59,6 +59,9 @@ const publishedTitle = computed(() => {
     }
 });
 
+// Name the action the badge runs, not just the owner it shows.
+const ownerFilterLabel = computed(() => `Filter by owner ${props.workflow.owner}`);
+
 const shared = computed(() => {
     return !userStore.matchesCurrentUsername(props.workflow.owner);
 });
@@ -208,9 +211,13 @@ function getStepText(steps: number) {
         <BBadge
             v-if="shared && !publishedView"
             v-g-tooltip.hover
+            role="button"
+            tabindex="0"
             class="outline-badge cursor-pointer mx-1"
+            :aria-label="ownerFilterLabel"
             :title="`'${workflow.owner}' shared this workflow with you. Click to view all workflows shared with you by '${workflow.owner}'`"
-            @click="onViewMySharedByUser">
+            @click="onViewMySharedByUser"
+            @keydown.enter.space.prevent="onViewMySharedByUser">
             <FontAwesomeIcon :icon="faUsers" size="sm" fixed-width />
             <span class="font-weight-bold"> {{ workflow.owner }} </span>
         </BBadge>
@@ -219,9 +226,13 @@ function getStepText(steps: number) {
             v-if="publishedView && workflow.published"
             v-g-tooltip.hover
             data-description="published owner badge"
+            role="button"
+            tabindex="0"
             class="outline-badge cursor-pointer mx-1"
+            :aria-label="ownerFilterLabel"
             :title="publishedTitle"
-            @click="onViewUserPublished">
+            @click="onViewUserPublished"
+            @keydown.enter.space.prevent="onViewUserPublished">
             <FontAwesomeIcon :icon="faUser" size="sm" fixed-width />
             <span class="font-weight-bold"> {{ workflow.owner }} </span>
         </BBadge>

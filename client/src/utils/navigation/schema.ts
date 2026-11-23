@@ -124,6 +124,8 @@ interface Roothistory_panelcontent_item extends Component {
     download_button: SelectorTemplate;
     info_button: SelectorTemplate;
     alltags: SelectorTemplate;
+    tag_area_button: SelectorTemplate;
+    tag_area_input: SelectorTemplate;
     metadata_file_download: SelectorTemplate;
     dataset_operations_dropdown: SelectorTemplate;
 }
@@ -453,6 +455,8 @@ interface Rootworkflow_editor extends Component {
     connect_icon: SelectorTemplate;
     collapse_icon: SelectorTemplate;
     edit_subworkflow: SelectorTemplate;
+    upgrade_subworkflow: SelectorTemplate;
+    latest_change: SelectorTemplate;
     node_title: SelectorTemplate;
     label_input: SelectorTemplate;
     annotation_input: SelectorTemplate;

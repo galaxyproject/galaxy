@@ -4,7 +4,10 @@ from typing import (
 )
 from unittest.mock import Mock
 
+import pytest
+
 from galaxy.app_unittest_utils import galaxy_mock
+from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.files import (
     ConfiguredFileSources,
     ConfiguredFileSourcesConf,
@@ -97,3 +100,15 @@ class TestToolsService:
 
         service.create_fetch(cast(ProvidesHistoryContext, self.trans), payload)
         cast(Mock, self.authnz_manager.refresh_expiring_oidc_tokens).assert_not_called()
+
+    def test_create_refuses_protected_tools(self):
+        # __DATA_FETCH__ runs whatever request it is handed, so only create_fetch may reach it
+        service = _ToolsServiceUnderTest(
+            config=self.app.config,
+            toolbox_search=cast(Any, object()),
+            security=self.app.security,
+            history_manager=cast(Any, object()),
+        )
+        payload = {"tool_id": "__DATA_FETCH__", "history_id": "abc", "inputs": {}}
+        with pytest.raises(RequestParameterInvalidException):
+            service.create(cast(ProvidesHistoryContext, self.trans), payload)

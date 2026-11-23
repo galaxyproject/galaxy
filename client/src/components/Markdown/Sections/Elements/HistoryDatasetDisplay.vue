@@ -12,6 +12,7 @@
                 </GButton>
 
                 <GButton
+                    v-if="!embed"
                     data-description="import dataset button"
                     tooltip
                     transparent
@@ -106,6 +107,8 @@ import { computed, onMounted, ref } from "vue";
 
 import { copyDataset } from "@/api/datasets";
 import { getFields, getItems } from "@/components/Markdown/Utilities/tabularData";
+import { toastDatatypesLoadError } from "@/composables/datatypesMapper";
+import { useEmbed } from "@/composables/embed";
 import { Toast } from "@/composables/toast";
 import { getAppRoot } from "@/onload/loadConfig";
 import { useDatasetStore } from "@/stores/datasetStore";
@@ -134,6 +137,8 @@ const props = defineProps<{
     datasetId: string;
     embedded?: boolean;
 }>();
+
+const embed = useEmbed();
 
 // Reactive state
 const currentPage = ref(1);
@@ -204,7 +209,7 @@ async function onImport() {
 
 // Lifecycle hooks
 onMounted(() => {
-    createMapper();
+    createMapper().catch(toastDatatypesLoadError);
 });
 </script>
 

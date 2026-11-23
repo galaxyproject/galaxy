@@ -66,6 +66,17 @@ describe("GButton.vue", () => {
 
         expect(wrapper.emitted("click")).toHaveLength(1);
     });
+
+    it("passes listeners it does not emit, like blur, to the button", async () => {
+        const onBlur = vi.fn();
+        const wrapper = mount(defineComponent({ render: () => h(GButton, { onBlur }, () => "Copy") }), {
+            global: localVue,
+        });
+
+        await wrapper.get("button").trigger("blur");
+
+        expect(onBlur).toHaveBeenCalledTimes(1);
+    });
 });
 
 describe("GButton.vue loading", () => {
@@ -348,5 +359,21 @@ describe("GButton.vue pressed", () => {
         await wrapper.get("button").trigger("click");
 
         expect(wrapper.emitted("update:pressed")).toEqual([[true]]);
+    });
+});
+
+describe("GButton.vue attributes", () => {
+    it("puts a consumer's class and style on the button once", () => {
+        const wrapper = mount(GButton as object, {
+            props: { color: "blue" },
+            attrs: { class: "consumer-class", style: "margin: 1px;" },
+            global: localVue,
+        });
+        const button = wrapper.get("button");
+        const classes = button.attributes("class")!.split(" ");
+
+        expect(classes).toEqual(expect.arrayContaining(["g-button", "g-blue", "consumer-class"]));
+        expect(new Set(classes).size).toBe(classes.length);
+        expect(button.attributes("style")).toBe("margin: 1px;");
     });
 });

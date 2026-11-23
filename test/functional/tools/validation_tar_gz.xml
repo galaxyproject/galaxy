@@ -1,6 +1,6 @@
 <tool id="validation_tar_gz" name="Validation (tar.gz)" version="1.0">
-    <!-- tool tests for assertions on gzipped outputs 
-         also tests that test outputs can be given multiple times 
+    <!-- tool tests for assertions on gzipped outputs
+         also tests that test outputs can be given multiple times
          (eg to specify assertions on compressed and upcompressed data)-->
     <command><![CDATA[
 cat '$input' > '$output'
@@ -95,6 +95,16 @@ cat '$input' > '$output'
                     </has_archive_member>
                 </assert_contents>
             </output>
+        </test>
+        <!-- decompress applies to checksum: compressed and decompressed sha1 of the same output -->
+        <test>
+            <param name="input" value="1.fastqsanger.gz" ftype="fastqsanger.gz" />
+            <output name="output" checksum="sha1$09a99e8f76a53d6dacae32274c18026031f17448" ftype="fastqsanger.gz"/>
+            <output name="output" checksum="sha1$ce8dc8f1e09a893466eb1b1b9eec2b9e5507c5fd" decompress="true" ftype="fastqsanger.gz"/>
+        </test>
+        <test expect_test_failure="true">
+            <param name="input" value="1.fastqsanger.gz" ftype="fastqsanger.gz" />
+            <output name="output" checksum="sha1$09a99e8f76a53d6dacae32274c18026031f17448" decompress="true" ftype="fastqsanger.gz"/>
         </test>
     </tests>
 </tool>

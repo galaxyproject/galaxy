@@ -88,7 +88,21 @@ const FILE_STATUS_MESSAGES: Record<UploadItem["status"], (file: UploadItem) => s
     cancelled: () => "Cancelled",
 };
 
+// A Galaxy task imports these, so there is no file transfer or dataset state to report.
+const GALAXY_LINK_STATUS_MESSAGES: Partial<Record<UploadItem["status"], (host: string) => string>> = {
+    queued: (host) => `Starting the import from ${host}`,
+    uploading: (host) => `Starting the import from ${host}`,
+    processing: (host) => `Importing from ${host}`,
+    completed: (host) => `Imported from ${host}`,
+};
+
 export function getFileStatusMessage(file: UploadItem): string | undefined {
+    if (file.uploadMode === "galaxy-link") {
+        const linkMessage = GALAXY_LINK_STATUS_MESSAGES[file.status];
+        if (linkMessage) {
+            return linkMessage(file.sourceHost);
+        }
+    }
     return FILE_STATUS_MESSAGES[file.status](file);
 }
 

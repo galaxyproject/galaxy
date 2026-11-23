@@ -31,19 +31,19 @@ function orderedTargets(wrapper: ReturnType<typeof mountColumnSelector>) {
 describe("ColumnSelector", () => {
     it("emits the selected column index", async () => {
         const wrapper = mountColumnSelector({ target: 0 });
-        wrapper.findComponent(SelectBasic).vm.$emit("input", 2);
+        wrapper.findComponent(SelectBasic).vm.$emit("update:modelValue", 2);
         expect(wrapper.emitted("update:target")).toEqual([[2]]);
     });
 
     it("emits a single selection as a list when valueAsList is set", async () => {
         const wrapper = mountColumnSelector({ target: [0], valueAsList: true });
-        wrapper.findComponent(SelectBasic).vm.$emit("input", 1);
+        wrapper.findComponent(SelectBasic).vm.$emit("update:modelValue", 1);
         expect(wrapper.emitted("update:target")).toEqual([[[1]]]);
     });
 
     it("emits all selected indices when multiple is set", async () => {
         const wrapper = mountColumnSelector({ target: [], multiple: true });
-        wrapper.findComponent(SelectBasic).vm.$emit("input", [0, 2]);
+        wrapper.findComponent(SelectBasic).vm.$emit("update:modelValue", [0, 2]);
         expect(wrapper.emitted("update:target")).toEqual([[[0, 2]]]);
     });
 
@@ -88,7 +88,7 @@ describe("ColumnSelector", () => {
                 { id: 0, text: "A" },
                 { id: 2, text: "C" },
             ]);
-            picker.vm.$emit("input", 2);
+            picker.vm.$emit("update:modelValue", 2);
             expect(wrapper.emitted("update:target")).toEqual([[[1, 2]]]);
             expect(wrapper.emitted("update:orderedEdit")).toEqual([[true], [false]]);
             expect(target).toEqual([1]);

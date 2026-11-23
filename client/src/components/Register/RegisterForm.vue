@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import axios from "axios";
-import { BCard, BCardBody, BCardFooter, BCardHeader, BForm, BFormGroup, BFormInput, BFormText } from "bootstrap-vue";
+import { BCard, BCardBody, BCardFooter, BCardHeader, BFormGroup, BFormInput, BFormText } from "bootstrap-vue";
 import { computed, type Ref, ref } from "vue";
 
 import { SKIP_PENDING_REQUESTS_HEADER } from "@/api/pendingRequests";
@@ -109,7 +109,7 @@ async function submit() {
                     {{ messageText }}
                 </GAlert>
 
-                <BForm id="registration" @submit.prevent="submit()">
+                <form id="registration" @submit.prevent="submit()">
                     <BCard no-body>
                         <!-- OIDC enabled and prioritized: encourage users to use it instead of local registration -->
                         <span v-if="oidcPreferred">
@@ -217,7 +217,7 @@ async function submit() {
                             <GLink id="login-toggle" to="/login/start"> Log in here. </GLink>
                         </BCardFooter>
                     </BCard>
-                </BForm>
+                </form>
             </div>
 
             <div v-if="termsUrl" class="w-100 position-relative embed-container">

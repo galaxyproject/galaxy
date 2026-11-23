@@ -35,6 +35,7 @@ from galaxy.tool_util.parameters import (
     RequestInternalDereferencedToolState,
     RequestInternalToolState,
 )
+from galaxy.tools.job_parameters import is_element_identifier_parameter
 from galaxy.util.permutations import (
     assert_matched_lengths,
     build_combos,
@@ -46,6 +47,10 @@ from galaxy.util.permutations import (
     state_set_value,
 )
 from galaxy.work.context import WorkRequestContext
+from galaxy.workflow.scheduling_dependencies import (
+    ToolInputsNotReadyWithDependencies,
+    unpopulated_collection_dependencies,
+)
 from . import visit_input_values
 from .workflow_utils import (
     runtime_to_json,
@@ -228,7 +233,7 @@ def expand_meta_parameters(
     """
 
     for key in list(incoming.keys()):
-        if key.endswith("|__identifier__"):
+        if is_element_identifier_parameter(key):
             incoming.pop(key)
 
     collections_to_match = matching.CollectionsToMatch()
@@ -486,7 +491,9 @@ def _batch_collection(
     decoded_id = trans.app.security.decode_id(incoming_val["id"])
     item, collection = _load_batch_collection(trans.sa_session, incoming_val["src"], decoded_id)
     if not collection.populated_optimized:
-        raise exceptions.ToolInputsNotReadyException("An input collection is not populated.")
+        raise ToolInputsNotReadyWithDependencies(
+            "An input collection is not populated.", dependencies=unpopulated_collection_dependencies(collection)
+        )
     return item, collection, incoming_val.get("map_over_type")
 
 

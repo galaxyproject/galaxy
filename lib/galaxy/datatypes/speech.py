@@ -1,10 +1,16 @@
+import re
+
 from galaxy.datatypes.data import Text
 from galaxy.datatypes.metadata import (
     ListParameter,
     MetadataElement,
 )
 from galaxy.datatypes.protocols import DatasetProtocol
-from galaxy.datatypes.sniff import get_headers
+from galaxy.datatypes.sniff import (
+    build_sniff_from_prefix,
+    FilePrefix,
+    get_headers,
+)
 
 
 class TextGrid(Text):
@@ -136,3 +142,51 @@ class BPF(Text):
                 return False
 
         return True
+
+
+@build_sniff_from_prefix
+class SubRip(Text):
+    """SubRip (SRT) subtitles: numbered cues, each with a ``00:00:01,000 --> 00:00:04,000`` timing line
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('example.srt')
+    >>> SubRip().sniff(fname)
+    True
+    >>> fname = get_test_fname('example.vtt')
+    >>> SubRip().sniff(fname)
+    False
+    >>> fname = get_test_fname('1_1119_2_22_001.textgrid')
+    >>> SubRip().sniff(fname)
+    False
+    """
+
+    file_ext = "srt"
+    blurb = "SubRip subtitles"
+    timing = re.compile(r"^\d{2,}:\d{2}:\d{2},\d{3} --> \d{2,}:\d{2}:\d{2},\d{3}")
+
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
+        lines = (line.strip().lstrip("\ufeff") for line in file_prefix.line_iterator())
+        lines = (line for line in lines if line)
+        return next(lines, "").isdigit() and bool(self.timing.match(next(lines, "")))
+
+
+@build_sniff_from_prefix
+class WebVTT(Text):
+    """WebVTT subtitles, https://www.w3.org/TR/webvtt1/
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('example.vtt')
+    >>> WebVTT().sniff(fname)
+    True
+    >>> fname = get_test_fname('example.srt')
+    >>> WebVTT().sniff(fname)
+    False
+    """
+
+    file_ext = "vtt"
+    blurb = "WebVTT subtitles"
+
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
+        # The spec allows a BOM, then "WEBVTT" followed by a space, tab or line end.
+        first_line = next(file_prefix.line_iterator(), "").lstrip("\ufeff").rstrip("\r\n")
+        return first_line == "WEBVTT" or first_line.startswith(("WEBVTT ", "WEBVTT\t"))

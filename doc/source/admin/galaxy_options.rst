@@ -1920,7 +1920,7 @@
 
 :Description:
     Email address to use in the 'From' field when sending emails for
-    account activations, workflow step notifications, password resets,
+    account activations, completion notifications, password resets,
     and tool error reports.  We recommend using a string in the
     following format: Galaxy Project <galaxy-no-reply@example.com>. If
     not configured, '<galaxy-no-reply@HOSTNAME>' will be used.
@@ -2643,6 +2643,24 @@
 :Type: seq
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+``another_galaxy_servers``
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Galaxy servers offered by the "Import from Another Galaxy" upload
+    method. Each entry requires a non-empty label and an absolute
+    HTTPS URL (plain HTTP only for localhost, 127.0.0.1 or [::1]),
+    optionally with the path Galaxy is served under, but without
+    credentials, a query or a fragment. Users can also type the URL of
+    another Galaxy server.
+    Example value: ``[{label: usegalaxy.eu, url:
+    https://usegalaxy.eu}, {label: Local Galaxy, url:
+    https://galaxy.example.org/galaxy/}]``
+:Default: ``[{'label': 'usegalaxy.eu', 'url': 'https://usegalaxy.eu'}, {'label': 'usegalaxy.org', 'url': 'https://usegalaxy.org'}, {'label': 'usegalaxy.org.au', 'url': 'https://usegalaxy.org.au'}]``
+:Type: seq
+
+
 ~~~~~~~~~~~~~~~~
 ``helpsite_url``
 ~~~~~~~~~~~~~~~~
@@ -2919,6 +2937,19 @@
     intact to protect your users.  Uncomment and leave empty to not
     set the `X-Frame-Options` header.
 :Default: ``SAMEORIGIN``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``widgets_allowed_origins``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Comma-separated origins, besides Galaxy itself, allowed to embed
+    Galaxy Widgets such as the history graph.
+    Widgets that support public embedding can be embedded from any
+    origin while their resource is published or accessible via link.
+:Default: ``None``
 :Type: str
 
 
@@ -4491,10 +4522,10 @@
     parent-side JSON decoding also adds overhead. Simple parameter
     references resolve in Python without starting a worker. When empty
     (the default), the worker runs without an OS-level jail.
-    Full JavaScript evaluation requires Python 3.10+ and the
-    quickjs-ng package. Without QuickJS, expressions requiring
-    JavaScript fail with an error; literals and simple parameter
-    references continue to work without it.
+    Full JavaScript evaluation requires the quickjs-ng package.
+    Without QuickJS, expressions requiring JavaScript fail with an
+    error; literals and simple parameter references continue to work
+    without it.
     Set this to ``bubblewrap`` to use a built-in bubblewrap jail. It
     clears the environment, unshares the PID/IPC/UTS namespaces, and
     read-only-binds only what the worker needs to run: the Python
@@ -4933,7 +4964,10 @@
     This option allows users to see the full path of datasets via the
     "View Details" option in the history. This option also exposes the
     command line to non-administrative users. Administrators can
-    always see dataset paths.
+    always see dataset paths. It also shows users the error from a
+    failing JavaScript expression in a YAML tool, which can quote the
+    job's input values, including dataset paths. User-defined tools
+    always show this error.
 :Default: ``false``
 :Type: bool
 
@@ -5223,10 +5257,20 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Time in seconds between workflow completion monitor iterations.
-    The completion monitor checks for workflows that have all jobs
-    completed and triggers completion hooks (e.g., exports,
-    notifications). Float values are allowed.
+    Time in seconds between workflow and tool completion monitor
+    iterations. Workflow handlers check up to 100 of their assigned
+    invocations per iteration and trigger completion hooks, such as
+    exports. When notifications or SMTP are configured, one elected
+    web process checks tool and workflow runs that requested
+    notifications, reporting when attention is needed and when they
+    finish. It checks an unfinished run again after this interval or a
+    tenth of the time the run has been pending, whichever is longer,
+    and at least every 5 minutes. Once the user has been told that a
+    run has paused jobs, its checks back off the same way from that
+    moment, but up to once an hour. Runs in deleted histories are not
+    reported. With SMTP configured, that process also dispatches
+    queued completion emails in a separate thread at this interval.
+    Float values are allowed.
 :Default: ``5.0``
 :Type: float
 
@@ -5357,9 +5401,7 @@
     If set to ``remote`` the tool command line will be built as part
     of the submitted job. Note that ``remote`` is a beta setting that
     will be useful for materializing deferred datasets as part of the
-    submitted job. Note also that you have to set
-    ``metadata_strategy`` to ``extended`` if you set this option to
-    ``remote``.
+    submitted job. The job then needs a Galaxy runtime where it runs.
 :Default: ``local``
 :Type: str
 
@@ -6345,7 +6387,8 @@
     or audit-table polling as a fallback for SQLite); entry-point
     changes are dispatched directly from the code paths that mutate
     them; in-app notifications and broadcasts are pushed when
-    ``enable_notification_system`` is also true. When disabled,
+    ``enable_notification_system`` is also true. Workflow invocation
+    and job changes are pushed as they are committed. When disabled,
     polling remains the source of updates for all three. See the admin
     guide "Server-Sent Events for real-time updates" for the full
     architecture, monitoring guidance and proxy configuration.
@@ -6664,6 +6707,53 @@
     is ``true``. Runs in a Celery task.
 :Default: ``86400``
 :Type: int
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``user_defined_tool_allowed_containers``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Container images that user defined tools may run in. User defined
+    tools run an arbitrary command in the image they name, so only
+    list images you trust. An entry ending in ``/*`` allows any image
+    below that registry or path, at any depth, with any tag or digest
+    (``quay.io/biocontainers/*``). An image without a tag or digest
+    allows any tag or digest of it (``docker.io/library/python``),
+    ``<image>:<tag>`` only that tag, and ``<image>@<digest>`` only
+    that digest. A lone ``*`` allows any image; it is meant for
+    testing and is not recommended in production, because users can
+    then run any image from any registry, and denied entries can't
+    block copies of an image on other registries. An empty list allows
+    none, so no user defined tool can be created or run. References
+    are canonicalized before they are compared, so ``python`` and
+    ``docker.io/library/python`` are the same image. Tools are checked
+    when they are created and again when their jobs run. Malformed
+    entries prevent Galaxy from starting. See the user defined tools
+    admin documentation for details.
+:Default: ``['quay.io/biocontainers/*']``
+:Type: seq
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``user_defined_tool_denied_containers``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Container images that user defined tools may not run in, even if
+    ``user_defined_tool_allowed_containers`` allows them. An entry
+    ending in ``/*`` denies any image below that registry or path, at
+    any depth, and an image name denies every tag and digest of that
+    image. Entries with a tag or digest are not accepted, because the
+    same image can be named by another tag or digest. When this list
+    is not empty, references that cannot be parsed are refused even if
+    ``user_defined_tool_allowed_containers`` is ``*``. Entries match
+    image names, so a copy of an image published under another name or
+    on another registry is not denied. Malformed entries prevent
+    Galaxy from starting. See the user defined tools admin
+    documentation for details.
+:Default: ``[]``
+:Type: seq
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -25,18 +25,25 @@
         <template v-slot:body>
             <FormElement
                 id="__label"
-                :value="label"
+                :model-value="label"
                 title="Label"
                 help="Add a step label."
                 :error="uniqueErrorLabel ?? undefined"
-                @input="onLabel" />
+                @update:model-value="onLabel" />
             <FormElement
                 id="__annotation"
-                :value="annotation"
+                :model-value="annotation"
                 title="Step Annotation"
                 :area="true"
                 help="Add an annotation or notes to this step. Annotations are available when a workflow is viewed."
-                @input="onAnnotation" />
+                @update:model-value="onAnnotation" />
+            <FormElement
+                v-if="type === 'data_input'"
+                id="__default_location"
+                :model-value="defaultLocation"
+                title="Default file location"
+                help="Optional URL or Galaxy file source URI to use when no dataset is selected at run time."
+                @update:model-value="onDefaultLocation" />
             <FormConditional
                 v-if="isSubworkflow"
                 :step="step"
@@ -85,8 +92,10 @@ import { useWorkflowStores } from "@/composables/workflowStores";
 import { useRefreshFromStore } from "@/stores/refreshFromStore";
 import type { Step } from "@/stores/workflowStepStore";
 
+import { useStepActions } from "../Actions/stepActions";
 import { useStepProps } from "../composables/useStepProps";
 import { useUniqueLabelError } from "../composables/useUniqueLabelError";
+import { defaultFileLocation, withDefaultFileLocation } from "../modules/defaultFile";
 
 import FormConditional from "./FormConditional.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
@@ -113,7 +122,8 @@ const emit = defineEmits([
 const stepRef = toRef(props, "step");
 const { stepId, contentId, annotation, label, name, type, configForm, stepInputs, postJobActions } =
     useStepProps(stepRef);
-const { stepStore } = useWorkflowStores();
+const { stepStore, undoRedoStore, stateStore, connectionStore } = useWorkflowStores();
+const { setInputDefaults } = useStepActions(stepStore, undoRedoStore, stateStore, connectionStore);
 const uniqueErrorLabel = useUniqueLabelError(stepStore, label.value);
 const stepTitle = computed(() => {
     if (isSubworkflow.value) {
@@ -125,6 +135,12 @@ const stepTitle = computed(() => {
 const nodeIcon = computed(() => WorkflowIcons[type.value]);
 const formDisplayId = computed(() => stepId.value.toString());
 const isSubworkflow = computed(() => type.value === "subworkflow");
+const defaultLocation = computed(() => defaultFileLocation(props.step.in));
+
+function onDefaultLocation(value: unknown) {
+    // Lazy action: consecutive keystrokes merge into one undo entry.
+    setInputDefaults(props.step, withDefaultFileLocation(props.step.in, String(value ?? "")));
+}
 
 function onAnnotation(newAnnotation: string) {
     emit("onAnnotation", stepId.value, newAnnotation);

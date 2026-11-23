@@ -1,5 +1,5 @@
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 from typing import (
     Annotated,
     Any,
@@ -15,19 +15,19 @@ from galaxy.schema.schema import Model
 from galaxy.util.hash_util import HashFunctionNames
 
 
-class RemoteFilesTarget(str, Enum):
+class RemoteFilesTarget(StrEnum):
     ftpdir = "ftpdir"
     userdir = "userdir"
     importdir = "importdir"
 
 
-class RemoteFilesFormat(str, Enum):
+class RemoteFilesFormat(StrEnum):
     flat = "flat"
     jstree = "jstree"
     uri = "uri"
 
 
-class RemoteFilesDisableMode(str, Enum):
+class RemoteFilesDisableMode(StrEnum):
     folders = "folders"
     files = "files"
 

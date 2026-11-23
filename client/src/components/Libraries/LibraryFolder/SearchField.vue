@@ -25,6 +25,7 @@ export default {
             required: false,
         },
     },
+    emits: ["updateSearch"],
     data() {
         return {
             search: "",

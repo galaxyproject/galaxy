@@ -4,7 +4,7 @@ API operations on the contents of a history dataset.
 
 import logging
 import os
-from enum import Enum
+from enum import StrEnum
 from typing import (
     Any,
 )
@@ -115,7 +115,7 @@ def is_direct_download_candidate(filename, to_ext, raw, offset, ck_size, is_arch
     return raw or to_ext is not None
 
 
-class RequestDataType(str, Enum):
+class RequestDataType(StrEnum):
     """Particular pieces of information that can be requested for a dataset."""
 
     state = "state"
@@ -128,7 +128,7 @@ class RequestDataType(str, Enum):
     in_use_state = "in_use_state"
 
 
-class DatasetContentType(str, Enum):
+class DatasetContentType(StrEnum):
     """For retrieving content from a structured dataset (e.g. HDF5)"""
 
     meta = "meta"
@@ -203,7 +203,7 @@ class DatasetInheritanceChain(RootModel):
     )
 
 
-class ExtraFilesEntryClass(str, Enum):
+class ExtraFilesEntryClass(StrEnum):
     Directory = "Directory"
     File = "File"
 
@@ -249,7 +249,7 @@ class ConvertedDatasetsMap(RootModel):
     )
 
 
-class DataMode(str, Enum):
+class DataMode(StrEnum):
     Coverage = "Coverage"
     Auto = "Auto"
 

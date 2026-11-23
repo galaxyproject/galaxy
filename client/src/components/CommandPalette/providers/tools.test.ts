@@ -2,7 +2,7 @@ import axios from "axios";
 import { createPinia, setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { useToolStore } from "@/stores/toolStore";
+import { type Tool, useToolStore } from "@/stores/toolStore";
 import { useUserStore } from "@/stores/userStore";
 
 import { makeCtx } from "../test-utils";
@@ -108,6 +108,17 @@ describe("toolsProvider", () => {
         mockToolsApi();
         const items = await toolsProvider.search("fa", makeCtx());
         expect(items.map((i) => i.id)).toEqual(["tools:fastqc_id"]);
+        expect(backendSearches()).toEqual([]);
+    });
+
+    it("hydrates the toolbox when the store holds only a single tool", async () => {
+        mockToolsApi();
+        useToolStore().saveToolForId(FASTQC.id, FASTQC as Tool);
+
+        const items = await toolsProvider.search("bowtie", makeCtx(), { localOnly: true });
+
+        expect(items.map((i) => i.id)).toEqual(["tools:bowtie_id"]);
+        expect(axios.get).toHaveBeenCalledTimes(1);
         expect(backendSearches()).toEqual([]);
     });
 

@@ -180,7 +180,8 @@ class DataMetaFilter(Filter):
             assert (
                 self.dynamic_option.file_fields is None and self.dynamic_option.dataset_ref_name is None
             ), "Required 'column' attribute missing from filter, when loading from file"
-        else:
+        elif not d_option.tool_data_table_name or d_option.tool_data_table is not None:
+            # A named column of a table that isn't configured here yet is resolved when filtering.
             self.column = d_option.column_spec_to_index(self.column)
         self.multiple = string_as_bool(elem.get("multiple", "False"))
         self.separator = elem.get("separator", ",")
@@ -247,9 +248,10 @@ class DataMetaFilter(Filter):
             return copy.deepcopy(options)
 
         if self.column is not None:
+            column = self.dynamic_option.column_spec_to_index(self.column)
             rval: list[ParameterOption] = []
             for fields in options:
-                if compare_meta_value(fields[self.column], meta_value):
+                if compare_meta_value(fields[column], meta_value):
                     rval.append(fields)
             return rval
         else:

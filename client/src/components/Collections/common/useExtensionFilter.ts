@@ -1,5 +1,6 @@
 import { computed, toRef, watch } from "vue";
 
+import { toastDatatypesLoadError } from "@/composables/datatypesMapper";
 import { useDatatypesMapperStore } from "@/stores/datatypesMapperStore";
 
 interface PropsWithOptionalExtensions {
@@ -50,7 +51,8 @@ export function useExtensionFiltering(props: PropsWithOptionalExtensions) {
         () => datatypesMapper.value,
         async (mapper) => {
             if (extensions.value?.length && !mapper) {
-                await datatypesMapperStore.createMapper();
+                // Without a mapper no element is filtered out, so the creator stays usable.
+                await datatypesMapperStore.createMapper().catch(toastDatatypesLoadError);
             }
         },
         { immediate: true },

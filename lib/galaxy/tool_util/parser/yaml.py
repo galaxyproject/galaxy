@@ -42,8 +42,13 @@ from galaxy.tool_util_models.tool_source import (
     XrefDict,
     YamlTemplateConfigFile,
 )
-from galaxy.util import listify
+from galaxy.tool_util_models.yaml_parameters import YamlReferenceDataParameter
+from galaxy.util import (
+    Element,
+    listify,
+)
 from .interface import (
+    DynamicOptions,
     InputSource,
     PageSource,
     PagesSource,
@@ -83,11 +88,11 @@ class YamlToolSource(ToolSource):
         self.root_dict = root_dict
         self._source_path = source_path
         self._macro_paths: list[str] = []
-        if not self._trusted and (unsupported := sorted(set(root_dict) - USER_TOOL_ROOT_KEYS)):
+        if not self.trusted and (unsupported := sorted(set(root_dict) - USER_TOOL_ROOT_KEYS)):
             raise UntrustedToolSourceError(f"User-defined tools may not set {', '.join(unsupported)}.")
 
     @property
-    def _trusted(self) -> bool:
+    def trusted(self) -> bool:
         return self.parse_class() != "GalaxyUserTool"
 
     @property
@@ -225,7 +230,7 @@ class YamlToolSource(ToolSource):
     def parse_input_pages(self) -> PagesSource:
         # All YAML tools have only one page (feature is deprecated)
         page_source_class = CanonicalYamlPageSource if self.is_yaml_origin() else YamlPageSource
-        page_source = page_source_class(self.root_dict.get("inputs", {}), trusted=self._trusted)
+        page_source = page_source_class(self.root_dict.get("inputs", {}), trusted=self.trusted)
         return PagesSource([page_source], "cwl")
 
     def parse_strict_shell(self):
@@ -656,7 +661,26 @@ class YamlInputSource(InputSource):
 
 class CanonicalYamlPageSource(YamlPageSource):
     def _input_source(self, input_dict) -> "CanonicalYamlInputSource":
-        return CanonicalYamlInputSource(input_dict, trusted=self.trusted)
+        return _canonical_input_source(input_dict, self.trusted)
+
+
+class YamlReferenceDataOptions(DynamicOptions):
+    """A ``reference_data`` input's table, as the ``<options>`` element Galaxy's selects load."""
+
+    def __init__(self, table: str):
+        self._table = table
+
+    def elem(self) -> Element:
+        return Element("options", {"from_data_table": self._table})
+
+    def get_dynamic_options_code(self) -> str | None:
+        return None
+
+    def get_data_table_name(self) -> str | None:
+        return self._table
+
+    def get_index_file_name(self) -> str | None:
+        return None
 
 
 class CanonicalYamlInputSource(YamlInputSource):
@@ -690,7 +714,28 @@ class CanonicalYamlInputSource(YamlInputSource):
         return CanonicalYamlPageSource(inputs_list, trusted=self.trusted)
 
     def _input_source(self, input_dict) -> "CanonicalYamlInputSource":
-        return CanonicalYamlInputSource(input_dict, trusted=self.trusted)
+        return _canonical_input_source(input_dict, self.trusted)
+
+
+class CanonicalYamlReferenceDataInputSource(CanonicalYamlInputSource):
+    """A GalaxyTool/GalaxyUserTool ``reference_data`` parameter, validated by its authoring model."""
+
+    def __init__(self, input_dict: dict[str, Any], trusted: bool = True) -> None:
+        self._reference_data = YamlReferenceDataParameter.model_validate(input_dict)
+        # Raw-dict readers (e.g. SelectToolParameter) see the model's coerced values.
+        super().__init__(self._reference_data.model_dump(by_alias=True, exclude_unset=True), trusted=trusted)
+
+    def parse_reference_data(self) -> YamlReferenceDataParameter:
+        return self._reference_data
+
+    def parse_dynamic_options(self) -> YamlReferenceDataOptions:
+        return YamlReferenceDataOptions(self._reference_data.table)
+
+
+def _canonical_input_source(input_dict: dict[str, Any], trusted: bool) -> CanonicalYamlInputSource:
+    if input_dict.get("type") == "reference_data":
+        return CanonicalYamlReferenceDataInputSource(input_dict, trusted=trusted)
+    return CanonicalYamlInputSource(input_dict, trusted=trusted)
 
 
 def _ensure_has(dict, defaults):

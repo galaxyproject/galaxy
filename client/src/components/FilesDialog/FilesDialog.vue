@@ -50,8 +50,6 @@ interface FilesDialogProps {
     requireWritable?: boolean;
     /** Optional selected item to start browsing from */
     selectedItem?: SelectionItem;
-    /** Whether the dialog is visible at the start */
-    isOpen?: boolean;
     /** Function to push a new route, used for navigation */
     routePush?: (route: string) => void;
 }
@@ -63,7 +61,6 @@ const props = withDefaults(defineProps<FilesDialogProps>(), {
     multiple: false,
     requireWritable: false,
     selectedItem: undefined,
-    isOpen: true,
     routePush: () => {},
 });
 
@@ -76,7 +73,7 @@ const errorMessage = ref<string>();
 const filter = ref();
 const items = ref<SelectionItem[]>([]);
 const itemsProvider = ref<ItemsProvider>();
-const modalShow = ref(props.isOpen);
+const modalShow = ref(true);
 const optionsShow = ref(false);
 const undoShow = ref(false);
 const hasValue = ref(false);

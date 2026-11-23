@@ -1,0 +1,24 @@
+class: GalaxyUserTool
+id: gx_reference_data_user
+version: "1.0.0"
+name: gx_reference_data_user
+container: busybox
+shell_command: |
+  echo '$(inputs.reference.class) $(inputs.reference.path) $(inputs.reference.basename) $(inputs.reference.source.table) $(inputs.reference.source.value) $(inputs.reference.metadata.dbkey) $(inputs.reference.metadata.name)' > output.txt
+inputs:
+  - name: reference
+    type: reference_data
+    table: test_fasta_indexes
+outputs:
+  - name: output
+    type: data
+    format: txt
+    from_work_dir: output.txt
+tests:
+  - inputs:
+      reference: hg19_value
+    outputs:
+      output:
+        asserts:
+          - has_line:
+              line: ReferenceData hg19_path hg19_path test_fasta_indexes hg19_value hg19 hg19_name

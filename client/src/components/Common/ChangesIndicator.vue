@@ -118,8 +118,7 @@ defineExpose({
             transform 0.2s ease;
     }
 
-    // TODO(vue3): rename .saved-indicator-enter to .saved-indicator-enter-from
-    .saved-indicator-enter,
+    .saved-indicator-enter-from,
     .saved-indicator-leave-to {
         opacity: 0;
         transform: translateY(-2px);
@@ -131,7 +130,7 @@ defineExpose({
             transition: none;
         }
 
-        .saved-indicator-enter,
+        .saved-indicator-enter-from,
         .saved-indicator-leave-to {
             transform: none;
         }

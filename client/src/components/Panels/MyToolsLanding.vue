@@ -8,9 +8,9 @@
  */
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
+import draggable from "vuedraggable";
 
 import { isTool, isToolSection } from "@/api/tools";
-import draggable from "@/components/Common/SortableList";
 import { useToast } from "@/composables/toast";
 import { useToolPanelFavorites } from "@/composables/toolPanelFavorites";
 import type { Tool, ToolPanelItem, ToolSection as ToolSectionType } from "@/stores/toolStore";

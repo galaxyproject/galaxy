@@ -9,7 +9,7 @@ export default {
             type: String,
             required: true,
         },
-        value: {
+        modelValue: {
             type: String,
             default: "",
         },
@@ -18,13 +18,14 @@ export default {
             default: false,
         },
     },
+    emits: ["update:modelValue"],
     computed: {
         currentValue: {
             get() {
-                return this.value;
+                return this.modelValue;
             },
             set(val) {
-                this.$emit("input", val);
+                this.$emit("update:modelValue", val);
             },
         },
     },

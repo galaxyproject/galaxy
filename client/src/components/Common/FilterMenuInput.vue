@@ -1,32 +1,30 @@
 <script setup lang="ts">
 import { faQuestion } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BFormDatalist, BFormDatepicker, BFormInput, BInputGroup, BInputGroupAppend } from "bootstrap-vue";
+import { BFormDatalist, BFormDatepicker, BInputGroup, BInputGroupAppend } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
 import type { ValidFilter } from "@/utils/filtering";
 import { capitalizeFirstLetter } from "@/utils/strings";
 
+import GFormInput from "../BaseComponents/Form/GFormInput.vue";
 import GButton from "../BaseComponents/GButton.vue";
 import GModal from "../BaseComponents/GModal.vue";
-
-type FilterType = string | boolean | undefined;
 
 interface Props {
     name: string;
     identifier: any;
     error?: string;
     filter: ValidFilter<any>;
-    filters: {
-        [k: string]: FilterType;
-    };
+    /** Text values only: `FilterMenu` routes Boolean filters to `FilterMenuBoolean` */
+    filters: Record<string, string | undefined>;
     disabled?: boolean;
 }
 
 const props = defineProps<Props>();
 
 const emit = defineEmits<{
-    (e: "change", name: string, value: FilterType): void;
+    (e: "change", name: string, value: string | undefined): void;
     (e: "on-enter"): void;
     (e: "on-esc"): void;
 }>();
@@ -67,13 +65,13 @@ watch(
         <small>Filter by {{ props.filter.placeholder }}:</small>
 
         <BInputGroup>
-            <BFormInput
+            <GFormInput
                 :id="`${identifier}-advanced-filter-${props.name}`"
                 ref="filterMenuInput"
                 v-model="localValue"
                 v-g-tooltip.focus.v-danger="props.error"
                 class="mw-100"
-                size="sm"
+                size="small"
                 :state="props.error ? false : null"
                 :placeholder="`any ${props.filter.placeholder}`"
                 :disabled="props.disabled"

@@ -98,6 +98,7 @@ class JobInfo:
         job_directory_type: Literal["galaxy", "pulsar"],
         output_paths: set[str],
         job_type: Literal["tool", "prolog", "epilog"] = "tool",
+        tool_environment_sets_home: bool = False,
     ):
         self.working_directory = working_directory
         # Tool files may be remote staged - so this is unintuitively a property
@@ -105,7 +106,10 @@ class JobInfo:
         self.tool_directory = tool_directory
         self.job_directory = job_directory
         self.tmp_directory = tmp_directory
+        # Directory Galaxy set HOME to, None if Galaxy did not set HOME.
         self.home_directory = home_directory
+        # The tool or a destination tool_env entry exports HOME itself.
+        self.tool_environment_sets_home = tool_environment_sets_home
         self.job_directory_type = job_directory_type
         self.job_type = job_type
         self.output_paths = output_paths

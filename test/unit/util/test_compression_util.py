@@ -1,5 +1,7 @@
+import io
 import os
 import shutil
+import tarfile
 import tempfile
 import zipfile
 
@@ -90,3 +92,21 @@ def test_compressed_file_tar_with_stray_zip_end_record(tmp_path):
         assert cf.file_type == "tar"
         outdir = cf.extract(str(tmp_path))
     assert os.path.isfile(os.path.join(outdir, "member.bin"))
+
+
+def test_tar_ending_in_zip_member_is_not_zip(tmp_path):
+    zip_bytes = io.BytesIO()
+    with zipfile.ZipFile(zip_bytes, "w") as zf:
+        zf.writestr("inner.txt", "inner\n")
+    path = str(tmp_path / "outer.tar")
+    with tarfile.open(path, "w") as tf:
+        for name, data in (("first.txt", b"first\n"), ("inner.zip", zip_bytes.getvalue())):
+            info = tarfile.TarInfo(name)
+            info.size = len(data)
+            tf.addfile(info, io.BytesIO(data))
+    fmt, fh = get_fileobj_raw(path, "rb")
+    with fh:
+        assert fmt is None
+    with CompressedFile(path) as cf:
+        assert cf.file_type == "tar"
+        assert sorted(cf.getname(m) for m in cf.getmembers()) == ["first.txt", "inner.zip"]

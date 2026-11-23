@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, watch } from "vue";
 
-import { useQuotaUsageStore } from "@/stores/quotaUsageStore";
+import { sourceLabelToKey, useQuotaUsageStore } from "@/stores/quotaUsageStore";
 
 import type { AnyStorageDescription } from "./types";
 
@@ -28,7 +28,7 @@ const badges = computed(() => props.storageInfo.badges);
 const userDefined = computed(() => props.storageInfo.object_store_id?.startsWith("user_objects://"));
 
 const quotaUsageStore = useQuotaUsageStore();
-const quotaSourceKey = computed(() => quotaSourceLabel.value ?? "__null__");
+const quotaSourceKey = computed(() => sourceLabelToKey(quotaSourceLabel.value));
 const isLoadingUsage = computed(() => Boolean(quotaUsageStore.loadingBySource[quotaSourceKey.value]));
 const quotaUsage = computed(() => quotaUsageStore.getQuotaUsageBySourceLabel(quotaSourceLabel.value) ?? null);
 

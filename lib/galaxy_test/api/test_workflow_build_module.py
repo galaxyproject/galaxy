@@ -82,7 +82,7 @@ class TestBuildWorkflowModule(ApiTestCase):
         specify_default = module["tool_state"]["parameter_definition"]["optional"]["specify_default"]
         assert specify_default["default"] == [1, 2]
         (parameter_definition,) = module["config_form"]["inputs"]
-        (integer_case,) = [case for case in parameter_definition["cases"] if case["value"] == "integer"]
+        (integer_case,) = (case for case in parameter_definition["cases"] if case["value"] == "integer")
         default_field = _find_input(integer_case["inputs"], "default")
         assert default_field["multiple"] is True
 

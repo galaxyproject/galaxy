@@ -118,7 +118,7 @@ defineExpose({
         class="g-tooltip"
         :class="{ 'sr-only': !isShowing }"
         :style="tooltipPositionStyle"
-        :data-show="isShowing">
+        :data-show="isShowing || undefined">
         <slot></slot>
         {{ props.text ?? "" }}
         <div

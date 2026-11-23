@@ -1,3 +1,4 @@
+import os
 import re
 from collections.abc import Callable
 from typing import (
@@ -25,6 +26,7 @@ from galaxy.tool_util_models.parameters import (
     DataJobInternalT,
     DataRequestInternalHda,
     DatasetCollectionElementReference,
+    ReferenceDataInternalJson,
 )
 
 if TYPE_CHECKING:
@@ -92,6 +94,24 @@ def dataset_path(
     return rewrite or dataset.get_file_name()
 
 
+def input_extra_files_path(
+    dataset: DatasetInstance,
+    compute_environment: Optional["ComputeEnvironment"] = None,
+) -> str | None:
+    """Return where a tool finds an input dataset's extra files on disk, if it has any.
+
+    YAML tools get this as ``extra_files_path`` and XML tools as
+    ``$input.extra_files_path``. Rewriting the path makes Pulsar stage the
+    folder and fail the job if it is missing, so only call that for a folder
+    that exists.
+    """
+    extra_files_path: str = dataset.extra_files_path
+    if not os.path.exists(extra_files_path):
+        return None
+    rewrite: str | None = compute_environment.input_extra_files_rewrite(dataset) if compute_environment else None
+    return rewrite or extra_files_path
+
+
 def is_list_like(collection_type: str) -> bool:
     """Returns True if this collection type has array elements.
 
@@ -100,6 +120,36 @@ def is_list_like(collection_type: str) -> bool:
     """
     first_segment = collection_type.split(":")[0]
     return first_segment in ("list", "sample_sheet")
+
+
+def setup_for_reference_data(
+    app: "MinimalToolApp",
+    compute_environment: Optional["ComputeEnvironment"],
+    trusted: bool,
+) -> Callable[[str, str], ReferenceDataInternalJson]:
+    """Set up a callback turning a selected tool data table entry into its dataset-like runtime form."""
+
+    def adapt_reference_data(table_name: str, value: str) -> ReferenceDataInternalJson:
+        table = app.tool_data_tables.get(table_name)
+        if table is None:
+            raise ValueError(f"Data table {table_name} is not configured")
+        if not table.readable_by(trusted=trusted):
+            raise ValueError(f"Data table {table_name} is not available to user-defined tools")
+        entry = next((row for row in table.get_named_fields_list() if row.get("value") == value), None)
+        if entry is None:
+            raise ValueError(f"Data table {table_name} has no entry with value {value}")
+        path = entry.get("path")
+        properties: dict[str, Any] = {
+            "class": "ReferenceData",
+            "source": {"table": table_name, "value": value},
+            "metadata": {k: v for k, v in entry.items() if isinstance(k, str) and k not in ("value", "path")},
+        }
+        if path is not None:
+            properties["path"] = (compute_environment and compute_environment.unstructured_path_rewrite(path)) or path
+            set_basename_and_derived_properties(properties, os.path.basename(path.rstrip(os.sep)))
+        return ReferenceDataInternalJson(**properties)
+
+    return adapt_reference_data
 
 
 def setup_for_runtimeify(
@@ -191,6 +241,7 @@ def setup_for_runtimeify(
             properties["location"] = source_uri
         else:
             properties["path"] = dataset_path(hda_entry, compute_environment, shell_quotable=shell_quotable)
+            properties["extra_files_path"] = input_extra_files_path(hda_entry, compute_environment)
         set_basename_and_derived_properties(properties, hda_entry.dataset.created_from_basename or hda_entry.name)
         # Like Cheetah's ``element_identifier``, fall back to the dataset name outside a collection.
         properties["element_identifier"] = element_identifiers.get(hda_entry) or hda_entry.name

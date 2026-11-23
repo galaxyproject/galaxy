@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { BForm } from "bootstrap-vue";
 import { ref } from "vue";
 
 import { capitalizeFirstLetter } from "@/utils/strings";
@@ -24,7 +23,7 @@ const messageVariant = ref<string | null>(null);
             {{ messageText }}
         </GAlert>
 
-        <BForm id="externalRegister" :class="{ 'd-flex h-100 justify-content-center': !props.columnDisplay }">
+        <form id="externalRegister" :class="{ 'd-flex h-100 justify-content-center': !props.columnDisplay }">
             <div :class="!props.columnDisplay ? 'oidc-idps-column' : 'oidc-idps-grid'">
                 <div v-for="(iDPInfo, idp) in props.idpsWithRegistration" :key="idp">
                     <GButton
@@ -60,7 +59,7 @@ const messageVariant = ref<string | null>(null);
                     </GButton>
                 </div>
             </div>
-        </BForm>
+        </form>
     </div>
 </template>
 

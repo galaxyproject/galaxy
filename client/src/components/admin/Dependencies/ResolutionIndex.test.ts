@@ -149,5 +149,28 @@ describe("ResolutionIndex", () => {
             await rows[0]!.setValue(false);
             expect(headerBox(wrapper).checked).toBe(false);
         });
+
+        it("clears the header when a filter empties the table and the rows come back", async () => {
+            const wrapper = await mountIndex();
+            await wrapper.find('#g-table-requirements-table thead input[type="checkbox"]').setValue(true);
+            expect(headerBox(wrapper).checked).toBe(true);
+
+            await wrapper.setData({ filterResolution: "resolved" });
+            expect(rowBoxes(wrapper)).toHaveLength(0);
+            expect(headerBox(wrapper).checked).toBe(false);
+
+            await wrapper.setData({ filterResolution: null });
+            expect(rowBoxes(wrapper).map((row) => (row.element as HTMLInputElement).checked)).toEqual([false, false]);
+            expect(headerBox(wrapper).checked).toBe(false);
+        });
+
+        it("disables the header while there are no requirements", async () => {
+            vi.mocked(getToolboxDependencies).mockResolvedValue([]);
+            const wrapper = await mountIndex();
+            expect(headerBox(wrapper).disabled).toBe(true);
+
+            await wrapper.setData({ requirements: REQUIREMENTS });
+            expect(headerBox(wrapper).disabled).toBe(false);
+        });
     });
 });

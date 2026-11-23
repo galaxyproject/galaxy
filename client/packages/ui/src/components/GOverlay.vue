@@ -73,7 +73,9 @@ withDefaults(
     transition: opacity 0.15s ease;
 }
 
+// -enter is Vue 2.7's name (the tool shed), -enter-from is Vue 3's.
 .g-overlay-fade-enter,
+.g-overlay-fade-enter-from,
 .g-overlay-fade-leave-to {
     opacity: 0;
 }

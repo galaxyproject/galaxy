@@ -64,17 +64,15 @@ defineProps({
             <FontAwesomeIcon fixed-width :icon="icon" />
             <TextShort :text="title ?? ''" />
         </template>
-        <template>
-            <GDropdownItem
-                v-for="(item, idx) in menu"
-                :key="idx"
-                :data-description="`${id} ${item.title.toLowerCase()}`"
-                :href="item.href"
-                role="menuitem"
-                @click="item.handler && item.handler()">
-                <FontAwesomeIcon v-if="item.icon" fixed-width :icon="item.icon" />
-                <span>{{ item.title }}</span>
-            </GDropdownItem>
-        </template>
+        <GDropdownItem
+            v-for="(item, idx) in menu"
+            :key="idx"
+            :data-description="`${id} ${item.title.toLowerCase()}`"
+            :href="item.href"
+            role="menuitem"
+            @click="item.handler && item.handler()">
+            <FontAwesomeIcon v-if="item.icon" fixed-width :icon="item.icon" />
+            <span>{{ item.title }}</span>
+        </GDropdownItem>
     </BNavItemDropdown>
 </template>

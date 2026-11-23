@@ -4,6 +4,9 @@ import json
 import os
 import subprocess
 import unittest
+import uuid
+from collections.abc import Iterator
+from contextlib import contextmanager
 from shutil import which
 from typing import Any
 
@@ -39,6 +42,32 @@ MULLED_EXAMPLE_MULTI_1_HASH = (
 CREDENTIALS_TEST_TOOL = "secret_tool"
 CONTAINER_TEST_VARIABLES = [{"name": "server", "value": "http://test-server:8080"}]
 CONTAINER_TEST_SECRETS = [{"name": "username", "value": "test_user"}, {"name": "password", "value": "test_pass"}]
+
+
+@contextmanager
+def host_home_probe() -> Iterator[str]:
+    """Yield a file name for a job to create in $HOME and assert it did not land in the host's home."""
+    probe_name = f"galaxy_home_probe_{uuid.uuid4().hex}"
+    host_probe = os.path.join(os.environ["HOME"], probe_name)
+    try:
+        yield probe_name
+        assert not os.path.exists(host_probe), f"job created {host_probe}"
+    finally:
+        if os.path.exists(host_probe):
+            os.unlink(host_probe)
+
+
+class SingularityHomeTestCases:
+    dataset_populator: DatasetPopulator
+
+    def test_legacy_tool_does_not_write_host_home(self) -> None:
+        with host_home_probe() as probe_name, self.dataset_populator.test_history() as history_id:
+            run_response = self.dataset_populator.run_tool("legacy_home_probe", {"probe_name": probe_name}, history_id)
+            self.dataset_populator.wait_for_job(run_response["jobs"][0]["id"], assert_ok=True)
+            home = self.dataset_populator.get_history_dataset_content(
+                history_id, dataset=run_response["outputs"][0]
+            ).strip()
+            assert home, "HOME is unset inside the container"
 
 
 def build_metadata_container():
@@ -521,7 +550,7 @@ class TestInlineJobEnvironmentContainerResolver(IntegrationTestCase):
         assert "0.7.15-r1140" in output
 
 
-class TestSingularityJobsIntegration(TestDockerizedJobsIntegration):
+class TestSingularityJobsIntegration(TestDockerizedJobsIntegration, SingularityHomeTestCases):
     job_config_file = SINGULARITY_JOB_CONFIG_FILE
     build_mulled_resolver = "build_mulled_singularity"
     container_type = "singularity"

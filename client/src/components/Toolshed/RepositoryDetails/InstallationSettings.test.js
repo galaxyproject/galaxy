@@ -91,6 +91,25 @@ describe("InstallationSettings", () => {
         expect(request.install_tool_dependencies).toBe(false);
     });
 
+    it("calls the parent's ok handler once, with the install request", async () => {
+        // An undeclared `ok` would fall through to the GModal root, so the parent's
+        // handler would also run on GModal's own payload-less `ok`.
+        const onOk = vi.fn();
+        const wrapper = mount(InstallationSettings, {
+            props: {
+                repo: { name: "name", owner: "owner" },
+                changesetRevision: "changesetRevision",
+                requiresPanel: false,
+                toolshedUrl: "toolshedUrl",
+            },
+            attrs: { onOk },
+            global: localVue,
+        });
+        await wrapper.find(".g-modal-confirm-buttons button:last-child").trigger("click");
+        expect(onOk).toHaveBeenCalledTimes(1);
+        expect(onOk.mock.calls[0][0].name).toBe("name");
+    });
+
     it("test tool repository installer interface", () => {
         const wrapper = mount(InstallationSettings, {
             propsData: {

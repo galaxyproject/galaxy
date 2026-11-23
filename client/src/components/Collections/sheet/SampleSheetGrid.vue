@@ -2,7 +2,7 @@
 import { faDownload } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import type { ColDef, ValueSetterParams } from "ag-grid-community";
-import { BCol, BFormInput, BInputGroup, BLink, BRow } from "bootstrap-vue";
+import { BCol, BInputGroup, BLink, BRow } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
 import type {
@@ -45,6 +45,7 @@ import {
     useSampleSheetGrid,
 } from "./useSampleSheetGrid";
 
+import GFormInput from "@/components/BaseComponents/Form/GFormInput.vue";
 import UploadSelect from "@/components/Upload/UploadSelect.vue";
 import UploadSelectExtension from "@/components/Upload/UploadSelectExtension.vue";
 
@@ -425,29 +426,29 @@ defineExpose({ attemptCreate });
                 <span class="upload-footer-title">Type</span>
                 <UploadSelectExtension
                     class="upload-footer-extension"
-                    :value="extension"
+                    :model-value="extension"
                     :disabled="busy"
                     :list-extensions="listExtensions"
-                    @input="extension = $event">
+                    @update:model-value="extension = $event">
                 </UploadSelectExtension>
             </BCol>
             <BCol v-if="mode === 'uris'" cols="4">
                 <span class="upload-footer-title">Reference</span>
                 <UploadSelect
                     class="upload-footer-genome"
-                    :value="dbKey"
+                    :model-value="dbKey"
                     :disabled="busy"
                     :options="listDbKeys"
                     what="reference"
                     placeholder="Select Reference"
-                    @input="dbKey = $event" />
+                    @update:model-value="dbKey = $event" />
             </BCol>
             <BCol cols="4">
                 <BInputGroup prepend="Collection Name" class="mb-2" size="sm">
-                    <BFormInput
+                    <GFormInput
                         v-model="name"
                         :placeholder="localize('Enter a name for your new sample sheet')"
-                        size="sm"
+                        size="small"
                         required />
                 </BInputGroup>
             </BCol>

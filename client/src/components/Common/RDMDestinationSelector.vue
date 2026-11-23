@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BCard, BFormGroup, BFormInput } from "bootstrap-vue";
+import { BCard, BFormGroup } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
 import { GalaxyApi } from "@/api";
@@ -9,6 +9,7 @@ import { errorMessageAsString } from "@/utils/simple-error";
 
 import { fileSourcePluginToItem } from "../FilesDialog/utilities";
 
+import GFormInput from "@/components/BaseComponents/Form/GFormInput.vue";
 import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GRadio from "@/components/BaseComponents/GRadio.vue";
@@ -144,11 +145,11 @@ defineExpose({
                     class="mt-3">
                     <FilesInput
                         id="source-selector"
-                        :value="sourceUri"
+                        :model-value="sourceUri"
                         mode="source"
                         :require-writable="true"
                         :filter-options="includeOnlyRDMCompatible"
-                        @input="(v: string) => (sourceUri = v)" />
+                        @update:model-value="(v: string) => (sourceUri = v)" />
                 </BFormGroup>
 
                 <BFormGroup
@@ -156,7 +157,7 @@ defineExpose({
                     label-for="record-name"
                     :description="recordNameDescription"
                     class="mt-3">
-                    <BFormInput
+                    <GFormInput
                         id="record-name-input"
                         v-model="recordName"
                         :placeholder="recordNamePlaceholder"
@@ -195,12 +196,12 @@ defineExpose({
                 class="mt-3">
                 <FilesInput
                     id="existing-record-selector"
-                    :value="recordUri"
+                    :model-value="recordUri"
                     mode="directory"
                     :require-writable="true"
                     :filter-options="fileSource ? undefined : includeOnlyRDMCompatible"
                     :selected-item="fileSourceAsItem"
-                    @input="(v: string) => (recordUri = v)" />
+                    @update:model-value="(v: string) => (recordUri = v)" />
             </BFormGroup>
         </div>
     </div>

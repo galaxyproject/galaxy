@@ -9,10 +9,7 @@ from time import sleep
 
 from galaxy.util.bunch import Bunch
 from . import BaseShellExec
-from ....util.process_groups import (
-    check_pg,
-    kill_pg,
-)
+from ....util.process_groups import kill_pg
 
 log = getLogger(__name__)
 
@@ -54,19 +51,16 @@ class LocalShell(BaseShellExec):
         is_cmd_string = isinstance(cmd, str)
         outf = TemporaryFile()
         p = Popen(cmd, stdin=None, stdout=outf, stderr=PIPE, shell=is_cmd_string, preexec_fn=os.setpgrp)
-        # check process group until timeout
-
+        # Popen.poll() reaps the child and records its exit status.
         for _ in range(int(timeout / timeout_check_interval)):
             sleep(0.1)  # For fast returning commands
-            if not check_pg(p.pid):
+            if p.poll() is not None:
                 break
             sleep(timeout_check_interval)
         else:
             kill_pg(p.pid)
             return Bunch(stdout="", stderr=TIMEOUT_ERROR_MESSAGE, returncode=TIMEOUT_RETURN_CODE)
         outf.seek(0)
-        # Need to poll once to establish return code
-        p.poll()
         return Bunch(stdout=_read_str(outf), stderr=_read_str(p.stderr), returncode=p.returncode)
 
 

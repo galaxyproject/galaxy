@@ -1,3 +1,7 @@
+from urllib.parse import urljoin
+
+from requests import get
+
 from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver import integration_util
 
@@ -36,3 +40,13 @@ class TestPrefixUrlSerializationIntegration(integration_util.IntegrationTestCase
             assert href.startswith(f"{self.url_prefix}/display_application")
             response = self._get(f"{self.url[: -(len(self.url_prefix) + 1)]}{href}")
             response.raise_for_status()
+
+    def test_published_widget_prefix_handling(self) -> None:
+        page_id = self.dataset_populator.new_page(slug="prefixed-widget")["id"]
+        widget_url = urljoin(self.url, f"widgets/pages/{page_id}")
+        assert get(widget_url).headers["Content-Security-Policy"] == "frame-ancestors 'self'"
+        self._put(f"pages/{page_id}/publish").raise_for_status()
+        response = get(widget_url)
+        response.raise_for_status()
+        assert "widgets.bundled.js" in response.text
+        assert response.headers["Content-Security-Policy"] == "frame-ancestors *"

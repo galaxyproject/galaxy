@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import axios from "axios";
-import { BCard, BForm, BFormGroup, BFormInput } from "bootstrap-vue";
+import { BCard, BFormGroup, BFormInput } from "bootstrap-vue";
 import { ref } from "vue";
 import { useRouter } from "vue-router";
 
@@ -37,7 +37,7 @@ async function resetLogin() {
         <div class="container">
             <div class="row justify-content-md-center">
                 <div class="col col-lg-6">
-                    <BForm @submit.prevent="resetLogin">
+                    <form @submit.prevent="resetLogin">
                         <GAlert v-if="!!message" id="reset-password-alert" class="mt-2" :variant="messageVariant" show>
                             {{ message }}
                         </GAlert>
@@ -51,7 +51,7 @@ async function resetLogin() {
                                 Send password reset email
                             </GButton>
                         </BCard>
-                    </BForm>
+                    </form>
                 </div>
             </div>
         </div>

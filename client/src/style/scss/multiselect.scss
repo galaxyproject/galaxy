@@ -101,7 +101,7 @@
 
     .multiselect__tags {
         background: transparent;
-        border: $border-default;
+        border: 1px solid $input-border-color;
         min-height: unset;
         .multiselect__single {
             background: transparent;
@@ -147,4 +147,13 @@
 
 .multiselect--active {
     z-index: 1500; // Should be on top of everything
+}
+
+// vue-multiselect 3's own CSS still starts its fades from Vue 2's `-enter`
+// class, which Vue 3 doesn't apply now that TRANSITION_CLASSES is off. The
+// spinner rule is doubled to beat the library's `-enter-active { opacity: 1 }`,
+// which has the same specificity and loads after this file.
+.multiselect-enter-from,
+.multiselect__loading-enter-from.multiselect__loading-enter-active {
+    opacity: 0;
 }

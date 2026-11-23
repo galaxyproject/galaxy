@@ -7,28 +7,28 @@ import localize from "@/utils/localization";
 import GFormInput from "@/components/BaseComponents/Form/GFormInput.vue";
 
 interface Props {
-    value: string;
+    modelValue: string;
     shortWhatIsBeingCreated: string;
 }
 
 const props = defineProps<Props>();
 
-const name = ref(props.value);
+const name = ref(props.modelValue);
 
 const emit = defineEmits<{
-    (e: "input", value: string): void;
+    (e: "update:modelValue", value: string): void;
 }>();
 
-// Watch for external updates to value and sync with innerValue
+// Keep the local copy in step when the parent changes modelValue
 watch(
-    () => props.value,
+    () => props.modelValue,
     (newValue) => {
         name.value = newValue;
     },
 );
 
 watch(name, (newValue) => {
-    emit("input", newValue);
+    emit("update:modelValue", newValue);
 });
 
 function updateName(v: string | null) {

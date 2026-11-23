@@ -80,8 +80,10 @@ describe("WorkflowComment", () => {
                 scale: 1,
                 rootOffset: {},
             },
-            provide: {
-                transform: mockTransform,
+            global: {
+                provide: {
+                    transform: mockTransform,
+                },
             },
         });
 
@@ -124,8 +126,10 @@ describe("WorkflowComment", () => {
                 scale: 1,
                 rootOffset: {},
             },
-            provide: {
-                transform: mockTransform,
+            global: {
+                provide: {
+                    transform: mockTransform,
+                },
             },
         });
 
@@ -150,8 +154,10 @@ describe("WorkflowComment", () => {
                 scale: 1,
                 rootOffset: {},
             },
-            provide: {
-                transform: mockTransform,
+            global: {
+                provide: {
+                    transform: mockTransform,
+                },
             },
         });
 
@@ -180,8 +186,10 @@ describe("WorkflowComment", () => {
                 scale: 1,
                 rootOffset: {},
             },
-            provide: {
-                transform: mockTransform,
+            global: {
+                provide: {
+                    transform: mockTransform,
+                },
             },
         });
 
@@ -197,7 +205,7 @@ describe("WorkflowComment", () => {
             vi.mocked(sanitizeHtml).mockImplementation((html) => `<span class="sanitized">${html}</span>`);
             return mount(WorkflowComment as any, {
                 propsData: { comment: { ...comment, type, data }, scale: 1, rootOffset: {} },
-                provide: { transform: mockTransform },
+                global: { provide: { transform: mockTransform } },
             });
         }
 
@@ -222,6 +230,27 @@ describe("WorkflowComment", () => {
             // markdown-it escapes raw HTML in the source before it reaches the sanitizer
             expect(html).toContain("&lt;b&gt;raw&lt;/b&gt;");
             expect(wrapper.find(".rendered-markdown .sanitized").exists()).toBe(true);
+        });
+    });
+
+    // Vue 3 renders enumerated attributes as given instead of coercing them (compat-config.js
+    // turns ATTR_ENUMERATED_COERCION off), so check the editable title/text spans still get
+    // explicit "true"/"false".
+    describe("contenteditable without enumerated coercion", () => {
+        function editable(type: string, data: object, readonly: boolean) {
+            const wrapper = mount(WorkflowComment as any, {
+                propsData: { comment: { ...comment, type, data }, scale: 1, rootOffset: {}, readonly },
+                global: { provide: { transform: mockTransform } },
+            });
+            return wrapper.find("[contenteditable]").attributes("contenteditable");
+        }
+
+        it.each([
+            ["text", { size: 1, text: "text" }],
+            ["frame", { title: "title" }],
+        ])("renders %s comments editable only when not readonly", (type, data) => {
+            expect(editable(type, data, false)).toBe("true");
+            expect(editable(type, data, true)).toBe("false");
         });
     });
 });

@@ -2063,7 +2063,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Returns histories available to the current user. */
+        /**
+         * Returns histories available to the current user.
+         * @description With `search`, `limit` defaults to 100 and must be less than 1000, and `sort_by=size`
+         *     is accepted only for a listing of the caller's own histories.
+         */
         get: operations["index_api_histories_get"];
         put?: never;
         /**
@@ -5739,6 +5743,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/tools/data_inputs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Return the dataset and collection inputs of the tools the user can see, by tool id.
+         * @description Covers the tools `GET /api/tools?in_panel=false` lists; tools without data inputs are left out.
+         */
+        get: operations["tools__data_inputs"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/tools/fetch": {
         parameters: {
             query?: never;
@@ -6877,6 +6901,28 @@ export interface paths {
          * @description Return information about the current authenticated user.
          */
         get: operations["whoami_api_whoami_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/widgets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Lists the widgets this Galaxy serves
+         * @description **Warning**: This API is unstable and may change without notice.
+         *
+         *     Widgets are interactive views of single resources that respect Galaxy's authorization. Hiding actions in a widget is a presentation choice, not an access control. Any origin may embed widgets that support public embedding while their resource is published or accessible via link; other widgets only Galaxy itself and the origins in `widgets_allowed_origins`. `/widgets/` serves the widgets app for any path, so a widget this Galaxy lacks still loads, showing only an error inside the page. Consumers check this list for the widgets and parameters an instance supports instead of hardcoding routes per Galaxy version.
+         */
+        get: operations["index_api_widgets_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -8164,6 +8210,11 @@ export interface components {
              * @description Explanation of the agent's reasoning
              */
             reasoning?: string | null;
+            /**
+             * Sources
+             * @description Verified sources behind the response
+             */
+            sources?: components["schemas"]["SourceCitation"][];
             /**
              * Suggestions
              * @description Actionable suggestions
@@ -9877,6 +9928,7 @@ export interface components {
                 | components["schemas"]["GroupTagParameterModel"]
                 | components["schemas"]["BaseUrlParameterModel"]
                 | components["schemas"]["GenomeBuildParameterModel"]
+                | components["schemas"]["ReferenceDataParameterModel"]
                 | components["schemas"]["ColorParameterModel"]
                 | components["schemas"]["ConditionalParameterModel"]
                 | components["schemas"]["RepeatParameterModel"]
@@ -18289,7 +18341,7 @@ export interface components {
          * InvocationSortByEnum
          * @enum {string}
          */
-        InvocationSortByEnum: "create_time" | "update_time" | "None";
+        InvocationSortByEnum: "create_time" | "update_time";
         /**
          * InvocationState
          * @enum {string}
@@ -19194,10 +19246,17 @@ export interface components {
             rerun_remap_job_id?: string | null;
             /**
              * Send Email Notification
-             * @description TODO
+             * @deprecated
+             * @description Legacy alias for send_notification. Delivery follows the user's tool notification preferences.
              * @default false
              */
             send_email_notification: boolean;
+            /**
+             * Send Notification
+             * @description Notify on completion using the user's channel preferences.
+             * @default false
+             */
+            send_notification: boolean;
             /**
              * Strict
              * @description Turn on strict validation of the inputs that drops support for some inconsistent legacy behavior.
@@ -20855,6 +20914,8 @@ export interface components {
                 | components["schemas"]["MessageNotificationContent"]
                 | components["schemas"]["NewSharedItemNotificationContent"]
                 | components["schemas"]["StorageOperationNotificationContent"]
+                | components["schemas"]["WorkflowCompletionNotificationContent"]
+                | components["schemas"]["ToolCompletionNotificationContent"]
                 | components["schemas"]["ToolInstallationRequestCreateContent"]
                 | components["schemas"]["BroadcastNotificationContent"];
             /**
@@ -20945,6 +21006,8 @@ export interface components {
                 | components["schemas"]["MessageNotificationContent"]
                 | components["schemas"]["NewSharedItemNotificationContent"]
                 | components["schemas"]["StorageOperationNotificationContent"]
+                | components["schemas"]["WorkflowCompletionNotificationContent"]
+                | components["schemas"]["ToolCompletionNotificationContent"]
                 | components["schemas"]["ToolInstallationRequestNotificationContent"]
                 | components["schemas"]["BroadcastNotificationContent"];
             /**
@@ -21727,6 +21790,7 @@ export interface components {
                 | components["schemas"]["GroupTagParameterModel"]
                 | components["schemas"]["BaseUrlParameterModel"]
                 | components["schemas"]["GenomeBuildParameterModel"]
+                | components["schemas"]["ReferenceDataParameterModel"]
                 | components["schemas"]["ColorParameterModel"]
                 | components["schemas"]["ConditionalParameterModel"]
                 | components["schemas"]["RepeatParameterModel"]
@@ -22178,7 +22242,13 @@ export interface components {
          *     displayed in the notification preferences.
          * @enum {string}
          */
-        PersonalNotificationCategory: "message" | "new_shared_item" | "storage_operation" | "tool_installation_request";
+        PersonalNotificationCategory:
+            | "message"
+            | "new_shared_item"
+            | "storage_operation"
+            | "tool_installation_request"
+            | "workflow_execution_completed"
+            | "tool_execution_completed";
         /** PluginAspectStatus */
         PluginAspectStatus: {
             /** Message */
@@ -22543,6 +22613,71 @@ export interface components {
             /** Workflow */
             workflow: unknown;
         };
+        /**
+         * ReferenceDataParameterModel
+         * @description A tool data table entry, requested by the value of its `value` column.
+         *
+         *     Tool expressions receive the entry as a ReferenceDataInternalJson, or a list of them when `multiple` is set.
+         */
+        ReferenceDataParameterModel: {
+            /**
+             * Argument
+             * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
+             */
+            argument?: string | null;
+            /**
+             * Help
+             * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
+             */
+            help?: string | null;
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden: boolean;
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic: boolean;
+            /**
+             * Label
+             * @description Will be displayed on the tool page as the label of the parameter.
+             */
+            label?: string | null;
+            /**
+             * Multiple
+             * @default false
+             */
+            multiple: boolean;
+            /**
+             * Name
+             * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
+             */
+            name: string;
+            /**
+             * Optional
+             * @description If `false`, parameter must have a value.
+             * @default false
+             */
+            optional: boolean;
+            /**
+             * Parameter Type
+             * @default gx_reference_data
+             * @constant
+             */
+            parameter_type: "gx_reference_data";
+            /**
+             * Table
+             * @description Name of the tool data table offering the entries.
+             */
+            table: string;
+            /**
+             * Type
+             * @constant
+             */
+            type: "reference_data";
+        };
         /** RegexJobMessage */
         RegexJobMessage: {
             /** Code Desc */
@@ -22780,6 +22915,7 @@ export interface components {
                 | components["schemas"]["GroupTagParameterModel"]
                 | components["schemas"]["BaseUrlParameterModel"]
                 | components["schemas"]["GenomeBuildParameterModel"]
+                | components["schemas"]["ReferenceDataParameterModel"]
                 | components["schemas"]["ColorParameterModel"]
                 | components["schemas"]["ConditionalParameterModel"]
                 | components["schemas"]["RepeatParameterModel"]
@@ -23452,6 +23588,7 @@ export interface components {
                 | components["schemas"]["GroupTagParameterModel"]
                 | components["schemas"]["BaseUrlParameterModel"]
                 | components["schemas"]["GenomeBuildParameterModel"]
+                | components["schemas"]["ReferenceDataParameterModel"]
                 | components["schemas"]["ColorParameterModel"]
                 | components["schemas"]["ConditionalParameterModel"]
                 | components["schemas"]["RepeatParameterModel"]
@@ -24357,6 +24494,27 @@ export interface components {
              * @description User ID of user that ran this job
              */
             user_id?: string | null;
+        };
+        /**
+         * SourceCitation
+         * @description A source an agent drew on, taken from what its tools returned rather than model-written text.
+         */
+        SourceCitation: {
+            /**
+             * Source Type
+             * @description Kind of source, e.g. 'gtn_tutorial' or 'gtn_faq'
+             */
+            source_type: string;
+            /**
+             * Title
+             * @description Title of the source
+             */
+            title: string;
+            /**
+             * Url
+             * @description URL of the source
+             */
+            url: string;
         };
         /** SplitUpPairedDataLogEntry */
         SplitUpPairedDataLogEntry: {
@@ -25464,7 +25622,7 @@ export interface components {
             compare?: components["schemas"]["OutputCompareType"] | null;
             /**
              * Decompress
-             * @description If true, decompress files before comparison. Applies to assertions expressed with `assert_contents` or `compare` set to anything but `sim_size`. Useful for testing compressed outputs that are non-deterministic despite having deterministic decompressed contents. By default, only files compressed with bz2, gzip and zip are automatically decompressed.
+             * @description If true, decompress files before comparison. Applies to assertions expressed with `assert_contents`, to `md5` and `checksum`, and to `compare` set to anything but `sim_size`. Useful for testing compressed outputs that are non-deterministic despite having deterministic decompressed contents. By default, only files compressed with bz2, gzip and zip are automatically decompressed. The result of combining `decompress` with `md5` or `checksum` on an archive with more than one member is undefined.
              */
             decompress?: boolean | null;
             /**
@@ -25547,7 +25705,7 @@ export interface components {
             compare?: components["schemas"]["OutputCompareType"] | null;
             /**
              * Decompress
-             * @description If true, decompress files before comparison. Applies to assertions expressed with `assert_contents` or `compare` set to anything but `sim_size`. Useful for testing compressed outputs that are non-deterministic despite having deterministic decompressed contents. By default, only files compressed with bz2, gzip and zip are automatically decompressed.
+             * @description If true, decompress files before comparison. Applies to assertions expressed with `assert_contents`, to `md5` and `checksum`, and to `compare` set to anything but `sim_size`. Useful for testing compressed outputs that are non-deterministic despite having deterministic decompressed contents. By default, only files compressed with bz2, gzip and zip are automatically decompressed. The result of combining `decompress` with `md5` or `checksum` on an archive with more than one member is undefined.
              */
             decompress?: boolean | null;
             /**
@@ -25686,7 +25844,7 @@ export interface components {
             compare?: components["schemas"]["OutputCompareType"] | null;
             /**
              * Decompress
-             * @description If true, decompress files before comparison. Applies to assertions expressed with `assert_contents` or `compare` set to anything but `sim_size`. Useful for testing compressed outputs that are non-deterministic despite having deterministic decompressed contents. By default, only files compressed with bz2, gzip and zip are automatically decompressed.
+             * @description If true, decompress files before comparison. Applies to assertions expressed with `assert_contents`, to `md5` and `checksum`, and to `compare` set to anything but `sim_size`. Useful for testing compressed outputs that are non-deterministic despite having deterministic decompressed contents. By default, only files compressed with bz2, gzip and zip are automatically decompressed. The result of combining `decompress` with `md5` or `checksum` on an archive with more than one member is undefined.
              */
             decompress?: boolean | null;
             /**
@@ -25769,7 +25927,7 @@ export interface components {
             compare?: components["schemas"]["OutputCompareType"] | null;
             /**
              * Decompress
-             * @description If true, decompress files before comparison. Applies to assertions expressed with `assert_contents` or `compare` set to anything but `sim_size`. Useful for testing compressed outputs that are non-deterministic despite having deterministic decompressed contents. By default, only files compressed with bz2, gzip and zip are automatically decompressed.
+             * @description If true, decompress files before comparison. Applies to assertions expressed with `assert_contents`, to `md5` and `checksum`, and to `compare` set to anything but `sim_size`. Useful for testing compressed outputs that are non-deterministic despite having deterministic decompressed contents. By default, only files compressed with bz2, gzip and zip are automatically decompressed. The result of combining `decompress` with `md5` or `checksum` on an archive with more than one member is undefined.
              */
             decompress?: boolean | null;
             /**
@@ -25917,6 +26075,40 @@ export interface components {
             /** Value */
             value?: string | null;
         };
+        /** ToolCompletionNotificationContent */
+        ToolCompletionNotificationContent: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            category: "tool_execution_completed";
+            /**
+             * Event
+             * @default completed
+             * @enum {string}
+             */
+            event: "needs_attention" | "completed";
+            /**
+             * Implicit Collection Jobs Id
+             * @description The encoded job group ID for a collection map-over.
+             */
+            implicit_collection_jobs_id?: string | null;
+            /**
+             * Job Id
+             * @description The encoded job ID for a single tool execution.
+             */
+            job_id?: string | null;
+            /**
+             * Message
+             * @description The message of the notification (supports Markdown).
+             */
+            message: string;
+            /**
+             * Subject
+             * @description The subject of the notification.
+             */
+            subject: string;
+        };
         /** ToolDataDetails */
         ToolDataDetails: {
             /**
@@ -26001,6 +26193,35 @@ export interface components {
              * @description The name of the field
              */
             name: string;
+        };
+        /** ToolDataInput */
+        ToolDataInput: {
+            /**
+             * Collection Type
+             * @description Collection types a `data_collection` input accepts, comma-separated (`list,paired`); null for a `data` input and for a collection input that accepts any collection type.
+             */
+            collection_type: string | null;
+            /**
+             * Extensions
+             * @description Datatype extensions the input accepts; `data` accepts any datatype.
+             */
+            extensions: string[];
+            /**
+             * Multiple
+             * @description Whether the input accepts several datasets; false for a collection input.
+             */
+            multiple: boolean;
+            /**
+             * Name
+             * @description The `|`-joined path of the parameter; inputs in a repeat use its first element (`queries_0|input`). For a `data` input it works as a tool form URL parameter that preselects a dataset; the form cannot prefill a `data_collection` input from the URL. Null for an input in a conditional case that is not the default one, which the form cannot reach.
+             */
+            name: string | null;
+            /**
+             * Type
+             * @description The parameter type: a dataset input or a collection input.
+             * @enum {string}
+             */
+            type: "data" | "data_collection";
         };
         /** ToolDataItem */
         ToolDataItem: {
@@ -27122,9 +27343,23 @@ export interface components {
          *           },
          *           "enabled": true
          *         },
+         *         "tool_execution_completed": {
+         *           "channels": {
+         *             "email": false,
+         *             "push": true
+         *           },
+         *           "enabled": true
+         *         },
          *         "tool_installation_request": {
          *           "channels": {
          *             "email": true,
+         *             "push": true
+         *           },
+         *           "enabled": true
+         *         },
+         *         "workflow_execution_completed": {
+         *           "channels": {
+         *             "email": false,
          *             "push": true
          *           },
          *           "enabled": true
@@ -27591,9 +27826,23 @@ export interface components {
          *           },
          *           "enabled": true
          *         },
+         *         "tool_execution_completed": {
+         *           "channels": {
+         *             "email": false,
+         *             "push": true
+         *           },
+         *           "enabled": true
+         *         },
          *         "tool_installation_request": {
          *           "channels": {
          *             "email": true,
+         *             "push": true
+         *           },
+         *           "enabled": true
+         *         },
+         *         "workflow_execution_completed": {
+         *           "channels": {
+         *             "email": false,
          *             "push": true
          *           },
          *           "enabled": true
@@ -27628,6 +27877,8 @@ export interface components {
                 | components["schemas"]["MessageNotificationContent"]
                 | components["schemas"]["NewSharedItemNotificationContent"]
                 | components["schemas"]["StorageOperationNotificationContent"]
+                | components["schemas"]["WorkflowCompletionNotificationContent"]
+                | components["schemas"]["ToolCompletionNotificationContent"]
                 | components["schemas"]["ToolInstallationRequestNotificationContent"];
             /**
              * Create time
@@ -28572,6 +28823,65 @@ export interface components {
              * @example 0123456789ABCDEF
              */
             revision: string;
+        };
+        /** Widget */
+        Widget: {
+            /**
+             * Description
+             * @description What the widget shows.
+             */
+            description: string;
+            /**
+             * Identifier
+             * @description Identifier of the widget.
+             */
+            id: string;
+            /**
+             * Name
+             * @description Display name of the widget.
+             */
+            name: string;
+            /**
+             * Parameters Schema
+             * @description JSON Schema of the parameters object. Path parameters fill the braces in `path`, all others go in the query.
+             */
+            parameters_schema: {
+                [key: string]: unknown;
+            };
+            /**
+             * Path
+             * @description Path template relative to `<galaxy root>/widgets/`, with path parameters in braces.
+             */
+            path: string;
+        };
+        /** WorkflowCompletionNotificationContent */
+        WorkflowCompletionNotificationContent: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            category: "workflow_execution_completed";
+            /**
+             * Event
+             * @default completed
+             * @enum {string}
+             */
+            event: "needs_attention" | "completed";
+            /**
+             * Invocation Id
+             * @description The encoded workflow invocation ID.
+             */
+            invocation_id?: string | null;
+            /**
+             * Message
+             * @description The message of the notification (supports Markdown).
+             */
+            message: string;
+            /**
+             * Subject
+             * @description The subject of the notification.
+             */
+            subject: string;
         };
         /** WorkflowEngineVersion */
         WorkflowEngineVersion: {
@@ -29835,6 +30145,7 @@ export interface components {
             | components["schemas"]["YamlColorParameter"]
             | components["schemas"]["YamlDataParameter"]
             | components["schemas"]["YamlDataCollectionParameter"]
+            | components["schemas"]["YamlReferenceDataParameter"]
             | components["schemas"]["YamlConditionalParameter-Input"]
             | components["schemas"]["YamlRepeatParameter-Input"]
             | components["schemas"]["YamlSectionParameter-Input"];
@@ -29848,6 +30159,7 @@ export interface components {
             | components["schemas"]["YamlColorParameter"]
             | components["schemas"]["YamlDataParameter"]
             | components["schemas"]["YamlDataCollectionParameter"]
+            | components["schemas"]["YamlReferenceDataParameter"]
             | components["schemas"]["YamlConditionalParameter-Output"]
             | components["schemas"]["YamlRepeatParameter-Output"]
             | components["schemas"]["YamlSectionParameter-Output"];
@@ -29926,6 +30238,55 @@ export interface components {
             selected: boolean;
             /** Value */
             value: string;
+        };
+        /**
+         * YamlReferenceDataParameter
+         * @description A built-in reference, such as a genome, that an administrator installed in a tool data table.
+         * @example {
+         *       "label": "Reference genome",
+         *       "name": "reference",
+         *       "table": "fasta_indexes",
+         *       "type": "reference_data"
+         *     }
+         */
+        YamlReferenceDataParameter: {
+            /**
+             * Help
+             * @description Additional guidance shown on the tool form to help users choose a value.
+             */
+            help?: string | null;
+            /**
+             * Label
+             * @description Label shown for the input on the tool form.
+             */
+            label?: string | null;
+            /**
+             * Multiple
+             * @description Set true to let the user select several table entries, supplied as a list.
+             * @default false
+             */
+            multiple: boolean;
+            /**
+             * Name
+             * @description Identifier used to read this input from `shell_command` and other expressions.
+             */
+            name: string;
+            /**
+             * Optional
+             * @description Set true when the command can run without the user supplying this input.
+             * @default false
+             */
+            optional: boolean;
+            /**
+             * Table
+             * @description Name of the tool data table. A user-defined tool can only use tables an admin allows.
+             */
+            table: string;
+            /**
+             * @description Lets the user pick a tool data table entry and exposes it to expressions like a dataset. (enum property replaced by openapi-typescript)
+             * @enum {string}
+             */
+            type: "reference_data";
         };
         /**
          * YamlRepeatParameter
@@ -40005,7 +40366,7 @@ export interface operations {
                 /** @description Whether to include archived histories. */
                 show_archived?: boolean | null;
                 /** @description Sort index by this specified attribute */
-                sort_by?: "create_time" | "name" | "update_time" | "username";
+                sort_by?: "create_time" | "name" | "size" | "update_time" | "username";
                 /** @description Sort in descending order? */
                 sort_desc?: boolean;
                 /**
@@ -44506,6 +44867,8 @@ export interface operations {
                 /** @description Include details for individual invocation steps and populate a steps attribute in the resulting dictionary. */
                 step_details?: boolean;
                 include_nested_invocations?: boolean;
+                /** @description Return only invocations matching every term. `workflow:<name>` and `history:<name>` match the name of the invocation's workflow or history, as a substring or, when the name is quoted, exactly. Text without a key matches the workflow name. `workflow_id:<id>` and `history_id:<id>` can repeat, and match any of the given ids. At most 10 keyed or quoted terms are used. */
+                search?: string | null;
             };
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
@@ -51745,6 +52108,52 @@ export interface operations {
             };
         };
     };
+    tools__data_inputs: {
+        parameters: {
+            query?: {
+                /** @description Only include tools of this `tool_type`, e.g. `interactive`. */
+                tool_type?: string | null;
+            };
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: components["schemas"]["ToolDataInput"][];
+                    };
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
     fetch_form_api_tools_fetch_post: {
         parameters: {
             query?: never;
@@ -51987,6 +52396,7 @@ export interface operations {
                         | components["schemas"]["GroupTagParameterModel"]
                         | components["schemas"]["BaseUrlParameterModel"]
                         | components["schemas"]["GenomeBuildParameterModel"]
+                        | components["schemas"]["ReferenceDataParameterModel"]
                         | components["schemas"]["ColorParameterModel"]
                         | components["schemas"]["ConditionalParameterModel"]
                         | components["schemas"]["RepeatParameterModel"]
@@ -55390,6 +55800,44 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["UserModel"] | null;
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    index_api_widgets_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Widget"][];
                 };
             };
             /** @description Request Error */

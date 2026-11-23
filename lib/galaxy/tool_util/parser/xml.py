@@ -1547,8 +1547,7 @@ class XmlInputSource(InputSource):
             return XmlDrillDownDynamicOptions(code_block=dynamic_options)
 
     def parse_drill_down_static_options(self, tool_data_path: str | None = None) -> list[DrillDownOptionsDict] | None:
-        from_file = self.input_elem.get("from_file", None)
-        if from_file:
+        if from_file := self.input_elem.get("from_file", None):
             if not tool_data_path:
                 # options are unknown, parameter models and the Tool Shed must not read files named by a tool
                 return None

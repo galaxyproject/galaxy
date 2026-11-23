@@ -40,6 +40,18 @@ export const useObjectStoreStore = defineStore("objectStoreStore", () => {
         }
     });
 
+    /** Names of the storages counting toward each quota source; one with its quota disabled counts toward none. */
+    const storeNamesByQuotaSource = computed<Record<string, string[]>>(() => {
+        const namesBySource: Record<string, string[]> = {};
+        for (const store of selectableObjectStores.value ?? []) {
+            const source = store.quota.source;
+            if (source && store.quota.enabled && store.name) {
+                (namesBySource[source] ??= []).push(store.name);
+            }
+        }
+        return namesBySource;
+    });
+
     function getObjectStoreNameById(id?: string | null) {
         if (id) {
             const store = objectStoresById.value[id];
@@ -73,6 +85,7 @@ export const useObjectStoreStore = defineStore("objectStoreStore", () => {
         loading,
         loadErrorMessage,
         selectableObjectStores,
+        storeNamesByQuotaSource,
         getObjectStoreNameById,
         addOrUpdateObjectStore,
     };

@@ -59,6 +59,7 @@ export default {
             type: Boolean,
         },
     },
+    emits: ["update:changedValue", "toggleDescriptionExpand"],
     data() {
         return {
             maxDescriptionLength: MAX_DESCRIPTION_LENGTH,

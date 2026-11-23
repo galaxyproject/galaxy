@@ -1,6 +1,6 @@
 <!-- https://schema.org/Person -->
 <template>
-    <BForm @submit="onSave" @reset="onReset">
+    <form @submit="onSave" @reset="onReset">
         <div v-for="attribute in displayedAttributes" :key="attribute.key" role="group" class="form-group">
             <label :for="attribute.key">{{ attribute.label }}</label>
             <GButton
@@ -27,13 +27,13 @@
         </div>
         <GButton type="submit" color="blue">Save</GButton>
         <GButton type="reset" color="red">Cancel</GButton>
-    </BForm>
+    </form>
 </template>
 
 <script>
 import { faEyeSlash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BForm, BFormInput } from "bootstrap-vue";
+import { BFormInput } from "bootstrap-vue";
 
 import ThingFormMixin from "./ThingFormMixin";
 
@@ -60,7 +60,6 @@ const ATTRIBUTES = ATTRIBUTES_INFO.map((a) => a.key);
 
 export default {
     components: {
-        BForm,
         BFormInput,
         FontAwesomeIcon,
         GButton,

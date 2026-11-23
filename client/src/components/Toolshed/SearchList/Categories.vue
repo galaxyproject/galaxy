@@ -40,6 +40,7 @@ export default {
             required: true,
         },
     },
+    emits: ["onLoading", "onTotal", "onError", "onCategory"],
     data() {
         return {
             categories: [],

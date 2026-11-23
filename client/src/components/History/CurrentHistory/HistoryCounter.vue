@@ -268,8 +268,8 @@ onMounted(() => {
                 <GButton
                     v-if="!hideReload"
                     v-g-tooltip.hover
-                    :title="reloadButtonTitle"
                     v-bind="variantToColor(reloadButtonVariant)"
+                    :title="reloadButtonTitle"
                     size="small"
                     class="rounded-0 text-decoration-none history-refresh-button"
                     @click="reloadContents()">

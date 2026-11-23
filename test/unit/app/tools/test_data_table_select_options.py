@@ -133,6 +133,13 @@ def test_table_dropdown_keeps_dataset_choices(table_select, monkeypatch):
     ]
 
 
+def test_data_meta_filter_on_a_table_that_is_not_installed_still_loads(table_select):
+    param, trans = table_select("""<options from_data_table="not_installed">
+            <filter type="data_meta" ref="reads" key="dbkey" column="name"/>
+        </options>""")
+    assert param.get_options(trans, {}) == []
+
+
 def test_non_table_dropdown_keeps_duplicate_values(table_select):
     _, trans = table_select()
     tool = cast("Tool", Bunch(app=trans.app, profile=26.1, ref_lines=["hg38\tFirst\n", "hg38\tSecond\n"]))

@@ -69,7 +69,6 @@ const emit = defineEmits<{
         transform 0.25s ease;
 }
 
-.navigation-title-collapse-enter,
 .navigation-title-collapse-enter-from,
 .navigation-title-collapse-leave-to {
     max-height: 0;

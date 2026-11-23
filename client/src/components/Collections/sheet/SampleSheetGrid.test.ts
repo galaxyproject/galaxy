@@ -435,6 +435,14 @@ describe("SampleSheetGrid", () => {
             });
         });
 
+        it("names the collection after the typed collection name", async () => {
+            const wrapper = await mountGrid([["https://example.org/a.fastq", "a"]]);
+            const nameInput = wrapper.get("input[placeholder='Enter a name for your new sample sheet']");
+            await nameInput.setValue("My sheet");
+
+            expect(await fetchTarget(wrapper)).toMatchObject({ name: "My sheet" });
+        });
+
         it("applies workbook metadata to the forward or reverse URL its column names", async () => {
             const workbook = {
                 rows: [

@@ -1,4 +1,4 @@
-from enum import Enum
+from enum import StrEnum
 from typing import (
     Literal,
 )
@@ -144,7 +144,7 @@ class PurgeHistoryDatasetsTaskRequest(Model):
     preserve_owner_update_time: bool = False
 
 
-class TaskState(str, Enum):
+class TaskState(StrEnum):
     """Enum representing the possible states of a task."""
 
     PENDING = "PENDING"
@@ -196,5 +196,6 @@ class QueueJobs(Model):
     tags: list[str] | None = None
     data_manager_mode: str | None = None
     send_email_notification: bool = False
+    send_notification: bool = False
     credentials_context: list[dict] | None = None
     dynamic_tool_id: int | None = None  # link to DynamicTool for custom/user tools

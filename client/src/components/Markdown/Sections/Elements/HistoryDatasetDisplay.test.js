@@ -1,5 +1,5 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue } from "@tests/vitest/helpers";
+import { getLocalVue, withPlugins } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -8,6 +8,7 @@ import { reactive, ref } from "vue";
 import { useServerMock } from "@/api/client/__mocks__";
 import { copyDataset } from "@/api/datasets";
 import { testDatatypesMapper } from "@/components/Datatypes/test_fixtures";
+import { embedKey } from "@/composables/embed";
 import { Toast } from "@/composables/toast";
 import { useDatatypesMapperStore } from "@/stores/datatypesMapperStore";
 
@@ -45,10 +46,10 @@ const localVue = getLocalVue();
 
 const { server, http } = useServerMock();
 
-function setUpDatatypesStore() {
+function setUpDatatypesStore(datatypesMapper = testDatatypesMapper) {
     const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
     const datatypesStore = useDatatypesMapperStore();
-    datatypesStore.datatypesMapper = testDatatypesMapper;
+    datatypesStore.datatypesMapper = datatypesMapper;
     return pinia;
 }
 
@@ -71,14 +72,14 @@ describe("HistoryDatasetDisplay", () => {
     const text = { item_data: "some text" };
     const textMetaData = { extension: "txt", name: "someName", state: "ok", peek: "needs a peek" };
 
-    async function mountTarget(datasetId, metaData, content, propsData = {}) {
+    async function mountTarget(datasetId, metaData, content, propsData = {}, provide = {}) {
         server.resetHandlers();
         server.use(
             http.get("/api/datasets/{dataset_id}", ({ response }) => response(200).json(metaData)),
             http.get("/api/datasets/{dataset_id}/get_content_as_text", ({ response }) => response(200).json(content)),
         );
         wrapper = mount(HistoryDatasetDisplay, {
-            global: localVue,
+            global: { ...localVue, provide },
             propsData: { datasetId, ...propsData },
             pinia: setUpDatatypesStore(),
         });
@@ -90,6 +91,22 @@ describe("HistoryDatasetDisplay", () => {
         vi.mocked(Toast.success).mockReset();
         vi.mocked(Toast.error).mockReset();
         mockHistoryStore.currentHistoryId = "current_history_id";
+    });
+
+    it("shows an error toast when the datatypes fail to load", async () => {
+        server.use(
+            http.get("/api/datatypes/types_and_mapping", ({ response }) =>
+                response("5XX").json({ err_msg: "Datatypes unavailable", err_code: 500 }, { status: 500 }),
+            ),
+            http.get("/api/datasets/{dataset_id}", ({ response }) => response(200).json(textMetaData)),
+            http.get("/api/datasets/{dataset_id}/get_content_as_text", ({ response }) => response(200).json(text)),
+        );
+        wrapper = mount(HistoryDatasetDisplay, {
+            props: { datasetId: textDatasetId },
+            global: withPlugins(localVue, setUpDatatypesStore(null)),
+        });
+        await flushPromises();
+        expect(Toast.error).toHaveBeenCalledWith("Datatypes unavailable", "Unable to load datatypes");
     });
 
     it("should render table", async () => {
@@ -111,6 +128,11 @@ describe("HistoryDatasetDisplay", () => {
         expect(wrapper.find(".card-header").exists()).toBe(true);
         await wrapper.setProps({ embedded: true });
         expect(wrapper.find(".card-header").exists()).toBe(false);
+    });
+
+    it("offers no import when embedded", async () => {
+        await mountTarget(textDatasetId, textMetaData, text, {}, { [embedKey]: ref(true) });
+        expect(wrapper.find(SELECTORS.IMPORT_BUTTON).exists()).toBe(false);
     });
 
     it("should expand dataset", async () => {

@@ -89,7 +89,52 @@ def test_reject_invalid_subdomain_switcher_entries(site):
 
 
 def _validate_subdomain_switcher(value):
-    option_schema = AppSchema(GALAXY_CONFIG_SCHEMA_PATH, "galaxy").app_schema["subdomain_switcher"].copy()
+    _validate_option("subdomain_switcher", value)
+
+
+@pytest.mark.parametrize(
+    "servers",
+    [
+        [],
+        [{"label": "usegalaxy.eu", "url": "https://usegalaxy.eu"}],
+        [{"label": "Local Galaxy", "url": "http://localhost:8080/galaxy/"}],
+        [{"label": "Loopback", "url": "http://127.0.0.1:8080"}],
+        [{"label": "Loopback IPv6", "url": "http://[::1]:8080/"}],
+        [{"label": "With port", "url": "https://galaxy.example.org:8443/galaxy"}],
+    ],
+)
+def test_validate_another_galaxy_servers(servers):
+    _validate_option("another_galaxy_servers", servers)
+
+
+def test_another_galaxy_servers_default_is_valid():
+    option_schema = AppSchema(GALAXY_CONFIG_SCHEMA_PATH, "galaxy").app_schema["another_galaxy_servers"]
+    _validate_option("another_galaxy_servers", option_schema["default"])
+
+
+@pytest.mark.parametrize(
+    "server",
+    [
+        {"label": "", "url": "https://usegalaxy.eu"},
+        {"label": "usegalaxy.eu", "url": "usegalaxy.eu"},
+        {"label": "usegalaxy.eu", "url": "/relative/url"},
+        {"label": "usegalaxy.eu", "url": "ftp://usegalaxy.eu"},
+        {"label": "usegalaxy.eu", "url": "http://usegalaxy.eu"},
+        {"label": "usegalaxy.eu", "url": "http://localhost.example.org"},
+        {"label": "usegalaxy.eu", "url": "https://usegalaxy.eu/?x=1"},
+        {"label": "usegalaxy.eu", "url": "https://usegalaxy.eu/#f"},
+        {"label": "usegalaxy.eu", "url": "https://user@usegalaxy.eu"},
+        {"label": "usegalaxy.eu"},
+        {"url": "https://usegalaxy.eu"},
+    ],
+)
+def test_reject_invalid_another_galaxy_servers_entries(server):
+    with pytest.raises(SchemaError):
+        _validate_option("another_galaxy_servers", [server])
+
+
+def _validate_option(name, value):
+    option_schema = AppSchema(GALAXY_CONFIG_SCHEMA_PATH, "galaxy").app_schema[name].copy()
     option_schema.pop("default")
     Core(source_data=value, schema_data=option_schema).validate()
 

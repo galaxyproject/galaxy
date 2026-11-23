@@ -273,6 +273,12 @@ def _from_input_source_galaxy(input_source: InputSource, profile: float) -> Tool
                 validators=select_validators,
                 **_common_param_kwargs(input_source),
             )
+        elif param_type == "reference_data":
+            if (reference_data := input_source.parse_reference_data()) is None:
+                raise ParameterDefinitionError(
+                    "reference_data is only supported in GalaxyTool and GalaxyUserTool YAML tools"
+                )
+            return reference_data.to_internal()
         elif param_type == "drill_down":
             multiple = input_source.get_bool("multiple", False)
             hierarchy = input_source.get("hierarchy", "exact")
@@ -382,6 +388,18 @@ def _from_input_source_galaxy(input_source: InputSource, profile: float) -> Tool
                     discriminator=typed_value, parameters=tool_parameter_models, is_default_when=is_default_when
                 )
             )
+        if isinstance(test_parameter, BooleanParameterModel):
+            # Tool.parse_input_elem supplies empty cases for omitted boolean
+            # branches. Model those execution states as well as declared whens.
+            for boolean_value in (True, False):
+                if not any(when.discriminator == boolean_value for when in whens):
+                    whens.append(
+                        ConditionalWhen(
+                            discriminator=boolean_value,
+                            parameters=[],
+                            is_default_when=boolean_value == default_test_value,
+                        )
+                    )
         return ConditionalParameterModel(
             type="conditional",
             name=input_source.parse_name(),

@@ -13,6 +13,14 @@ import SelectionDialog from "./SelectionDialog.vue";
 import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GTable from "@/components/Common/GTable.vue";
 
+// Translates only what a test asks for, so the other assertions see the source strings.
+const translations = vi.hoisted(() => ({}));
+vi.mock("@/utils/localization", async (importOriginal) => {
+    const actual = await importOriginal();
+    const localize = (text) => translations[text] ?? actual.localize(text);
+    return { ...actual, default: localize, localize };
+});
+
 const mockOptions = {
     callback: () => {},
     modalShow: true,
@@ -53,6 +61,10 @@ describe("SelectionDialog.vue", () => {
         expect(wrapper.emitted("onClick")).toBeUndefined();
     });
 
+    afterEach(() => {
+        Object.keys(translations).forEach((text) => delete translations[text]);
+    });
+
     it("names the search and its clear button", () => {
         expect(wrapper.get("input[type='text']").attributes("aria-label")).toContain("search");
         expect(wrapper.get("button[aria-label='Clear search']").exists()).toBe(true);
@@ -63,10 +75,46 @@ describe("SelectionDialog.vue", () => {
         expect(wrapper.findComponent(DataDialogSearch).exists()).toBeTruthy();
     });
 
+    it.each([true, false])("dialog open matches modalShow %s on mount", async (modalShow) => {
+        const dialogWrapper = mount(SelectionDialog, {
+            props: { ...mockOptions, modalShow },
+            global: localVue,
+            attachTo: document.body,
+        });
+        await nextTick();
+        expect(dialogWrapper.find("dialog").element.open).toBe(modalShow);
+        dialogWrapper.unmount();
+    });
+
     it("hideModal called on click cancel", async () => {
         expect(wrapper.emitted("onCancel")).toBeFalsy();
         wrapper.find("[data-description='selection dialog cancel']").trigger("click");
         expect(wrapper.emitted("onCancel")).toBeTruthy();
+    });
+
+    it("names each row's selection checkbox after the row's label", async () => {
+        await wrapper.setProps({
+            optionsShow: true,
+            selectable: true,
+            items: [
+                { id: "1", label: "file1", isLeaf: true },
+                { id: "2", label: "file2", isLeaf: true },
+            ],
+        });
+
+        const names = wrapper.findAll("tbody input[type='checkbox']").map((box) => box.attributes("aria-label"));
+        expect(names).toEqual(["Select file1", "Select file2"]);
+    });
+
+    it("localizes the row selection checkbox name", async () => {
+        translations["Select"] = "Auswählen";
+        await wrapper.setProps({
+            optionsShow: true,
+            selectable: true,
+            items: [{ id: "1", label: "file1", isLeaf: true }],
+        });
+
+        expect(wrapper.get("tbody input[type='checkbox']").attributes("aria-label")).toBe("Auswählen file1");
     });
 
     it("syncs row selection state from incoming items", async () => {
@@ -259,7 +307,7 @@ describe("SelectionDialog.vue with a provider", () => {
         const wrapper = mountWith(provider);
         await flushPromises();
 
-        wrapper.findComponent(DataDialogSearch).vm.$emit("input", "file 3");
+        wrapper.findComponent(DataDialogSearch).vm.$emit("update:modelValue", "file 3");
         await flushPromises();
         expect(load).toHaveBeenLastCalledWith(expect.objectContaining({ page: 1, filter: "file 3" }));
         expect(rowLabels(wrapper)).toEqual(["file 3", "file 30"]);

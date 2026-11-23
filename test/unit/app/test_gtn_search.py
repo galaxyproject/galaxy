@@ -11,7 +11,7 @@ import sqlite3
 from datetime import (
     datetime,
     timedelta,
-    timezone,
+    UTC,
 )
 from pathlib import Path
 
@@ -177,6 +177,27 @@ def test_search_by_tools_escapes_like_metacharacters(fixture_db: Path):
     assert db.search_by_tools(["hisa_2"]) == []
 
 
+def test_get_tutorial_looks_up_by_slugs(fixture_db: Path):
+    db = GTNSearchDB(db_path=str(fixture_db))
+    result = db.get_tutorial("transcriptomics", "rna-seq-intro")
+    assert result is not None
+    assert result.title == "RNA-seq analysis introduction"
+    assert result.url.endswith("/topics/transcriptomics/tutorials/rna-seq-intro/tutorial.html")
+    assert db.get_tutorial("Transcriptomics", "RNA-seq-intro") is not None
+    assert db.get_tutorial("transcriptomics", "made-up") is None
+    assert db.get_tutorial("variant-analysis", "rna-seq-intro") is None
+
+
+def test_get_faq_looks_up_by_category_and_filename(fixture_db: Path):
+    db = GTNSearchDB(db_path=str(fixture_db))
+    result = db.get_faq("galaxy", "archive-a-history")
+    assert result is not None
+    assert result.title == "How do I archive a history?"
+    assert result.to_dict()["url"] == f"{GTN_FAQ_BASE_URL}/galaxy/archive-a-history.html"
+    assert db.get_faq("Galaxy", "archive-a-history") is not None
+    assert db.get_faq("gtn", "archive-a-history") is None
+
+
 def test_faq_result_to_dict_points_at_per_faq_page():
     # GTN renders each FAQ as its own .html page rather than as a fragment
     # anchor on the category index, so the URL has to be built from the
@@ -258,7 +279,7 @@ def test_refresh_database_if_stale_downloads_when_remote_is_newer(tmp_path: Path
     _build_fixture_db(local_path, "LOCAL")
 
     # Push local mtime well into the past so remote is unambiguously newer.
-    past = (datetime.now(timezone.utc) - timedelta(days=30)).timestamp()
+    past = (datetime.now(UTC) - timedelta(days=30)).timestamp()
     os.utime(local_path, (past, past))
 
     metadata = GTNSearchDB.refresh_database_if_stale(local_path, remote_path.as_uri())
@@ -274,7 +295,7 @@ def test_refresh_database_if_stale_skips_when_local_is_current(tmp_path: Path):
     _build_fixture_db(local_path, "LOCAL")
 
     # Push remote into the past so local always looks current.
-    past = (datetime.now(timezone.utc) - timedelta(days=30)).timestamp()
+    past = (datetime.now(UTC) - timedelta(days=30)).timestamp()
     os.utime(remote_path, (past, past))
 
     local_mtime_before = local_path.stat().st_mtime
@@ -302,7 +323,7 @@ def test_download_stamps_local_mtime_to_remote_last_modified(tmp_path: Path):
     _build_fixture_db(remote_path, "REMOTE")
     # Pin the remote file's mtime to a known past second so we can assert
     # the local copy ends up with the same second after download.
-    pinned = (datetime.now(timezone.utc) - timedelta(days=7)).replace(microsecond=0).timestamp()
+    pinned = (datetime.now(UTC) - timedelta(days=7)).replace(microsecond=0).timestamp()
     os.utime(remote_path, (pinned, pinned))
 
     local_path = tmp_path / "local.db"
@@ -327,9 +348,7 @@ def test_refresh_database_streams_http_download_and_stamps_timestamp(fixture_db:
 
     assert metadata["tutorial_count"] == 2
     assert target.read_bytes() == fixture_db.read_bytes()
-    assert datetime.fromtimestamp(target.stat().st_mtime, tz=timezone.utc) == datetime(
-        2025, 8, 20, 12, 0, tzinfo=timezone.utc
-    )
+    assert datetime.fromtimestamp(target.stat().st_mtime, tz=UTC) == datetime(2025, 8, 20, 12, 0, tzinfo=UTC)
 
 
 @responses.activate
@@ -337,7 +356,7 @@ def test_refresh_database_if_stale_uses_http_head(fixture_db: Path, tmp_path: Pa
     url = "https://example.com/gtn_search.db"
     target = tmp_path / "current.db"
     target.write_bytes(fixture_db.read_bytes())
-    current = datetime(2025, 8, 21, 12, 0, tzinfo=timezone.utc).timestamp()
+    current = datetime(2025, 8, 21, 12, 0, tzinfo=UTC).timestamp()
     os.utime(target, (current, current))
     responses.add(responses.HEAD, url, headers={"Last-Modified": "Wed, 20 Aug 2025 12:00:00 GMT"})
 

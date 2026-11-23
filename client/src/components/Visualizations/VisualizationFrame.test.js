@@ -45,6 +45,14 @@ describe("what the frame hands the plugin", () => {
         expect(incomingOf(unsaved).visualization_id).toBeUndefined();
     });
 
+    it("says whether the plugin is embedded", async () => {
+        const embedded = mountFrame({ embed: true });
+        const standalone = mountFrame({});
+        await flushPromises();
+        expect(incomingOf(embedded).visualization_embedded).toBe(true);
+        expect(incomingOf(standalone).visualization_embedded).toBe(false);
+    });
+
     it("keeps sending the config, plugin and root alongside it", async () => {
         const wrapper = mountFrame({ config: { dataset_id: "d1" }, visualizationId: "abc123" });
         await flushPromises();

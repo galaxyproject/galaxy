@@ -20,6 +20,10 @@ from cachetools import TTLCache
 from kombu.entity import Queue
 
 from galaxy.managers.sse import make_event_id
+from galaxy.model.pending_changes import (
+    InvocationUpdate,
+    JobUpdate,
+)
 from galaxy.queue_worker import (
     ControlTask,
     GalaxyQueueWorker,
@@ -220,3 +224,35 @@ class SSEEventDispatcher:
                 "event_id": event_id or make_event_id(),
             },
         )
+
+    def invocation_update(self, updates: list[InvocationUpdate], event_id: str | None = None) -> None:
+        """Fan out committed workflow invocation changes to their owners and history viewers.
+
+        All changes from one transaction travel in a single control task, so a parent
+        invocation and the subworkflow invocations scheduled with it cost one message.
+        """
+        self._send(
+            "invocation_update",
+            {
+                "updates": updates,
+                "event_id": event_id or make_event_id(),
+            },
+        )
+
+    def job_update(
+        self,
+        updates: list[JobUpdate],
+        resync_user_ids: list[int] | None = None,
+        resync_session_ids: list[int] | None = None,
+        resync_history_ids: list[int] | None = None,
+        event_id: str | None = None,
+    ) -> None:
+        """Fan out committed job state changes to the jobs' users, anonymous sessions and history viewers."""
+        kwargs: dict[str, Any] = {"updates": updates, "event_id": event_id or make_event_id()}
+        if resync_user_ids:
+            kwargs["resync_user_ids"] = resync_user_ids
+        if resync_session_ids:
+            kwargs["resync_session_ids"] = resync_session_ids
+        if resync_history_ids:
+            kwargs["resync_history_ids"] = resync_history_ids
+        self._send("job_update", kwargs)

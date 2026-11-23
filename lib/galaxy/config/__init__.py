@@ -113,9 +113,14 @@ LOGGING_CONFIG_DEFAULT: dict[str, Any] = {
             "propagate": False,
             "handlers": ["console"],
         },
+        # Per-event inotify DEBUG logging: inotify_buffer in watchdog 6, inotify_move_event_grouper in watchdog 7
         "watchdog.observers.inotify_buffer": {
             "level": "INFO",
             "qualname": "watchdog.observers.inotify_buffer",
+        },
+        "watchdog.observers.inotify_move_event_grouper": {
+            "level": "INFO",
+            "qualname": "watchdog.observers.inotify_move_event_grouper",
         },
         "py.warnings": {
             "level": "ERROR",
@@ -177,10 +182,37 @@ DEFAULT_EMAIL_FROM_LOCAL_PART = "galaxy-no-reply"
 DISABLED_FLAG = "disabled"  # Used to mark a config option as disabled
 
 
+COMPLIANCE_LOGGER_NAME = "COMPLIANCE"
+"""Name of the logger recording events needed for data protection compliance, e.g. user purges"""
+
+
+class LogLevelFilter(logging.Filter):
+    """Pass records at or above ``level``, and all records of the compliance logger.
+
+    Used in place of a handler level, so that compliance records are not dropped
+    when the configured log level is higher than theirs.
+    """
+
+    def __init__(self, level: int | str) -> None:
+        super().__init__()
+        levelno = logging.getLevelName(level) if isinstance(level, str) else level
+        if not isinstance(levelno, int):
+            raise ValueError(f"Unknown log level: {level}")
+        self.levelno = levelno
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        return record.levelno >= self.levelno or record.name == COMPLIANCE_LOGGER_NAME
+
+
 def default_log_config(log_level: str = "DEBUG") -> dict[str, Any]:
     logging_conf = copy.deepcopy(LOGGING_CONFIG_DEFAULT)
-    if log_level != "DEBUG":
-        logging_conf["handlers"]["console"]["level"] = log_level
+    console = logging_conf["handlers"]["console"]
+    console.pop("level", None)
+    logging_conf["filters"]["log_level"] = {
+        "()": "galaxy.config.LogLevelFilter",
+        "level": log_level,
+    }
+    console["filters"] = [*console.get("filters", []), "log_level"]
     return logging_conf
 
 
@@ -191,7 +223,7 @@ def configure_logging(config, facts=None):
     or a simple dictionary of configuration variables.
     """
     facts = facts or get_facts(config=config)
-    # Get root logger
+    # Already registered when galaxy.util.custom_logging is imported, repeated here for clarity
     logging.addLevelName(LOGLV_TRACE, "TRACE")
     # PasteScript will have already configured the logger if the
     # 'loggers' section was found in the config file, otherwise we do
@@ -249,6 +281,15 @@ def resolve_curated_workflows_source(source: str | None, owners: list[str]) -> s
     return normalized
 
 
+def validate_widgets_allowed_origins(origins: str | None) -> None:
+    """Reject entries that would change the widgets' Content-Security-Policy beyond listing origins."""
+    for origin in listify(origins, do_strip=True):
+        if not re.fullmatch(r"https?://[A-Za-z0-9.-]+(:\d{1,5})?", origin):
+            raise ConfigurationError(
+                f"Invalid entry in widgets_allowed_origins: {origin!r} (expected an origin such as https://example.org)"
+            )
+
+
 def find_root(kwargs) -> str:
     return os.path.abspath(kwargs.get("root_dir", "."))
 
@@ -281,6 +322,12 @@ def expand_pretty_datetime_format(value):
 
 
 OptStr = TypeVar("OptStr", None, str)
+
+
+def container_entries(value) -> list:
+    """Split a comma-separated string into stripped entries, dropping blank ones."""
+    entries = (entry.strip() if isinstance(entry, str) else entry for entry in listify(value))
+    return [entry for entry in entries if entry != ""]
 
 
 class BaseAppConfiguration(HasDynamicProperties):
@@ -925,6 +972,7 @@ class GalaxyAppConfiguration(GalaxyAppConfigurationAttributes, BaseAppConfigurat
         self.curated_workflows_source = resolve_curated_workflows_source(
             self.curated_workflows_source, self.curated_workflow_owners
         )
+        validate_widgets_allowed_origins(self.widgets_allowed_origins)
 
         self.user_tool_filters = listify(self.user_tool_filters, do_strip=True)
         self.user_tool_label_filters = listify(self.user_tool_label_filters, do_strip=True)
@@ -932,6 +980,12 @@ class GalaxyAppConfiguration(GalaxyAppConfigurationAttributes, BaseAppConfigurat
         self.has_user_tool_filters = bool(
             self.user_tool_filters or self.user_tool_label_filters or self.user_tool_section_filters
         )
+        # An option left empty in galaxy.yml means the default, not "no image"; a value set
+        # through the environment is a comma-separated string.
+        if self.user_defined_tool_allowed_containers is None:
+            self.user_defined_tool_allowed_containers = self.schema.defaults["user_defined_tool_allowed_containers"]
+        self.user_defined_tool_allowed_containers = container_entries(self.user_defined_tool_allowed_containers)
+        self.user_defined_tool_denied_containers = container_entries(self.user_defined_tool_denied_containers)
 
         self.password_expiration_period = timedelta(days=int(cast(SupportsInt, self.password_expiration_period)))
 
@@ -1285,21 +1339,6 @@ class GalaxyAppConfiguration(GalaxyAppConfigurationAttributes, BaseAppConfigurat
             self.redact_user_details_in_bugreport = True
             self.redact_user_address_during_deletion = True
             self.allow_user_deletion = True
-
-            LOGGING_CONFIG_DEFAULT["formatters"]["brief"] = {
-                "format": "%(asctime)s %(levelname)-8s %(name)-15s %(message)s"
-            }
-            LOGGING_CONFIG_DEFAULT["handlers"]["compliance_log"] = {
-                "class": "logging.handlers.RotatingFileHandler",
-                "formatter": "brief",
-                "filename": "compliance.log",
-                "backupCount": 0,
-            }
-            LOGGING_CONFIG_DEFAULT["loggers"]["COMPLIANCE"] = {
-                "handlers": ["compliance_log"],
-                "level": "DEBUG",
-                "qualname": "COMPLIANCE",
-            }
 
         log_destination = kwargs.get("log_destination")
         log_rotate_size = size_to_bytes(unicodify(kwargs.get("log_rotate_size", 0)))

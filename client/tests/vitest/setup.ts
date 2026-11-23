@@ -37,27 +37,9 @@ config.global.directives = {
 };
 vi.mock("../../packages/ui/src/directives/sanitizeHtml");
 
-// Auto-stubs drop compatConfig, so compat would rewire a modelValue component's
-// v-model back to value/input. Leave components that opted out unstubbed, even
-// for an explicit `stubs: { X: true }` (pass a stub component to force one);
-// returning undefined falls back to VTU's default stub (its type doesn't say so).
-config.plugins.createStubs = (({ component }) =>
-    component.compatConfig?.COMPONENT_V_MODEL === false ? component : undefined) as NonNullable<
-    typeof config.plugins.createStubs
->;
-
 // Mock hashedUserId and userLocalStorage by default
 vi.mock("@/composables/hashedUserId");
 vi.mock("@/composables/userLocalStorage");
-
-// Mock handsontable to avoid core-js dependency issues
-vi.mock("handsontable", () => ({
-    default: class Handsontable {},
-}));
-vi.mock("@handsontable/vue", () => ({
-    default: {},
-    HotTable: {},
-}));
 
 // Mock KaTeX to avoid quirks mode warning (it checks document.compatMode at module load)
 vi.mock("katex", () => ({

@@ -6,7 +6,6 @@ access; the last tests talk to a real GitLab instance and are skipped when the p
 credentials are unavailable.
 """
 
-import asyncio
 import logging
 
 import pytest
@@ -363,9 +362,7 @@ def _skip_if_transient(e: Exception):
     cause = e.__cause__ or e
     if (status := getattr(cause, "status", None)) in TRANSIENT_STATUSES:
         pytest.skip(f"DataHUB returned HTTP {status}: {e}")
-    if isinstance(cause, asyncio.TimeoutError) or (
-        isinstance(cause, OSError) and not isinstance(cause, FileNotFoundError)
-    ):
+    if isinstance(cause, TimeoutError) or (isinstance(cause, OSError) and not isinstance(cause, FileNotFoundError)):
         pytest.skip(f"DataHUB unreachable: {e}")
 
 

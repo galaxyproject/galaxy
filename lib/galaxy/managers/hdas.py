@@ -8,6 +8,7 @@ history.
 import gettext
 import logging
 import os
+from collections import defaultdict
 from typing import (
     Any,
     TYPE_CHECKING,
@@ -487,7 +488,10 @@ class HDAStorageCleanerManager(base.StorageCleanerManager):
         stmt = (
             select(HistoryDatasetAssociation)
             .where(HistoryDatasetAssociation.id.in_(item_ids))
-            .options(selectinload(HistoryDatasetAssociation.history), selectinload(HistoryDatasetAssociation.dataset))
+            .options(
+                selectinload(HistoryDatasetAssociation.history).selectinload(model.History.user),
+                selectinload(HistoryDatasetAssociation.dataset),
+            )
         )
         hdas_by_id = {hda.id: hda for hda in self.hda_manager.session().scalars(stmt)}
 
@@ -500,16 +504,25 @@ class HDAStorageCleanerManager(base.StorageCleanerManager):
                 errors.append(StorageItemCleanupError(item_id=hda_id, error=str(e)))
 
         if hdas_to_purge:
-            freed_sizes = user.sole_dataset_sizes(hdas_to_purge)
-            user.adjust_disk_usage_for_datasets(freed_sizes, -1)
-            total_free_bytes = sum(freed_sizes.values())
+            session = self.hda_manager.session()
+            # An admin can clean up other users' datasets, the usage to decrease is their owners'
+            hdas_by_owner: dict[model.User, list[HistoryDatasetAssociation]] = defaultdict(list)
+            for hda in hdas_to_purge:
+                if (owner := hda.user) is not None:
+                    hdas_by_owner[owner].append(hda)
+            # Lock the owners' rows in the order of their ids, as job finish does. The flush writes the default
+            # quota source's usage now, other quota sources lock the row as they are adjusted.
+            for owner in sorted(hdas_by_owner, key=lambda owner: owner.id):
+                freed_sizes = owner.sole_dataset_sizes(hdas_by_owner[owner])
+                owner.adjust_disk_usage_for_datasets(freed_sizes, -1)
+                session.flush([owner])
+                total_free_bytes += sum(freed_sizes.values())
             for hda in hdas_to_purge:
                 hda.deleted = True
                 hda.purged = True
                 assert hda.dataset is not None
                 dataset_ids_to_remove.add(hda.dataset.id)
             success_item_count = len(hdas_to_purge)
-            session = self.hda_manager.session()
             session.commit()
 
         self._request_full_delete_all(dataset_ids_to_remove, user)

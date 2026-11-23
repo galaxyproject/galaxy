@@ -1,4 +1,5 @@
 import re
+from typing import Self
 
 from pydantic import (
     BaseModel,
@@ -7,7 +8,6 @@ from pydantic import (
     RootModel,
     ValidationError,
 )
-from typing_extensions import Self
 
 from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.tool_util_models.parameter_validators import AnySafeValidatorModel
@@ -144,7 +144,10 @@ def validate_column_value(
     elif column_type == "string":
         if not isinstance(column_value, (str,)):
             raise RequestParameterInvalidException(f"{column_value} was not a string as expected")
-        strip_control_characters(column_value)
+        if strip_control_characters(column_value) != column_value:
+            raise RequestParameterInvalidException(
+                f"Column '{column_definition_model.name}' contains control characters that are not allowed."
+            )
     elif column_type == "boolean":
         if not isinstance(column_value, (bool,)):
             raise RequestParameterInvalidException(f"{column_value} was not a boolean as expected")

@@ -28,6 +28,10 @@ const props = withDefaults(defineProps<Props>(), {
     icon: undefined,
 });
 
+const emit = defineEmits<{
+    (e: "onClick"): void;
+}>();
+
 const currentTitle = computed(() => (props.wait ? "Please wait..." : props.tooltip));
 </script>
 
@@ -39,7 +43,7 @@ const currentTitle = computed(() => (props.wait ? "Please wait..." : props.toolt
         :title="currentTitle"
         :disabled="props.wait || props.disabled"
         :size="props.size"
-        @click="$emit('onClick')">
+        @click="emit('onClick')">
         <FontAwesomeIcon v-if="wait" :icon="faSpinner" fixed-width spin />
         <FontAwesomeIcon v-else :icon="!props.icon ? faPlay : props.icon" fixed-width />
         <span v-if="title">{{ title }}</span>

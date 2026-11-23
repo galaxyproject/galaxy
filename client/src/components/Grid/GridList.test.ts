@@ -1,23 +1,28 @@
 import { faCog, faCopy, faFilter, faFolder } from "@fortawesome/free-solid-svg-icons";
 import { createTestingPinia } from "@pinia/testing";
+import { deferred } from "@tests/vitest/deferred";
 import { getLocalVue, nth } from "@tests/vitest/helpers";
 import { setupMockConfig } from "@tests/vitest/mockConfig";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { Toast } from "@/composables/toast";
 import type { GalaxyConfiguration } from "@/stores/configurationStore";
-import Filtering from "@/utils/filtering";
+import Filtering, { equals } from "@/utils/filtering";
 
 import type { GridConfig, RowData } from "./configs/types";
 
 import MountTarget from "./GridList.vue";
+import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 
 vi.useFakeTimers();
 
 setupMockConfig({ disabled: false, enabled: true });
 
 vi.mock("vue-router");
+
+vi.mock("@/composables/toast");
 
 const localVue = getLocalVue();
 
@@ -107,6 +112,10 @@ function createTarget(propsData: TargetProps) {
 }
 
 describe("GridList", () => {
+    beforeEach(() => {
+        vi.mocked(Toast.error).mockClear();
+    });
+
     it("basic rendering", async () => {
         const testGrid = createTestGrid();
         const wrapper = createTarget({
@@ -190,6 +199,214 @@ describe("GridList", () => {
         await flushPromises();
         expect(vi.mocked(testGrid.getData)).toHaveBeenCalledTimes(2);
         expect(vi.mocked(testGrid.getData).mock.calls[1]!.slice(0, 5)).toEqual([0, 25, "filter query", "id", true]);
+    });
+
+    it("column filter handling", async () => {
+        const testGrid = createTestGrid();
+        testGrid.filtering = new Filtering({
+            link: { type: "MultiTags", handler: equals("link", "link"), menuItem: false },
+            name: { handler: equals("name", "name"), menuItem: false },
+        });
+        const search = vi.fn(async () => [
+            { id: "link-1", name: "Link one" },
+            { id: "link-2", name: "Link two" },
+        ]);
+        testGrid.fields[1]!.filter = { key: "link", clears: ["name"], plural: "links", search };
+        const wrapper = createTarget({
+            gridConfig: testGrid,
+        });
+        await flushPromises();
+        const filterInput = () => wrapper.find("[data-description='filter text input']").element as HTMLInputElement;
+        await wrapper.find("[data-description='filter text input']").setValue("name:foo");
+        vi.runAllTimers();
+        await flushPromises();
+        await wrapper.find("[data-description='grid column filter link'] button").trigger("click");
+        await flushPromises();
+        expect(search).toHaveBeenCalledWith("");
+        await wrapper.find("input[data-description='grid column filter option link-2']").setValue(true);
+        await flushPromises();
+        expect(filterInput().value).toBe("link:link-2");
+        expect(vi.mocked(testGrid.getData).mock.calls.at(-1)!.slice(0, 5)).toEqual([0, 25, "link:link-2", "id", true]);
+        await wrapper.find("input[data-description='grid column filter option link-1']").setValue(true);
+        await flushPromises();
+        expect(filterInput().value).toBe("link:link-2 link:link-1");
+        const chips = wrapper.findAll("[data-description='grid active column filter link']");
+        expect(chips.map((chip) => chip.text())).toEqual(["link: Link two", "link: Link one"]);
+        await chips[0]!.trigger("click");
+        await flushPromises();
+        expect(filterInput().value).toBe("link:link-1");
+        expect(wrapper.find("[data-description='grid column filter count']").text()).toBe("1");
+    });
+
+    it("stops offering column filter options at the grid's limit", async () => {
+        const testGrid = createTestGrid();
+        testGrid.filtering = new Filtering({
+            link: { type: "MultiTags", handler: equals("link", "link"), menuItem: false },
+        });
+        testGrid.maxColumnFilterPicks = 1;
+        const search = vi.fn(async () => [
+            { id: "link-1", name: "Link one" },
+            { id: "link-2", name: "Link two" },
+        ]);
+        testGrid.fields[1]!.filter = { key: "link", plural: "links", search };
+        const wrapper = createTarget({ gridConfig: testGrid });
+        await flushPromises();
+        await wrapper.find("[data-description='grid column filter link'] button").trigger("click");
+        await flushPromises();
+        const option = (id: string) =>
+            wrapper.find(`input[data-description='grid column filter option ${id}']`).element as HTMLInputElement;
+        expect(option("link-2").disabled).toBe(false);
+
+        await wrapper.find("input[data-description='grid column filter option link-1']").setValue(true);
+        await flushPromises();
+
+        expect(option("link-1").disabled).toBe(false);
+        expect(option("link-2").disabled).toBe(true);
+        expect(wrapper.find("[data-description='grid column filter limit']").text()).toContain("up to 1 items");
+    });
+
+    it("keeps column filters available when a pick matches nothing", async () => {
+        const testGrid = createTestGrid();
+        testGrid.filtering = new Filtering({
+            link: { type: "MultiTags", handler: equals("link", "link"), menuItem: false },
+        });
+        const search = vi.fn(async () => [{ id: "link-1", name: "Link one" }]);
+        testGrid.fields[1]!.filter = { key: "link", plural: "links", search };
+        const wrapper = createTarget({ gridConfig: testGrid });
+        await flushPromises();
+        await wrapper.find("[data-description='grid column filter link'] button").trigger("click");
+        await flushPromises();
+        vi.mocked(testGrid.getData).mockResolvedValue([[], 0]);
+        await wrapper.find("input[data-description='grid column filter option link-1']").setValue(true);
+        await flushPromises();
+
+        expect(wrapper.text()).toContain("Nothing found with:");
+        expect(wrapper.findAll("[data-description='grid item']")).toHaveLength(0);
+        expect(wrapper.find("[data-description='grid column filter link']").exists()).toBe(true);
+        expect(wrapper.find("[data-description='grid column filter search']").exists()).toBe(true);
+    });
+
+    it("hides the table when there is no data and no filter", async () => {
+        const testGrid = createTestGrid();
+        testGrid.filtering = new Filtering({
+            link: { type: "MultiTags", handler: equals("link", "link"), menuItem: false },
+        });
+        testGrid.fields[1]!.filter = { key: "link", plural: "links", search: vi.fn(async () => []) };
+        vi.mocked(testGrid.getData).mockResolvedValue([[], 0]);
+        const wrapper = createTarget({ gridConfig: testGrid });
+        await flushPromises();
+
+        expect(wrapper.find(".grid-table").exists()).toBe(false);
+        expect(wrapper.text()).toContain("No data available.");
+    });
+
+    it("ignores a response that arrives after a newer one", async () => {
+        const testGrid = createTestGrid();
+        testGrid.filtering = new Filtering({
+            link: { type: "MultiTags", handler: equals("link", "link"), menuItem: false },
+        });
+        const wrapper = createTarget({ gridConfig: testGrid });
+        await flushPromises();
+        const slow = deferred<[RowData[], number]>();
+        const fast = deferred<[RowData[], number]>();
+        vi.mocked(testGrid.getData).mockReturnValueOnce(slow.promise).mockReturnValueOnce(fast.promise);
+        await wrapper.find("[data-description='filter text input']").setValue("link:slow");
+        vi.runAllTimers();
+        await flushPromises();
+        await wrapper.find("[data-description='filter text input']").setValue("link:fast");
+        vi.runAllTimers();
+        await flushPromises();
+
+        fast.resolve([[{ id: "fast-row" }], 1]);
+        await flushPromises();
+        slow.resolve([[{ id: "slow-row" }], 1]);
+        await flushPromises();
+
+        expect(wrapper.find("[data-description='grid cell 0-0']").text()).toBe("fast-row");
+    });
+
+    it("saves the tag edits of a row one after another", async () => {
+        const testGrid = createTestGrid();
+        const saves = [deferred<void>(), deferred<void>()];
+        const tagsHandler = vi.fn((_row: RowData) => saves[tagsHandler.mock.calls.length - 1]!.promise);
+        testGrid.fields.push({ key: "tags", title: "tags", type: "tags", handler: tagsHandler });
+        const wrapper = createTarget({ gridConfig: testGrid, limit: 1 });
+        await flushPromises();
+
+        const tags = wrapper.findComponent(StatelessTags);
+        tags.vm.$emit("update:modelValue", ["first"]);
+        tags.vm.$emit("update:modelValue", ["first", "second"]);
+        await flushPromises();
+        expect(tagsHandler).toHaveBeenCalledTimes(1);
+        expect(tagsHandler.mock.calls[0]![0].tags).toEqual(["first"]);
+        expect(tags.props("modelValue")).toEqual(["first", "second"]);
+
+        saves[0]!.resolve();
+        await flushPromises();
+        expect(tagsHandler).toHaveBeenCalledTimes(2);
+        expect(tagsHandler.mock.calls[1]![0].tags).toEqual(["first", "second"]);
+        saves[1]!.resolve();
+        await flushPromises();
+        expect(tags.props("modelValue")).toEqual(["first", "second"]);
+    });
+
+    it("reports a failed tag save and reloads the grid", async () => {
+        const testGrid = createTestGrid();
+        const tagsHandler = vi.fn(async (_row: RowData) => {
+            throw new Error("save failed");
+        });
+        testGrid.fields.push({ key: "tags", title: "tags", type: "tags", handler: tagsHandler });
+        const wrapper = createTarget({ gridConfig: testGrid, limit: 1 });
+        await flushPromises();
+        expect(testGrid.getData).toHaveBeenCalledTimes(1);
+
+        wrapper.findComponent(StatelessTags).vm.$emit("update:modelValue", ["first"]);
+        await flushPromises();
+
+        expect(tagsHandler).toHaveBeenCalledTimes(1);
+        expect(Toast.error).toHaveBeenCalledWith("Failed to save tags: save failed");
+        expect(testGrid.getData).toHaveBeenCalledTimes(2);
+    });
+
+    it("keeps the tags of rows without an id apart", async () => {
+        const testGrid = createTestGrid();
+        const tagsHandler = vi.fn(async (_row: RowData) => {});
+        testGrid.fields = [{ key: "tags", title: "tags", type: "tags", handler: tagsHandler }];
+        testGrid.getData = vi.fn(async (): Promise<[RowData[], number]> => [[{ tags: ["a"] }, { tags: ["b"] }], 2]);
+        const wrapper = createTarget({ gridConfig: testGrid });
+        await flushPromises();
+
+        const [firstTags, secondTags] = wrapper.findAllComponents(StatelessTags);
+        secondTags!.vm.$emit("update:modelValue", ["b", "edited"]);
+        await flushPromises();
+
+        expect(firstTags!.props("modelValue")).toEqual(["a"]);
+        expect(secondTags!.props("modelValue")).toEqual(["b", "edited"]);
+    });
+
+    it("saves the tag edits of a row without an id one after another", async () => {
+        const testGrid = createTestGrid();
+        const saves = [deferred<void>(), deferred<void>()];
+        const tagsHandler = vi.fn((_row: RowData) => saves[tagsHandler.mock.calls.length - 1]!.promise);
+        testGrid.fields = [{ key: "tags", title: "tags", type: "tags", handler: tagsHandler }];
+        testGrid.getData = vi.fn(async (): Promise<[RowData[], number]> => [[{ tags: ["a"] }], 1]);
+        const wrapper = createTarget({ gridConfig: testGrid });
+        await flushPromises();
+
+        const tags = wrapper.findComponent(StatelessTags);
+        tags.vm.$emit("update:modelValue", ["first"]);
+        tags.vm.$emit("update:modelValue", ["first", "second"]);
+        await flushPromises();
+        expect(tagsHandler).toHaveBeenCalledTimes(1);
+        expect(tags.props("modelValue")).toEqual(["first", "second"]);
+
+        saves[0]!.resolve();
+        await flushPromises();
+        expect(tagsHandler).toHaveBeenCalledTimes(2);
+        expect(tagsHandler.mock.calls[1]![0].tags).toEqual(["first", "second"]);
+        saves[1]!.resolve();
+        await flushPromises();
+        expect(tags.props("modelValue")).toEqual(["first", "second"]);
     });
 
     it("pagination", async () => {

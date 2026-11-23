@@ -27,6 +27,9 @@ export function redirectLoggedIn(to: RouteLocationNormalized) {
     if (!Galaxy?.user?.id) {
         return;
     }
+    if (to.query.token) {
+        return;
+    }
     const redirect = safeLoginRedirect(to.query.redirect, Galaxy.config?.allowed_login_redirect_hosts ?? []);
     if (redirect && !redirect.startsWith("/")) {
         // An allowed external site: leave the router.

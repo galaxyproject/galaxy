@@ -32,10 +32,32 @@ data2	data2name	${__HERE__}/data2/entry.txt
 data3	data3name	${__HERE__}/data3/entry.txt
 """
 
+USER_ACCESSIBLE_TABLE_CONF_XML = """<tables>
+  <table name="shared" {attributes}>
+    <columns>value, name, path</columns>
+    <file path="{loc_path}" />
+  </table>
+</tables>
+"""
+
 COLUMN_DIVERGENT_TABLE_CONF_XML = """<tables>
   <table name="testalpha" comment_char="#">
     <columns>value, name, path, extra</columns>
     <file path="{loc_path}" />
+  </table>
+</tables>
+"""
+
+SHED_COLUMN_DIVERGENT_TABLE_CONF_XML = """<tables>
+  <table name="testalpha" comment_char="#">
+    <columns>value, name, path, extra</columns>
+    <file path="{loc_path}" />
+    <tool_shed_repository>
+      <tool_shed>toolshed.g2.bx.psu.edu</tool_shed>
+      <repository_name>data_manager_example</repository_name>
+      <repository_owner>iuc</repository_owner>
+      <installed_changeset_revision>abc123</installed_changeset_revision>
+    </tool_shed_repository>
   </table>
 </tables>
 """
@@ -164,6 +186,54 @@ def test_assert_data_table_consistency_raises_column_mismatch(tdt_manager):
             {"value": 0, "name": 1, "path": 2, "extra": 3},
         )
     assert exc_info.value.table_name == "testalpha"
+
+
+@pytest.fixture
+def divergent_conf(tmp_path):
+    loc_path = tmp_path / "divergent.loc"
+    loc_path.write_text("data9\tdata9name\t/data9\textra9\n")
+    conf = tmp_path / "divergent_tool_data_table_conf.xml"
+    conf.write_text(COLUMN_DIVERGENT_TABLE_CONF_XML.format(loc_path=loc_path))
+    return conf
+
+
+def test_load_from_config_file_raises_column_mismatch(tdt_manager, tmp_path, divergent_conf):
+    with pytest.raises(DataTableColumnMismatch) as exc_info:
+        tdt_manager.load_from_config_file(divergent_conf, tmp_path)
+    assert exc_info.value.table_name == "testalpha"
+    assert exc_info.value.config_filename == divergent_conf
+    assert exc_info.value.repository_info is None
+    assert str(divergent_conf) in str(exc_info.value)
+
+
+def test_load_from_config_file_column_mismatch_names_repository(tdt_manager, tmp_path):
+    loc_path = tmp_path / "divergent.loc"
+    loc_path.write_text("data9\tdata9name\t/data9\textra9\n")
+    conf = tmp_path / "shed_tool_data_table_conf.xml"
+    conf.write_text(SHED_COLUMN_DIVERGENT_TABLE_CONF_XML.format(loc_path=loc_path))
+    with pytest.raises(DataTableColumnMismatch) as exc_info:
+        tdt_manager.load_from_config_file(conf, tmp_path, from_shed_config=True)
+    assert exc_info.value.repository_info == {
+        "tool_shed": "toolshed.g2.bx.psu.edu",
+        "name": "data_manager_example",
+        "owner": "iuc",
+        "installed_changeset_revision": "abc123",
+    }
+    assert "installed by repository iuc/data_manager_example revision abc123" in str(exc_info.value)
+    assert tdt_manager["testalpha"].columns == {"value": 0, "name": 1, "path": 2}
+
+
+def test_merge_tool_data_table_raises_column_mismatch(tdt_manager, tmp_path, divergent_conf):
+    divergent = ToolDataTableManager(tmp_path, divergent_conf)["testalpha"]
+    table = tdt_manager["testalpha"]
+    original_data = list(table.data)
+    original_filenames = dict(table.filenames)
+    with pytest.raises(DataTableColumnMismatch) as exc_info:
+        table.merge_tool_data_table(divergent)
+    assert exc_info.value.table_name == "testalpha"
+    assert exc_info.value.incoming_columns == divergent.columns
+    assert table.data == original_data
+    assert table.filenames == original_filenames
 
 
 def test_get_filename_for_source_falls_back_to_shared_filename(tdt_manager):
@@ -342,3 +412,41 @@ def test_config_sources_append_unlisted_managed_file(tmp_path, managed_optional)
         ToolDataTableConfigSource(str(tmp_path / "local.xml")),
         ToolDataTableConfigSource(managed, optional=managed_optional),
     ]
+
+
+def _shared_table_conf(tmp_path, name: str, attributes: str) -> str:
+    loc_path = tmp_path / f"{name}.loc"
+    loc_path.write_text("a\tA\t/a\n")
+    conf = tmp_path / f"{name}.xml"
+    conf.write_text(USER_ACCESSIBLE_TABLE_CONF_XML.format(attributes=attributes, loc_path=loc_path))
+    return str(conf)
+
+
+@pytest.mark.parametrize(
+    "attributes,expected",
+    [("", False), ('user_accessible="false"', False), ('user_accessible="true"', True)],
+)
+def test_tables_are_closed_to_user_tools_unless_opened(tmp_path, attributes, expected):
+    conf = _shared_table_conf(tmp_path, "table", attributes)
+    assert ToolDataTableManager(str(tmp_path), conf)["shared"].user_accessible is expected
+
+
+@pytest.mark.parametrize("first,second", [('user_accessible="true"', ""), ("", 'user_accessible="true"')])
+def test_opening_a_table_in_one_config_survives_merging_in_either_order(tmp_path, first, second):
+    configs = [_shared_table_conf(tmp_path, "one", first), _shared_table_conf(tmp_path, "two", second)]
+    manager = ToolDataTableManager(str(tmp_path), config_sources=[ToolDataTableConfigSource(c) for c in configs])
+    assert manager["shared"].user_accessible is True
+    manager.reload_tables()
+    assert manager["shared"].user_accessible is True
+
+
+def test_tool_shed_repository_cannot_open_a_table(tmp_path):
+    repository_conf = _shared_table_conf(tmp_path, "repository", 'user_accessible="true"')
+    persisted_conf = tmp_path / "shed_tool_data_table_conf.xml"
+    manager = ToolDataTableManager(str(tmp_path))
+
+    manager.add_new_entries_from_config_file(repository_conf, str(tmp_path), str(persisted_conf), persist=True)
+
+    assert manager["shared"].user_accessible is False
+    # The persisted shed config is later loaded like an admin's own.
+    assert ToolDataTableManager(str(tmp_path), str(persisted_conf))["shared"].user_accessible is False

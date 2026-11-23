@@ -53,6 +53,7 @@ BASE_TOOL: dict[str, Any] = {
     "outputs": [],
 }
 PARAMETER_RUNTIME_INPUTS: dict[str, Any] = {
+    "reference": {"path": "/refs/hg38.fa"},
     "include_header": True,
     "plot_color": "#ff0000",
     "search_options": {"mode": "sensitive", "iterations": 3},

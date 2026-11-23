@@ -22,6 +22,7 @@ from galaxy import (
 from galaxy.app import UniverseApplication
 from galaxy.app_unittest_utils.galaxy_mock import MockTrans
 from galaxy.app_unittest_utils.toolbox_support import BaseToolBoxTestCase
+from galaxy.app_unittest_utils.tools_support import SIMPLE_CAT_TOOL_CONTENTS
 from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.managers.tools import DynamicToolManager
 from galaxy.tool_util.ontologies import ontology_data
@@ -178,6 +179,52 @@ class TestToolBox(BaseToolBoxTestCase):
             assert tool.to_panel_entry(trans) == tool.to_dict(trans)
             assert ("config_file" in tool.to_panel_entry(trans)) is is_admin
 
+    def test_panel_entry_leaves_out_data_inputs(self):
+        self._init_tool(tool_contents=SIMPLE_CAT_TOOL_CONTENTS)
+        self._add_config("""<toolbox><section id="t" name="test"><tool file="tool.xml" /></section></toolbox>""")
+        tool = self.toolbox.get_tool("test_tool")
+        assert tool.data_inputs
+        assert "data_inputs" not in tool.to_panel_entry(mock_trans())
+
+    def test_data_inputs_by_tool_id(self):
+        self._init_tool(tool_contents=SIMPLE_CAT_TOOL_CONTENTS)
+        self._add_config("""<toolbox><section id="t" name="test"><tool file="tool.xml" /></section></toolbox>""")
+        data_inputs = self.toolbox.data_inputs_by_tool_id(mock_trans())
+        assert {tool_id: [i.model_dump() for i in inputs] for tool_id, inputs in data_inputs.items()} == {
+            "test_tool": [
+                {
+                    "name": "param1",
+                    "extensions": ["tabular"],
+                    "multiple": False,
+                    "type": "data",
+                    "collection_type": None,
+                },
+                {
+                    "name": "repeat1_0|param2",
+                    "extensions": ["tabular"],
+                    "multiple": False,
+                    "type": "data",
+                    "collection_type": None,
+                },
+            ]
+        }
+
+    def test_data_inputs_by_tool_id_restricted_to_tool_type(self):
+        self._init_tool(tool_contents=SIMPLE_CAT_TOOL_CONTENTS)
+        self._add_config("""<toolbox><section id="t" name="test"><tool file="tool.xml" /></section></toolbox>""")
+        assert list(self.toolbox.data_inputs_by_tool_id(mock_trans(), tool_type="default")) == ["test_tool"]
+        assert self.toolbox.data_inputs_by_tool_id(mock_trans(), tool_type="interactive") == {}
+
+    def test_data_inputs_by_tool_id_skips_tools_without_data_inputs(self):
+        self._init_tool_in_section()
+        assert self.toolbox.data_inputs_by_tool_id(mock_trans()) == {}
+
+    def test_data_inputs_by_tool_id_applies_panel_filters(self):
+        self._init_tool(tool_contents=SIMPLE_CAT_TOOL_CONTENTS)
+        self._add_config("""<toolbox><section id="t" name="test"><tool file="tool.xml" /></section></toolbox>""")
+        self.toolbox.get_tool("test_tool").allow_user_access = lambda user, attempting_access: False
+        assert self.toolbox.data_inputs_by_tool_id(mock_trans()) == {}
+
     def test_panel_entry_link_uses_url_prefix(self):
         self._init_tool_in_section()
         self.app.config.galaxy_url_prefix = "/galaxy/"
@@ -306,6 +353,27 @@ class TestToolBox(BaseToolBoxTestCase):
         self.toolbox.get_tool("test_tool").allow_user_access = allow_user_access
         as_dict = self.toolbox.to_dict(mock_trans(), in_panel=False)
         assert len(as_dict) == 0, as_dict
+
+    def test_curated_tool_tags_by_id_skips_tools_the_user_cannot_access(self):
+        tool = self._init_curated_tag_tool()
+        assert self.toolbox.curated_tool_tags_by_id(mock_trans()) == {"test_tool": ["curated_tag"]}
+
+        def deny_access(user, attempting_access: bool = True) -> bool:
+            return False
+
+        tool.allow_user_access = deny_access  # type: ignore[method-assign]
+        assert self.toolbox.curated_tool_tags_by_id(mock_trans()) == {}
+
+    def test_curated_tool_tags_by_id_skips_hidden_tools(self):
+        tool = self._init_curated_tag_tool()
+        tool.hidden = True
+        assert self.toolbox.curated_tool_tags_by_id(mock_trans()) == {}
+
+    def _init_curated_tag_tool(self) -> "Tool":
+        self._init_tool_in_section()
+        tool = self.toolbox.get_tool("test_tool")
+        tool.tool_tags = ["curated_tag"]
+        return tool
 
     def _setup_dynamic_tool_test(self) -> "Tool":
         self._init_tool()
@@ -520,6 +588,35 @@ class TestToolBox(BaseToolBoxTestCase):
         ]:
             with pytest.raises(exceptions.ObjectNotFound):
                 exact_version(tool_id, tool_version)
+
+    def test_exact_lookup_matches_tool_id_not_version(self):
+        self._init_tool()
+        self._setup_two_versions_in_config(section=False)
+        self._setup_two_versions()
+        unversioned = "github.com/galaxyproject/example/test_tool"
+
+        # Non-exact lookups resolve an unversioned guid through its lineage.
+        assert self.toolbox.get_tool(unversioned, tool_version="0.1").id == f"{unversioned}/0.1"
+        assert self.toolbox.has_tool(unversioned, tool_version="0.1")
+        assert self.toolbox.get_tool(unversioned, tool_version="0.1", exact=True) is None
+        assert not self.toolbox.has_tool(unversioned, tool_version="0.1", exact=True)
+        assert self.toolbox.has_tool(f"{unversioned}/0.1", tool_version="0.1", exact=True)
+
+    def test_get_tool_at_version(self):
+        self._init_tool()
+        self._setup_two_versions_in_config(section=False)
+        self._setup_two_versions()
+        unversioned = "github.com/galaxyproject/example/test_tool"
+
+        for tool_id in (unversioned, "test_tool"):
+            assert self.toolbox.get_tool_at_version(tool_id, "0.1").id == f"{unversioned}/0.1"
+            assert self.toolbox.get_tool_at_version(tool_id, "0.2").id == f"{unversioned}/0.2"
+            # A non-exact lookup falls back to the newest version; this doesn't.
+            assert self.toolbox.get_tool_at_version(tool_id, "3") is None
+        assert self.toolbox.get_tool_at_version(f"{unversioned}/0.2", "0.2").id == f"{unversioned}/0.2"
+        assert self.toolbox.get_tool_at_version(f"{unversioned}/0.2", "0.1") is None
+        assert self.toolbox.get_tool_at_version(f"{unversioned}/0.2", "3") is None
+        assert self.toolbox.get_tool_at_version("not_a_test_tool", "0.1") is None
 
     def test_load_file_in_section(self):
         self._init_tool_in_section()

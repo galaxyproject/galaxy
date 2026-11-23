@@ -170,22 +170,30 @@ class Image(data.Data):
                     im_ndim = len(im_shape)
 
                     # Determine the metadata values that are available without loading the image data
-                    dataset.metadata.width = im.size[0]
-                    dataset.metadata.height = im.size[1]
-                    dataset.metadata.depth = 0
-                    dataset.metadata.frames = getattr(im, "n_frames", 0)
-                    dataset.metadata.dtype = str(np.array((0,), im_typestr).dtype)
+                    values: dict[str, Any] = {
+                        "width": im.size[0],
+                        "height": im.size[1],
+                        "depth": 0,
+                        "frames": getattr(im, "n_frames", 0),
+                        "dtype": str(np.array((0,), im_typestr).dtype),
+                    }
 
                     # Determine the remaining values, by assuming the order of axes
                     if im_ndim == 2:
-                        dataset.metadata.axes = "YX"
-                        dataset.metadata.channels = 0
+                        values.update(axes="YX", channels=0)
                     elif im_ndim == 3:
-                        dataset.metadata.axes = "YXC"
-                        dataset.metadata.channels = im_shape[2]
+                        values.update(axes="YXC", channels=im_shape[2])
+
+                # Assign only once every value was read, so a failure leaves all of them unset
+                for key, value in values.items():
+                    setattr(dataset.metadata, key, value)
 
             except PIL.UnidentifiedImageError:
                 pass
+            except Exception as e:
+                # Image metadata is optional: an unparsable header (e.g. GROMACS XPM) or an image
+                # above Pillow's decompression bomb limit leaves it unset.
+                log.warning("Could not read image metadata from %s: %s", dataset.get_file_name(), e)
 
 
 class Jpg(Image):
@@ -245,7 +253,8 @@ class Tiff(Image):
         """
         Determine if the file is in TIFF format by checking the file header.
 
-        For a successful check, the first 4 bytes must be the TIFF magic number. See [1] for a list of magic numbers.
+        For a successful check, the first 4 bytes must be the TIFF or BigTIFF magic number. See [1] for a list of magic
+        numbers and [3] for BigTIFF.
 
         Manual checking of the file header, as opposed to trying to read the file with tifffile, is required due to an
         ambiguity with DICOM files. This is because the DICOM standard allows *any content* for the first 128 bytes of
@@ -253,10 +262,13 @@ class Tiff(Image):
 
         [1] https://gist.github.com/leommoore/f9e57ba2aa4bf197ebc5
         [2] https://dicom.nema.org/medical/dicom/current/output/html/part10.html
+        [3] https://www.awaresystems.be/imaging/tiff/bigtiff.html
         """
         return file_prefix.contents_header_bytes[:4] in (
             b"\x4d\x4d\x00\x2a",  # TIFF format (Motorola - big endian)
             b"\x49\x49\x2a\x00",  # TIFF format (Intel - little endian)
+            b"\x4d\x4d\x00\x2b",  # BigTIFF format (Motorola - big endian)
+            b"\x49\x49\x2b\x00",  # BigTIFF format (Intel - little endian)
         ) and (
             len(file_prefix.contents_header_bytes) < 132  # file is too short to be a DICOM
             or file_prefix.contents_header_bytes[128:132] != b"DICM"  # file does not contain the DICOM prefix

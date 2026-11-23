@@ -359,8 +359,7 @@ function unexpandedClick(event: Event) {
                         icon-only
                         class="p-0"
                         title="Inputs/Outputs highlighted for this item"
-                        @click.stop="toggleHighlights"
-                        @keypress="toggleHighlights">
+                        @click.stop="toggleHighlights">
                         <FontAwesomeIcon :icon="faCheckCircle" />
                     </GButton>
                     <GButton
@@ -393,6 +392,7 @@ function unexpandedClick(event: Event) {
                         v-if="item.sub_items?.length && !isSubItem"
                         v-g-tooltip.hover
                         title="Show converted items"
+                        :aria-expanded="String(subItemsVisible)"
                         :aria-label="`${localize('Show converted items')} (${item.sub_items.length})`"
                         tabindex="0"
                         class="display-btn px-1 align-items-center"
@@ -438,11 +438,11 @@ function unexpandedClick(event: Event) {
                 v-if="!tagsDisabled || hasTags"
                 class="px-2 pb-2"
                 :class="{ 'cursor-pointer': !expandDataset }"
-                :value="tags"
+                :model-value="tags"
                 :disabled="tagsDisabled"
                 :clickable="filterable"
                 :use-toggle-link="false"
-                @input="onTags"
+                @update:model-value="onTags"
                 @tag-click="onTagClick" />
         </span>
         <!-- collections are not expandable, so we only need the DatasetDetails component here -->

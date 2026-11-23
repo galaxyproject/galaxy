@@ -20,7 +20,7 @@ export interface SelectOrTextOption {
 const props = withDefaults(
     defineProps<{
         id?: string;
-        value?: string | null;
+        modelValue?: string | null;
         options: SelectOrTextOption[];
         /** Label of the option that switches to the text field. */
         otherLabel?: string;
@@ -35,7 +35,7 @@ const props = withDefaults(
     }>(),
     {
         id: () => `form-select-or-text-${uid()}`,
-        value: null,
+        modelValue: null,
         otherLabel: "Other...",
         otherHelp: undefined,
         otherPlaceholder: undefined,
@@ -44,7 +44,7 @@ const props = withDefaults(
 );
 
 const emit = defineEmits<{
-    (e: "input", value: string | null): void;
+    (e: "update:modelValue", value: string | null): void;
     (e: "alert", message: string | undefined): void;
 }>();
 
@@ -62,7 +62,7 @@ const selectOptions = computed(() => [
     { label: props.otherLabel, value: OTHER_VALUE },
 ]);
 const selectedIndex = computed(() =>
-    otherMode.value ? -1 : props.options.findIndex((option) => option.value === (props.value ?? null)),
+    otherMode.value ? -1 : props.options.findIndex((option) => option.value === (props.modelValue ?? null)),
 );
 const selectValue = computed(() => {
     if (otherMode.value) {
@@ -89,7 +89,7 @@ function isListed(value: string | null): boolean {
 }
 
 watch(
-    () => props.value,
+    () => props.modelValue,
     (value) => {
         if (otherMode.value && value === text.value) {
             // the typed text echoed back - stay in the text field while typing through a listed value
@@ -106,8 +106,8 @@ watch(
     () => props.options,
     () => {
         // a selected value the options no longer list moves to the text field rather than blanking the select
-        if (!otherMode.value && props.value !== null && !isListed(props.value)) {
-            text.value = props.value;
+        if (!otherMode.value && props.modelValue !== null && !isListed(props.modelValue)) {
+            text.value = props.modelValue;
             edited.value = false;
             otherMode.value = true;
         }
@@ -121,28 +121,33 @@ function onSelect(value: string | null) {
     }
     if (value === OTHER_VALUE) {
         otherMode.value = true;
-        text.value = props.value ?? "";
+        text.value = props.modelValue ?? "";
         edited.value = false;
         return;
     }
     const selected = props.options.find((_, index) => optionValue(index) === value)!.value;
     otherMode.value = false;
     text.value = selected ?? "";
-    emit("input", selected);
+    emit("update:modelValue", selected);
 }
 
 function onText(value: string | null) {
     text.value = value ?? "";
     edited.value = true;
     if (!textError.value) {
-        emit("input", text.value);
+        emit("update:modelValue", text.value);
     }
 }
 </script>
 
 <template>
     <div class="form-select-or-text">
-        <FormSelect :id="id" :value="selectValue" :options="selectOptions" optional @input="onSelect" />
+        <FormSelect
+            :id="id"
+            :model-value="selectValue"
+            :options="selectOptions"
+            optional
+            @update:model-value="onSelect" />
         <small v-if="selectedHelp" class="form-text text-muted">{{ selectedHelp }}</small>
         <div v-if="otherMode" class="mt-2">
             <GFormInput

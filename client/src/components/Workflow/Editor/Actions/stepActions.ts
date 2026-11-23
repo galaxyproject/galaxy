@@ -445,11 +445,17 @@ export class AutoLayoutAction extends UndoRedoAction {
     oldPositions: Positions;
     workflowId;
     ran;
+    keepFrameMembership;
 
-    constructor(workflowId: string) {
+    /**
+     * @param keepFrameMembership use the frames' stored `child_steps` instead of re-deriving them from
+     *   current positions, which are meaningless before a workflow's first layout
+     */
+    constructor(workflowId: string, { keepFrameMembership = false } = {}) {
         super();
 
         this.workflowId = workflowId;
+        this.keepFrameMembership = keepFrameMembership;
         this.stepStore = useWorkflowStepStore(workflowId);
         this.commentStore = useWorkflowCommentStore(workflowId);
 
@@ -511,8 +517,10 @@ export class AutoLayoutAction extends UndoRedoAction {
             h: comment.size[1],
         }));
 
-        this.commentStore.resolveCommentsInFrames();
-        this.commentStore.resolveStepsInFrames();
+        if (!this.keepFrameMembership) {
+            this.commentStore.resolveCommentsInFrames();
+            this.commentStore.resolveStepsInFrames();
+        }
 
         const newPositions = await autoLayout(this.workflowId, this.stepStore.steps, this.commentStore.comments);
 
@@ -627,6 +635,15 @@ export function useStepActions(
         });
     }
 
+    function setInputDefaults(step: Step, stepIn: Step["in"]) {
+        changeValueOrCreateAction({
+            step,
+            key: "in",
+            value: stepIn,
+            name: `edit input defaults of step "${step.id + 1}: ${step.label ?? step.name}"`,
+        });
+    }
+
     function setOutputLabel(
         step: Step,
         workflowOutputs: Step["workflow_outputs"],
@@ -710,6 +727,7 @@ export function useStepActions(
         setLabel,
         setData,
         setOutputLabel,
+        setInputDefaults,
         removeStep,
         updateStep,
         copyStep,

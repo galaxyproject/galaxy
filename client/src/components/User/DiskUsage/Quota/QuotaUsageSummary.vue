@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 
+import { sourceLabelToKey } from "@/stores/quotaUsageStore";
 import { bytesToString } from "@/utils/utils";
 
 import type { QuotaUsage } from "./model";
@@ -21,6 +22,8 @@ const totalQuotaInBytes = computed(() => {
 const niceTotalQuota = computed(() => {
     return bytesToString(totalQuotaInBytes.value, true, undefined);
 });
+
+const hasSeveralSources = computed(() => props.quotaUsages.length > 1);
 
 const allSourcesUnlimited = computed(() => {
     const allUnlimited = props.quotaUsages.every((usage) => usage.isUnlimited);
@@ -52,8 +55,11 @@ defineExpose({
             </div>
         </div>
 
-        <div v-for="quotaUsage in props.quotaUsages" :key="quotaUsage.sourceLabel">
-            <QuotaUsageBar :quota-usage="quotaUsage" class="quota-usage-bar" />
+        <div v-for="quotaUsage in props.quotaUsages" :key="sourceLabelToKey(quotaUsage.rawSourceLabel)">
+            <QuotaUsageBar
+                :quota-usage="quotaUsage"
+                :show-default-source-name="hasSeveralSources"
+                class="quota-usage-bar" />
         </div>
     </div>
 </template>

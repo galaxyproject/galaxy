@@ -3,7 +3,6 @@ Actions to be run at job completion (or output hda creation, as in the case of
 immediate_actions listed below.
 """
 
-import datetime
 import re
 
 from markupsafe import escape
@@ -14,7 +13,6 @@ from galaxy.model import (
     HistoryDatasetCollectionAssociation,
     PostJobActionAssociation,
 )
-from galaxy.util import send_mail
 from galaxy.util.custom_logging import get_logger
 
 log = get_logger(__name__)
@@ -69,48 +67,14 @@ class DefaultJobAction:
 
 
 class EmailAction(DefaultJobAction):
-    """
-    This action sends an email to the galaxy user responsible for a job.
-    """
+    """Inert compatibility entry for workflows containing removed email actions."""
 
     name = "EmailAction"
-    verbose_name = "Email Notification"
-
-    @classmethod
-    def execute(cls, app, sa_session, action, job, replacement_dict=None, final_job_state=None):
-        try:
-            history_id_encoded = app.security.encode_id(job.history_id)
-            link_invocation = None
-            if job.workflow_invocation_step:
-                invocation_id_encoded = app.security.encode_id(job.workflow_invocation_step.workflow_invocation_id)
-                link_invocation = (
-                    f"{app.config.galaxy_infrastructure_url}/workflows/invocations/report?id={invocation_id_encoded}"
-                )
-            link = f"{app.config.galaxy_infrastructure_url}/histories/view?id={history_id_encoded}"
-            to = job.get_user_email()
-            subject = f"Galaxy job completion notification from history '{job.history.name}'"
-            outdata = ",\n".join(ds.dataset.display_name() for ds in job.output_datasets)
-            body = (
-                f"Your Galaxy job generating dataset(s):\n\n{outdata}\n\nis complete as of {datetime.datetime.now().strftime('%H:%M')}. "
-                f"Click the link below to access your data: \n{link}\n\n"
-                "Please remember to cite Galaxy using our primary publication "
-                '(<a href="https://gxy.io/p/latest-nar">https://gxy.io/p/latest-nar</a>) '
-                "in any publication based on your analysis."
-            )
-            if link_invocation:
-                body += f"\n\nWorkflow Invocation Report:\n{link_invocation}"
-            send_mail(app.config.email_from, to, subject, body, app.config)
-        except Exception:
-            log.exception("EmailAction PJA Failed")
+    verbose_name = "Email Notification (removed)"
 
     @classmethod
     def get_short_str(cls, pja):
-        if pja.action_arguments and "host" in pja.action_arguments:
-            return (
-                f"Email the current user from server {escape(pja.action_arguments['host'])} when this job is complete."
-            )
-        else:
-            return "Email the current user when this job is complete."
+        return "Step email notifications have been removed. Use the notification controls on the workflow run form."
 
 
 class ValidateOutputsAction(DefaultJobAction):
@@ -577,7 +541,6 @@ class ActionBox:
         "RenameDatasetAction",
         "ChangeDatatypeAction",
         "ColumnSetAction",
-        "EmailAction",
         "DeleteIntermediatesAction",
         "TagDatasetAction",
         "RemoveTagDatasetAction",

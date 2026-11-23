@@ -28,7 +28,7 @@
                 :identifier-text-capitalized="identifierTextCapitalized" />
         </div>
         <div v-else>
-            <BForm @submit.prevent="submit">
+            <form @submit.prevent="submit">
                 <GRadioGroup v-model="importType" stacked class="mb-3" name="import-type" :label="howLabel">
                     <GRadio value="externalUrl">
                         Export URL from another Galaxy instance
@@ -65,7 +65,7 @@
                         </ExternalLink>
                     </GAlert>
 
-                    <BFormInput v-model="sourceURL" type="url" />
+                    <GFormInput v-model="sourceURL" type="url" />
                 </BFormGroup>
                 <BFormGroup v-else-if="importType === 'upload'" :label="fileLabel">
                     <BFormFile v-model="sourceFile" />
@@ -78,7 +78,7 @@
                 <GButton class="import-button" color="blue" type="submit" :disabled="!importReady">
                     Import {{ identifierText }}
                 </GButton>
-            </BForm>
+            </form>
         </div>
     </div>
 </template>
@@ -88,7 +88,7 @@ import { faExternalLinkAlt, faFolderOpen, faUpload } from "@fortawesome/free-sol
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { refDebounced } from "@vueuse/core";
 import axios from "axios";
-import { BForm, BFormFile, BFormGroup, BFormInput } from "bootstrap-vue";
+import { BFormFile, BFormGroup } from "bootstrap-vue";
 import { ref, watch } from "vue";
 
 import { fetchFileSources } from "@/api/remoteFiles";
@@ -102,6 +102,7 @@ import GButton from "./BaseComponents/GButton.vue";
 import GRadio from "./BaseComponents/GRadio.vue";
 import GRadioGroup from "./BaseComponents/GRadioGroup.vue";
 import ExternalLink from "./ExternalLink.vue";
+import GFormInput from "@/components/BaseComponents/Form/GFormInput.vue";
 import FilesInput from "@/components/FilesDialog/FilesInput.vue";
 import ImportSuccess from "@/components/ImportSuccess.vue";
 import JobError from "@/components/JobInformation/JobError.vue";
@@ -109,10 +110,8 @@ import LoadingSpan from "@/components/LoadingSpan.vue";
 
 export default {
     components: {
-        BForm,
         BFormFile,
         BFormGroup,
-        BFormInput,
         FilesInput,
         FontAwesomeIcon,
         ImportSuccess,
@@ -121,6 +120,7 @@ export default {
         ExternalLink,
         GAlert,
         GButton,
+        GFormInput,
         GRadio,
         GRadioGroup,
     },

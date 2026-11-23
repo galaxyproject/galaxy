@@ -7,7 +7,7 @@ from collections.abc import (
     AsyncGenerator,
     Callable,
 )
-from enum import Enum
+from enum import StrEnum
 from string import Template
 from typing import (
     Any,
@@ -436,7 +436,7 @@ class BaseGalaxyAPIController(BaseAPIController):
         super().__init__(app)
 
 
-class RestVerb(str, Enum):
+class RestVerb(StrEnum):
     get = "GET"
     head = "HEAD"
     post = "POST"

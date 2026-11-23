@@ -13,13 +13,15 @@ class TestManageInformation(SeleniumTestCase):
         'Not available.'
         """
         new_api_key = self._create_api_key()
-        api_key_input = self.components.preferences.api_key_input.wait_for_visible()
-        input_value = api_key_input.get_attribute("value")
-        assert new_api_key == input_value
-        # Hover the input to view the key
-        self.hover(api_key_input)
-        hover_value = api_key_input.get_attribute("value")
-        assert new_api_key == hover_value
+        preferences = self.components.preferences
+        assert preferences.api_key_input.wait_for_value() == new_api_key
+        # The key is masked until the show/hide button reveals it
+        preferences.api_key_input_of_type(type="password").wait_for_visible()
+        self.screenshot("preferences_api_key_masked")
+        preferences.api_key_show_hide_button.wait_for_and_click()
+        assert preferences.api_key_input_of_type(type="text").wait_for_value() == new_api_key
+        preferences.api_key_show_hide_button.wait_for_and_click()
+        preferences.api_key_input_of_type(type="password").wait_for_visible()
 
     @selenium_test
     def test_copy_api_key(self):
@@ -35,7 +37,6 @@ class TestManageInformation(SeleniumTestCase):
         assert not self.get_api_key()
         self.navigate_to_user_preferences()
         self.components.preferences.manage_api_key.wait_for_and_click()
-        self.sleep_for(self.wait_types.UX_TRANSITION)
         # When there is no API key the create button is visible
         self.components.preferences.get_new_key.wait_for_and_click()
         self.components.preferences.api_key_input.wait_for_visible()

@@ -3,7 +3,7 @@
 import socket
 from datetime import (
     datetime,
-    timezone,
+    UTC,
 )
 
 import pytest
@@ -100,7 +100,7 @@ def test_deposit_lists_files_from_hal_portals_with_size_and_time(hal):
         ("variants table.xlsx", "gxfiles://hal/hal-01479142v2/variants%20table.xlsx"),
     ]
     assert [file.size for file in files] == [123, 0, 456]
-    assert files[0].ctime == datetime(2020, 10, 22, 12, 20, 16, tzinfo=timezone.utc)
+    assert files[0].ctime == datetime(2020, 10, 22, 12, 20, 16, tzinfo=UTC)
     assert files[2].ctime is None
 
 

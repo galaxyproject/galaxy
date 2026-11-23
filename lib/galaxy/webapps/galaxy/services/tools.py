@@ -54,6 +54,7 @@ from galaxy.schema.fetch_data import (
 from galaxy.schema.schema import CreateToolLandingRequestPayload
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.tool_util.parameters import ToolParameterT
+from galaxy.tool_util.parameters.data_inputs import ToolDataInput
 from galaxy.tool_util.toolbox.base import (
     MaterializationReasonName,
     ToolLike,
@@ -68,6 +69,7 @@ from galaxy.tool_util_models.parameters import (
 from galaxy.tools import Tool
 from galaxy.tools._types import InputFormatT
 from galaxy.tools.cached_toolbox import CachedToolBox
+from galaxy.tools.job_parameters import DATA_MANAGER_MODE
 from galaxy.tools.search import ToolBoxSearch
 from galaxy.util.path import safe_contains
 from galaxy.util.tool_version import remove_version_from_guid
@@ -81,6 +83,18 @@ if TYPE_CHECKING:
     PanelViewTrans: TypeAlias = "GalaxyWebTransaction | SessionRequestContext"
 
 log = logging.getLogger(__name__)
+
+# Do not allow these tools to be called directly - they (it) enforces extra security and
+# provides access via a different API endpoint.
+PROTECTED_TOOLS = ["__DATA_FETCH__"]
+
+
+def validate_not_protected(tool_id: str | None):
+    if tool_id in PROTECTED_TOOLS:
+        raise exceptions.RequestParameterInvalidException(
+            f"Cannot execute tool [{tool_id}] directly, must use alternative endpoint."
+        )
+
 
 ToolRunPayload = dict[str, Any]
 JobCreateResponse = dict[str, Any]
@@ -226,11 +240,14 @@ class ToolsService(ServiceBase):
         Sidecar for the My Tools panel; keeps `tool_tags` out of the bulk /api/tools
         payload (and out of its cache key).
         """
-        mapping: dict[str, list[str]] = {}
-        for _, tool in trans.app.toolbox.tools():
-            if tool.tool_tags:
-                mapping[tool.id] = list(tool.tool_tags)
+        mapping: dict[str, list[str]] = trans.app.toolbox.curated_tool_tags_by_id(trans)
         return mapping
+
+    def data_inputs_by_tool_id(
+        self, trans: ProvidesUserContext, tool_type: str | None = None
+    ) -> dict[str, list[ToolDataInput]]:
+        """Sidecar for the Explore tab; keeps per-tool data inputs out of the bulk /api/tools payload."""
+        return trans.app.toolbox.data_inputs_by_tool_id(trans, tool_type=tool_type)
 
     def file_landing_to_tool_landing(
         self,
@@ -263,6 +280,10 @@ class ToolsService(ServiceBase):
     ) -> CreateToolLandingRequestPayload:
         request_version = "1"
         payload = data_landing_payload.model_dump(exclude_unset=True)["request_state"]
+        for target in payload["targets"]:
+            # The claimant runs the landing, so it may only import into their own history.
+            if target["destination"]["type"] in ("library", "library_folder"):
+                raise exceptions.RequestParameterInvalidException("Data landings cannot target libraries.")
         validate_and_normalize_targets(trans, payload, set_internal_fields=False)
         validated_back_to_model = TargetsAdapter.validate_python(payload["targets"])
         request_state = {
@@ -343,6 +364,10 @@ class ToolsService(ServiceBase):
         create_payload.update(files_payload)
         return self._create(trans, create_payload)
 
+    def create(self, trans: ProvidesHistoryContext, payload: ToolRunPayload, **kwd) -> JobCreateResponse:
+        validate_not_protected(payload.get("tool_id"))
+        return self._create(trans, payload, **kwd)
+
     def _create(self, trans: ProvidesHistoryContext, payload: ToolRunPayload, **kwd) -> JobCreateResponse:
         action = payload.get("action")
         if action == "rerun":
@@ -402,7 +427,7 @@ class ToolsService(ServiceBase):
             raise exceptions.RequestParameterInvalidException(f"input_format invalid {input_format}")
         input_format = cast(InputFormatT, input_format)  # https://github.com/python/mypy/issues/15106
         if "data_manager_mode" in payload:
-            incoming["__data_manager_mode"] = payload["data_manager_mode"]
+            incoming[DATA_MANAGER_MODE] = payload["data_manager_mode"]
         tags = payload.get("__tags")
         vars = tool.handle_input(
             trans,
@@ -414,6 +439,7 @@ class ToolsService(ServiceBase):
             credentials_context=CredentialsContext(root=credentials_context) if credentials_context else None,
             tags=tags,
             send_email_notification=inputs.get("send_email_notification", False),
+            send_notification=inputs.get("send_notification", False),
         )
         return self._handle_inputs_output_to_api_response(trans, tool, target_history, vars)
 

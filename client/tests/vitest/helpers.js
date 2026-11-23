@@ -71,14 +71,6 @@ export function getLocalVue(instrumentLocalization = false) {
             "b-tooltip": mockedDirective,
             "b-popover": mockedDirective,
         },
-        stubs: {
-            // bootstrap-vue components render for real (through the compat shim in
-            // patches/bootstrap-vue), so tests assert on the markup users get.
-            // Stubbing them hid real bugs, like pagination links with no click
-            // listener.
-            Portal: true,
-            PortalTarget: true,
-        },
     };
 
     return config;
@@ -103,19 +95,6 @@ export function suppressErrorForCustomIcons() {
         if (!String(msg).includes("Could not find one or more icon(s)")) {
             originalError(msg);
         }
-    });
-}
-
-export function suppressLucideVue2Deprecation() {
-    const originalWarn = console.warn;
-    vi.spyOn(console, "warn").mockImplementation((msg) => {
-        if (String(msg).includes("[Lucide Vue] This package will be deprecated")) {
-            return;
-        }
-        if (String(msg).includes("[Vue warn]")) {
-            return;
-        }
-        originalWarn(msg);
     });
 }
 

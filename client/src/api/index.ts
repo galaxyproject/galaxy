@@ -20,7 +20,7 @@ export type HistorySummary = components["schemas"]["HistorySummary"];
  * We can not extract this from the schema for an unknown reason.
  * The desired solution would be: `GalaxyApiPaths["/api/histories"]["get"]["parameters"]["query"]["sort_by"]`.
  */
-export type HistorySortByLiteral = "create_time" | "name" | "update_time" | "username" | undefined;
+export type HistorySortByLiteral = "create_time" | "name" | "size" | "update_time" | "username" | undefined;
 
 /**
  * Contains minimal information about a History with additional content stats.
@@ -301,6 +301,15 @@ export function isAnonymousUser(user: AnyUser | UserModel): user is AnonymousUse
 
 export function isAdminUser(user: AnyUser | UserModel): user is RegisteredUser {
     return isRegisteredUser(user) && user.is_admin;
+}
+
+/** Whether the user exceeded their default storage quota: jobs are held once the usage exceeds it, not at it. */
+export function isUserOverQuota(user: AnyUser) {
+    if (isRegisteredUser(user) && typeof user.quota_bytes === "number") {
+        return user.total_disk_usage > user.quota_bytes;
+    }
+    // Anonymous users only get the percentage, which the server caps at 100
+    return (user?.quota_percent ?? 0) >= 100;
 }
 
 export function userOwnsHistory(user: AnyUser, history: AnyHistory) {

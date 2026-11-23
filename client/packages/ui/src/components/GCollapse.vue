@@ -15,11 +15,6 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 // Module-level accordion registry: maps group name to the close callback of the currently open member
 const accordionRegistry = new Map<string, () => void>();
 
-defineOptions({
-    // Under @vue/compat, keep v-model on modelValue instead of Vue 2's value/input
-    compatConfig: { COMPONENT_V_MODEL: false },
-});
-
 const props = withDefaults(
     defineProps<{
         /** Two-way binding for open/closed state (v-model) */

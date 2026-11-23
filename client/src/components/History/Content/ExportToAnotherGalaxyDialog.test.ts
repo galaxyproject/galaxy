@@ -25,7 +25,12 @@ let mounted: VueWrapper[] = [];
 beforeEach(() => {
     exportUrls = [];
     localStorage.clear();
+    serveConfig({});
 });
+
+function serveConfig(config: Record<string, unknown>) {
+    server.use(http.get("/api/configuration", ({ response }) => response(200).json(config as never)));
+}
 
 // Exports are followed to their end even after the dialog closes, so stop them before the next test.
 afterEach(() => {
@@ -82,6 +87,8 @@ describe("ExportToAnotherGalaxyDialog", () => {
         expect((linkInput(wrapper).element as HTMLInputElement).value).toMatch(
             /^https?:\/\/.*\/api\/short_term_storage\/req1$/,
         );
+        expect(linkInput(wrapper).classes()).toContain("g-form-input");
+        expect(linkInput(wrapper).attributes("readonly")).toBeDefined();
         expect(exportUrls[0]).toContain("/contents/datasets/d1/prepare_store_download");
         await vi.waitFor(() => expect(recentExportRecord("d1")).toMatchObject({ isFinal: true, taskStatus: "READY" }));
     });
@@ -194,5 +201,40 @@ describe("ExportToAnotherGalaxyDialog", () => {
         await vi.waitFor(() => expect(linkInput(wrapper).exists()).toBe(true));
         expect(exportUrls[0]).toContain("/contents/dataset_collections/c1/prepare_store_download");
         expect(wrapper.text()).toContain("download this collection");
+    });
+
+    it("states how long the link lasts on this server", async () => {
+        serveConfig({ short_term_storage_effective_duration: 172800 });
+        exportEndsIn("SUCCESS");
+        const { wrapper, store } = mountDialog();
+        store.open(dataset("d1"));
+        await vi.waitFor(() => expect(linkInput(wrapper).exists()).toBe(true));
+        await vi.waitFor(() => expect(wrapper.text()).toContain("usually after 2 days"));
+    });
+
+    it("says 24 hours when the server does not report the link lifetime", async () => {
+        exportEndsIn("SUCCESS");
+        const { wrapper, store } = mountDialog();
+        store.open(dataset("d1"));
+        await vi.waitFor(() => expect(linkInput(wrapper).exists()).toBe(true));
+        expect(wrapper.text()).toContain("usually after 24 hours");
+    });
+
+    it("exports again once a reused link would be past half its lifetime", async () => {
+        vi.useFakeTimers({ shouldAdvanceTime: true });
+        serveConfig({ short_term_storage_effective_duration: 1800 });
+        exportEndsIn("SUCCESS");
+        const { wrapper, store } = mountDialog();
+        store.open(dataset("d1"));
+        await vi.waitFor(() => expect(wrapper.text()).toContain("usually after 30 minutes"));
+        store.close();
+        vi.setSystemTime(Date.now() + 14 * 60 * 1000);
+        store.open(dataset("d1"));
+        await flushPromises();
+        expect(exportUrls).toHaveLength(1);
+        store.close();
+        vi.setSystemTime(Date.now() + 2 * 60 * 1000);
+        store.open(dataset("d1"));
+        await vi.waitFor(() => expect(exportUrls).toHaveLength(2));
     });
 });

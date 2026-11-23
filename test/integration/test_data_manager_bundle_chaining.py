@@ -17,6 +17,9 @@ class TestDataManagerBundleChaining(DataManagerIntegrationTestCase):
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        # Extended metadata pushes outputs to the object store from the job, which doesn't work
+        # with the store_by id object store configured below.
+        config["metadata_strategy"] = "directory"
         super().handle_galaxy_config_kwds(config)
         tool = Path(__file__).resolve().parents[1] / "functional/tools/data_manager_bundle_chain.xml"
         manager_config = Path(cls.temp_tool_data_dir) / "data_managers.xml"

@@ -20,8 +20,6 @@ import { radioGroupKey } from "./radioGroupContext";
 
 defineOptions({
     inheritAttrs: false,
-    // Under @vue/compat: keep v-model on modelValue, and keep class/style/listeners in $attrs so they can be split below
-    compatConfig: { COMPONENT_V_MODEL: false, INSTANCE_ATTRS_CLASS_STYLE: false, INSTANCE_LISTENERS: false },
 });
 
 const props = defineProps<{
@@ -128,6 +126,8 @@ function onChange(event: Event) {
 </template>
 
 <style scoped lang="scss">
+@use "../../styles/focus-ring" as *;
+
 .g-radio {
     display: inline-flex;
     align-items: center;
@@ -162,10 +162,9 @@ function onChange(event: Event) {
         cursor: not-allowed;
     }
 
-    // The offset leaves a gap that shows the real background; outline survives forced colors.
+    // No halo: the square page-colour halo would show around the round native control on tinted rows
     &:focus-visible {
-        outline: 2px solid var(--color-blue-600, #25537b);
-        outline-offset: 2px;
+        @include focus-ring($halo: false);
     }
 }
 
@@ -226,12 +225,9 @@ function onChange(event: Event) {
         z-index: 1;
     }
 
-    // Page-background gap keeps the ring clear of the fill and of neighbouring buttons; outline survives forced colors.
     &:has(.g-radio-input:focus-visible) {
         z-index: 2;
-        outline: 2px solid var(--color-blue-600, #25537b);
-        outline-offset: 2px;
-        box-shadow: 0 0 0 2px var(--background-color, #ffffff);
+        @include focus-ring;
     }
 
     &.g-grey {
@@ -241,15 +237,17 @@ function onChange(event: Event) {
 
         &:hover {
             background-color: var(--color-grey-300);
+            border-color: var(--color-grey-400);
         }
 
-        // Light fill keeps the dark text readable; the darker border sets it apart from a hovered unchecked button
+        // Dark fill keeps >= 3:1 against unchecked and hovered neighbours, so the state does not rest on the border
         &.g-checked {
-            background-color: var(--color-grey-250);
-            border-color: var(--color-grey-600);
+            background-color: var(--color-grey-600);
+            border-color: var(--color-grey-800);
+            color: var(--color-grey-100);
 
             &:hover:not(.g-outline) {
-                background-color: var(--color-grey-300);
+                background-color: var(--color-grey-700);
             }
         }
 

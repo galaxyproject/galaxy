@@ -1,16 +1,26 @@
 from datetime import timedelta
 from functools import partial
+from typing import cast
 
 import yaml
+from sqlalchemy import (
+    delete,
+    insert,
+)
 
 from galaxy import model
 from galaxy.app_unittest_utils import galaxy_mock
 from galaxy.managers.tools import DynamicToolManager
 from galaxy.managers.workflows import WorkflowsManager
+from galaxy.structured_app import MinimalManagerApp
 from galaxy.tools.parameters.workflow_utils import workflow_building_modes
 from galaxy.util import now
 from galaxy.util.bunch import Bunch
 from galaxy.workflow.modules import module_factory
+from galaxy.workflow.scheduling_manager import (
+    WorkflowRequestMonitor,
+    WorkflowSchedulingManager,
+)
 
 
 class MockTrans:
@@ -62,7 +72,7 @@ class MockToolbox:
     def __init__(self):
         self.tools = {}
 
-    def get_tool(self, tool_id, tool_version=None, exact=False, tool_uuid=None):
+    def get_tool(self, tool_id, tool_version=None, exact=False, tool_uuid=None, user=None):
         # Real tool box returns None of missing tool also
         return self.tools.get(tool_id, None)
 
@@ -151,3 +161,42 @@ def expression_json_hda(path, content: str | None, seconds_since_updated: int = 
     hda.dataset.external_filename = str(path)
     hda.update_time = now() - timedelta(seconds=seconds_since_updated)
     return hda
+
+
+class SchedulingHarness:
+    def __init__(self, **config):
+        self.app = galaxy_mock.MockApp(
+            config=galaxy_mock.MockAppConfig(
+                maximum_workflow_invocation_duration=0, history_local_serial_workflow_scheduling=False, **config
+            )
+        )
+        self.app.job_config["self_handler_tags"] = []
+        self.monitor = WorkflowRequestMonitor(
+            cast(MinimalManagerApp, self.app),
+            cast(WorkflowSchedulingManager, Bunch(default_handler_id="main", handler_assignment_methods=[])),
+        )
+        self.session = self.app.model.context
+        self.history = model.History()
+        invocation = model.WorkflowInvocation()
+        invocation.history = self.history
+        invocation.workflow = model.Workflow()
+        invocation.state = model.WorkflowInvocation.states.READY
+        self.session.add(invocation)
+        self.session.commit()
+        self.invocation_id = invocation.id
+        self.set_history_update_time(now() - timedelta(seconds=60))
+
+    def attempt(self, scheduler) -> int:
+        self.monitor._WorkflowRequestMonitor__attempt_schedule(self.invocation_id, scheduler)
+        return scheduler.scheduled
+
+    def set_history_update_time(self, update_time):
+        history_id = self.history.id
+        self.session.execute(delete(model.HistoryAudit).where(model.HistoryAudit.history_id == history_id))
+        self.session.execute(insert(model.HistoryAudit).values(history_id=history_id, update_time=update_time))
+        self.session.commit()
+
+    def persist(self, *objects):
+        self.session.add_all(objects)
+        self.session.commit()
+        return objects[0].id

@@ -1,12 +1,15 @@
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
+
+import { useServerMock } from "@/api/client/__mocks__";
 
 import { type QuotaUsage, toQuotaUsage } from "./model";
 
 import QuotaUsageBar from "./QuotaUsageBar.vue";
 
 const localVue = getLocalVue();
+const { server, http } = useServerMock();
 
 const NON_DEFAULT_QUOTA_USAGE: QuotaUsage = toQuotaUsage({
     quota_source_label: "The label",
@@ -28,6 +31,11 @@ function mountQuotaUsageBarWith(quotaUsage: QuotaUsage) {
 }
 
 describe("QuotaUsageBar.vue", () => {
+    beforeEach(() => {
+        // The bar looks up the names of the storages using its source
+        server.use(http.get("/api/object_stores", ({ response }) => response(200).json([])));
+    });
+
     it("names each progress bar by its storage source and retains its quota value", () => {
         const wrapper = mountQuotaUsageBarWith(NON_DEFAULT_QUOTA_USAGE);
         const progress = wrapper.get('[role="progressbar"]');
@@ -48,7 +56,12 @@ describe("QuotaUsageBar.vue", () => {
         // TODO: explicit any because the type of the vm is not correctly inferred, remove when fixed
         expect((wrapper.vm as any).isDefaultQuota).toBe(false);
         expect(storageSourceLabel.exists()).toBe(true);
-        expect(storageSourceLabel.text()).toBe(NON_DEFAULT_QUOTA_USAGE.sourceLabel);
+        expect(storageSourceLabel.text()).toBe(NON_DEFAULT_QUOTA_USAGE.rawSourceLabel);
+    });
+
+    it("names a source labelled like the default one", async () => {
+        const wrapper = mountQuotaUsageBarWith(toQuotaUsage({ quota_source_label: "Default", total_disk_usage: 0 }));
+        expect(wrapper.find(".storage-source-label").text()).toBe("Default");
     });
 
     it("should show the usage percent when there is a quota limit", async () => {

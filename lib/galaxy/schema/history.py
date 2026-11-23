@@ -17,7 +17,7 @@ from galaxy.schema.schema import (
     UpdateTimeField,
 )
 
-HistorySortByEnum = Literal["create_time", "name", "update_time", "username"]
+HistorySortByEnum = Literal["create_time", "name", "size", "update_time", "username"]
 
 
 class HistoryIndexQueryPayload(Model):

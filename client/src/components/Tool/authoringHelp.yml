@@ -128,6 +128,12 @@ sections:
       See the [Datatypes page](gxui:/datatypes) in your Galaxy instance for the
       extensions available there.
 
+      A `reference_data` input offers the entries of a tool data table, such
+      as built-in genomes, and hands the selected entry to expressions like a
+      dataset, or a list of them with `multiple: true`. An administrator has
+      to open the table to user-defined tools; until then the input offers no
+      entries.
+
       Types that exist in the XML tool vocabulary but are rejected here:
       `hidden`, `drill_down`, `data_column`, `genomebuild`, `group_tag`,
       `baseurl`, `rules`, `directory`. XML-only fields such as `truevalue`,
@@ -283,6 +289,13 @@ sections:
       them. Quote any substitution that can contain spaces yourself, as
       `'$(inputs.query.path)'`.
 
+      Some datatypes, such as BLAST databases and `pbed`, keep their data in a
+      folder of extra files. Reference that folder as
+      `$(inputs.database.extra_files_path)`, for example
+      `-db '$(inputs.database.extra_files_path)/blastdb'`. It is only set for
+      datasets that have extra files. A `directory` dataset's content is at
+      `$(inputs.input_name.path)`.
+
       Reusable helper functions can be declared with a `javascript` requirement,
       and are then available to every expression in the tool:
 
@@ -429,6 +442,15 @@ sections:
       itself when the destination executes through Singularity or Apptainer;
       writing the prefix yourself produces a doubled `docker://docker://...`
       identifier.
+
+      A tag can be combined with or replaced by a digest to pin the exact
+      image, as in `quay.io/biocontainers/foldseek@sha256:<digest>`.
+
+      The server decides which images user-defined tools may use. By default
+      only images below `quay.io/biocontainers/` are allowed. Saving a tool
+      with any other image is refused with an error that lists the images
+      the server allows, and a tool whose image the server no longer allows
+      fails when it runs.
 
       Author user-defined tools with the top-level `container` field. Which
       container runtime executes that image, and whether images are converted

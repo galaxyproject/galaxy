@@ -39,6 +39,7 @@ export default {
             required: true,
         },
     },
+    emits: ["update-rules"],
     data: function () {
         return {
             savedRulesMenu: _l("Recently used rules"),

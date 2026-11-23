@@ -29,6 +29,7 @@ from galaxy.workflow.refactor.schema import RefactorActionExecutionMessageTypeEn
 from galaxy_test.base.populators import WorkflowPopulator
 from galaxy_test.base.uses_shed_api import UsesShedApi
 from galaxy_test.base.workflow_fixtures import (
+    WORKFLOW_NESTED_OUTPUT,
     WORKFLOW_NESTED_RUNTIME_PARAMETER,
     WORKFLOW_NESTED_SIMPLE,
     WORKFLOW_NESTED_WITH_MULTIPLE_VERSIONS_TOOL,
@@ -51,6 +52,55 @@ steps:
 
 ActionJson = dict[str, Any]
 ActionsJson = list[ActionJson]
+SUBWORKFLOW_WITH_MISSING_TOOL = """
+class: GalaxyWorkflow
+name: Sub-workflow with a tool this server lacks
+inputs:
+  inner_input: data
+outputs:
+  workflow_output:
+    outputSource: not_installed/out_file1
+steps:
+  not_installed:
+    tool_id: cat_missing_tool
+    in:
+      input1: inner_input
+"""
+WORKFLOW_NESTED_TWO_INPUTS = """
+class: GalaxyWorkflow
+inputs:
+  outer_a: data
+  outer_b: data
+steps:
+  nested_workflow:
+    run:
+      class: GalaxyWorkflow
+      inputs:
+        first: data
+        second: data
+      steps:
+        cat_inputs:
+          tool_id: cat1
+          in:
+            input1: first
+            queries_0|input2: second
+    in:
+      first: outer_a
+      second: outer_b
+"""
+SUBWORKFLOW_REORDERED_INPUTS = """
+class: GalaxyWorkflow
+name: Sub-workflow with its inputs in the other order
+inputs:
+  second: data
+  first: data
+steps:
+  cat_inputs:
+    tool_id: cat1
+    in:
+      input1: first
+      queries_0|input2: second
+"""
 
 
 class TestWorkflowRefactoringIntegration(integration_util.IntegrationTestCase, UsesShedApi):
@@ -929,14 +979,7 @@ steps:
         # ensure subworkflow updated properly...
         nested_stored_workflow = self._recent_stored_workflow(2)
         assert len(nested_stored_workflow.workflows) == 3
-        middle_workflow_id = self._app.security.encode_id(nested_stored_workflow.workflows[1].id)
-        actions: ActionsJson = [
-            {
-                "action_type": "upgrade_subworkflow",
-                "step": {"label": "nested_workflow"},
-                "content_id": middle_workflow_id,
-            },
-        ]
+        actions = self._upgrade_subworkflow_to("nested_workflow", nested_stored_workflow.workflows[1])
         action_executions = self._dry_run(actions).action_executions
         assert len(action_executions) == 1
         assert len(action_executions[0].messages) == 0
@@ -946,6 +989,54 @@ steps:
         assert len(action_executions[0].messages) == 0
         post_upgrade_native = self._download_native(self._most_recent_stored_workflow)
         self._assert_nested_workflow_num_lines_is(post_upgrade_native, "20")
+
+    def test_subworkflow_upgrade_to_workflow_using_a_missing_tool(self):
+        self.workflow_populator.upload_yaml_workflow(WORKFLOW_NESTED_OUTPUT)
+        stored_workflow = self._most_recent_stored_workflow
+        self.workflow_populator.upload_yaml_workflow(SUBWORKFLOW_WITH_MISSING_TOOL)
+        replacement = self._most_recent_stored_workflow.latest_workflow
+        actions = self._upgrade_subworkflow_to("nested_workflow", replacement)
+        action_executions = self._refactor(actions, stored_workflow=stored_workflow).action_executions
+        assert action_executions[0].messages == []
+        self._app.model.session.expire_all()
+        workflow = stored_workflow.latest_workflow
+        nested_step = workflow.step_by_label("nested_workflow")
+        assert nested_step.subworkflow.id == replacement.id
+        [inner_connection] = nested_step.input_connections
+        assert inner_connection.input_subworkflow_step.label == "inner_input"
+        assert inner_connection.output_step.label == "first_cat"
+        assert [o.label for o in nested_step.workflow_outputs] == ["nested_output"]
+        second_cat_connections = workflow.step_by_label("second_cat").input_connections
+        assert {(c.input_name, c.output_step.label, c.output_name) for c in second_cat_connections} == {
+            ("input1", "nested_workflow", "workflow_output"),
+            ("queries_0|input2", "nested_workflow", "workflow_output"),
+        }
+
+    def test_subworkflow_upgrade_keeps_connections_when_inputs_are_reordered(self):
+        self.workflow_populator.upload_yaml_workflow(WORKFLOW_NESTED_TWO_INPUTS)
+        stored_workflow = self._most_recent_stored_workflow
+        self.workflow_populator.upload_yaml_workflow(SUBWORKFLOW_REORDERED_INPUTS)
+        replacement = self._most_recent_stored_workflow.latest_workflow
+        actions = self._upgrade_subworkflow_to("nested_workflow", replacement)
+        self._refactor(actions, stored_workflow=stored_workflow)
+        self._app.model.session.expire_all()
+        connections = stored_workflow.latest_workflow.step_by_label("nested_workflow").input_connections
+        assert {c.input_name: c.input_subworkflow_step.label for c in connections} == {
+            "first": "first",
+            "second": "second",
+        }
+        dataset_populator = self.workflow_populator.dataset_populator
+        history_id = dataset_populator.new_history()
+        inputs = {
+            label: {"src": "hda", "id": dataset_populator.new_dataset(history_id, content=content, wait=True)["id"]}
+            for label, content in (("outer_a", "a\n"), ("outer_b", "b\n"))
+        }
+        workflow_id = self._app.security.encode_id(stored_workflow.id)
+        invocation_id = self.workflow_populator.invoke_workflow_and_assert_ok(
+            workflow_id, history_id=history_id, inputs=inputs, inputs_by="name"
+        )
+        self.workflow_populator.wait_for_workflow(workflow_id, invocation_id, history_id)
+        assert dataset_populator.get_history_dataset_content(history_id) == "a\nb\n"
 
     def test_subworkflow_upgrade_connection_input_dropped(self):
         self.workflow_populator.upload_yaml_workflow(WORKFLOW_NESTED_SIMPLE)
@@ -1036,6 +1127,7 @@ steps:
         assert message.step_label == "nested_workflow"
         assert message.output_name == "workflow_output"
         assert message.output_label == "outer_output"
+        assert not _step_with_label(self._download_native(), "nested_workflow")["workflow_outputs"]
 
     def test_upgrade_all_steps(self):
         self.install_repository("iuc", "compose_text_param", "feb3acba1e0a")  # 0.1.0
@@ -1073,6 +1165,15 @@ steps:
         assert message.order_index == 2
         assert message.step_label == "tool_update_step"
         assert message.output_name == "output"
+
+    def _upgrade_subworkflow_to(self, label: str, workflow: Workflow) -> ActionsJson:
+        return [
+            {
+                "action_type": "upgrade_subworkflow",
+                "step": {"label": label},
+                "content_id": self._app.security.encode_id(workflow.id),
+            }
+        ]
 
     def _download_native(self, workflow=None):
         workflow = workflow or self._most_recent_stored_workflow

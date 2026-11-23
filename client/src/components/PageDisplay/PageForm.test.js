@@ -29,9 +29,6 @@ function mountTarget(props = {}) {
         stubs: {
             FontAwesomeIcon: true,
         },
-        directives: {
-            localize: () => {},
-        },
     });
 }
 

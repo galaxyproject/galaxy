@@ -236,8 +236,7 @@ class LintContext:
         lint_target: LintTargetType,
         module_name: str | None = None,
     ):
-        if name.startswith("lint_"):
-            name = name[len("lint_") :]
+        name = name.removeprefix("lint_")
         if name in self.skip_types:
             return
         if module_name and module_name in self.skip_types:

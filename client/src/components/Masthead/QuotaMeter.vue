@@ -1,16 +1,39 @@
 <script setup lang="ts">
+import { faExclamationTriangle } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BLink, BProgress, BProgressBar } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed } from "vue";
 
-import { isRegisteredUser } from "@/api";
+import { isRegisteredUser, isUserOverQuota } from "@/api";
 import { useConfig } from "@/composables/config";
+import { hasOtherQuotaSources } from "@/composables/otherQuotaSources";
+import { useQuotaSourceNames } from "@/composables/quotaSourceNames";
+import { useQuotaUsageStore } from "@/stores/quotaUsageStore";
 import { useUserStore } from "@/stores/userStore";
 import localize from "@/utils/localization";
 import { bytesToString } from "@/utils/utils";
 
+import QuotaSourcesList from "./QuotaSourcesList.vue";
+import QuotaSourcesLogin from "./QuotaSourcesLogin.vue";
+import QuotaSourcesPopover from "./QuotaSourcesPopover.vue";
+
 const { config } = useConfig();
 const { currentUser, isAnonymous } = storeToRefs(useUserStore());
+const { quotaUsages, otherSourcesOverQuota } = storeToRefs(useQuotaUsageStore());
+const { otherSourcesOverQuotaNames } = useQuotaSourceNames();
+
+const LINK_ID = "quota-meter-link";
+
+const otherSourcesOverQuotaText = computed(
+    () => `${localize("Over quota on these storages:")} ${otherSourcesOverQuotaNames.value}`,
+);
+
+// The server gives anonymous users no usage per storage; other users need it listed beyond the default storage.
+const showSourcesPopover = computed(
+    () => hasOtherQuotaSources(config.value) && (isAnonymous.value || (quotaUsages.value?.length ?? 0) > 1),
+);
+const isOverDefaultQuota = computed(() => isUserOverQuota(currentUser.value));
 
 const hasQuota = computed<boolean>(() => {
     const quotasEnabled = config.value.enable_quotas ?? false;
@@ -34,9 +57,14 @@ const usage = computed(() => {
 
 const quotaLink = computed(() => (isAnonymous.value ? "/login/start" : "/storage"));
 
-const quotaTitle = computed(() =>
-    localize(isAnonymous.value ? "Login to Access Storage Details" : "Storage and Usage Details"),
-);
+// The popover listing the sources takes the place of the tooltip. An empty title in the binding turns it off; a
+// title attribute wouldn't, as the directive keeps showing the first one it saw.
+const quotaTitle = computed(() => {
+    if (showSourcesPopover.value) {
+        return "";
+    }
+    return localize(isAnonymous.value ? "Login to Access Storage Details" : "Storage and Usage Details");
+});
 
 const variant = computed(() => {
     if (!hasQuota.value || usage.value < 80) {
@@ -49,8 +77,8 @@ const variant = computed(() => {
 </script>
 
 <template>
-    <div v-g-tooltip.hover.bottom class="quota-meter d-flex align-items-center" :title="quotaTitle">
-        <BLink class="quota-progress" :to="quotaLink" data-description="storage dashboard link">
+    <div v-g-tooltip.hover.bottom="{ title: quotaTitle }" class="quota-meter d-flex align-items-center">
+        <BLink :id="LINK_ID" class="quota-progress" :to="quotaLink" data-description="storage dashboard link">
             <BProgress :max="100">
                 <BProgressBar aria-label="Quota usage" :value="usage" :variant="variant" />
             </BProgress>
@@ -59,9 +87,20 @@ const variant = computed(() => {
                 }}<span v-if="hasQuota"
                     ><span>{{ usage.toFixed(0) }}%</span>{{ " "
                     }}<span v-if="quotaLimit !== null">of {{ quotaLimit }}</span></span
-                ><span v-else>{{ totalUsageString }}</span>
+                ><span v-else>{{ totalUsageString }}</span
+                ><span
+                    v-if="otherSourcesOverQuota.length"
+                    class="other-sources-over-quota ml-1"
+                    data-description="other storage over quota">
+                    <FontAwesomeIcon :icon="faExclamationTriangle" />
+                    <span class="sr-only">{{ otherSourcesOverQuotaText }}</span>
+                </span>
             </span>
         </BLink>
+        <QuotaSourcesPopover v-if="showSourcesPopover" v-slot="{ isShown }" :target="LINK_ID">
+            <QuotaSourcesLogin v-if="isAnonymous" :is-over-default-quota="isOverDefaultQuota" />
+            <QuotaSourcesList v-else :quota-usages="quotaUsages ?? []" :show-sources="isShown" />
+        </QuotaSourcesPopover>
     </div>
 </template>
 
@@ -71,6 +110,11 @@ const variant = computed(() => {
     height: 100%;
     margin-left: 0.5rem;
     margin-right: 0.5rem;
+    .other-sources-over-quota {
+        color: var(--color-yellow-500);
+        // A dark outline keeps the icon visible on the light bar and on the red one alike
+        filter: drop-shadow(0 0 0.5px var(--color-grey-900)) drop-shadow(0 0 0.5px var(--color-grey-900));
+    }
     .quota-progress {
         width: 12rem;
         height: 1.4em;

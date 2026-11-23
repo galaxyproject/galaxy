@@ -1,4 +1,10 @@
-from typing import Any
+import io
+from typing import (
+    Any,
+    cast,
+)
+
+import PIL.Image
 
 from galaxy.datatypes.images import (
     Dicom,
@@ -10,10 +16,13 @@ from galaxy.datatypes.images import (
     Png,
     Ppm,
     Tiff,
+    Xpm,
 )
+from galaxy.datatypes.protocols import DatasetProtocol
 from galaxy.datatypes.sniff import get_test_fname
 from .util import (
     get_dataset,
+    MockDataset,
     MockDatasetDataset,
 )
 
@@ -34,6 +43,14 @@ def __test(image_cls: type[Image], input_filename: str):
         return test
 
     return decorator
+
+
+def __set_meta(image_cls: type[Image], path: str):
+    dataset = MockDataset(1)
+    dataset.set_file_name(path)
+    dataset.dataset = MockDatasetDataset(path)
+    image_cls().set_meta(cast(DatasetProtocol, dataset))
+    return dataset.metadata
 
 
 # Define test factory
@@ -92,6 +109,7 @@ test_tiff_depth_0 = __create_test(Tiff, "im1_uint8.tif", depth=0)  # axes: YXS
 test_tiff_depth_25 = __create_test(Tiff, "im7_uint8.tif", depth=25)  # axes: ZYX
 test_tiff_frames_0 = __create_test(Tiff, "im1_uint8.tif", frames=0)  # axes: YXS
 test_tiff_frames_5 = __create_test(Tiff, "im8_uint16.tif", frames=5)  # axes: TYX
+test_tiff_bigtiff_axes_yx = __create_test(Tiff, "bigtiff_le.tif", axes="YX", width=8, height=8)
 
 
 @__test(Tiff, "im_empty.tif")
@@ -141,6 +159,8 @@ def test_tiff_sniff():
         "im8_uint16.tif",
         "im6_uint8.tif",
         "im3_b.tif",
+        "bigtiff_le.tif",
+        "bigtiff_be.tif",
     ):
         fname = get_test_fname(filename)
         assert not Dicom().sniff(fname), f"filename: {filename}"
@@ -242,6 +262,31 @@ def test_dicom_sniff():
 @__test(Pdf, "454Score.pdf")
 def test_unsupported_metadata(metadata):
     __assert_empty_metadata(metadata)
+
+
+# Test with a file that Pillow recognizes but cannot parse
+
+
+def test_unparsable_metadata(caplog):
+    __assert_empty_metadata(__set_meta(Xpm, get_test_fname("gromacs_rmsd_matrix_false.xpm")))
+    assert "Could not read image metadata" in caplog.text
+
+
+def test_decompression_bomb_metadata(monkeypatch, caplog):
+    monkeypatch.setattr(PIL.Image, "MAX_IMAGE_PIXELS", 1)
+    __assert_empty_metadata(__set_meta(Image, get_test_fname("im1_uint8.png")))
+    assert "Could not read image metadata" in caplog.text
+
+
+def test_truncated_metadata(tmp_path, caplog):
+    frames = [PIL.Image.new("L", (16, 16), i * 40) for i in range(4)]
+    buffer = io.BytesIO()
+    frames[0].save(buffer, "GIF", save_all=True, append_images=frames[1:])
+    # Pillow opens the cut file and reads its size, but counting frames fails
+    path = tmp_path / "truncated.gif"
+    path.write_bytes(buffer.getvalue()[:-40])
+    __assert_empty_metadata(__set_meta(Image, str(path)))
+    assert "Could not read image metadata" in caplog.text
 
 
 def test_pbm_sniff():

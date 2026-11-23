@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { BFormGroup, BFormInput } from "bootstrap-vue";
+import { BFormGroup } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
 import type { BrowsableFilesSourcePlugin } from "@/api/remoteFiles";
 import localize from "@/utils/localization";
 
 import GButton from "../BaseComponents/GButton.vue";
+import GFormInput from "@/components/BaseComponents/Form/GFormInput.vue";
 import RDMDestinationSelector from "@/components/Common/RDMDestinationSelector.vue";
 
 interface Props {
@@ -68,7 +69,7 @@ function onRecordSelected(selectedRecordUri: string) {
 <template>
     <div class="export-to-rdm-repository">
         <BFormGroup id="fieldset-name" label-for="name" :description="nameDescription" class="mt-3">
-            <BFormInput id="file-name-input" v-model="fileName" :placeholder="namePlaceholder" required />
+            <GFormInput id="file-name-input" v-model="fileName" :placeholder="namePlaceholder" required />
         </BFormGroup>
 
         <RDMDestinationSelector

@@ -1,8 +1,6 @@
 import type { components } from "@/api/schema";
 import { bytesToString } from "@/utils/utils";
 
-export const DEFAULT_QUOTA_SOURCE_LABEL = "Default";
-
 export type UserQuotaUsageData = components["schemas"]["UserQuotaUsage"];
 
 /**
@@ -10,11 +8,6 @@ export type UserQuotaUsageData = components["schemas"]["UserQuotaUsage"];
  */
 export interface QuotaUsage {
     rawSourceLabel: string | null;
-
-    /**
-     * The name of the ObjectStore associated with the quota.
-     */
-    sourceLabel: string;
 
     /**
      * The maximum allowed disk usage in bytes.
@@ -45,6 +38,11 @@ export interface QuotaUsage {
      * Whether this ObjectStore has unlimited quota
      */
     isUnlimited: boolean;
+
+    /**
+     * Whether the usage exceeds the quota: jobs writing to this ObjectStore are held only then.
+     */
+    isOverQuota: boolean;
 }
 
 /**
@@ -65,10 +63,6 @@ class QuotaUsageModel implements QuotaUsage {
 
     get rawSourceLabel(): string | null {
         return this._data.quota_source_label ?? null;
-    }
-
-    get sourceLabel(): string {
-        return this.rawSourceLabel ?? DEFAULT_QUOTA_SOURCE_LABEL;
     }
 
     get quotaInBytes(): number | undefined | null {
@@ -98,6 +92,11 @@ class QuotaUsageModel implements QuotaUsage {
     }
 
     get isUnlimited(): boolean {
+        // As on the server, a quota of 0 bytes means no quota
         return !this.quotaInBytes;
+    }
+
+    get isOverQuota(): boolean {
+        return !this.isUnlimited && this.totalDiskUsageInBytes > (this.quotaInBytes ?? 0);
     }
 }

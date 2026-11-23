@@ -72,6 +72,18 @@ def test_sample_sheet_validation_string_type():
         validate_row([1], [{"type": "string", "name": "condition", "default_value": "none", "optional": False}])
 
 
+@pytest.mark.parametrize("value", ["a\nb", "a\tb", "a\rb", "a\x00b", "a\x7fb"])
+def test_sample_sheet_validation_string_rejects_control_characters(value):
+    with pytest.raises(RequestParameterInvalidException, match="control characters"):
+        validate_row([value], [{"type": "string", "name": "condition", "optional": False}])
+
+
+def test_sample_sheet_validation_string_allows_punctuation():
+    validate_row(
+        ["short;long --min=10 /data/ref.v2 'q' \"q\""], [{"type": "string", "name": "condition", "optional": False}]
+    )
+
+
 def test_sample_sheet_validation_boolean_type():
     validate_row([True], [{"type": "boolean", "name": "control?", "optional": False}])
 

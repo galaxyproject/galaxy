@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { BProgress, BProgressBar } from "bootstrap-vue";
 import { computed } from "vue";
 
 import localize from "@/utils/localization";
 
 import GPopover from "@/components/BaseComponents/GPopover.vue";
+import GProgress from "@/components/BaseComponents/GProgress.vue";
+import GProgressBar from "@/components/BaseComponents/GProgressBar.vue";
 
 type ProgressHeightClass = "storage-operation-progress-sm" | "storage-operation-progress-md";
 
@@ -62,11 +63,15 @@ const popoverTargetId = `storage-operation-progress-${Math.random().toString(36)
 <template>
     <div>
         <div :id="popoverTargetId" class="storage-operation-progress-target">
-            <BProgress :max="props.totalCount || 1" :class="props.heightClass" :aria-label="progressLabel">
-                <BProgressBar variant="success" :value="props.succeededCount" />
-                <BProgressBar variant="danger" :value="props.failedCount" />
-                <BProgressBar variant="warning" :value="props.skippedCount" />
-            </BProgress>
+            <GProgress
+                :max="props.totalCount || 1"
+                :class="props.heightClass"
+                :aria-label="progressLabel"
+                :show-progress="props.heightClass !== 'storage-operation-progress-sm'">
+                <GProgressBar variant="success" :value="props.succeededCount" :aria-label="localize('Success')" />
+                <GProgressBar variant="danger" :value="props.failedCount" :aria-label="localize('Failed')" />
+                <GProgressBar variant="warning" :value="props.skippedCount" :aria-label="localize('Skipped')" />
+            </GProgress>
         </div>
 
         <GPopover

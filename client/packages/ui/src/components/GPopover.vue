@@ -788,13 +788,13 @@ defineExpose({
     <span class="g-popover-host" hidden>
         <div
             v-show="showState"
+            v-bind="isDialog ? dialogName(Boolean(title || $slots.title)) : {}"
             :id="popoverId"
             ref="popoverEl"
             class="popover b-popover"
             :class="[customClass, `bs-popover-${basePlacement}`]"
             :role="isDialog ? 'dialog' : 'tooltip'"
             :tabindex="isDialog ? -1 : undefined"
-            v-bind="isDialog ? dialogName(Boolean(title || $slots.title)) : {}"
             :style="{ transform: `translate(${x}px, ${y}px)` }">
             <span
                 v-if="isHoverDialog"

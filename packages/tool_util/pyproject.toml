@@ -7,7 +7,7 @@ dynamic = ["readme"]
 name = "galaxy-tool-util"
 version = "27.0.dev0"
 description = "Galaxy tool and tool dependency utilities"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 license = {"text" = "MIT"}
 authors = [
     {name = "Galaxy Project and Community", email = "galaxy-committers@lists.galaxyproject.org"},
@@ -33,7 +33,6 @@ classifiers = [
     "Natural Language :: English",
     "Operating System :: POSIX",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
@@ -46,7 +45,7 @@ keywords = ["Galaxy"]
 
 [project.optional-dependencies]
 cwl = [
-    "cwl-utils!=0.44",  # configures root logging on import: https://github.com/common-workflow-language/cwl-utils/pull/471
+    "cwl-utils>=0.46",
     "cwltool>=3.1.20230624081518",
 ]
 mulled = [

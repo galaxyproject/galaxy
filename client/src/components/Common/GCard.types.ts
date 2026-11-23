@@ -78,6 +78,8 @@ export interface CardBadge
     extends BaseCardElement,
         NavigationProps,
         Pick<StylingProps, "variant" | "icon" | "class" | "spin"> {
+    /** Accessible name when the label alone does not say what the badge does */
+    ariaLabel?: string;
     /** Badge display type */
     type?: CardBadgeType;
 }

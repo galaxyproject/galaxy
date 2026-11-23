@@ -18,7 +18,10 @@ const emit = defineEmits<{
             </span>
         </div>
         <div id="tool-form-tags" class="ui-form-field">
-            <StatelessTags :value="props.tags" placeholder="Add tags" @input="emit('update:tags', $event)" />
+            <StatelessTags
+                :model-value="props.tags"
+                placeholder="Add tags"
+                @update:model-value="emit('update:tags', $event)" />
         </div>
         <span v-localize class="ui-form-info form-text text-muted">
             Enter tags to apply to the output datasets in your history (e.g., 'sample1'). Tags starting with '#' (e.g.,

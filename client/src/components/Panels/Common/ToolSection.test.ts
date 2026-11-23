@@ -71,6 +71,27 @@ describe("ToolSection", () => {
         expect(wrapper.findAll(".name").length).toBe(1);
     });
 
+    test("exposes the expanded state of the section toggle", async () => {
+        const wrapper = mount(ToolSection, {
+            props: {
+                category: {
+                    model_class: "ToolSection",
+                    id: "tool_section",
+                    name: "tool_section",
+                    title: "tool_section",
+                    elems: [{ name: "name" } as Tool],
+                },
+            },
+            global: withPlugins(localVue, pinia),
+        });
+        const toggle = wrapper.find(".title-link");
+        expect(toggle.attributes("aria-expanded")).toBe("false");
+        await toggle.trigger("click");
+        expect(toggle.attributes("aria-expanded")).toBe("true");
+        await toggle.trigger("click");
+        expect(toggle.attributes("aria-expanded")).toBe("false");
+    });
+
     test("test tool slider state", async () => {
         const wrapper = mount(ToolSection, {
             props: {

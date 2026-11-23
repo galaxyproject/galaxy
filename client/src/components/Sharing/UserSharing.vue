@@ -2,7 +2,7 @@
 import axios from "axios";
 import { BCard, BCardGroup, BListGroup, BListGroupItem } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
-import { computed, ref, watch } from "vue";
+import { computed, nextTick, ref, watch } from "vue";
 import Multiselect from "vue-multiselect";
 
 import type { AnyShareableItemWithStatus, ShareOption } from "@/api";
@@ -102,6 +102,34 @@ function onRemove(user: { email: string }) {
     }
 }
 
+/**
+ * Removes a tag from its remove button, keeping keyboard focus inside the control
+ * the way the patched vue-multiselect default tag does.
+ */
+function onRemoveTag(option: { email: string }, remove: (option: { email: string }) => void, event: MouseEvent) {
+    const button = event.currentTarget as HTMLButtonElement;
+    const multiselect = button.closest<HTMLElement>(".multiselect");
+    const removeButtons = () =>
+        Array.from(multiselect?.querySelectorAll<HTMLButtonElement>("button.multiselect__tag-icon") ?? []);
+    const restoreFocus = document.activeElement === button;
+    const index = removeButtons().indexOf(button);
+    remove(option);
+    if (restoreFocus) {
+        nextTick(() => {
+            if (button.isConnected) {
+                return;
+            }
+            const buttons = removeButtons();
+            const target =
+                buttons[index] ||
+                buttons[index - 1] ||
+                multiselect?.querySelector<HTMLElement>("input.multiselect__input") ||
+                multiselect;
+            target?.focus();
+        });
+    }
+}
+
 const charactersThresholdWarning = "Enter at least 3 characters to see suggestions";
 const elementsNotFoundWarning = "No elements found. Consider changing the search query";
 
@@ -190,12 +218,12 @@ defineExpose({
                     <template v-slot:tag="{ option, remove }">
                         <span class="multiselect__tag remove_sharing_with" :data-email="option.email">
                             <span>{{ option.email }}</span>
-                            <i
-                                aria-hidden="true"
-                                tabindex="0"
+                            <button
+                                type="button"
                                 class="multiselect__tag-icon"
-                                @click="remove(option)"
-                                @keyup.enter.space="remove(option)"></i>
+                                :aria-label="`Remove ${option.email}`"
+                                @mousedown.prevent
+                                @click.stop="onRemoveTag(option, remove, $event)"></button>
                         </span>
                     </template>
 

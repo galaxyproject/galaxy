@@ -1,83 +1,69 @@
 # Server-Sent Events (SSE) for real-time updates
 
-Galaxy can push history changes, interactive-tool entry-point changes, and
-in-app notifications to connected browsers via [Server-Sent Events][sse-mdn]
-instead of polling. This replaces the legacy 3-second history poll and
-10-second entry-point poll with a single long-lived HTTP connection per
-browser tab, dramatically reducing API load on busy servers and giving users
-sub-second update latency.
+Galaxy can push history changes, interactive-tool entry-point changes,
+workflow invocation and job changes, and in-app notifications to connected
+browsers via [Server-Sent Events][sse-mdn] instead of polling. The history
+panel, interactive tool entry points and notifications then update over a
+single long-lived HTTP connection per browser tab instead of the 3-second
+history poll and 10-second entry-point poll, which reduces API load on busy
+servers and gives users sub-second update latency.
 
-This document describes the architecture, the configuration knobs, the
-metrics admins should watch, and how to configure NGINX so the long-lived
-event connection is not buffered or prematurely terminated.
+This document covers the processes involved, the configuration, the metrics
+to watch, and how to configure NGINX so the long-lived event connection is
+not buffered or prematurely terminated. The event types, their payloads and
+routing, and the subscription API are described for developers in
+[Server-Sent Events: event types, routing and producers](../dev/sse_events.md).
 
 [sse-mdn]: https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events
 
 ## How it works
 
-A high-level view of the moving parts on the server:
-
 ```
-   ┌────────────────┐  LISTEN/NOTIFY     ┌──────────────────────┐
-   │  Postgres      │ ─────────────────► │ HistoryAuditMonitor  │
-   │  history_audit │  (or audit poll    │ (one elected process) │
-   │                │   on SQLite)       └──────────┬───────────┘
-   └────────────────┘                               │ Kombu
-                                                    ▼
-                                     ┌─────────────────────────────┐
-                                     │  galaxy_queue_worker        │
-                                     │  control task fan-out:      │
-                                     │   • history_update          │
-                                     │   • entry_point_update      │
-                                     │   • notification_update     │
-                                     │   • broadcast_update        │
+   ┌────────────────┐  LISTEN/NOTIFY     ┌──────────────────────┐   ┌─────────────────────────┐
+   │  Postgres      │ ─────────────────► │ HistoryAuditMonitor  │   │ web workers, job        │
+   │  history_audit │  (or audit poll    │ (one elected process) │   │ handlers, workflow      │
+   │                │   on SQLite)       └──────────┬───────────┘   │ schedulers, Celery      │
+   └────────────────┘                               │               │ (on each commit)        │
+                                                    │ Kombu         └────────────┬────────────┘
+                                                    ▼                            │ Kombu
+                                     ┌─────────────────────────────┐             │
+                                     │  AMQP control queue:        │ ◄───────────┘
+                                     │  one control task per event │
+                                     │  to every web worker        │
                                      └──────────────┬──────────────┘
-                                                    │ in-process
                                                     ▼
                               ┌─────────────────────────────────────┐
-                              │  Each gunicorn worker:              │
-                              │   SSEConnectionManager → asyncio    │
-                              │   queue per connected browser tab   │
+                              │  Each gunicorn worker holds the     │
+                              │  connections of its browser tabs    │
                               └──────────────┬──────────────────────┘
-                                             │ HTTP chunked
+                                             │ HTTP chunked, /api/events/stream
                                              ▼
                               ┌─────────────────────────────────────┐
                               │  Browser EventSource                │
-                              │  (single stream, multiplexed events)│
                               └─────────────────────────────────────┘
 ```
 
-Concretely:
-
-1. **One stream per browser, many event types.** The browser opens a single
-   `EventSource` against `/api/events/stream`. The same connection carries
-   `history_update`, `entry_point_update`, `notification_update`,
-   `broadcast_update`, and `notification_status` events.
-2. **Per-process registries.** Each Gunicorn worker keeps an
-   `SSEConnectionManager` that holds an `asyncio.Queue` per connected tab,
-   indexed by user id (and Galaxy session id, so anonymous users still
-   receive their own history's updates).
-3. **Producers.**
-   - History updates come from a `HistoryAuditMonitor` that watches
-     `history_audit` via PostgreSQL `LISTEN/NOTIFY` (instant) or by polling
-     the audit table on SQLite. Only one process in the cluster is the
-     producer, picked by `DatabaseHeartbeat` leader election. If a
-     standalone `galaxy-sse-monitor` process is running it always wins;
-     otherwise one webapp picks it up.
-   - Entry-point updates are dispatched directly from the code paths that
-     mutate interactive-tool entry points — there is no separate watcher.
-   - Notifications dispatch SSE events from `NotificationManager` whenever
-     a notification or broadcast is created.
-4. **Cross-process fan-out.** Producers don't know which worker holds the
-   recipient's connection, so all events go through a Kombu control task
-   broadcast on the internal AMQP bus. Every worker receives every event
-   and locally drops the ones for users it doesn't currently hold a
-   connection for.
-5. **Reconnect catch-up.** When a browser reconnects after a network blip,
-   it sends `Last-Event-ID`. The server replays an aggregated
-   `notification_status` covering everything since that timestamp. History
-   updates come with an `update_time` cursor in the payload, so the client
-   can request the delta itself.
+- **Web workers** hold the browsers' connections to `/api/events/stream`,
+  in memory. Each worker needs its own control queue, see
+  [What to monitor](#what-to-monitor).
+- **History changes** are picked up by a `HistoryAuditMonitor` that watches
+  the `history_audit` table via PostgreSQL `LISTEN/NOTIFY` (instant) or by
+  polling it on SQLite. Only one process in the cluster runs it, picked by
+  `DatabaseHeartbeat` leader election: a standalone `galaxy-sse-monitor`
+  process if one runs, otherwise one webapp.
+- **Workflow invocation, job, entry-point and notification changes** are sent
+  by whichever Galaxy process commits them: web workers, job handlers,
+  workflow schedulers or Celery workers. These processes need access to the
+  AMQP broker configured by `amqp_internal_connection`.
+- **Fan-out.** Every event travels as a control task over the internal AMQP
+  connection to every web worker, which pushes it to the connections it
+  holds and drops it otherwise. Job events add a message for each committed
+  job state change, so expect noticeably more control-queue traffic on busy
+  servers than with SSE updates off.
+- **Delivery is best effort.** Events carry ids and states only, and
+  browsers refetch the changed objects through the regular, access-controlled
+  API. A failed dispatch is logged and leaves the browser to catch up on its
+  next refetch; it never fails the change itself.
 
 ### Standalone monitor (recommended for production)
 
@@ -111,11 +97,12 @@ galaxy:
   enable_sse_updates: true
 ```
 
-This controls **all three** SSE-driven paths (history, entry-point,
-notifications). When `false`:
+This controls **all** SSE-driven updates: history, entry-point, workflow
+invocation and job changes, and notifications. When `false`:
 
 - `HistoryAuditMonitor` is not registered, so the cluster does no
   `LISTEN/NOTIFY` or audit-table polling for history changes.
+- No process sends invocation or job events.
 - The browser falls back to its existing 3-second history poll and
   10-second entry-point poll.
 - Notifications fall back to the existing 30-second polling against

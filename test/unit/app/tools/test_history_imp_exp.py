@@ -1,11 +1,14 @@
+import io
 import json
 import os
 import tarfile
 import tempfile
+import zipfile
 from shutil import rmtree
 from typing import Any
 from unittest.mock import Mock
 
+import pytest
 from sqlalchemy import select
 
 from galaxy import model
@@ -788,6 +791,22 @@ def test_history_import_abspath_in_archive():
         history_archive.write_file("datasets/Pasted_Entry_1.txt", "foo")
         history_archive.finalize()
         _run_unpack(history_archive, dest_parent, "Absolute path in import archive allowed")
+
+
+def test_history_import_relpath_in_tar_ending_in_zip(tmp_path):
+    zip_bytes = io.BytesIO()
+    with zipfile.ZipFile(zip_bytes, "w") as zf:
+        zf.writestr("inner.txt", "inner\n")
+    archive_path = str(tmp_path / "archive.tar")
+    with tarfile.open(archive_path, "w") as tf:
+        for name, data in (("../insecure", b"foo\n"), ("inner.zip", zip_bytes.getvalue())):
+            info = tarfile.TarInfo(name)
+            info.size = len(data)
+            tf.addfile(info, io.BytesIO(data))
+    dest_dir = tmp_path / "parent" / "dest"
+    dest_dir.mkdir(parents=True)
+    with pytest.raises(AssertionError, match="outside target directory"):
+        unpack_tar_gz_archive.check_archive(archive_path, str(dest_dir))
 
 
 class HistoryArchive:

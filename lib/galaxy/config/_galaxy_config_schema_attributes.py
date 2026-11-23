@@ -201,6 +201,7 @@ class GalaxyAppConfigurationAttributes:
     logo_src: str
     logo_src_secondary: str | None
     subdomain_switcher: list[dict[str, str]]
+    another_galaxy_servers: list[dict[str, str]]
     helpsite_url: str
     wiki_url: str
     quota_url: str
@@ -225,6 +226,7 @@ class GalaxyAppConfigurationAttributes:
     upstream_gzip: bool
     upstream_mod_zip: bool
     x_frame_options: str
+    widgets_allowed_origins: str | None
     nginx_upload_store: str | None
     nginx_upload_path: str | None
     nginx_upload_job_files_store: str | None
@@ -491,5 +493,7 @@ class GalaxyAppConfigurationAttributes:
     enable_failed_jobs_working_directory_cleanup: bool
     failed_jobs_working_directory_cleanup_days: int
     failed_jobs_working_directory_cleanup_interval: int
+    user_defined_tool_allowed_containers: list[str]
+    user_defined_tool_denied_containers: list[str]
     enable_beta_tool_formats: bool
     require_container_for_user_defined_tools: bool

@@ -1,23 +1,37 @@
-import { getFakeHistorySummary, getFakeRegisteredUser } from "@tests/test-data";
-import { getLocalVue } from "@tests/vitest/helpers";
+import { getFakeHistorySummary, getFakeQuotaUsageData, getFakeRegisteredUser, getFakeStorage } from "@tests/test-data";
+import { getLocalVue, withPlugins } from "@tests/vitest/helpers";
 import { shallowMount } from "@vue/test-utils";
+import flushPromises from "flush-promises";
+import { createPinia, setActivePinia } from "pinia";
 import { describe, expect, it } from "vitest";
 
 import type { AnonymousUser, AnyUser, HistorySummary } from "@/api";
+import { useServerMock } from "@/api/client/__mocks__";
+import { toQuotaUsage, type UserQuotaUsageData } from "@/components/User/DiskUsage/Quota/model/QuotaUsage";
+import { useQuotaUsageStore } from "@/stores/quotaUsageStore";
 
 import HistoryMessages from "./HistoryMessages.vue";
 
 const localVue = getLocalVue();
+const { server, http } = useServerMock();
 
 const MESSAGES = "[data-description='history messages']";
 const OVER_QUOTA_MESSAGE = "[data-description='over quota message']";
+const OTHER_SOURCES_OVER_QUOTA_MESSAGE = "[data-description='other sources over quota message']";
 
 const CURRENT_USER = getFakeRegisteredUser({ id: "current_user_id" });
 
-function mountHistoryMessages(currentUser: AnyUser, history: HistorySummary = getFakeHistorySummary()) {
+function mountHistoryMessages(
+    currentUser: AnyUser,
+    history: HistorySummary = getFakeHistorySummary(),
+    quotaUsages: UserQuotaUsageData[] = [],
+) {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    useQuotaUsageStore().quotaUsages = quotaUsages.map(toQuotaUsage);
     return shallowMount(HistoryMessages as object, {
         props: { history, currentUser },
-        global: localVue,
+        global: withPlugins(localVue, pinia),
     });
 }
 
@@ -52,11 +66,11 @@ describe("HistoryMessages", () => {
         expect(wrapper.find(OVER_QUOTA_MESSAGE).exists()).toBe(warns);
     });
 
-    it("doesn't warn about the user's quota on someone else's history", () => {
+    it("doesn't warn about the user's quotas on someone else's history", () => {
         const user = { ...CURRENT_USER, quota_percent: 100 };
         const history = { ...getFakeHistorySummary(), user_id: "another_user_id" };
 
-        const wrapper = mountHistoryMessages(user, history);
+        const wrapper = mountHistoryMessages(user, history, [getFakeQuotaUsageData("scratch", 1001)]);
 
         expect(wrapper.find(MESSAGES).exists()).toBe(false);
     });
@@ -79,5 +93,43 @@ describe("HistoryMessages", () => {
         const wrapper = mountHistoryMessages(CURRENT_USER, history);
 
         expect(wrapper.find(MESSAGES).exists()).toBe(expectedShown);
+    });
+
+    it("names the other storage sources whose quota the user exceeded after their storages", async () => {
+        server.use(
+            http.get("/api/object_stores", ({ response }) =>
+                response(200).json([getFakeStorage("scratch", "Scratch Storage", { source: "scratch" })]),
+            ),
+        );
+        const usages = [
+            getFakeQuotaUsageData(null, 200),
+            getFakeQuotaUsageData("scratch", 1001),
+            getFakeQuotaUsageData("archive", 1500),
+        ];
+
+        const wrapper = mountHistoryMessages(getFakeRegisteredUser({ quota_percent: 20 }), undefined, usages);
+
+        expect(wrapper.find(OVER_QUOTA_MESSAGE).exists()).toBe(false);
+        await flushPromises();
+
+        // No storage uses the archive source, so it keeps its label
+        expect(wrapper.find(OTHER_SOURCES_OVER_QUOTA_MESSAGE).text()).toContain("Scratch Storage, archive");
+    });
+
+    it("doesn't repeat the default storage's warning as another source's", () => {
+        const user = getFakeRegisteredUser({ quota_percent: 100 });
+
+        const wrapper = mountHistoryMessages(user, undefined, [getFakeQuotaUsageData(null, 1001)]);
+
+        expect(wrapper.find(OVER_QUOTA_MESSAGE).exists()).toBe(true);
+        expect(wrapper.find(OTHER_SOURCES_OVER_QUOTA_MESSAGE).exists()).toBe(false);
+    });
+
+    it("shows no messages while the other storage sources don't exceed their quota", () => {
+        const usages = [getFakeQuotaUsageData(null, 200), getFakeQuotaUsageData("scratch", 1000, 1000)];
+
+        const wrapper = mountHistoryMessages(getFakeRegisteredUser({ quota_percent: 20 }), undefined, usages);
+
+        expect(wrapper.find(MESSAGES).exists()).toBe(false);
     });
 });

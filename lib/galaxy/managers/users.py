@@ -32,6 +32,7 @@ from galaxy import (
     util,
 )
 from galaxy.config import (
+    COMPLIANCE_LOGGER_NAME,
     GALAXY_APP_NAME,
     templates,
 )
@@ -347,8 +348,8 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         # Delete UserAuthnzTokens, unlinking any external identities
         for authnz in user.social_auth:
             self.session().delete(authnz)
-        compliance_log = logging.getLogger("COMPLIANCE")
-        compliance_log.info(f"delete-user-event: {user.username}")
+        compliance_log = logging.getLogger(COMPLIANCE_LOGGER_NAME)
+        compliance_log.info(f"delete-user-event: {user.id}")
         # Maybe there is some case in the future where an admin needs
         # to prove that a user was using a server for some reason (e.g.
         # a court case.) So we make this painfully hard to recover (and

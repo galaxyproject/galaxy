@@ -11,6 +11,7 @@ from typing import (
     Any,
     cast,
     Literal,
+    NotRequired,
     Optional,
     TYPE_CHECKING,
     Union,
@@ -18,7 +19,6 @@ from typing import (
 
 import packaging.version
 from typing_extensions import (
-    NotRequired,
     TypedDict,
 )
 
@@ -65,6 +65,7 @@ if TYPE_CHECKING:
         ToolOutputBase,
         ToolOutputCollection,
     )
+    from galaxy.tool_util_models.yaml_parameters import YamlReferenceDataParameter
     from .stdio import (
         ToolStdioExitCode,
         ToolStdioRegex,
@@ -170,6 +171,11 @@ class ToolSource(metaclass=ABCMeta):
     def allows_tool_provided_metadata(self) -> bool:
         """Return whether this source may enable tool-provided metadata."""
         return False
+
+    @property
+    def trusted(self) -> bool:
+        """False for a source any user may write, which can only read what an admin opened to user tools."""
+        return True
 
     def is_yaml_origin(self) -> bool:
         """Return whether this is a GalaxyTool/GalaxyUserTool source, following the canonical parameter contract."""
@@ -531,6 +537,7 @@ class DrillDownDynamicOptions(metaclass=ABCMeta):
 
 class InputSource(metaclass=ABCMeta):
     default_optional = False
+    trusted: bool = True
 
     @property
     def input_class(self) -> INPUT_CLASS_T:
@@ -614,6 +621,10 @@ class InputSource(metaclass=ABCMeta):
     def parse_text_optional(self) -> tuple[bool, bool]:
         """Return text optionality and whether it was inferred from validators accepting ""."""
         return text_input_is_optional(self)
+
+    def parse_reference_data(self) -> Optional["YamlReferenceDataParameter"]:
+        """Return the validated ``reference_data`` definition; only YAML tools declare one."""
+        return None
 
     def parse_dynamic_options(self) -> DynamicOptions | None:
         """Return an optional element describing dynamic options.

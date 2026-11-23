@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { watchDebounced } from "@vueuse/core";
 import axios from "axios";
-import { BCard, BFormInput, BInputGroup, BInputGroupAppend } from "bootstrap-vue";
+import { BCard, BInputGroup, BInputGroupAppend } from "bootstrap-vue";
 import { computed, type Ref, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 
@@ -15,6 +16,7 @@ import { errorMessageAsString } from "@/utils/simple-error";
 
 import type { TrsSelection, TrsTool as TrsSearchData } from "./types";
 
+import GFormInput from "@/components/BaseComponents/Form/GFormInput.vue";
 import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GTable from "@/components/Common/GTable.vue";
@@ -42,6 +44,7 @@ const fields: TableField[] = [
     { key: "organization", label: "Organization" },
 ];
 
+const queryInput = ref("");
 const query = ref("");
 const results: Ref<TrsSearchData[]> = ref([]);
 const trsServer = ref("");
@@ -71,32 +74,60 @@ const itemsComputed = computed(() => {
 
 const services = new Services();
 
-watch(query, async () => {
-    if (query.value == "") {
+// Typing waits 500ms before searching; a change (Enter or blur) searches at once
+watchDebounced(queryInput, (value) => (query.value = value), { debounce: 500 });
+
+function applyQuery() {
+    query.value = queryInput.value;
+}
+
+function clearQuery() {
+    queryInput.value = "";
+    query.value = "";
+}
+
+let searchCount = 0;
+
+// A query typed before the TRS server list has loaded is searched once a server is selected.
+watch([query, trsServer], async () => {
+    const searchId = ++searchCount;
+    if (query.value == "" || trsServer.value == "") {
         results.value = [];
+        loading.value = false;
         // Reset selection state when search is cleared
         selectedTool.value = null;
         selectedVersion.value = undefined;
-    } else {
-        loading.value = true;
+        return;
+    }
 
-        try {
-            const response = await axios.get(
-                withPrefix(`/api/trs_search?query=${query.value}&trs_server=${trsServer.value}`),
-            );
+    loading.value = true;
+
+    try {
+        const params = new URLSearchParams({ query: query.value, trs_server: trsServer.value });
+        const response = await axios.get(withPrefix(`/api/trs_search?${params}`));
+        // ignore responses to searches that a newer search has replaced
+        if (searchId === searchCount) {
             results.value = response.data;
-        } catch (e) {
+        }
+    } catch (e) {
+        if (searchId === searchCount) {
             errorMessage.value = errorMessageAsString(e);
         }
+    }
 
+    if (searchId === searchCount) {
         loading.value = false;
     }
 });
 
 function onTrsSelection(selection: TrsSelection) {
+    // Only clear the query when switching servers, not when the initial selection arrives
+    // while the user may already be typing.
+    if (trsServer.value && trsServer.value !== selection.id) {
+        clearQuery();
+    }
     trsSelection.value = selection;
     trsServer.value = selection.id;
-    query.value = "";
 }
 
 function onTrsSelectionError(message: string) {
@@ -175,16 +206,16 @@ defineExpose({ triggerImport });
 
         <div class="trs-search-field">
             <BInputGroup>
-                <BFormInput
+                <GFormInput
                     id="trs-search-query"
-                    v-model="query"
-                    debounce="500"
+                    v-model="queryInput"
                     placeholder="search query"
                     data-description="filter text input"
-                    @keyup.esc="query = ''" />
+                    @change="applyQuery"
+                    @keyup.esc="clearQuery" />
 
                 <BInputGroupAppend>
-                    <GButton size="small" title="clear search" @click="query = ''">
+                    <GButton size="small" title="clear search" @click="clearQuery">
                         <FontAwesomeIcon :icon="faTimes" />
                     </GButton>
                 </BInputGroupAppend>

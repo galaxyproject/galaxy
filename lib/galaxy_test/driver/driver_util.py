@@ -271,6 +271,8 @@ def setup_galaxy_config(
         use_tasked_jobs=True,
         use_heartbeat=False,
         user_library_import_dir=user_library_import_dir,
+        # Test user defined tools use images from anywhere (busybox, python, ...).
+        user_defined_tool_allowed_containers=["*"],
         webhooks_dir=webhooks_dir,
         logging=logging,
         monitor_thread_join_timeout=5,
@@ -288,6 +290,10 @@ def setup_galaxy_config(
             f"sqlalchemy+sqlite:///{os.path.join(tmpdir, 'control.sqlite')}?isolation_level=IMMEDIATE"
         )
 
+    # A default only: a test class that sets metadata_strategy in handle_galaxy_config_kwds keeps its value.
+    metadata_strategy = os.environ.get("GALAXY_TEST_METADATA_STRATEGY")
+    if metadata_strategy:
+        config["metadata_strategy"] = metadata_strategy
     config.update(database_conf(tmpdir, prefer_template_database=prefer_template_database))
     config.update(install_database_conf(tmpdir, default_merged=default_install_db_merged))
     if asbool(os.environ.get("GALAXY_TEST_USE_HIERARCHICAL_OBJECT_STORE")):

@@ -14,6 +14,7 @@ from collections.abc import (
     Iterable,
 )
 from decimal import Decimal
+from pathlib import Path
 from typing import (
     Any,
     NamedTuple,
@@ -116,6 +117,20 @@ def resolve_discovered_extension(ext: str, path: str | None) -> str:
     if ext == "_infer_from_file_name_":
         return _get_datatypes_registry().get_datatype_from_filename(os.path.basename(path)).file_ext
     return ext
+
+
+def ensure_job_path_in_job_directory(path: StrPath, job_directory: StrPath) -> None:
+    """Reject ``path`` if it is located in ``job_directory`` but resolves to a location outside of it.
+
+    Paths located elsewhere, e.g. object store paths of outputs written there directly, are not checked.
+    Symbolic links above ``job_directory`` are trusted, links below it are not.
+    """
+    real_job_directory = os.path.realpath(job_directory)
+    absolute_path = Path(os.path.abspath(path))
+    if os.path.lexists(absolute_path) and any(
+        os.path.realpath(parent) == real_job_directory for parent in absolute_path.parents
+    ):
+        ensure_path_in_directory(absolute_path, real_job_directory)
 
 
 class ModelPersistenceContext(metaclass=abc.ABCMeta):
@@ -1237,7 +1252,14 @@ class JsonCollectedDatasetMatch:
 
     @property
     def ext(self) -> str:
-        return self.as_dict.get("ext", self.collector and self.collector.default_ext or "data")
+        # A named group that did not participate in the regex match shows up
+        # in ``groupdict()`` with a value of ``None``; treat that like a
+        # pattern without an ``ext`` group and fall back to the collector
+        # default extension.
+        ext = self.as_dict.get("ext")
+        if not ext:
+            return self.collector and self.collector.default_ext or "data"
+        return ext
 
     @property
     def visible(self) -> bool:

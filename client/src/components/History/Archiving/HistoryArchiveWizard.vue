@@ -11,7 +11,6 @@ import { useToast } from "@/composables/toast";
 import { useHistoryStore } from "@/stores/historyStore";
 import { errorMessageAsString } from "@/utils/simple-error";
 
-import Alert from "@/components/Alert.vue";
 import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GTab from "@/components/BaseComponents/GTab.vue";
 import GTabs from "@/components/BaseComponents/GTabs.vue";
@@ -92,7 +91,7 @@ const breadcrumbItems = computed(() => [
     <div class="history-archive-wizard">
         <BreadcrumbHeading :items="breadcrumbItems" />
 
-        <Alert v-if="loadError" :message="loadError" variant="error" />
+        <GAlert v-if="loadError" variant="danger">{{ loadError }}</GAlert>
         <GAlert v-else-if="!history" show>
             <LoadingSpan spinner-only />
         </GAlert>

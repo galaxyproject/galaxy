@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from datetime import (
     datetime,
     timedelta,
-    timezone,
+    UTC,
 )
 from typing import (
     Any,
@@ -285,6 +285,26 @@ def test_to_panel_entry_carries_client_contract_fields():
     assert "config_file" not in d
 
 
+def test_to_panel_entry_leaves_out_indexed_data_inputs():
+    e = _entry(
+        data_inputs=[
+            {"name": "infile", "extensions": ["tabular"], "multiple": False, "type": "data", "collection_type": None}
+        ]
+    )
+    assert "data_inputs" not in _stub(e).to_panel_entry(trans=None)
+
+
+def test_data_inputs_come_from_the_index_entry():
+    e = _entry(
+        data_inputs=[
+            {"name": "infile", "extensions": ["tabular"], "multiple": False, "type": "data", "collection_type": None}
+        ]
+    )
+    assert [data_input.model_dump() for data_input in _stub(e).data_inputs] == [
+        {"name": "infile", "extensions": ["tabular"], "multiple": False, "type": "data", "collection_type": None}
+    ]
+
+
 def test_to_panel_entry_includes_config_file_for_admin():
     trans = MagicMock()
     trans.user_is_admin = True
@@ -437,7 +457,7 @@ def test_create_tool_returns_cachedtool_on_source_path_hit():
         tool_id="bowtie2",
         tool_dir=None,
         source_path="/tools/bowtie2.xml",
-        stored_at=datetime.now(timezone.utc),
+        stored_at=datetime.now(UTC),
     )
     tool = box.create_tool(config_file="/tools/bowtie2.xml")
     assert isinstance(tool, CachedTool)
@@ -571,7 +591,7 @@ def test_index_tool_files_reloads_a_stale_index_another_populate_already_wrote(t
         tool_version="1.0",
         tool_dir=None,
         source_path=str(tool_file),
-        stored_at=datetime.now(timezone.utc),
+        stored_at=datetime.now(UTC),
     )
     current = ToolIndex()
     current.add_entry(_entry(id=guid, version="1.0", source_hash="after-update"))
@@ -755,7 +775,7 @@ def _shed_image_stored(tool_dir):
         tool_id=SHED_IMAGE_GUID,
         tool_dir=tool_dir,
         source_path=None,
-        stored_at=datetime.now(timezone.utc),
+        stored_at=datetime.now(UTC),
     )
 
 
@@ -1079,6 +1099,23 @@ def test_guid_sibling_versions_reset_on_in_place_removal():
     assert box._index_versions_for(f"{prefix}/0.20.1") == ["0.20.1"]
 
 
+def test_versionless_guid_resolves_remaining_version_after_removal():
+    box = _registry_box()
+    box._guid_sibling_versions_cache = None
+    prefix = "toolshed.g2.bx.psu.edu/repos/iuc/fastp/fastp"
+    for version in ("0.20.1", "0.23.2"):
+        entry = _entry(id=f"{prefix}/{version}", version=version)
+        box._tool_index.add_entry(entry)
+        box._register_cached_entry(entry)
+    remaining = box.get_tool(f"{prefix}/0.20.1")
+    assert isinstance(remaining, CachedTool)
+    box._remove_tool_in_memory(f"{prefix}/0.23.2")
+    tool = box.get_tool(prefix, tool_version="0.20.1")
+    assert tool is not None and tool.id == f"{prefix}/0.20.1"
+    assert remaining.lineage is not None
+    assert list(remaining.lineage.tool_versions) == ["0.20.1"]
+
+
 def test_get_tool_short_id_missing_version_honors_exact():
     box = _registry_box()
     guid = "toolshed.example.com/repos/owner/repo/cat/1.0"
@@ -1088,6 +1125,32 @@ def test_get_tool_short_id_missing_version_honors_exact():
     default_tool = box.get_tool("cat", tool_version="9.9", exact=False)
     assert isinstance(default_tool, CachedTool)
     assert default_tool.id == guid
+
+
+def test_get_tool_short_id_prefers_guid_with_requested_version():
+    box = _registry_box()
+    prefix = "toolshed.example.com/repos/owner/repo/cat"
+    for version in ("1.0", "2.0"):
+        box._tool_index.add_entry(_entry(id=f"{prefix}/{version}", version=version))
+    box._shed_short_id_to_guids = {"cat": {f"{prefix}/1.0", f"{prefix}/2.0"}}
+    for exact in (True, False):
+        tool = box.get_tool("cat", tool_version="1.0", exact=exact)
+        assert isinstance(tool, CachedTool)
+        assert tool.id == f"{prefix}/1.0"
+    newest = box.get_tool("cat", tool_version="9.9", exact=False)
+    assert isinstance(newest, CachedTool)
+    assert newest.id == f"{prefix}/2.0"
+
+
+def test_get_tool_all_versions_of_shed_guid_includes_sibling_versions():
+    box = _registry_box()
+    box._guid_sibling_versions_cache = None
+    prefix = "toolshed.example.com/repos/owner/repo/cat"
+    for version in ("2.0", "1.0"):
+        box._tool_index.add_entry(_entry(id=f"{prefix}/{version}", version=version))
+    for version in ("1.0", "2.0"):
+        tools = box.get_tool(f"{prefix}/{version}", get_all_versions=True)
+        assert [tool.id for tool in tools] == [f"{prefix}/1.0", f"{prefix}/2.0"]
 
 
 def _materialising_box(source_hash):
@@ -1137,6 +1200,25 @@ def test_invalidate_index_cache_refreshes_materialised_tool_on_content_change():
     assert refreshed._entry.source_hash == "hash_v2"
     assert not any(cached is original for cached in box._tool_object_cache.values())
     assert box.materialize_tool(refreshed, reason="execution") is not original
+
+
+@pytest.mark.parametrize("source_hash", ["hash_v1", "hash_v2"], ids=["conf_change", "content_change"])
+def test_invalidate_index_cache_refreshes_cached_panel_entries(source_hash):
+    box, _holder = _materialising_box("hash_v1")
+    trans = MagicMock(user_is_admin=False)
+    admin_trans = MagicMock(user_is_admin=True)
+    for t in (trans, admin_trans):
+        assert box.get_tool_to_dict(t, box.get_tool("tool1"))["name"] == "Bowtie2"
+
+    reloaded = ToolIndex()
+    reloaded.add_entry(
+        _entry(id="tool1", version="1.0", name="Renamed", source_hash=source_hash, source_path="/t/tool1.xml")
+    )
+    box._store.load_index.return_value = reloaded
+    box.invalidate_index_cache()
+
+    for t in (trans, admin_trans):
+        assert box.get_tool_to_dict(t, box.get_tool("tool1"))["name"] == "Renamed"
 
 
 def test_invalidate_index_cache_keeps_materialised_tool_when_content_unchanged():
@@ -1431,7 +1513,7 @@ def test_edited_tool_files_selects_only_changed_files(tmp_path):
     _, untouched_entry = _indexed(tmp_path, "untouched.xml", "untouched")
     unmodified, _ = _indexed(tmp_path, "unmodified.xml", "unmodified")
     # Not modified since indexing: skipped without hashing, as the eager ToolCache does.
-    indexed_at = datetime.fromtimestamp(unmodified.stat().st_mtime + 60, tz=timezone.utc)
+    indexed_at = datetime.fromtimestamp(unmodified.stat().st_mtime + 60, tz=UTC)
     unmodified_entry = _entry(id="unmodified", source_path=str(unmodified), file_hash="stale", indexed_at=indexed_at)
     writable = ToolIndex()
     for entry in (edited_entry, shed_entry, untouched_entry, unmodified_entry):
@@ -1453,7 +1535,7 @@ def test_edited_tool_files_hashes_edit_stamped_before_indexed_at(tmp_path):
     path, entry = _indexed(tmp_path, "racy.xml", "racy")
     path.write_text(path.read_text().replace("1.0", "1.1"))
     # A coarse file clock can stamp an edit made after hashing slightly before indexed_at.
-    entry.indexed_at = datetime.fromtimestamp(path.stat().st_mtime + 0.01, tz=timezone.utc)
+    entry.indexed_at = datetime.fromtimestamp(path.stat().st_mtime + 0.01, tz=UTC)
     index = ToolIndex()
     index.add_entry(entry)
 
@@ -1468,7 +1550,7 @@ def test_edited_tool_files_sees_edit_made_while_populating(tmp_path, monkeypatch
 
     def hash_then_edit(file_path):
         file_hash = md5_hash_file(file_path)
-        edited_at.append(datetime.now(timezone.utc))
+        edited_at.append(datetime.now(UTC))
         tool_file.write_text(_shed_tool_xml("echo after"))
         return file_hash
 

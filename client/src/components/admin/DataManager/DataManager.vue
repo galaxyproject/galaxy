@@ -1,13 +1,13 @@
 <template>
     <div>
-        <Alert :message="message" :variant="status" />
-        <Alert v-if="viewOnly" message="Not implemented" variant="dark" />
-        <Alert v-else-if="loading" message="Waiting for data" variant="info" />
+        <GAlert v-if="message" :variant="statusVariant">{{ message }}</GAlert>
+        <GAlert v-if="viewOnly" variant="dark">Not implemented</GAlert>
+        <GAlert v-else-if="loading" variant="info">Waiting for data</GAlert>
         <div v-else-if="dataManagers && !dataManagers.length">
-            <Alert variant="primary">
+            <GAlert variant="primary">
                 <span class="alert-heading h-sm">None installed</span>
                 You do not currently have any Data Managers installed.
-            </Alert>
+            </GAlert>
         </div>
         <div v-else-if="dataManagers && dataTables">
             <BContainer fluid>
@@ -17,7 +17,7 @@
                             <BInputGroup>
                                 <BFormInput v-model="filter" placeholder="Type to Search" @keyup.esc="filter = ''" />
                                 <BInputGroupAppend>
-                                    <BButton :disabled="!filter" @click="filter = ''">Clear (esc)</BButton>
+                                    <GButton :disabled="!filter" @click="filter = ''">Clear (esc)</GButton>
                                 </BInputGroupAppend>
                             </BInputGroup>
                         </BFormGroup>
@@ -75,7 +75,6 @@
 import axios from "axios";
 import {
     BBadge,
-    BButton,
     BCard,
     BCardGroup,
     BCol,
@@ -91,15 +90,15 @@ import {
 import { debounce } from "lodash";
 
 import { getAppRoot } from "@/onload/loadConfig";
+import { alertVariant } from "@/utils/alertVariant";
 
-import Alert from "@/components/Alert.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
 
 export default {
     components: {
         BBadge,
-        BButton,
         BCard,
         BCardGroup,
         BCol,
@@ -111,7 +110,7 @@ export default {
         BListGroup,
         BListGroupItem,
         BRow,
-        Alert,
+        GAlert,
         GButton,
         GButtonGroup,
     },
@@ -134,6 +133,9 @@ export default {
         };
     },
     computed: {
+        statusVariant() {
+            return alertVariant(this.status);
+        },
         dataManagersFiltered() {
             return this.dataManagers.filter((d) => d["name"].match(new RegExp(this.filter, "i")));
         },

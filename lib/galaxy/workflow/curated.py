@@ -117,9 +117,6 @@ def _as_timestamp(value: Any) -> str | None:
     text = _as_text(value)
     if text is None:
         return None
-    # Python 3.10's fromisoformat rejects the "Z" UTC suffix that 3.11+ accepts.
-    if text.endswith(("Z", "z")):
-        text = f"{text[:-1]}+00:00"
     try:
         return datetime.fromisoformat(text).isoformat()
     except ValueError:

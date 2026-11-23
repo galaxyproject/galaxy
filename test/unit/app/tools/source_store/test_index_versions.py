@@ -154,7 +154,7 @@ def test_iter_entries_yields_each_entry_once(index_entry, tool_index):
 def test_index_schema_hash_is_pinned():
     # Published tool source store bundles are matched on this hash; a change
     # discards every deployed index until the bundles are republished.
-    assert INDEX_SCHEMA_HASH == "c90ca5455dfe48a0179a2e1ea5ae7fe8"
+    assert INDEX_SCHEMA_HASH == "eb1929cb8fb4afed1be9f7f5f927abae"
 
 
 def test_configured_entry_stays_default_over_newer_storage_only_version(index_entry, tool_index):

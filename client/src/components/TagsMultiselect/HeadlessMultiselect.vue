@@ -392,7 +392,7 @@ onClickOutside(
                     :data-parent-id="props.id"
                     class="headless-multiselect__option"
                     role="option"
-                    :aria-selected="props.selected.includes(normalizeTag(option))"
+                    :aria-selected="props.selected.includes(normalizeTag(option)) || undefined"
                     :class="{
                         invalid: i === 0 && !searchValueValid,
                         highlighted: highlightedOption === i,

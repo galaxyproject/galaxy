@@ -1,5 +1,5 @@
 import { getLocalVue } from "@tests/vitest/helpers";
-import { shallowMount } from "@vue/test-utils";
+import { mount, shallowMount } from "@vue/test-utils";
 import { describe, expect, it, vi } from "vitest";
 
 import { sanitizeHtml } from "@/directives/sanitizeHtml";
@@ -47,5 +47,15 @@ describe("VaultSecret", () => {
             localVue,
         });
         expect(sanitizeHtml).toHaveBeenCalledWith("<p>the <em>help</em></p>\n", "links");
+    });
+
+    it("masks the stored secret", () => {
+        const wrapper = mount(VaultSecret as object, {
+            props: { name: "secret", label: "Secret", help: "help", isSet: true },
+            global: localVue,
+        });
+        const masked = wrapper.get(".ui-form-field input");
+        expect(masked.attributes("type")).toBe("password");
+        expect((masked.element as HTMLInputElement).value).toBe("*****************************");
     });
 });

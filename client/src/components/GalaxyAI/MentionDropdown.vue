@@ -230,7 +230,7 @@ defineExpose({ handleKeydown });
             class="mention-item"
             role="option"
             tabindex="-1"
-            :aria-selected="index === selectedIndex"
+            :aria-selected="index === selectedIndex ? 'true' : 'false'"
             :class="{ selected: index === selectedIndex }"
             @mouseenter="selectedIndex = index"
             @mousedown.prevent="handleSelect(item)">

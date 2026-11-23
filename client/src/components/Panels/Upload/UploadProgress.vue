@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { BPagination } from "bootstrap-vue";
-
 import { usePagination } from "@/composables/pagination";
 import { useUploadBatchOperations } from "@/composables/upload/useUploadBatchOperations";
 import { useUserLocalStorage } from "@/composables/userLocalStorage";
@@ -12,6 +10,7 @@ import { useUploadState } from "./uploadState";
 import BatchUploadGroup from "./BatchUploadGroup.vue";
 import UploadFileRow from "./UploadFileRow.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
+import GPagination from "@/components/BaseComponents/GPagination.vue";
 import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
 
 const uploadBatchOperations = useUploadBatchOperations();
@@ -117,12 +116,12 @@ function onStopAll() {
                 </div>
 
                 <div v-if="showPagination" class="d-flex justify-content-center mt-3">
-                    <BPagination
-                        :value="currentPage"
+                    <GPagination
+                        :model-value="currentPage"
                         :total-rows="orderedUploadItems.length"
                         :per-page="itemsPerPage"
                         align="center"
-                        size="sm"
+                        size="small"
                         first-number
                         last-number
                         @change="onPageChange" />

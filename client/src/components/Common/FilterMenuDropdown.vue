@@ -5,7 +5,8 @@ import { BInputGroup, BInputGroupAppend } from "bootstrap-vue";
 import { computed, onMounted, ref, watch } from "vue";
 
 import type { QuotaUsage } from "@/api/users";
-import { useQuotaUsageStore } from "@/stores/quotaUsageStore";
+import { useQuotaSourceNames } from "@/composables/quotaSourceNames";
+import { sourceLabelToKey, useQuotaUsageStore } from "@/stores/quotaUsageStore";
 import type { FilterType, ValidFilter } from "@/utils/filtering";
 import { capitalizeFirstLetter } from "@/utils/strings";
 
@@ -82,6 +83,7 @@ function onHelp(_: string, value: string) {
 // Quota Source refs and operations
 const quotaUsageStore = useQuotaUsageStore();
 const quotaUsages = computed<QuotaUsage[]>(() => quotaUsageStore.quotaUsages ?? []);
+const { quotaSourceName } = useQuotaSourceNames();
 
 async function loadQuotaUsages() {
     await quotaUsageStore.loadQuotaUsages();
@@ -110,7 +112,7 @@ function isQuotaUsage(value: FilterValue): value is QuotaUsage {
 
 const dropDownText = computed<string>(() => {
     if (props.type === "QuotaSource" && isQuotaUsage(localValue.value)) {
-        return localValue.value.sourceLabel;
+        return quotaSourceName(localValue.value.rawSourceLabel);
     }
     if (localValue.value) {
         const stringMatch = stringDatalist.value.find((item) => item === localValue.value);
@@ -164,10 +166,10 @@ function setValue(val: FilterValue) {
                 <span v-else-if="props.type === 'QuotaSource'">
                     <GDropdownItem
                         v-for="quotaUsage in quotaUsages"
-                        :key="quotaUsage.sourceLabel"
+                        :key="sourceLabelToKey(quotaUsage.rawSourceLabel)"
                         href="#"
                         @click="setValue(quotaUsage)">
-                        {{ quotaUsage.sourceLabel }}
+                        {{ quotaSourceName(quotaUsage.rawSourceLabel) }}
                         <QuotaUsageBar
                             :quota-usage="quotaUsage"
                             class="quota-usage-bar"

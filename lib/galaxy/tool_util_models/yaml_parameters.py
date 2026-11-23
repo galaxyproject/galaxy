@@ -9,8 +9,8 @@ Every model exposes ``to_internal()`` returning the matching internal
 ``GalaxyParameterT`` instance so callers that need the internal metamodel (e.g.
 round-trip tests) can construct it directly without re-parsing through
 ``YamlToolSource``. The primary production path still builds internal models via
-``input_models_for_tool_source`` from the raw validated dict, so ``to_internal()``
-is not load-bearing for execution today.
+``input_models_for_tool_source`` from the raw validated dict; only
+``reference_data`` loads through its ``to_internal()`` today.
 """
 
 from typing import (
@@ -46,6 +46,7 @@ from .parameters import (
     GalaxyParameterT,
     IntegerParameterModel,
     LabelValue,
+    ReferenceDataParameterModel,
     RepeatParameterModel,
     SectionParameterModel,
     SelectParameterModel,
@@ -275,7 +276,7 @@ class YamlTextParameter(_YamlParamBase):
     def to_internal(self) -> TextParameterModel:
         return TextParameterModel(
             type="text",
-            default_value=self.value,
+            value=self.value,
             area=self.area,
             validators=list(self.validators),
             **_common_internal_kwargs(self),
@@ -465,6 +466,45 @@ reverse='$(inputs.reads.elements.reverse.path)'""",
         )
 
 
+class YamlReferenceDataParameter(_YamlParamBase):
+    """A built-in reference, such as a genome, that an administrator installed in a tool data table."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "name": "reference",
+                    "type": "reference_data",
+                    "label": "Reference genome",
+                    "table": "fasta_indexes",
+                }
+            ],
+            "x-shell-command": "reference='$(inputs.reference.path)'",
+        }
+    )
+
+    type: Annotated[
+        Literal["reference_data"],
+        Field(description="Lets the user pick a tool data table entry and exposes it to expressions like a dataset."),
+    ]
+    table: Annotated[
+        str,
+        Field(description="Name of the tool data table. A user-defined tool can only use tables an admin allows."),
+    ]
+    multiple: Annotated[
+        bool,
+        Field(description="Set true to let the user select several table entries, supplied as a list."),
+    ] = False
+
+    def to_internal(self) -> ReferenceDataParameterModel:
+        return ReferenceDataParameterModel(
+            type="reference_data",
+            table=self.table,
+            multiple=self.multiple,
+            **_common_internal_kwargs(self),
+        )
+
+
 YamlConditionalTestParameter = Annotated[YamlBooleanParameter | YamlSelectParameter, Field(discriminator="type")]
 
 
@@ -644,6 +684,7 @@ YamlGalaxyParameterT = (
     | YamlColorParameter
     | YamlDataParameter
     | YamlDataCollectionParameter
+    | YamlReferenceDataParameter
     | YamlConditionalParameter
     | YamlRepeatParameter
     | YamlSectionParameter

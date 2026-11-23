@@ -53,6 +53,13 @@ const props = withDefaults(
         loading?: boolean;
     }>(),
     {
+        href: undefined,
+        to: undefined,
+        color: undefined,
+        title: undefined,
+        disabledTitle: undefined,
+        size: undefined,
+        tooltipPlacement: undefined,
         // An absent Boolean prop would cast to false; undefined marks a button that is not a toggle.
         pressed: undefined,
     },
@@ -136,6 +143,7 @@ const buttonElementRef = useResolveElement(buttonRef);
 <template>
     <component
         :is="baseComponent"
+        v-bind="anchorAttributes"
         ref="buttonRef"
         class="g-button"
         :data-title="currentTitle"
@@ -146,7 +154,6 @@ const buttonElementRef = useResolveElement(buttonRef);
         :aria-disabled="props.disabled || undefined"
         :aria-busy="props.loading || undefined"
         :aria-pressed="ariaPressed"
-        v-bind="{ ...anchorAttributes, ...$attrs }"
         @click="onClick">
         <FontAwesomeIcon v-if="props.loading" :icon="faSpinner" spin aria-hidden="true" />
         <slot></slot>
@@ -161,6 +168,8 @@ const buttonElementRef = useResolveElement(buttonRef);
 </template>
 
 <style scoped lang="scss">
+@use "../styles/focus-ring" as *;
+
 .g-button {
     display: inline-flex;
     gap: var(--spacing-1);
@@ -190,11 +199,8 @@ const buttonElementRef = useResolveElement(buttonRef);
         z-index: 999;
     }
 
-    // Page-background gap keeps the ring clear of the fill and of grouped neighbours; outline survives forced colors.
     &:focus-visible {
-        outline: 2px solid var(--color-blue-600);
-        outline-offset: 2px;
-        box-shadow: 0 0 0 2px var(--background-color);
+        @include focus-ring;
         z-index: 999;
     }
 
@@ -232,13 +238,14 @@ const buttonElementRef = useResolveElement(buttonRef);
             border-color: var(--color-grey-600);
         }
 
-        // Out-ranks the hover rule above, so hover is restated here; focus keeps the light fill and the ring shows it
+        // Dark fill keeps >= 3:1 against unpressed and hovered neighbours; out-ranks the hover rule above, so hover is restated
         &.g-pressed:not(.g-outline):not(.g-transparent) {
-            background-color: var(--color-grey-250);
-            border-color: var(--color-grey-600);
+            background-color: var(--color-grey-600);
+            border-color: var(--color-grey-800);
+            color: var(--color-grey-100);
 
             &:hover {
-                background-color: var(--color-grey-300);
+                background-color: var(--color-grey-700);
             }
         }
 

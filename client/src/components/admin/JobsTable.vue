@@ -1,7 +1,6 @@
 <template>
     <div class="jobs-table-wrapper">
         <GTable
-            v-model="innerValue"
             :fields="fields"
             :items="items"
             sort-by="update_time"
@@ -123,19 +122,8 @@ export default {
             type: String,
             default: "No jobs to display.",
         },
-        value: {},
     },
-    emits: ["user-clicked", "tool-clicked", "runner-clicked", "handler-clicked", "input"],
-    data() {
-        return {
-            innerValue: this.value,
-        };
-    },
-    watch: {
-        innerValue(newVal) {
-            this.$emit("input", newVal);
-        },
-    },
+    emits: ["user-clicked", "tool-clicked", "runner-clicked", "handler-clicked"],
     methods: {
         onRowClick({ toggleDetails }) {
             toggleDetails();

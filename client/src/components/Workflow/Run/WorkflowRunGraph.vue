@@ -39,8 +39,11 @@ const { steps, loading, loadWorkflowOntoGraph } = useWorkflowRunGraph(
     toRef(props, "stepValidation"),
 );
 
+datatypesMapperStore.createMapper().catch((error) => {
+    errorMessage.value = errorMessageAsString(error);
+});
+
 try {
-    datatypesMapperStore.createMapper();
     loadWorkflowOntoGraph();
 } catch (error) {
     errorMessage.value = errorMessageAsString(error);

@@ -173,6 +173,13 @@ INDEX_SEARCH_FILTERS = {
     "is": "is",
 }
 
+INVOCATION_INDEX_SEARCH_FILTERS = {
+    "workflow": "workflow",
+    "workflow_id": "workflow_id",
+    "history": "history",
+    "history_id": "history_id",
+}
+
 
 def _tool_steps(workflow: model.Workflow) -> list[model.WorkflowStep]:
     steps = []
@@ -234,6 +241,27 @@ class WorkflowsManager(sharable.SharableModelManager[model.StoredWorkflow], dele
             if step.dynamic_tool is not None and step.dynamic_tool.id in tool_copies:
                 step.dynamic_tool = tool_copies[step.dynamic_tool.id]
         return copied_workflow
+
+    def ensure_owns_user_defined_tools(self, user: model.User | None, workflow: model.Workflow) -> None:
+        """Refuse to run ``workflow`` for a user who doesn't own the user-defined tools it uses."""
+        unowned_tool_ids: list[str] = []
+        for step in _tool_steps(workflow):
+            dynamic_tool = step.user_defined_tool
+            if dynamic_tool is None or dynamic_tool.uuid is None:
+                continue
+            self.dynamic_tool_manager.ensure_can_use_unprivileged_tool(user)
+            assert user
+            tool_id = dynamic_tool.tool_id or str(dynamic_tool.uuid)
+            if (
+                not self.dynamic_tool_manager.get_unprivileged_tool_by_uuid(user, dynamic_tool.uuid)
+                and tool_id not in unowned_tool_ids
+            ):
+                unowned_tool_ids.append(tool_id)
+        if unowned_tool_ids:
+            raise exceptions.ItemAccessibilityException(
+                f"This workflow uses user-defined tools owned by another user ({', '.join(unowned_tool_ids)}). "
+                "Import the workflow to run it with your own copy of these tools."
+            )
 
     def index_query(
         self, trans: ProvidesUserContext, payload: WorkflowIndexQueryPayload, include_total_count: bool = False
@@ -609,7 +637,7 @@ class WorkflowsManager(sharable.SharableModelManager[model.StoredWorkflow], dele
         workflow_canvas = WorkflowCanvas()
         for step in workflow.steps:
             # Load from database representation
-            module = module_factory.from_workflow_step(trans, step)
+            module = module_factory.from_workflow_step(trans, step, view_only=True)
             module_name = module.get_name()
             module_data_inputs = module.get_data_inputs()
             module_data_outputs = module.get_data_outputs()
@@ -708,6 +736,30 @@ class WorkflowsManager(sharable.SharableModelManager[model.StoredWorkflow], dele
         trans.sa_session.commit()
         return workflow_invocation_step
 
+    def _invocation_search_filters(self, search: str | None) -> tuple[list, list]:
+        """Translate an invocation index search into filters on the workflow and on the history."""
+        workflow_filters: list = []
+        history_filters: list = []
+        workflow_ids: list[int] = []
+        history_ids: list[int] = []
+        if search:
+            for term in filter_terms(parse_filters_structured(search, INVOCATION_INDEX_SEARCH_FILTERS)).terms:
+                if isinstance(term, RawTextTerm):
+                    workflow_filters.append(raw_text_column_filter([StoredWorkflow.name], term))
+                elif term.filter == "workflow_id":
+                    workflow_ids.append(decode_id(self.app, term.text))
+                elif term.filter == "history_id":
+                    history_ids.append(decode_id(self.app, term.text))
+                elif term.filter == "history":
+                    history_filters.append(text_column_filter(History.name, term))
+                else:
+                    workflow_filters.append(text_column_filter(StoredWorkflow.name, term))
+        if workflow_ids:
+            workflow_filters.append(StoredWorkflow.id.in_(workflow_ids))
+        if history_ids:
+            history_filters.append(History.id.in_(history_ids))
+        return workflow_filters, history_filters
+
     def build_invocations_query(
         self,
         trans: ProvidesUserContext,
@@ -722,17 +774,28 @@ class WorkflowsManager(sharable.SharableModelManager[model.StoredWorkflow], dele
         sort_desc=None,
         include_nested_invocations=True,
         check_ownership=True,
+        search: str | None = None,
     ) -> tuple[list, int]:
         """Get invocations owned by the current user."""
 
+        workflow_filters, history_filters = self._invocation_search_filters(search)
         stmt = select(WorkflowInvocation)
         if stored_workflow_id is not None:
             stored_workflow = trans.sa_session.get(StoredWorkflow, stored_workflow_id)
             if not stored_workflow:
                 raise exceptions.ObjectNotFound()
-            stmt = stmt.join(Workflow).where(Workflow.stored_workflow_id == stored_workflow_id)
+        if stored_workflow_id is not None or workflow_filters:
+            stmt = stmt.join(Workflow)
+        if stored_workflow_id is not None:
+            stmt = stmt.where(Workflow.stored_workflow_id == stored_workflow_id)
+        if workflow_filters:
+            stmt = stmt.join(StoredWorkflow, Workflow.stored_workflow_id == StoredWorkflow.id).where(*workflow_filters)
+        if user_id is not None or history_filters:
+            stmt = stmt.join(History)
         if user_id is not None:
-            stmt = stmt.join(History).where(History.user_id == user_id)
+            stmt = stmt.where(History.user_id == user_id)
+        if history_filters:
+            stmt = stmt.where(*history_filters)
         if history_id is not None:
             stmt = stmt.where(WorkflowInvocation.history_id == history_id)
         if job_id is not None:
@@ -764,6 +827,9 @@ class WorkflowsManager(sharable.SharableModelManager[model.StoredWorkflow], dele
             stmt = stmt.limit(limit)
         if offset is not None:
             stmt = stmt.offset(offset)
+
+        # Load the page's histories in one query, since `check_security` reads each row's history.
+        stmt = stmt.options(selectinload(WorkflowInvocation.history))
 
         invocations = [
             inv
@@ -861,6 +927,8 @@ class WorkflowContentsManager(UsesAnnotations):
         galaxy_interface = None
         import_options = ImportOptions()
         import_options.deduplicate_subworkflows = True
+        # leave steps written without a position unplaced, so the editor lays them out
+        import_options.default_positions = False
         as_dict = python_to_workflow(as_dict, galaxy_interface, workflow_directory=None, import_options=import_options)
         raw_description = RawWorkflowDescription(as_dict)
         created_workflow = self.build_workflow_from_raw_description(trans, raw_description, WorkflowCreateOptions())
@@ -891,6 +959,8 @@ class WorkflowContentsManager(UsesAnnotations):
             galaxy_interface = None
             import_options = ImportOptions()
             import_options.deduplicate_subworkflows = True
+            # leave steps written without a position unplaced, so the editor lays them out
+            import_options.default_positions = False
             try:
                 as_dict = python_to_workflow(
                     as_dict, galaxy_interface, workflow_directory=workflow_directory, import_options=import_options
@@ -946,7 +1016,7 @@ class WorkflowContentsManager(UsesAnnotations):
             isinstance(workflow_create_options, WorkflowCreateOptions) and workflow_create_options.publish
         )
         stored.hidden = hidden
-        if data["annotation"]:
+        if data.get("annotation"):
             annotation = sanitize_html(data["annotation"])
             self.add_item_annotation(trans.sa_session, stored.user, stored, annotation)
         workflow_tags = data.get("tags", [])
@@ -993,8 +1063,7 @@ class WorkflowContentsManager(UsesAnnotations):
             ]
             raise MissingToolsException(workflow, errors)
 
-        report_markdown = (workflow.reports_config or {}).get("markdown")
-        if report_markdown:
+        if report_markdown := (workflow.reports_config or {}).get("markdown"):
             try:
                 validate_galaxy_markdown_fence_types(report_markdown)
             except ValueError as e:
@@ -1263,6 +1332,10 @@ class WorkflowContentsManager(UsesAnnotations):
             )
         else:
             raise exceptions.RequestParameterInvalidException(f"Unknown workflow style {style}")
+        if style == "format2":
+            # The format2 schema has no ``version`` key, and gxformat2 may give that name a
+            # format version, so keep the revision index out of the document itself.
+            return wf_dict
         if version is not None:
             wf_dict["version"] = version
             # If returning a run-form workflow for a specific version, use that version's name
@@ -1330,6 +1403,7 @@ class WorkflowContentsManager(UsesAnnotations):
             raise exceptions.MessageException("Workflow cannot be run because it does not have any steps.")
         if has_cycles(workflow):
             raise exceptions.MessageException("Workflow cannot be run because it contains cycles.")
+        self.app.workflow_manager.ensure_owns_user_defined_tools(trans.user, workflow)
         trans.workflow_building_mode = workflow_building_modes.USE_HISTORY
         module_injector = WorkflowModuleInjector(trans)
         has_upgrade_messages = False
@@ -1403,6 +1477,9 @@ class WorkflowContentsManager(UsesAnnotations):
                     if isinstance(input, (DataToolParameter, DataCollectionToolParameter)):
                         accepted = input._acceptable_extensions()
                         input_dict["acceptable_extensions"] = sorted(accepted) if accepted else []
+                    if step.type == "data_input" and input_dict.get("default_location"):
+                        # Start with no selection so the default is used unless a dataset is picked.
+                        input_dict["value"] = None
                     input_dicts.append(input_dict)
                 step_model = {"inputs": input_dicts}
             step_model["when"] = step.when_expression
@@ -1533,7 +1610,7 @@ class WorkflowContentsManager(UsesAnnotations):
             return input_dicts
 
         module_injector = WorkflowModuleInjector(trans)
-        module_injector.inject_all(workflow, ignore_tool_missing_exception=True, exact_tools=False)
+        module_injector.inject_all(workflow, ignore_tool_missing_exception=True, exact_tools=False, view_only=True)
         step_dicts = []
         for step in workflow.steps:
             step_dict = {}
@@ -1549,11 +1626,11 @@ class WorkflowContentsManager(UsesAnnotations):
                 continue
             if step.type == "tool":
                 tool_id = step.effective_tool_id
-                tool = trans.app.toolbox.get_tool(tool_id, step.tool_version, tool_uuid=step.tool_uuid, user=trans.user)
+                assert isinstance(step.module, ToolModule)
+                tool = step.module.tool
                 assert (
                     tool is not None
                 ), f"Tool '{tool_id}' unexpectedly missing after successful runtime state computation"
-                tool = trans.app.toolbox.materialize_tool(tool, reason="serialization")
                 step_dict["tool_id"] = tool_id
                 step_dict["tool_version"] = step.tool_version
                 step_dict["label"] = step.label or tool.name
@@ -1592,6 +1669,8 @@ class WorkflowContentsManager(UsesAnnotations):
         data["name"] = workflow.name
         data["steps"] = {}
         data["upgrade_messages"] = {}
+        # parameters that had no stored value and got their tool default; informational, not upgrade problems
+        data["filled_defaults"] = {}
         data["report"] = workflow.reports_config or {}
         data["license"] = workflow.license
         data["creator"] = workflow.creator_metadata
@@ -1611,13 +1690,15 @@ class WorkflowContentsManager(UsesAnnotations):
         # For each step, rebuild the form and encode the state
         for step in workflow.steps:
             # Load from database representation
-            module = module_factory.from_workflow_step(trans, step, exact_tools=False)
+            module = module_factory.from_workflow_step(trans, step, exact_tools=False, view_only=True)
             if not module:
                 raise exceptions.MessageException(f"Unrecognized step type: {step.type}")
             # Load label from state of data input modules, necessary for backward compatibility
             self.__set_default_label(step, module, step.tool_inputs)
             # Fix any missing parameters
             upgrade_message_dict = module.check_and_update_state() or {}
+            if module.filled_defaults:
+                data["filled_defaults"][step.order_index] = module.filled_defaults
             version_changes = getattr(module, "version_changes", None)
             if version_changes:
                 upgrade_message_dict[module.get_name()] = "\n".join(version_changes)
@@ -1642,6 +1723,8 @@ class WorkflowContentsManager(UsesAnnotations):
                 "when": step.when_expression,
                 "workflow_outputs": [],
             }
+            if step_defaults := step.input_defaults_dict():
+                step_dict["in"] = step_defaults
             if tooltip:
                 step_dict["tooltip"] = module.get_tooltip(static_path="/static")
             # Connections
@@ -1879,7 +1962,9 @@ class WorkflowContentsManager(UsesAnnotations):
         # For each step, rebuild the form and encode the state
         for step in workflow.steps:
             # Load from database representation
-            module = module_factory.from_workflow_step(trans, step)
+            # An internal export is rebuilt into a workflow (refactoring), so it resolves tools
+            # as saving does.
+            module = module_factory.from_workflow_step(trans, step, view_only=not internal)
             if not module:
                 raise exceptions.MessageException(f"Unrecognized step type: {step.type}")
             # Get user annotation if it exists, otherwise get owner annotation.
@@ -2002,12 +2087,7 @@ class WorkflowContentsManager(UsesAnnotations):
                 for output in module.get_data_outputs():
                     step_dict["outputs"].append({"name": output["name"], "type": output["extensions"][0]})
 
-            step_in = {}
-            for step_input in step.inputs:
-                if step_input.default_value_set:
-                    step_in[step_input.name] = {"default": step_input.default_value}
-
-            if step_in:
+            if step_in := step.input_defaults_dict():
                 step_dict["in"] = step_in
 
             # Connections
@@ -2059,8 +2139,9 @@ class WorkflowContentsManager(UsesAnnotations):
                 else:
                     back_compat_input_conn_dict[input_name] = input_conn_list
             step_dict["input_connections"] = back_compat_input_conn_dict
-            # Position
-            step_dict["position"] = step.position
+            # Position; a step never laid out has none, and older Galaxy reads a missing key but not null
+            if step.position:
+                step_dict["position"] = step.position
             # Add to return value
             steps[step.order_index] = step_dict
         return data
@@ -2244,7 +2325,7 @@ class WorkflowContentsManager(UsesAnnotations):
             raise exceptions.ObjectAttributeMissingException("Workflow step is missing required 'id' attribute.")
         dry_run = kwds.get("dry_run", False)
         step = model.WorkflowStep()
-        step.position = step_dict.get("position", model.WorkflowStep.DEFAULT_POSITION)
+        step.position = step_dict.get("position")
         if step_dict.get("uuid", None) and step_dict["uuid"] != "None":
             step.uuid = step_dict["uuid"]
         if "label" in step_dict:

@@ -5,6 +5,29 @@
 26.2 Galaxy Release
 ===========================================================
 
+Completion notifications
+========================
+
+Saved email post-job actions no longer send mail. Users can request a completion
+notification through the bell beside Run in the tool and workflow forms.
+Paused runs send one message asking for attention, then a final summary after
+they finish. Further pauses do not send more attention messages.
+The run choice resets for each run. Email delivery is a saved preference for
+each notification category and defaults to off for tool and workflow completion.
+
+When SMTP is configured and notifications are disabled, the bell offers
+"Email me" for each run. This mode needs no Celery worker and
+keeps other notification categories disabled. Galaxy queues completion emails
+in the database. Failed sends are logged without retries.
+
+With ``enable_notification_system`` enabled, email delivery uses Celery. Run Celery Beat for fallback delivery and scheduled cleanup.
+The legacy tool API option ``send_email_notification`` is an alias for
+``send_notification``. It requests an email in SMTP-only mode, or a notification
+with the user's saved delivery preferences when notifications are enabled.
+
+See :doc:`Completion notifications </admin/completion_notifications>` for
+configuration and upgrade guidance.
+
 Workflow expression compatibility
 =================================
 
@@ -13,3 +36,33 @@ through Galaxy's internal pipe-prefixed connection names (for example,
 ``inputs["cond|param"]``). Use the nested tool-state form instead, such as
 ``inputs.cond.param`` or ``inputs["cond"]["param"]``. Ordinary top-level inputs
 and extra expression inputs such as ``inputs.when`` remain unchanged.
+
+Singularity and Apptainer home directories
+==========================================
+
+Galaxy now passes ``--home`` to Singularity and Apptainer only when the job
+sets ``HOME``. Galaxy sets it to a per-job home directory (tools with profile
+18.01 or newer), the job working directory (YAML tools), or the destination's
+``shared_home_dir``. When Galaxy sets none of these, a tool's own ``HOME``
+environment variable or a ``HOME`` ``tool_env`` entry sets it instead; a
+``tool_env`` entry does not replace a home directory Galaxy sets.
+``singularity_env_HOME`` still sets the container home explicitly. Other jobs,
+such as legacy tools on a destination without ``shared_home_dir``, get the
+empty home that ``--contain`` provides instead of a read-write bind mount of
+the home directory of the user running the job. A ``HOME`` set with ``env`` or
+``job_env`` stays outside the container; use ``singularity_env_HOME`` to choose
+the container home. Destinations that disable ``--contain`` keep Singularity's
+default home mount.
+
+Admin Notes
+===========
+
+**Removal of support for Python 3.10**
+  Python 3.10 reached its end-of-life in October 2026. The previous Galaxy
+  release (26.1) was the last to support it: Galaxy 26.2 requires Python 3.11 or
+  later. This also applies to the Python used on compute nodes to run job-side
+  code such as metadata setting, when Galaxy's virtualenv is not shared with them.
+  Since Python 3.11 will in turn reach its end-of-life in October 2027, during
+  the support period of Galaxy 26.2, we recommend using Python 3.12 or 3.13.
+  Some optional dependencies, such as TensorFlow (used for tool
+  recommendations), do not support Python 3.14 yet.

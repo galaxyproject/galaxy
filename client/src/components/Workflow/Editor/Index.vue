@@ -23,13 +23,21 @@ import { useRoute, useRouter } from "vue-router";
 import { generateAIReport as generateAIReportFetch } from "@/api/chat";
 import type { Creator, RefactorRequestAction } from "@/api/workflows";
 import { InsertStepAction, useStepActions } from "@/components/Workflow/Editor/Actions/stepActions";
-import { CopyIntoWorkflowAction, SetValueActionHandler } from "@/components/Workflow/Editor/Actions/workflowActions";
+import {
+    CopyIntoWorkflowAction,
+    RefactorWorkflowAction,
+    SetValueActionHandler,
+} from "@/components/Workflow/Editor/Actions/workflowActions";
 import { defaultPosition } from "@/components/Workflow/Editor/composables/useDefaultStepPosition";
 import { useSpecialWorkflowActivities, useWorkflowActivities } from "@/components/Workflow/Editor/modules/activities";
 import { fromSimple, type Workflow } from "@/components/Workflow/Editor/modules/model";
 import { getUntypedWorkflowParameters, type UntypedParameters } from "@/components/Workflow/Editor/modules/parameters";
 import { getModule, getVersions, saveWorkflow } from "@/components/Workflow/Editor/modules/services";
-import { getStateUpgradeMessages, type UpgradeMessage } from "@/components/Workflow/Editor/modules/utilities";
+import {
+    getFilledDefaults,
+    getStateUpgradeMessages,
+    type UpgradeMessage,
+} from "@/components/Workflow/Editor/modules/utilities";
 import reportDefault from "@/components/Workflow/Editor/reportDefault";
 import { Services } from "@/components/Workflow/services";
 import { useConfirmDialog } from "@/composables/confirmDialog";
@@ -317,6 +325,8 @@ function setTags(newTags: string[]) {
 // For the State Upgrade modal
 const stateMessages = ref<UpgradeMessage[]>([]);
 const insertedStateMessages = ref<UpgradeMessage[]>([]);
+const filledDefaults = ref<UpgradeMessage[]>([]);
+const insertedFilledDefaults = ref<UpgradeMessage[]>([]);
 
 /** Refactor actions that are queued up to be executed on the workflow. */
 const refactorActions = ref<RefactorRequestAction[]>([]);
@@ -381,13 +391,15 @@ commentStore.$subscribe((_mutation, _state) => {
     }
 });
 
-async function resetStores() {
+async function resetStores({ keepUndoHistory = false } = {}) {
     hasChanges.value = false;
     connectionStore.$reset();
     stepStore.$reset();
     stateStore.$reset();
     commentStore.$reset();
-    undoRedoStore.$reset();
+    if (!keepUndoHistory) {
+        undoRedoStore.$reset();
+    }
     await nextTick();
 }
 
@@ -641,13 +653,39 @@ function hideErrorModal() {
 async function onRefactor(response: { workflow: any }) {
     // Store transform and bounds before resetting to adjust for coordinate shifts
     const { transform: transformBefore, bounds: boundsBefore } = captureTransformAndBounds(transform.value);
+    // The version number stays out so that undoing leaves the editor on the newest version, as an unsaved change.
+    const before = { ...cloneRaw(workflowData.value), version: undefined };
+    const after = cloneRaw(response.workflow);
 
-    await resetStores();
+    await resetStores({ keepUndoHistory: true });
     await fromSimple(id.value, response.workflow);
     await loadEditorData(response.workflow);
 
     // Adjust for coordinate shifts so nodes appear in the same position
     // and stateStore.position is synced with the d3 transform
+    adjustForCoordinateShift(transformBefore, boundsBefore);
+
+    undoRedoStore.applyAction(new RefactorWorkflowAction(before, after, restoreWorkflowState));
+}
+
+/**
+ * Puts a complete workflow state back into the editor. Runs synchronously, so that a
+ * history roll-over can replay the actions recorded on top of this state straight after it.
+ */
+function restoreWorkflowState(data: Workflow) {
+    const { transform: transformBefore, bounds: boundsBefore } = captureTransformAndBounds(transform.value);
+    const restored = cloneRaw(data);
+
+    connectionStore.$reset();
+    stepStore.$reset();
+    commentStore.$reset();
+    stateStore.activeNodeId = null;
+    stateStore.clearStepMultiSelection();
+    fromSimple(id.value, restored);
+    // Tags are saved on the server as they change and are not part of undo history.
+    applyWorkflowAttributes({ ...restored, tags: tags.value });
+    hideErrorModal();
+
     adjustForCoordinateShift(transformBefore, boundsBefore);
 }
 
@@ -722,6 +760,7 @@ async function copyIntoWorkflow(workflowId: string) {
         // Determine if any parameters were 'upgraded' and provide message
         const insertedStateMessagesGotten = getStateUpgradeMessages(data);
         insertedStateMessages.value = insertedStateMessagesGotten;
+        insertedFilledDefaults.value = getFilledDefaults(data);
     } finally {
         loadingWorkflow.value = false;
     }
@@ -1174,7 +1213,7 @@ async function insertStep(contentId: string, name: string, type: NewStep["type"]
     stateStore.activeNodeId = stepData.id;
 }
 
-async function loadEditorData(data: any) {
+function applyWorkflowAttributes(data: any) {
     if (data.name !== undefined) {
         name.value = data.name;
     }
@@ -1198,14 +1237,19 @@ async function loadEditorData(data: any) {
     const markdown = newReport.markdown || reportDefault;
     report.value.markdown = markdown;
 
-    hideErrorModal();
-
-    stateMessages.value = getStateUpgradeMessages(data);
-    const hasStateMessages = stateMessages.value.length > 0;
     tags.value = data.tags;
     license.value = data.license;
     creator.value = data.creator;
     doi.value = data.doi;
+}
+
+async function loadEditorData(data: any) {
+    applyWorkflowAttributes(data);
+    hideErrorModal();
+
+    stateMessages.value = getStateUpgradeMessages(data);
+    filledDefaults.value = [];
+    const hasStateMessages = stateMessages.value.length > 0;
 
     // The attribute watchers just marked these loaded values as changes; undo that now,
     // not after the versions request, so the editor isn't dirty while it's pending.
@@ -1220,6 +1264,8 @@ async function loadEditorData(data: any) {
         await nextTick();
         hasChanges.value = hasStateMessages;
     }
+    // filled defaults aren't changes to save; show them only now, so accepting them isn't reset above
+    filledDefaults.value = getFilledDefaults(data);
 }
 
 /**
@@ -1258,6 +1304,14 @@ async function loadCurrent(workflowId: string, workflowVersion?: number | null, 
             } else {
                 // If we are not fitting the graph, adjust for coordinate shifts so the nodes appear in the same position
                 adjustForCoordinateShift(transformBefore, boundsBefore);
+            }
+
+            // the graph's first layout of a workflow without positions is part of loading it, not an edit
+            if (stateStore.needsInitialLayout) {
+                const loadedChanges = hasChanges.value;
+                await until(() => stateStore.needsInitialLayout).toBe(false, { timeout: 30000 });
+                await nextTick();
+                hasChanges.value = loadedChanges;
             }
         } finally {
             loadingWorkflow.value = false;
@@ -1315,12 +1369,17 @@ initializeWorkflowEditor();
 
 <template>
     <div class="workflow-editor">
-        <StateUpgradeModal :state-messages="stateMessages" />
+        <StateUpgradeModal
+            :state-messages="stateMessages"
+            :filled-defaults="filledDefaults"
+            @accept="hasChanges = true" />
 
         <StateUpgradeModal
             :state-messages="insertedStateMessages"
+            :filled-defaults="insertedFilledDefaults"
             title="Subworkflow embedded with changes"
-            message="Problems were encountered loading this workflow (possibly a result of tool upgrades). Please review the following parameters and then save." />
+            message="Problems were encountered loading this workflow (possibly a result of tool upgrades). Please review the following parameters and then save."
+            @accept="hasChanges = true" />
 
         <RefactorConfirmationModal
             v-model:loading="loadingWorkflow"
@@ -1358,7 +1417,7 @@ initializeWorkflowEditor();
             @cancel="resetSaveAs">
             <GForm @submit.prevent="doSaveAs">
                 <GFormLabel title="Name">
-                    <GFormInput v-model="saveAsName" />
+                    <GFormInput v-model="saveAsName" data-description="save-as name input" />
                 </GFormLabel>
                 <GFormLabel title="Annotation">
                     <BFormTextarea v-model="saveAsAnnotation" />

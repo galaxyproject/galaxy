@@ -177,3 +177,29 @@ def test_optional_boolean_null(loaded_tool: LoadedTool, tool_input_format: Descr
     loaded_tool.execute().with_inputs(tool_input_format.when.any({})).assert_has_single_job.with_output(
         "output"
     ).with_json({"flag": None})
+
+
+@pytest.mark.parametrize("loaded_tool", _parameter_load_paths("gx_reference_data_user"), indirect=True)
+def test_reference_data_contract(loaded_tool: LoadedTool, tool_input_format: DescribeToolInputs):
+    parameter = loaded_tool.build()["inputs"][0]
+    assert parameter["name"] == "reference"
+    assert parameter["type"] == "select"
+    assert parameter["optional"] is False
+    assert [option[1] for option in parameter["options"]] == ["hg19_value", "hg18_value", "mm10_value"]
+    loaded_tool.execute().with_inputs(
+        tool_input_format.when.any({"reference": "mm10_value"})
+    ).assert_has_single_job.with_output("output").with_contents_stripped(
+        "ReferenceData mm10_path mm10_path test_fasta_indexes mm10_value mm10 mm10_name"
+    )
+
+
+@pytest.mark.parametrize("loaded_tool", _parameter_load_paths("gx_reference_data_multiple_user"), indirect=True)
+def test_reference_data_multiple_contract(loaded_tool: LoadedTool, tool_input_format: DescribeToolInputs):
+    parameter = loaded_tool.build()["inputs"][0]
+    assert parameter["name"] == "reference"
+    assert parameter["type"] == "select"
+    assert parameter["multiple"] is True
+    assert [option[1] for option in parameter["options"]] == ["hg19_value", "hg18_value", "mm10_value"]
+    loaded_tool.execute().with_inputs(
+        tool_input_format.when.any({"reference": ["hg19_value", "mm10_value"]})
+    ).assert_has_single_job.with_output("output").with_contents_stripped("hg19_value:hg19 mm10_value:mm10")

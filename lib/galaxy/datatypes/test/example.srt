@@ -1,0 +1,7 @@
+1
+00:00:00,000 --> 00:00:02,500
+Welcome to the Galaxy training.
+
+2
+00:00:02,500 --> 00:00:05,000
+Today we transcribe a recording.

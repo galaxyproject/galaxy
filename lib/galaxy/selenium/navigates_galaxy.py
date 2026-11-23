@@ -1028,6 +1028,14 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         # bootstrap vue checkbox seems to be hidden by label, but the label is not interactable
         self.execute_script("$(arguments[0]).click();", checkbox)
 
+    def histories_purge_all(self):
+        """Purge every listed history: Histories > Select all > Purge (N) > Purge histories."""
+        histories = self.components.histories
+        histories.select_all.wait_for_and_click()
+        histories.bulk_purge_button.wait_for_and_click()
+        self.components.confirm_dialog.ok_button.wait_for_and_click()
+        histories.bulk_purge_button.wait_for_absent_or_hidden()
+
     def published_grid_search_for(self, search_term=None):
         return self._inline_search_for(
             self.navigation.grids.free_text_search,
@@ -2425,6 +2433,10 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
             self.move_to_and_click(expand_link)
             workflow_run.expanded_form.wait_for_visible()
 
+    def workflow_run_switch_to_simple_form(self):
+        self.components.workflow_run.simple_form_toggle.wait_for_and_click()
+        self.components.workflow_run.expanded_form.wait_for_absent()
+
     def workflow_create_new(
         self, annotation: str | None = None, clear_placeholder: bool = False, save_workflow: bool = True
     ):
@@ -2889,6 +2901,19 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         self.use_bootstrap_dropdown(option="export tool references", menu="history options")
         self.components.citations._.reference.wait_for_visible()
 
+    def navigate_to_history_view(self, history_id):
+        """Open the history view page of history ``history_id``."""
+        self.navigate_to(self.build_url(f"histories/view?id={history_id}"))
+
+    def history_view_import(self, new_name=None):
+        """Import the open history view's history: Import this history > Copy History."""
+        self.components.history_view.import_button.wait_for_and_click()
+        copy_modal = self.components.copy_history_modal
+        if new_name is not None:
+            copy_modal.name_input.wait_for_and_clear_aggressive_and_send_keys(new_name)
+        copy_modal.copy_button.wait_for_and_click()
+        copy_modal._.wait_for_absent_or_hidden()
+
     def click_history_option_extract_workflow(self):
         self.use_bootstrap_dropdown(option="extract workflow", menu="history options")
 
@@ -3171,14 +3196,18 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
 
     @edit_details
     def history_panel_add_tags(self, tags):
-        tag_area_button = self.components.history_panel.tag_area_button
+        history_panel = self.components.history_panel
+        self.tags_add_from_button(history_panel.tag_area_button, history_panel.tag_area_input, tags)
 
+    def tags_add_from_button(self, tag_area_button, tag_area_input, tags):
+        """Open a tag editor with ``tag_area_button`` and enter each tag in ``tags``."""
         tag_area_button.wait_for_and_click()
-        input_element = self.components.history_panel.tag_area_input.wait_for_visible()
+        input_element = tag_area_input.wait_for_visible()
 
         for tag in tags:
             input_element.send_keys(tag)
             self.send_enter(input_element)
+            # StatelessTags appends to the parent's tags, so let the parent take this one before the next
             self.sleep_for(self.wait_types.UX_RENDER)
 
         self.send_escape(input_element)
@@ -3393,6 +3422,11 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         item_component = self.history_panel_item_component(hid=hid)
         item_component.wait_for_visible()
         return [e.text for e in item_component.alltags.all()]
+
+    def history_panel_item_add_tags(self, hid, tags):
+        """Expand dataset ``hid`` and add each tag in ``tags`` from its Add Tags button."""
+        item_component = self.history_panel_ensure_showing_item_details(hid)
+        self.tags_add_from_button(item_component.tag_area_button, item_component.tag_area_input, tags)
 
     def history_panel_item_available_visualizations(self, hid):
         # Precondition: viz menu has been opened with history_panel_item_click_visualization_menu

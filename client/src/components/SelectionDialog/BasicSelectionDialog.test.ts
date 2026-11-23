@@ -39,7 +39,7 @@ describe("BasicSelectionDialog.vue", () => {
         const wrapper = mountDialog(async () => entries);
         await flushPromises();
 
-        wrapper.findComponent(DataDialogSearch).vm.$emit("input", "workflow 2");
+        wrapper.findComponent(DataDialogSearch).vm.$emit("update:modelValue", "workflow 2");
         await flushPromises();
         expect(rowLabels(wrapper)).toHaveLength(11);
         expect(rowLabels(wrapper)[0]).toBe("workflow 2");

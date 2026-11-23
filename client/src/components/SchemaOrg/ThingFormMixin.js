@@ -1,5 +1,7 @@
 // As silly as ThingFormMixin sounds - they are literally http://schema.org/Thing objects.
 export default {
+    // vue/require-explicit-emits doesn't look inside mixins.
+    emits: ["onReset", "onSave"],
     computed: {
         addAttributes() {
             const options = [{ value: null, text: "Add attribute" }];

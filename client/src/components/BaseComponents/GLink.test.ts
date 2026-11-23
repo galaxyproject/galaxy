@@ -120,3 +120,19 @@ describe("GLink.vue clicks", () => {
         expect(parentClick).not.toHaveBeenCalled();
     });
 });
+
+describe("GLink.vue attributes", () => {
+    it("puts a consumer's class and style on the link once", () => {
+        const wrapper = mount(GLink as object, {
+            props: { href: "/somewhere" },
+            attrs: { class: "consumer-class", style: "margin: 1px;" },
+            global: localVue,
+        });
+        const link = wrapper.get("a");
+        const classes = link.attributes("class")!.split(" ");
+
+        expect(classes).toEqual(expect.arrayContaining(["g-link", "consumer-class"]));
+        expect(new Set(classes).size).toBe(classes.length);
+        expect(link.attributes("style")).toBe("margin: 1px;");
+    });
+});

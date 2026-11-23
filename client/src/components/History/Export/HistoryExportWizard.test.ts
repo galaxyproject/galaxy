@@ -336,6 +336,8 @@ describe("HistoryExportWizard.vue", () => {
             // Check if the file name input has the expected placeholder text
             const fileNameInput = wrapper.find(selectors.fileNameInput);
             expect(fileNameInput.exists()).toBe(true);
+            expect(fileNameInput.classes()).toContain("g-form-input");
+            expect(fileNameInput.attributes("required")).toBeDefined();
             expect(fileNameInput.attributes("placeholder")).toContain(FAKE_HISTORY_NAME);
         });
     });

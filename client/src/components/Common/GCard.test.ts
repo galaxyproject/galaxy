@@ -155,6 +155,21 @@ describe("GCard", () => {
         });
 
         it.each([
+            ["a text title", { title: "First history" }, "Select First history"],
+            [
+                "a clickable title",
+                { title: { label: "Second history", title: "Open", handler: vi.fn() } },
+                "Select Second history",
+            ],
+            ["a select title", { title: "Third history", selectTitle: "Pin Third history" }, "Pin Third history"],
+            ["no title", { title: "" }, "Select for bulk actions"],
+        ])("names the select checkbox after the card for %s", (_name, props, name) => {
+            const checkbox = mountCard({ selectable: true, ...props }).get("input#g-card-select-card");
+
+            expect(checkbox.attributes("aria-label")).toBe(name);
+        });
+
+        it.each([
             ["not clickable", { selectable: true }],
             ["disabled", { clickable: true, disabled: true, selectable: true }],
         ])("does not click a card that is %s", async (_name, props) => {
@@ -218,7 +233,7 @@ describe("GCard", () => {
             const wrapper = mountHeader();
             const checkbox = wrapper.get("input#g-card-select-card");
 
-            expect(checkbox.attributes("aria-label")).toBe("Select for bulk actions");
+            expect(checkbox.attributes("aria-label")).toBe("Select Card");
             await checkbox.setValue(true);
 
             expect(wrapper.emitted("select")).toHaveLength(1);
@@ -441,6 +456,18 @@ describe("GCard", () => {
         const inert = wrapper.find("#g-card-badge-static-card");
         expect(inert.attributes("role")).toBeUndefined();
         expect(inert.attributes("tabindex")).toBeUndefined();
+    });
+
+    it.each(["titleBadges", "badges"])("names %s by their ariaLabel", (prop) => {
+        const wrapper = mountCard({
+            [prop]: [
+                { id: "named", label: "jdoe", title: "Owner", ariaLabel: "Filter by owner jdoe", handler: vi.fn() },
+                { id: "plain", label: "Plain", title: "Plain", handler: vi.fn() },
+            ],
+        });
+
+        expect(wrapper.find("#g-card-badge-named-card").attributes("aria-label")).toBe("Filter by owner jdoe");
+        expect(wrapper.find("#g-card-badge-plain-card").attributes("aria-label")).toBeUndefined();
     });
 
     it.each(["titleBadges", "badges"])("leaves Enter alone on link %s so they still navigate", (prop) => {

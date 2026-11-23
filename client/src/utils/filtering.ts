@@ -392,7 +392,7 @@ export default class Filtering<T> {
             const re = /[^\s'"]+(?:['"][^'"]*['"][^\s'"]*)*|(?:['"][^'"]*['"][^\s'"]*)+/g;
             return { pairs: filterText.match(re) || [] };
         }
-        const re = /(\S+):(.*?)(?=\s+\S+:|$)/g;
+        const re = /(\S+):(?:'[^']*'(?=\s|$)|"[^"]*"(?=\s|$)|.*?)(?=\s+\S+:|$)/g;
         const pairs = filterText.match(re) || [];
         // this regex only matches from the first `key:` onward, so any leading text is separate
         const firstMatchStart = pairs.length ? filterText.indexOf(pairs[0]!) : filterText.length;
@@ -585,7 +585,14 @@ export default class Filtering<T> {
             ([a], [b]) => Number(b === unspecifiedTextKey) - Number(a === unspecifiedTextKey),
         );
 
-        let newFilterText = "";
+        // without an autoFilterKey, plain words have no filter to go into, so they are kept as typed
+        let newFilterText =
+            this.autoFilterKey === undefined
+                ? sourceTokens
+                      .filter((t) => t.isRawText)
+                      .map((t) => t.value)
+                      .join(" ")
+                : "";
         entries.forEach(([key, value]) => {
             // this is a default filter, skip it if ALL default filters have default values
             const skipDefault = !backendFormatted && hasDefaults && this.defaultFilters[key] !== undefined;

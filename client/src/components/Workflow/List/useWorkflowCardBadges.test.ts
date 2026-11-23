@@ -10,6 +10,12 @@ import { useUserStore } from "@/stores/userStore";
 
 import { useWorkflowCardBadges } from "./useWorkflowCardBadges";
 
+// A one-entry dictionary, so the spec can tell whether the action part of the name is translated.
+vi.mock("@/utils/localization", () => {
+    const localize = (text: string) => (text === "Filter by owner" ? "Nach Besitzer filtern" : text);
+    return { default: localize, localize };
+});
+
 vi.mock("vue-router/composables", () => ({
     useRouter: vi.fn(() => ({ push: vi.fn() })),
 }));
@@ -70,6 +76,18 @@ describe("useWorkflowCardBadges", () => {
         renderBadges(makeWorkflow(USERNAME));
         await flushPromises();
         expect(countRequests).toEqual([]);
+    });
+
+    it.each([
+        ["owner-shared", false],
+        ["owner-published", true],
+    ])("names the %s badge after the filter it applies", (id, publishedView) => {
+        const workflow = ref(makeWorkflow("someone_else", { published: true }));
+        const { workflowCardTitleBadges } = useWorkflowCardBadges(workflow, publishedView, true, true, vi.fn());
+        const badge = workflowCardTitleBadges.value.find((b) => b.id === id);
+
+        expect(badge?.visible).toBe(true);
+        expect(badge?.ariaLabel).toBe("Nach Besitzer filtern someone_else");
     });
 
     it("does not fetch invocation count when step count is shown", async () => {

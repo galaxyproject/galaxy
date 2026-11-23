@@ -44,6 +44,32 @@ class TestEmbeddedPulsarIntegrationInstance(integration_util.IntegrationTestCase
             assert warnings[0]["variable_names"] == ["EMPTY_VAR", "MISSING_VAR"]
             assert job["state"] == "ok"
 
+    def test_user_defined_tool_reads_composite_input_extra_files(self):
+        with self.dataset_populator.test_history() as history_id:
+            velvet_hda = self.dataset_populator.fetch_hda(
+                history_id,
+                {
+                    "src": "composite",
+                    "ext": "velvet",
+                    "composite": {
+                        "items": [
+                            {"src": "pasted", "paste_content": "sequences content"},
+                            {"src": "pasted", "paste_content": "roadmaps content"},
+                            {"src": "pasted", "paste_content": "log content"},
+                        ]
+                    },
+                },
+                wait=True,
+            )
+            result = self.dataset_populator.run_tool(
+                "composite_user_defined", {"input1": {"src": "hda", "id": velvet_hda["id"]}}, history_id
+            )
+            self.dataset_populator.wait_for_job(result["jobs"][0]["id"], assert_ok=True)
+            output = self.dataset_populator.get_history_dataset_content(
+                history_id, dataset_id=result["outputs"][0]["id"]
+            )
+            assert output.strip() == "roadmaps content"
+
     def test_tool_eval_failure(self):
         with self.dataset_populator.test_history() as history_id:
             dataset = self.dataset_populator.new_dataset(history_id=history_id, content="ABC", ext="tabular")
@@ -111,8 +137,8 @@ class TestEmbeddedPulsarIntegrationInstance(integration_util.IntegrationTestCase
                 if m["plugin"] == "pulsar"
             }
         assert metrics["client_version"]
-        # pulsar-galaxy-lib 0.15.15 doesn't say where the target version came from.
-        assert metrics["target_version_source"] == "unreported"
+        # The embedded Pulsar is set up remotely, and pulsar-galaxy-lib >= 0.16.2 reports that.
+        assert metrics["target_version_source"] == "remote"
         # The embedded Pulsar is this client library, and it reports its version when the job finishes.
         assert metrics["server_version"] == metrics["target_version"] == metrics["client_version"]
         assert metrics["server_version_source"] == "status"
