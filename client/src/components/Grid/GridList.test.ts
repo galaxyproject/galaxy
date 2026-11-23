@@ -5,8 +5,9 @@ import { getLocalVue, nth } from "@tests/vitest/helpers";
 import { setupMockConfig } from "@tests/vitest/mockConfig";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { Toast } from "@/composables/toast";
 import type { GalaxyConfiguration } from "@/stores/configurationStore";
 import Filtering, { equals } from "@/utils/filtering";
 
@@ -20,6 +21,8 @@ vi.useFakeTimers();
 setupMockConfig({ disabled: false, enabled: true });
 
 vi.mock("vue-router");
+
+vi.mock("@/composables/toast");
 
 const localVue = getLocalVue();
 
@@ -109,6 +112,10 @@ function createTarget(propsData: TargetProps) {
 }
 
 describe("GridList", () => {
+    beforeEach(() => {
+        vi.mocked(Toast.error).mockClear();
+    });
+
     it("basic rendering", async () => {
         const testGrid = createTestGrid();
         const wrapper = createTarget({
@@ -341,6 +348,24 @@ describe("GridList", () => {
         saves[1]!.resolve();
         await flushPromises();
         expect(tags.props("modelValue")).toEqual(["first", "second"]);
+    });
+
+    it("reports a failed tag save and reloads the grid", async () => {
+        const testGrid = createTestGrid();
+        const tagsHandler = vi.fn(async (_row: RowData) => {
+            throw new Error("save failed");
+        });
+        testGrid.fields.push({ key: "tags", title: "tags", type: "tags", handler: tagsHandler });
+        const wrapper = createTarget({ gridConfig: testGrid, limit: 1 });
+        await flushPromises();
+        expect(testGrid.getData).toHaveBeenCalledTimes(1);
+
+        wrapper.findComponent(StatelessTags).vm.$emit("update:modelValue", ["first"]);
+        await flushPromises();
+
+        expect(tagsHandler).toHaveBeenCalledTimes(1);
+        expect(Toast.error).toHaveBeenCalledWith("Failed to save tags: save failed");
+        expect(testGrid.getData).toHaveBeenCalledTimes(2);
     });
 
     it("pagination", async () => {
