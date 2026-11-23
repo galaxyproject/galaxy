@@ -91,6 +91,7 @@ from galaxy.tools.parameters import (
     params_from_strings,
     params_to_incoming,
     params_to_strings,
+    ToolInputsT,
     visit_input_values,
 )
 from galaxy.tools.parameters.basic import (
@@ -1945,7 +1946,11 @@ class StepInputFormDefault(NamedTuple):
 
 
 def step_input_form_defaults(
-    inputs, state_inputs, defaults: dict[Any, Any], connected_input_names: Collection[str], app
+    inputs: ToolInputsT,
+    state_inputs: dict[str, Any],
+    defaults: dict[str, Any],
+    connected_input_names: Collection[str],
+    app,
 ) -> list[StepInputFormDefault]:
     """Find the step input defaults that the editor's tool form shows as parameter values.
 
@@ -2394,7 +2399,7 @@ class ToolModule(WorkflowModule):
     def get_runtime_inputs(self, step, connections: Optional[Iterable[WorkflowStepConnection]] = None):
         return self.get_inputs()
 
-    def show_step_input_defaults(self, defaults: dict[Any, Any], connected_input_names: Collection[str]) -> None:
+    def show_step_input_defaults(self, defaults: dict[str, Any], connected_input_names: Collection[str]) -> None:
         """Write the step input defaults that replace the tool state at run time into the tool form state."""
         if self.tool is None:
             return
@@ -2404,7 +2409,7 @@ class ToolModule(WorkflowModule):
             form_default.parent[form_default.param.name] = form_default.value
 
     def step_input_defaults_changed_in_form(
-        self, defaults: dict[Any, Any], connected_input_names: Collection[str]
+        self, defaults: dict[str, Any], connected_input_names: Collection[str]
     ) -> set[str]:
         """Return the names of the step input defaults whose tool form value the user changed."""
         if self.tool is None:
