@@ -137,6 +137,7 @@ from galaxy.tools.evaluation import global_tool_errors
 from galaxy.tools.execution_helpers import ToolExecutionCache
 from galaxy.tools.imp_exp import JobImportHistoryArchiveWrapper
 from galaxy.tools.job_parameters import (
+    DATA_MANAGER_MODE,
     EXPORT_TO_URI,
     TEMPLATE_JOB_PARAMETERS,
 )
@@ -3606,7 +3607,7 @@ class DataManagerTool(OutputParameterJSONTool):
         assert (
             data_manager is not None
         ), f"Invalid data manager ({data_manager_id}) requested. It may have been removed before the job completed."
-        data_manager_mode = param_dict.get("__data_manager_mode", "populate")
+        data_manager_mode = param_dict.get(DATA_MANAGER_MODE, "populate")
         if data_manager_mode == "populate":
             data_manager.process_result(out_data)
         elif data_manager_mode == "dry_run":

@@ -5,6 +5,7 @@ DBKEY = "dbkey"
 TARGET_DATATYPE = "__target_datatype__"
 EXPORT_TO_URI = "__EXPORT_TO_URI__"
 ELEMENT_IDENTIFIER_SUFFIX = "|__identifier__"
+DATA_MANAGER_MODE = "__data_manager_mode"
 
 # Job parameters that are not tool inputs and that tool templates read: the
 # reference genome of the inputs and the target datatype of a datatype converter.

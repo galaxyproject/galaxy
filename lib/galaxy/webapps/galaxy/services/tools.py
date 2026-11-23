@@ -59,6 +59,7 @@ from galaxy.tool_util_models.parameters import (
     FileRequestUri,
 )
 from galaxy.tools import Tool
+from galaxy.tools.job_parameters import DATA_MANAGER_MODE
 from galaxy.tools.search import ToolBoxSearch
 from galaxy.util.path import safe_contains
 from galaxy.webapps.galaxy.services._fetch_util import validate_and_normalize_targets
@@ -341,7 +342,7 @@ class ToolsService(ServiceBase):
             raise exceptions.RequestParameterInvalidException(f"input_format invalid {input_format}")
         input_format = cast(Literal["legacy", "21.01"], input_format)
         if "data_manager_mode" in payload:
-            incoming["__data_manager_mode"] = payload["data_manager_mode"]
+            incoming[DATA_MANAGER_MODE] = payload["data_manager_mode"]
         tags = payload.get("__tags")
         vars = tool.handle_input(
             trans,

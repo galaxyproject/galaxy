@@ -82,6 +82,7 @@ from galaxy.tools.expressions import (
     do_eval,
     resolve_isolation_command,
 )
+from galaxy.tools.job_parameters import DATA_MANAGER_MODE
 from galaxy.tools.parameters import (
     check_param,
     params_to_incoming,
@@ -2389,9 +2390,12 @@ class ToolModule(WorkflowModule):
         tool_state = step.state
         assert tool_state is not None
         tool_inputs = tool.inputs.copy()
-        # Only tool inputs become job parameters. The stored step state can hold other
-        # keys, e.g. inputs of another version of the tool, and the runtime step metadata.
-        tool_state.inputs = {name: value for name, value in tool_state.inputs.items() if name in tool_inputs}
+        # Only tool inputs and the data manager mode become job parameters. The stored step
+        # state can hold other keys, e.g. inputs of another version of the tool, and the
+        # runtime step metadata.
+        tool_state.inputs = {
+            name: value for name, value in tool_state.inputs.items() if name in tool_inputs or name == DATA_MANAGER_MODE
+        }
 
         all_inputs = self.get_all_inputs()
 
