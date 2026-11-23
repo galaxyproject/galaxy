@@ -290,6 +290,7 @@
   <tool file="for_workflows/create_input_collection.xml" />
   <tool file="for_workflows/randomlines.xml" />
   <tool file="create_directory_index.xml" />
+  <tool file="create_directory_index_unreadable.xml" />
   <tool file="use_directory_index.xml" />
 
   <tool_dir dir="parameters/" />
