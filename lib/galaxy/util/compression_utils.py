@@ -29,6 +29,7 @@ from .checkers import (
     is_bz2,
     is_gzip,
     is_xz,
+    is_zip,
     iter_zip,
 )
 
@@ -77,14 +78,14 @@ def get_fileobj(filename: str, mode: str = "r", compressed_formats: list[str] | 
 
 
 def _open_first_zip_member(filename: str) -> IO[bytes] | None:
-    if not zipfile.is_zipfile(filename):
+    if not is_zip(filename):
         return None
     members = iter_zip(filename)
     try:
         return next(members)[0]
     except (zipfile.BadZipFile, StopIteration):
-        # is_zipfile only looks for an end-of-central-directory record, which
-        # other files (e.g. a tar containing a zip) can contain too.
+        # The file starts and ends like a zip but has no readable member:
+        # an empty or corrupt archive is read as raw bytes.
         return None
     finally:
         members.close()
@@ -188,11 +189,11 @@ class CompressedFile:
 
     @staticmethod
     def can_decompress(file_path: StrPath) -> bool:
-        return tarfile.is_tarfile(file_path) or zipfile.is_zipfile(file_path)
+        return tarfile.is_tarfile(file_path) or is_zip(str(file_path))
 
     def __init__(self, file_path: StrPath, mode: Literal["a", "r", "w", "x"] = "r") -> None:
         file_path_str = str(file_path)
-        if zipfile.is_zipfile(file_path) and not file_path_str.endswith(".jar"):
+        if is_zip(file_path_str) and not file_path_str.endswith(".jar"):
             self.file_type = "zip"
         elif tarfile.is_tarfile(file_path):
             self.file_type = "tar"
@@ -207,7 +208,7 @@ class CompressedFile:
             try:
                 self.archive = getattr(self, method)(file_path, mode)
             except zipfile.BadZipFile:
-                # is_zipfile also matches a tar that merely contains a zip end record.
+                # A file that passes the zip check but cannot be opened as one may still be a tar.
                 if not tarfile.is_tarfile(file_path):
                     raise
                 self.file_type = self.type = "tar"
