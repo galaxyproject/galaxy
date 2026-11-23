@@ -9886,7 +9886,7 @@ class WorkflowStep(Base, RepresentById, UsesCreateAndUpdateTime):
         return {
             step_input.name: {"default": step_input.default_value}
             for step_input in self.inputs
-            if step_input.default_value_set
+            if step_input.name is not None and step_input.default_value_set
         }
 
     @property
