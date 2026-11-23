@@ -134,7 +134,7 @@ class TestInvocationSSEIntegration(BaseInvocationSSEIntegrationTestCase):
             )
             invocation_id = summary.invocation_id
             # The step after the pause stays delayed, which keeps the invocation ready.
-            self.workflow_populator.wait_on_invocation(
+            self.workflow_populator.sse_waiter.wait_on_invocation(
                 invocation_id,
                 lambda: self._invocation_state(invocation_id) == "ready" or None,
                 "invocation to be ready",

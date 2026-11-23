@@ -1,6 +1,6 @@
-"""Shared helpers for SSE integration tests.
+"""Shared helpers for tests against Galaxy's SSE event stream.
 
-The stream layer emits a ``ready`` event as the first frame on every connection
+``SSEWaiter`` backs the populators' event-driven waits. The stream layer emits a ``ready`` event as the first frame on every connection
 so tests can synchronize on the server-side subscription rather than the
 underlying TCP socket. ``SSELineListener`` waits for that ``ready`` event before
 ``start()`` returns, and propagates listener-thread exceptions back to the main
@@ -20,12 +20,16 @@ import requests
 from galaxy.util.wait import (
     timeout_type,
     TimeoutAssertionError,
+    wait_on,
 )
+from .api import ApiTestInteractor
 
 T = TypeVar("T")
 
 CONNECT_TIMEOUT = 15
 DEFAULT_WAIT_TIMEOUT = 15
+# The stream sends a keepalive every 30 seconds; a longer read timeout keeps idle waits connected.
+WAIT_READ_TIMEOUT = 60
 
 
 def parse_sse_events(raw: str) -> list[dict]:
@@ -230,3 +234,124 @@ def invocation_states_for(events: list[dict], invocation_id: str) -> list[str]:
         for invocation in json.loads(event["data"])["invocations"]
         if invocation["id"] == invocation_id
     ]
+
+
+class SSEWaiter:
+    """Waits that re-check a condition when the server reports a change instead of polling.
+
+    Against a server with ``enable_sse_updates``, each wait opens the event stream for the
+    interactor's current user and re-runs its function only when a matching event arrives, so a
+    missing event fails the wait. Events go to the owner of the changed object's history; when
+    someone else owns it, the wait subscribes the user as a viewer of that history for its
+    duration. Without an interactor, against servers without SSE updates, and for anonymous
+    users, the waits poll.
+    """
+
+    def __init__(self, interactor: ApiTestInteractor | None) -> None:
+        self._interactor = interactor
+        self._enabled: bool | None = None
+        # Tests switch users by swapping the interactor's API key, so user ids are cached per key.
+        self._user_ids_by_api_key: dict[str, str] = {}
+
+    def wait_on_job(self, job_id: str, function: Callable[[], T | None], desc: str, timeout: timeout_type) -> T:
+        def matches(event: dict) -> bool:
+            data = json.loads(event["data"])
+            return "resync" in data or any(job["id"] == job_id for job in data["jobs"])
+
+        return self._wait("job_update", matches, function, desc, timeout, lambda: self._job_history_id(job_id))
+
+    def wait_on_history_jobs(
+        self, history_id: str, function: Callable[[], T | None], desc: str, timeout: timeout_type
+    ) -> T:
+        # Job events do not name the history, so any change to a job the user sees re-checks it.
+        return self._wait("job_update", lambda event: True, function, desc, timeout, lambda: history_id)
+
+    def wait_on_history(self, history_id: str, function: Callable[[], T | None], desc: str, timeout: timeout_type) -> T:
+        return self._wait(
+            "history_update",
+            lambda event: history_id in json.loads(event["data"])["history_ids"],
+            function,
+            desc,
+            timeout,
+            lambda: history_id,
+        )
+
+    def wait_on_invocation(
+        self, invocation_id: str, function: Callable[[], T | None], desc: str, timeout: timeout_type
+    ) -> T:
+        return self._wait(
+            "invocation_update",
+            lambda event: any(item["id"] == invocation_id for item in json.loads(event["data"])["invocations"]),
+            function,
+            desc,
+            timeout,
+            lambda: self._get(f"invocations/{invocation_id}")["history_id"],
+        )
+
+    def _wait(
+        self,
+        event_type: str,
+        predicate: Callable[[dict], bool],
+        function: Callable[[], T | None],
+        desc: str,
+        timeout: timeout_type,
+        history_id: Callable[[], str | None],
+    ) -> T:
+        listener = self._listener()
+        if listener is None:
+            return wait_on(function, desc, timeout=timeout)
+        viewed_history_id = None
+        try:
+            watched_history_id = history_id()
+            if watched_history_id is not None and not self._owns_history(watched_history_id):
+                # Sent through the same control queue as the events, so the subscription reaches the
+                # workers ahead of the events for any change committed after this returns.
+                self._subscribe(watched_history_id)
+                viewed_history_id = watched_history_id
+            return wait_on_events(listener, event_type, predicate, function, desc, timeout)
+        finally:
+            if viewed_history_id is not None:
+                self._unsubscribe(viewed_history_id)
+            listener.stop()
+
+    def _listener(self) -> SSELineListener | None:
+        interactor = self._interactor
+        if interactor is None or interactor.api_key is None:
+            return None
+        if self._enabled is None:
+            # Servers that predate SSE updates do not report the option.
+            self._enabled = bool(self._get("configuration").get("enable_sse_updates"))
+        if not self._enabled:
+            return None
+        listener = SSELineListener(f"{interactor.api_url}/events/stream", interactor.api_key, timeout=WAIT_READ_TIMEOUT)
+        listener.start()
+        return listener
+
+    def _owns_history(self, history_id: str) -> bool:
+        return self._get(f"histories/{history_id}", {"keys": "user_id"})["user_id"] == self._current_user_id()
+
+    def _current_user_id(self) -> str:
+        assert self._interactor is not None and self._interactor.api_key is not None
+        api_key = self._interactor.api_key
+        if api_key not in self._user_ids_by_api_key:
+            self._user_ids_by_api_key[api_key] = self._get("users/current")["id"]
+        return self._user_ids_by_api_key[api_key]
+
+    def _job_history_id(self, job_id: str) -> str | None:
+        return self._get(f"jobs/{job_id}")["history_id"]
+
+    def _get(self, path: str, data: dict | None = None) -> dict:
+        assert self._interactor is not None
+        response = self._interactor.get(path, data=data or {})
+        response.raise_for_status()
+        return response.json()
+
+    def _subscribe(self, history_id: str) -> None:
+        assert self._interactor is not None
+        response = self._interactor.post("events/history-subscriptions", {"history_ids": [history_id]}, json=True)
+        assert response.status_code == 204, response.text
+
+    def _unsubscribe(self, history_id: str) -> None:
+        assert self._interactor is not None
+        response = self._interactor.delete("events/history-subscriptions", {"history_ids": [history_id]}, json=True)
+        assert response.status_code == 204, response.text

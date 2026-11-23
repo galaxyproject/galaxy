@@ -78,7 +78,7 @@ class TestJobSSEIntegration(SSEIntegrationTestCase):
             self.workflow_populator.wait_for_invocation(None, invocation_id)
             (job,) = self.dataset_populator.invocation_jobs(invocation_id)
             job_id = job["id"]
-            self.dataset_populator.wait_on_job_update(
+            self.dataset_populator.sse_waiter.wait_on_job(
                 job_id,
                 lambda: self._job_state(job_id) == "running" or None,
                 "job to run",
@@ -87,7 +87,7 @@ class TestJobSSEIntegration(SSEIntegrationTestCase):
             listener = self._listener()
             try:
                 self.workflow_populator.cancel_invocation(invocation_id)
-                self.dataset_populator.wait_on_job_update(
+                self.dataset_populator.sse_waiter.wait_on_job(
                     job_id,
                     lambda: self._job_state(job_id) in ("deleted", "deleting") or None,
                     "job to be deleted",
