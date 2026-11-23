@@ -44,6 +44,7 @@ from sqlalchemy import (
     inspect,
     or_,
     select,
+    union,
     update,
 )
 from sqlalchemy.engine import CursorResult
@@ -2211,23 +2212,52 @@ class MinimalJobWrapper(HasResourceParameters):
             self._setup_working_directory(job=job)
 
     def _set_unknown_output_extensions_to_data(self, job: Job) -> None:
-        """Set outputs whose extension is not a registered datatype, and all their copies, to ``data``.
+        """Set datasets the job created whose extension is not a registered datatype, and all their copies, to ``data``.
 
-        Each replaced extension is recorded as an ``unknown_datatype`` job message.
+        These are the job's outputs and the datasets it created without an output association, such as
+        ``__unnamed_outputs`` in ``galaxy.json``. Each replaced extension is recorded as an ``unknown_datatype``
+        job message.
         """
         datatypes_registry = self.app.datatypes_registry
-        replaced: dict[str, int] = {}
-        for dataset_assoc in job.output_datasets + job.output_library_datasets:
-            extension = dataset_assoc.dataset.extension
+
+        def is_unregistered(extension: str | None) -> bool:
             # auto is resolved on materialization of deferred outputs
-            if (
-                not extension
-                or extension == "auto"
-                or datatypes_registry.get_datatype_by_extension(extension) is not None
-            ):
-                continue
-            dataset = dataset_assoc.dataset.dataset
-            assert dataset is not None
+            return (
+                bool(extension)
+                and extension != "auto"
+                and datatypes_registry.get_datatype_by_extension(extension) is None
+            )
+
+        unregistered: dict[Dataset, str] = {}
+        for dataset_assoc in job.output_datasets + job.output_library_datasets:
+            dataset_instance = dataset_assoc.dataset
+            if is_unregistered(dataset_instance.extension):
+                assert dataset_instance.dataset is not None
+                unregistered.setdefault(dataset_instance.dataset, dataset_instance.extension)
+        # Also the datasets the job created without an output association. Output discovery leaves them unflushed.
+        self.sa_session.flush()
+        instance_classes = (model.HistoryDatasetAssociation, LibraryDatasetDatasetAssociation)
+        created_extensions = self.sa_session.scalars(
+            union(
+                *(
+                    select(instance_class.extension).join(instance_class.dataset).where(Dataset.job_id == job.id)
+                    for instance_class in instance_classes
+                )
+            )
+        )
+        if unregistered_created_extensions := [
+            extension for extension in created_extensions if is_unregistered(extension)
+        ]:
+            for instance_class in instance_classes:
+                created_datasets = self.sa_session.execute(
+                    select(Dataset, instance_class.extension)
+                    .join(instance_class, instance_class.dataset_id == Dataset.id)
+                    .where(Dataset.job_id == job.id, instance_class.extension.in_(unregistered_created_extensions))
+                )
+                for dataset, extension in created_datasets:
+                    unregistered.setdefault(dataset, extension)
+        replaced: dict[str, int] = {}
+        for dataset, extension in unregistered.items():
             for dataset_instance in dataset.history_associations + dataset.library_associations:
                 if dataset_instance.extension == extension:
                     dataset_instance.extension = "data"

@@ -21,10 +21,14 @@ from galaxy.jobs import (
 from galaxy.jobs.handler import BaseJobHandlerQueue
 from galaxy.model import (
     Base,
+    Dataset,
+    HistoryDatasetAssociation,
     Job,
+    LibraryDatasetDatasetAssociation,
     Task,
     User,
 )
+from galaxy.model.unittest_utils import GalaxyDataTestApp
 from galaxy.objectstore import BaseObjectStore
 from galaxy.tool_util.deps.container_classes import JOB_DIRECTORY_CONTAINER_SUBDIRECTORIES
 from galaxy.tools import ToolBox
@@ -319,47 +323,46 @@ def test_fix_output_permissions_does_not_initialize_job_io():
     MinimalJobWrapper._fix_output_permissions(wrapper)
 
 
-def _wrapper_with_registry(known_extensions):
-    datatypes_registry = SimpleNamespace(
-        get_datatype_by_extension=lambda extension: object() if extension in known_extensions else None
+def _wrapper_with_app(app: GalaxyDataTestApp) -> MinimalJobWrapper:
+    return cast(MinimalJobWrapper, SimpleNamespace(app=app, sa_session=app.model.session))
+
+
+def _hda(session, extension: str, dataset: Dataset | None = None) -> HistoryDatasetAssociation:
+    return HistoryDatasetAssociation(
+        extension=extension, dataset=dataset, create_dataset=dataset is None, sa_session=session
     )
-    return cast(MinimalJobWrapper, SimpleNamespace(app=SimpleNamespace(datatypes_registry=datatypes_registry)))
-
-
-def _output_instance(extension):
-    dataset = SimpleNamespace(history_associations=[], library_associations=[])
-    instance = SimpleNamespace(extension=extension, dataset=dataset)
-    dataset.history_associations.append(instance)
-    return instance
 
 
 def test_unknown_output_extensions_set_to_data():
-    hda = _output_instance("notadatatype")
-    copied_hda = SimpleNamespace(extension="notadatatype")
-    retyped_copy = SimpleNamespace(extension="tabular")
-    hda.dataset.history_associations.extend([copied_hda, retyped_copy])
-    ldda = SimpleNamespace(extension="notadatatype")
-    ldda.dataset = SimpleNamespace(history_associations=[], library_associations=[ldda])
-    known = _output_instance("txt")
-    deferred = _output_instance("auto")
-    job = SimpleNamespace(
-        output_datasets=[
-            SimpleNamespace(dataset=hda),
-            SimpleNamespace(dataset=known),
-            SimpleNamespace(dataset=deferred),
-        ],
-        output_library_datasets=[SimpleNamespace(dataset=ldda)],
-        job_messages=None,
-    )
+    app = GalaxyDataTestApp()
+    session = app.model.session
+    job = Job()
+    hda = _hda(session, "notadatatype")
+    copied_hda = _hda(session, "notadatatype", dataset=hda.dataset)
+    retyped_copy = _hda(session, "tabular", dataset=hda.dataset)
+    ldda = LibraryDatasetDatasetAssociation(extension="notadatatype", create_dataset=True, sa_session=session)
+    known = _hda(session, "txt")
+    deferred = _hda(session, "auto")
+    job.add_output_dataset("hda", hda)
+    job.add_output_dataset("known", known)
+    job.add_output_dataset("deferred", deferred)
+    job.add_output_library_dataset("ldda", ldda)
+    unnamed = _hda(session, "notadatatype")
+    assert unnamed.dataset
+    unnamed.dataset.job = job
+    unrelated = _hda(session, "notadatatype")
+    session.add_all([job, copied_hda, retyped_copy, unnamed, unrelated])
+    session.flush()
 
-    MinimalJobWrapper._set_unknown_output_extensions_to_data(_wrapper_with_registry({"txt", "tabular"}), cast(Job, job))
+    MinimalJobWrapper._set_unknown_output_extensions_to_data(_wrapper_with_app(app), job)
 
-    assert [hda.extension, copied_hda.extension, ldda.extension] == ["data", "data", "data"]
+    assert [hda.extension, copied_hda.extension, ldda.extension, unnamed.extension] == ["data"] * 4
     assert [retyped_copy.extension, known.extension, deferred.extension] == ["tabular", "txt", "auto"]
+    assert unrelated.extension == "notadatatype"
     assert job.job_messages == [
         {
             "type": "unknown_datatype",
-            "desc": "Extension 'notadatatype' is not a datatype on this Galaxy server, 2 output datasets set to 'data'",
+            "desc": "Extension 'notadatatype' is not a datatype on this Galaxy server, 3 output datasets set to 'data'",
             "code_desc": None,
             "error_level": 2,
             "extension": "notadatatype",
@@ -368,10 +371,15 @@ def test_unknown_output_extensions_set_to_data():
 
 
 def test_known_output_extensions_add_no_job_message():
-    hda = _output_instance("txt")
-    job = SimpleNamespace(output_datasets=[SimpleNamespace(dataset=hda)], output_library_datasets=[], job_messages=None)
+    app = GalaxyDataTestApp()
+    session = app.model.session
+    job = Job()
+    hda = _hda(session, "txt")
+    job.add_output_dataset("output", hda)
+    session.add(job)
+    session.flush()
 
-    MinimalJobWrapper._set_unknown_output_extensions_to_data(_wrapper_with_registry({"txt"}), cast(Job, job))
+    MinimalJobWrapper._set_unknown_output_extensions_to_data(_wrapper_with_app(app), job)
 
     assert hda.extension == "txt"
     assert job.job_messages is None

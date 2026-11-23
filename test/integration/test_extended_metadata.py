@@ -171,6 +171,11 @@ class TestExtendedMetadataIntegration(integration_util.IntegrationTestCase):
     def test_unknown_output_extension_job_message(self, history_id):
         self._assert_unknown_datatype_job_message("discover_unknown_ext", history_id, "2 output datasets")
 
+    def test_unknown_unnamed_output_extension_job_message(self, history_id):
+        self._assert_unknown_datatype_job_message("unnamed_output_unknown_ext", history_id, "1 output dataset")
+        (unnamed,) = self.dataset_populator.get_history_contents(history_id)
+        assert unnamed["extension"] == "data"
+
     def _assert_unknown_datatype_job_message(self, tool_id: str, history_id: str, datasets: str) -> None:
         response = self.dataset_populator.run_tool(tool_id, {}, history_id)
         job_id = response["jobs"][0]["id"]
