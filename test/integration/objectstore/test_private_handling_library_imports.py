@@ -12,6 +12,8 @@ from galaxy_test.base import api_asserts
 from galaxy_test.base.populators import LibraryPopulator
 from ._base import BaseObjectStoreIntegrationTestCase
 
+IMPORTER_EMAIL = "library_importer@bx.psu.edu"
+
 DISTRIBUTED_OBJECT_STORE_WITH_PRIVATE_CONFIG_TEMPLATE = string.Template(
     """<?xml version="1.0"?>
 <object_store type="distributed" id="primary" order="0">
@@ -120,23 +122,58 @@ class TestToolOutputFromLibraryImportWithPrivateObjectStore(BaseObjectStoreInteg
                 output_storage["object_store_id"] == "private"
             ), f"Tool output should be in the private store, got {output_storage['object_store_id']}"
 
-    def test_tool_output_from_library_import_is_shared_with_history(self):
+    def test_tool_output_from_public_library_dataset_is_shared_with_history(self):
         """Outputs made private by the history defaults stay manageable by the user,
         so making the history accessible also makes them accessible."""
-        # A dataset in a public library, managed by its uploader rather than by the user running the tool.
-        library = self.library_populator.new_library("public_library")
-        self.library_populator.set_add_permission(library["id"], self.library_populator.user_private_role_id())
+        copy_payload = self._library_dataset_managed_by_uploader(access_role_ids=[])
+
+        library_copy_id, output_id = self._run_tool_and_share_history_as_importer(copy_payload)
+
+        with self._different_user(anon=True):
+            library_copy_response = self._get(f"datasets/{library_copy_id}")
+            output_response = self._get(f"datasets/{output_id}")
+        api_asserts.assert_status_code_is_ok(library_copy_response)
+        api_asserts.assert_status_code_is_ok(output_response)
+
+    def test_tool_output_from_restricted_library_dataset_stays_restricted_when_shared(self):
+        """Users cannot lift access restrictions that their outputs inherit from the input data."""
+        uploader_id = self.dataset_populator.user_id()
+        with self._different_user(IMPORTER_EMAIL):
+            importer_id = self.dataset_populator.user_id()
+        shared_role_id = self.dataset_populator.create_role([uploader_id, importer_id])["id"]
+        copy_payload = self._library_dataset_managed_by_uploader(access_role_ids=[shared_role_id])
+
+        _, output_id = self._run_tool_and_share_history_as_importer(copy_payload)
+
+        with self._different_user(anon=True):
+            output_response = self._get(f"datasets/{output_id}")
+        api_asserts.assert_status_code_is(output_response, 403)
+
+    def _library_dataset_managed_by_uploader(self, access_role_ids: list[str]) -> dict:
+        """Upload a library dataset with the given access roles, managed only by the uploader."""
+        library = self.library_populator.new_library("library_for_imports")
+        uploader_role_id = self.library_populator.user_private_role_id()
+        self.library_populator.set_add_permission(library["id"], uploader_role_id)
         payload, files = self.library_populator.create_dataset_request(library, contents="1 2 3")
         create_response = self.library_populator.raw_library_contents_create(library["id"], payload, files=files)
         api_asserts.assert_status_code_is_ok(create_response)
         library_dataset = self.library_populator.wait_on_library_dataset(library["id"], create_response.json()[0]["id"])
         copy_payload = {"content": library_dataset["id"], "source": "library", "type": "dataset"}
+        # Library and history copies share the dataset, so its permissions can be set through a history copy.
         with self.dataset_populator.test_history() as uploader_history_id:
             uploader_copy_id = self._copy_to_history(uploader_history_id, copy_payload)
-            response = self.dataset_populator.make_dataset_public_raw(uploader_history_id, uploader_copy_id)
-            api_asserts.assert_status_code_is_ok(response)
+            # Make it public first: access can only be given to roles whose users can already access the dataset.
+            for access in ([], access_role_ids):
+                permissions = {"access": access, "manage": [uploader_role_id]}
+                response = self.dataset_populator.update_permissions_raw(
+                    uploader_history_id, uploader_copy_id, permissions
+                )
+                api_asserts.assert_status_code_is_ok(response)
+        return copy_payload
 
-        with self._different_user("library_importer@bx.psu.edu"):
+    def _run_tool_and_share_history_as_importer(self, copy_payload: dict) -> tuple[str, str]:
+        """As another user, import the library dataset, run a tool on it and make the history accessible."""
+        with self._different_user(IMPORTER_EMAIL):
             history_id = self.dataset_populator.new_history()
             library_copy_id = self._copy_to_history(history_id, copy_payload)
             run_response = self.dataset_populator.run_tool(
@@ -145,16 +182,9 @@ class TestToolOutputFromLibraryImportWithPrivateObjectStore(BaseObjectStoreInteg
                 history_id=history_id,
             )
             self.dataset_populator.wait_for_history(history_id, assert_ok=True)
-            output_id = run_response["outputs"][0]["id"]
-
             sharing_response = self._put(f"histories/{history_id}/enable_link_access")
             api_asserts.assert_status_code_is_ok(sharing_response)
-
-        with self._different_user(anon=True):
-            library_copy_response = self._get(f"datasets/{library_copy_id}")
-            output_response = self._get(f"datasets/{output_id}")
-        api_asserts.assert_status_code_is_ok(library_copy_response)
-        api_asserts.assert_status_code_is_ok(output_response)
+        return library_copy_id, run_response["outputs"][0]["id"]
 
     def _copy_to_history(self, history_id: str, payload: dict) -> str:
         response = self._post(f"histories/{history_id}/contents", data=payload, json=True)
