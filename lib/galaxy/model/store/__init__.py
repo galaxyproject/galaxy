@@ -197,12 +197,16 @@ class DatasetAttributeImportModel(BaseModel):
 
 DEFAULT_DISCARDED_DATA_TYPE = ImportDiscardedDataType.FORBID
 
+# Dataset instance attributes keyed by (model_class, id)
+DatasetsAttrsById = dict[tuple[str, int], dict[str, Any]]
+
 
 class ImportOptions:
     allow_edit: bool
     allow_library_creation: bool
     allow_dataset_object_edit: bool
     discarded_data: ImportDiscardedDataType
+    datasets_attrs_at_job_setup: DatasetsAttrsById
 
     def __init__(
         self,
@@ -210,7 +214,12 @@ class ImportOptions:
         allow_library_creation: bool = False,
         allow_dataset_object_edit: Optional[bool] = None,
         discarded_data: ImportDiscardedDataType = DEFAULT_DISCARDED_DATA_TYPE,
+        datasets_attrs_at_job_setup: Optional[DatasetsAttrsById] = None,
     ) -> None:
+        """
+        :param datasets_attrs_at_job_setup: when editing a job's outputs, their attributes as exported at job
+            setup (see :func:`load_datasets_attrs_by_id`), so edits made while the job ran are kept.
+        """
         self.allow_edit = allow_edit
         self.allow_library_creation = allow_library_creation
         if allow_dataset_object_edit is None:
@@ -218,6 +227,7 @@ class ImportOptions:
         else:
             self.allow_dataset_object_edit = allow_dataset_object_edit
         self.discarded_data = discarded_data
+        self.datasets_attrs_at_job_setup = datasets_attrs_at_job_setup or {}
 
 
 class SessionlessContext:
@@ -510,9 +520,8 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                 if "id" in dataset_attrs["dataset"] and self.import_options.allow_edit:
                     dataset_instance.dataset.id = dataset_attrs["dataset"]["id"]
                     for dataset_association in dataset_instance.dataset.history_associations:
-                        if (
-                            dataset_association is not dataset_instance
-                            and dataset_association.extension == dataset_instance.extension
+                        if dataset_association is not dataset_instance and (
+                            dataset_association.extension == dataset_instance.extension
                             or dataset_association.extension == "auto"
                         ):
                             copy_dataset_instance_metadata_attributes(
@@ -529,6 +538,9 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                 model_class = getattr(model, dataset_attrs["model_class"])
                 dataset_instance = self.sa_session.get(model_class, dataset_attrs["id"])
                 assert isinstance(dataset_instance, model.DatasetInstance)
+                attrs_at_job_setup = self.import_options.datasets_attrs_at_job_setup.get(
+                    (dataset_attrs["model_class"], dataset_attrs["id"]), {}
+                )
                 attributes = [
                     "name",
                     "extension",
@@ -536,7 +548,6 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                     "blurb",
                     "peek",
                     "designation",
-                    "visible",
                     "metadata",
                     "tool_version",
                     "validated_state",
@@ -549,9 +560,20 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                             value = replace_metadata_file(value, dataset_instance, self.sa_session)
                         elif attribute == "extension":
                             value = self._registered_extension(value)
+                        elif attribute in ("name", "info") and attribute in attrs_at_job_setup:
+                            value = _keep_edits_made_while_job_ran(
+                                current=getattr(dataset_instance, attribute),
+                                at_job_setup=attrs_at_job_setup[attribute],
+                                from_job=value,
+                                keep_appended_text=attribute == "info",
+                            )
                         setattr(dataset_instance, attribute, value)
 
                 handle_dataset_object_edit(dataset_instance, dataset_attrs)
+                # Keep the server's visibility, which may have changed while the job ran (e.g. hidden when
+                # building a collection). The job only unhides outputs that failed.
+                if dataset_attrs.get("visible") and dataset_instance.state == dataset_instance.states.ERROR:
+                    dataset_instance.visible = True
             else:
                 metadata_deferred = dataset_attrs.get("metadata_deferred", False)
                 metadata = dataset_attrs.get("metadata")
@@ -3183,10 +3205,38 @@ def payload_to_source_uri(payload) -> str:
     return source_uri
 
 
+def load_datasets_attrs_by_id(directory: str) -> DatasetsAttrsById:
+    """Load the attributes of the dataset instances exported for edit to ``directory``."""
+    datasets_attrs_path = os.path.join(directory, ATTRS_FILENAME_DATASETS)
+    if not os.path.exists(datasets_attrs_path):
+        return {}
+    with open(datasets_attrs_path) as f:
+        datasets_attrs = load(f)
+    return {(attrs["model_class"], attrs["id"]): attrs for attrs in datasets_attrs}
+
+
+def _keep_edits_made_while_job_ran(current: Any, at_job_setup: Any, from_job: Any, keep_appended_text: bool) -> Any:
+    """Return the value of an output attribute the job reports, keeping edits made while the job ran.
+
+    The current value is kept if the job didn't change the value it got at job setup (``None`` and ``""`` count
+    as the same). With ``keep_appended_text``, lines the job appended to it are appended to the current value;
+    this matches how the job side adds stdout to ``info`` (``f"{info.rstrip()}\n{stdout}"``).
+    """
+    at_job_setup = at_job_setup or ""
+    if (from_job or "") == at_job_setup:
+        return current
+    if keep_appended_text and from_job:
+        setup_text = at_job_setup.rstrip()
+        if from_job.startswith(f"{setup_text}\n"):
+            return f"{(current or '').rstrip()}{from_job[len(setup_text):]}"
+    return from_job
+
+
 def copy_dataset_instance_metadata_attributes(source: model.DatasetInstance, target: model.DatasetInstance) -> None:
+    # The metadata setter only keeps keys in the target's current datatype spec, so set the extension first.
+    target.extension = source.extension
     target.metadata = source.metadata
     target.blurb = source.blurb
     target.peek = source.peek
     target.info = source.info
     target.tool_version = source.tool_version
-    target.extension = source.extension
