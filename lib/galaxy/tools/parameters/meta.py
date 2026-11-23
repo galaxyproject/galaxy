@@ -35,6 +35,7 @@ from galaxy.tool_util.parameters import (
     RequestInternalDereferencedToolState,
     RequestInternalToolState,
 )
+from galaxy.tools.job_parameters import is_element_identifier_parameter
 from galaxy.util.permutations import (
     assert_matched_lengths,
     build_combos,
@@ -232,7 +233,7 @@ def expand_meta_parameters(
     """
 
     for key in list(incoming.keys()):
-        if key.endswith("|__identifier__"):
+        if is_element_identifier_parameter(key):
             incoming.pop(key)
 
     collections_to_match = matching.CollectionsToMatch()

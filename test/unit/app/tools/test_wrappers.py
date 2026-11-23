@@ -447,7 +447,11 @@ def sample_datatypes_registry():
 def _hda_at(path, ext="bam", metadata_files=()):
     hda = model.HistoryDatasetAssociation(extension=ext, dataset=model.Dataset(external_filename=path))
     # Metadata files live in the object store, which these tests don't have.
-    hda.get_metadata_file_paths_and_extensions = lambda: list(metadata_files)  # type: ignore[method-assign]
+    files = [
+        (file_ext, f"{file_ext}_index", cast(model.MetadataFile, SimpleNamespace(get_file_name=lambda path=path: path)))
+        for file_ext, path in metadata_files
+    ]
+    hda.get_metadata_files_and_extensions = lambda: list(files)  # type: ignore[method-assign]
     return hda
 
 
@@ -548,7 +552,8 @@ class StagingComputeEnvironment:
     def input_path_rewrite(self, dataset):
         return f"/job/inputs/{os.path.basename(dataset.get_file_name())}"
 
-    def input_metadata_rewrite(self, dataset, metadata_value):
+    def input_metadata_rewrite(self, dataset, metadata_name, metadata_file):
+        metadata_value = metadata_file.get_file_name()
         self.metadata_rewrites.append(metadata_value)
         return f"/job/inputs/metadata_{os.path.basename(metadata_value)}"
 
@@ -587,19 +592,19 @@ def test_collection_wrapper_metadata_files_are_loaded_and_rewritten_once():
     compute_environment = StagingComputeEnvironment()
     wrapper = _list_paired_wrapper(cast(ComputeEnvironment, compute_environment))
     forward = wrapper.sample1.forward
-    forward.unsanitized.get_metadata_file_paths_and_extensions = Mock(
-        wraps=forward.unsanitized.get_metadata_file_paths_and_extensions
+    forward.unsanitized.get_metadata_files_and_extensions = Mock(
+        wraps=forward.unsanitized.get_metadata_files_and_extensions
     )
     # Path-only accessors don't load metadata files at all.
     assert len(wrapper.all_paths) == len(wrapper.get_all_staging_paths(include_collection_name=True)) == 2
-    assert forward.unsanitized.get_metadata_file_paths_and_extensions.call_count == 0
+    assert forward.unsanitized.get_metadata_files_and_extensions.call_count == 0
     rewritten = [("bai", "/job/inputs/metadata_forward_bai.dat")]
     for _ in range(3):
         assert wrapper.all_metadata_files == [rewritten, []]
         assert wrapper.element_identifiers_extensions_paths_and_metadata_files[0][3] == rewritten
         assert wrapper.serialize()[0]["metadata_files"][0]["source_path"] == rewritten[0][1]
     # Each access would otherwise query every metadata file again, which adds up over a large collection.
-    assert forward.unsanitized.get_metadata_file_paths_and_extensions.call_count == 1
+    assert forward.unsanitized.get_metadata_files_and_extensions.call_count == 1
     assert compute_environment.metadata_rewrites == ["/galaxy/forward_bai.dat"]
     # A template changing the list it got doesn't change what later accessors return.
     forward.all_metadata_files.pop()

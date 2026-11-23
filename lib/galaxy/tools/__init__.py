@@ -185,6 +185,11 @@ from galaxy.tools.evaluation import (
 from galaxy.tools.execution_helpers import ToolExecutionCache
 from galaxy.tools.expressions.labels import render_yaml_tool_label
 from galaxy.tools.imp_exp import JobImportHistoryArchiveWrapper
+from galaxy.tools.job_parameters import (
+    DATA_MANAGER_MODE,
+    EXPORT_TO_URI,
+    TEMPLATE_JOB_PARAMETERS,
+)
 from galaxy.tools.parameters import (
     check_param,
     fill_dynamic_defaults,
@@ -487,8 +492,12 @@ IMPLICITLY_REQUIRED_TOOL_FILES: dict[str, dict] = {
     # minimum example:
     # "foobar": {"required": REQUIRE_FULL_DIRECTORY}
     # if no version is specified, all versions without explicit RequiredFiles will be selected
+    # charts.r sources the module script named by -m from the -w tool directory
+    "charts": {"required": {"includes": [{"path": "*.r", "path_type": "glob"}]}},
     "circos": {"required": REQUIRE_FULL_DIRECTORY},
     "cp_image_math": {"required": {"includes": [{"path": "*.py", "path_type": "glob"}]}},
+    # the script path sits in \'...\' inside a $'...' parallel argument
+    "docking": {"required": {"includes": [{"path": "*.py", "path_type": "glob"}]}},
     "enumerate_charges": {"required": REQUIRE_FULL_DIRECTORY},
     "fasta_compute_length": {"required": REQUIRE_PY_SCRIPTS_AND_UTILS},
     "fasta_concatenate0": {"required": REQUIRE_PY_SCRIPTS_AND_UTILS},
@@ -499,9 +508,13 @@ IMPLICITLY_REQUIRED_TOOL_FILES: dict[str, dict] = {
     "maxquant": {"required": {"includes": [{"path": "*.py", "path_type": "glob"}]}},
     "maxquant_mqpar": {"required": {"includes": [{"path": "*.py", "path_type": "glob"}]}},
     "query_tabular": {"required": {"includes": [{"path": "*.py", "path_type": "glob"}]}},
+    # the script path sits in \"...\" inside an Rscript -e argument
+    "seurat": {"required": {"includes": [{"path": "*.R", "path_type": "glob"}]}},
     "shasta": {"required": {"includes": [{"path": "configs/*", "path_type": "glob"}]}},
     "sqlite_to_tabular": {"required": {"includes": [{"path": "*.py", "path_type": "glob"}]}},
     "sucos_max_score": {"required": {"includes": [{"path": "*.py", "path_type": "glob"}]}},
+    # transformation_wrapper.R sources transformation_script.R from its own directory
+    "Transformation": {"required": {"includes": [{"path": "*.R", "path_type": "glob"}]}},
     "translate_bed": {"required": {"includes": [{"path": "*.py", "path_type": "glob"}]}},
 }
 
@@ -1270,11 +1283,16 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
     default_tool_action = DefaultToolAction
     tool_action: ToolAction
     tool_type_local = False
+    # Files the tool writes to the job directory while the job is prepared; runners
+    # that stage the job elsewhere (Pulsar) transfer them with the job.
+    job_directory_files: tuple[str, ...] = ()
     dict_collection_visible_keys = ["id", "name", "version", "description", "labels"]
     _conf_tool_shed_repository: ToolConfRepository | None = None
     job_search: "JobSearch"
     uses_tool_provided_metadata: bool
     allows_unnamed_outputs: bool
+    # Job parameters that are not tool inputs and that the tool's templates read.
+    template_job_parameters: frozenset[str] = TEMPLATE_JOB_PARAMETERS
 
     def __init__(
         self,
@@ -2162,6 +2180,15 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
                 )
             help_content = HelpContent(format="restructuredtext", content=help_text)
         return help_content
+
+    @property
+    def keeps_undeclared_job_parameters(self) -> bool:
+        """Pass job parameters that are not tool inputs to the templates.
+
+        Tools that do not check their values (data source tools) take the request
+        parameters as they are sent.
+        """
+        return not self.check_values
 
     def new_state(self, trans: "ProvidesHistoryContext"):
         """
@@ -3465,6 +3492,7 @@ class ExpressionTool(Tool):
     tool_type = "expression"
     tool_type_local = True
     EXPRESSION_INPUTS_NAME = "_expression_inputs_.json"
+    job_directory_files = (expressions.EXPRESSION_SCRIPT_NAME, EXPRESSION_INPUTS_NAME)
 
     def parse(self, tool_source: ToolSource, guid: str | None = None, dynamic: bool = False) -> None:
         super().parse(tool_source, guid, dynamic)
@@ -3732,6 +3760,7 @@ class SetMetadataTool(Tool):
 
 class ExportHistoryTool(Tool):
     tool_type = "export_history"
+    template_job_parameters = Tool.template_job_parameters | {EXPORT_TO_URI}
 
 
 class ImportHistoryTool(Tool):
@@ -3838,7 +3867,7 @@ class DataManagerTool(OutputParameterJSONTool):
         assert (
             data_manager is not None
         ), f"Invalid data manager ({data_manager_id}) requested. It may have been removed before the job completed."
-        data_manager_mode = param_dict.get("__data_manager_mode", "populate")
+        data_manager_mode = param_dict.get(DATA_MANAGER_MODE, "populate")
         if data_manager_mode == "populate":
             data_manager.process_result(out_data, _data_manager_source_extra_files_paths(app, job, out_data))
         elif data_manager_mode == "dry_run":
