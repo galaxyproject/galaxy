@@ -160,6 +160,7 @@ def __main__():
                     start_col=startCol,
                     end_col=endCol,
                     strand_col=strandCol,
+                    default_strand=".",
                     fix_strand=True,
                     return_header=False,
                     return_comments=False,

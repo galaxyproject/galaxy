@@ -13,7 +13,7 @@
     <tests>
         <test>
             <param name="input1" ftype="interval" value="2.interval"/>
-            <output name="output1" ftype="bed6" value="2.bed6"/>
+            <output name="output1" ftype="bed6" value="2_no_strand.bed6"/>
         </test>
     </tests>
     <help>
