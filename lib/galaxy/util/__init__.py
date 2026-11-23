@@ -859,8 +859,8 @@ def mask_password_from_url(url):
 # A run of two or more slashes starts every authority, also of a scheme-relative URL.
 _URL_AUTHORITY_START_RE = re.compile(r"//+")
 # A "/" ends every authority and starts the next one, and no known userinfo holds a "/",
-# so each character is visited once.
-_URL_AUTHORITY_END_RE = re.compile(r"[/?#\s]")
+# so each character is visited once. In text, whitespace ends a URL too.
+_URL_AUTHORITY_END_RE = re.compile(r"[/\s]")
 # urlsplit() drops these characters anywhere in a URL, so text may hold a userinfo without them.
 _URLSPLIT_REMOVED_CHARACTERS = str.maketrans("", "", "\t\r\n")
 _USERINFO_TRIE_END = ""
@@ -1173,9 +1173,11 @@ def strip_url_userinfo(text: str, known_urls: Iterable[str] = ()) -> str:
         authority_start = separator.end()
         authority_end_match = _URL_AUTHORITY_END_RE.search(text, authority_start)
         authority_end = authority_end_match.start() if authority_end_match else len(text)
+        text_userinfo_end, ambiguous = _authority_userinfo_end(text, authority_start, authority_end)
         known_userinfo_end, redacted_end = _known_userinfo_end(text, authority_start, known_userinfo)
-        # Up to the last "@", so unencoded "@" in a password is stripped too.
-        userinfo_end = max(text.rfind("@", authority_start, authority_end), known_userinfo_end)
+        userinfo_end = max(text_userinfo_end, known_userinfo_end)
+        if ambiguous:
+            redacted_end = max(redacted_end, authority_end)
         # A userinfo is removed, and an ambiguous authority replaced, even where it holds a parser error.
         if userinfo_end != -1:
             marks[authority_start : userinfo_end + 1] = bytes([_USERINFO]) * (userinfo_end + 1 - authority_start)

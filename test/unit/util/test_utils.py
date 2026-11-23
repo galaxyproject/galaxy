@@ -1,6 +1,7 @@
 import errno
 import http.client
 import os
+import random
 import tempfile
 import time
 import urllib.request
@@ -316,6 +317,20 @@ def test_url_helpers_keep_url_without_userinfo(url):
     text = f"Failed to fetch url {url} : Not Found for url: {url}"
     assert util.strip_url_userinfo(text) == text
     assert util.strip_url_userinfo(text, [url]) == text
+
+
+@pytest.mark.parametrize(
+    "text,expected",
+    [
+        ("Failed to fetch https://u:12?34@example.org/a.bed", "Failed to fetch https://[redacted]/a.bed"),
+        ("Failed to fetch https://to#ken@example.org (404)", "Failed to fetch https://[redacted] (404)"),
+        ("Failed: https://example.org/a?next=//u:12?34@inner b", "Failed: https://example.org/a?next=//[redacted] b"),
+        ("Failed to fetch https://example.org?x=1 (404)", "Failed to fetch https://example.org?x=1 (404)"),
+        ("Failed to fetch https://user:secret@example.org?x=1", "Failed to fetch https://example.org?x=1"),
+    ],
+)
+def test_strip_url_userinfo_redacts_ambiguous_authority_of_unknown_url(text, expected):
+    assert util.strip_url_userinfo(text) == expected
 
 
 def test_url_helpers_remove_userinfo_before_query():
@@ -804,3 +819,38 @@ def test_strip_url_userinfo_scales_linearly_with_colons_in_known_userinfo():
 def test_name_from_url(url, expected):
     assert util.name_from_url(url) == expected
 
+
+# Each secret holds one of these characters, which the URLs and text around it never hold, so a match is a leak.
+_SECRET_MARKERS = "ZQK0123456789"
+_SECRET_ALPHABET = _SECRET_MARKERS + "?#=.:@"
+_SECRET_URL_FORMS = [
+    "https://{user}:{password}@example.org",
+    "https://{user}:{password}@example.org/a.bed",
+    "https://{user}:{password}@example.org?x=y",
+    "https://{user}:{password}@example.org#f",
+    "https://{user}@{password}@example.org/a.bed?x=y",
+    "https://example.org/a?next=//{user}:{password}@inner.example.org/b",
+    "https://example.org/a?next=ftp://{user}:{password}@inner.example.org",
+]
+
+
+def _random_secret(rng):
+    secret = "".join(rng.choice(_SECRET_ALPHABET) for _ in range(rng.randint(3, 10)))
+    return secret if any(char in _SECRET_MARKERS for char in secret) else secret + rng.choice(_SECRET_MARKERS)
+
+
+def test_url_helpers_never_echo_random_userinfo():
+    rng = random.Random(20261123)
+    for _ in range(5_000):
+        user, password = _random_secret(rng), _random_secret(rng)
+        url = rng.choice(_SECRET_URL_FORMS).format(user=user, password=password)
+        text = f"Failed to fetch url {url}: Not Found for url: {url}"
+        outputs = {
+            "url_without_userinfo": util.url_without_userinfo(url),
+            "name_from_url": util.name_from_url(url),
+            "strip_url_userinfo": util.strip_url_userinfo(text),
+            "strip_url_userinfo with known url": util.strip_url_userinfo(text, [url]),
+        }
+        for helper, output in outputs.items():
+            for secret in (user, password):
+                assert secret not in output, f"{helper} echoes {secret!r} of {url!r}: {output!r}"
