@@ -1,0 +1,11 @@
+- doc: The default of an unconnected rename input is used on a conditional step.
+  job:
+    reads:
+      class: File
+      contents: "ACGT\n"
+      filetype: txt
+  outputs:
+    final_output:
+      class: File
+      metadata:
+        name: "b1_processed"

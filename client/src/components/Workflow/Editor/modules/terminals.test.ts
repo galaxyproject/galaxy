@@ -27,6 +27,7 @@ import {
 import {
     InputCollectionTerminal,
     InputParameterTerminal,
+    InputRenameReferenceTerminal,
     InputTerminal,
     InvalidOutputTerminal,
     NO_COLLECTION_TYPE_INFORMATION_MESSAGE,
@@ -566,6 +567,43 @@ describe("canAccept", () => {
         const integerParam = terminals["integer parameter input"]!["output"] as any;
         expect(dataIn.canAccept(integerParam).canAccept).toBe(false);
         expect(dataIn.canAccept(integerParam).reason).toBe("Cannot connect workflow parameter to data input.");
+    });
+    function renameReferenceInput() {
+        const source: TerminalSource = {
+            name: "sample_name",
+            label: "sample_name",
+            input_type: "parameter",
+            type: "text",
+            rename_reference: true,
+            optional: true,
+            multiple: false,
+            extensions: [],
+        };
+        return terminalFactory(1, source, testDatatypesMapper, useStores()) as InputRenameReferenceTerminal;
+    }
+    it("accepts any single parameter on a rename reference", () => {
+        const renameIn = renameReferenceInput();
+        expect(renameIn).toBeInstanceOf(InputRenameReferenceTerminal);
+        for (const label of ["integer parameter input", "text parameter input", "optional integer parameter input"]) {
+            const parameterOut = terminals[label]!["output"] as OutputParameterTerminal;
+            expect(renameIn.canAccept(parameterOut).canAccept).toBe(true);
+        }
+    });
+    it("rejects data, multiple and mapped-over values on a rename reference", () => {
+        const renameIn = renameReferenceInput();
+        const dataOut = terminals["data input"]!["output"] as OutputTerminal;
+        expect(renameIn.canAccept(dataOut).reason).toBe(
+            "Only parameters can be referenced in a rename; use #{input} for the name of a dataset input",
+        );
+        const multipleOut = terminals["multiple text parameter input"]!["output"] as OutputParameterTerminal;
+        expect(renameIn.canAccept(multipleOut).reason).toBe(
+            "A rename reference takes a single value, not multiple values",
+        );
+        const integerOut = terminals["integer parameter input"]!["output"] as OutputParameterTerminal;
+        stepStore.changeStepMapOver(integerOut.stepId, new CollectionTypeDescription("list"));
+        expect(renameIn.canAccept(integerOut).reason).toBe(
+            "A rename reference takes a single value, not a collection or a mapped-over output",
+        );
     });
     it("accepts integer parameter to integer parameter connection", () => {
         const integerInputParam = terminals["multi data"]!["advanced|advanced_threshold"] as InputParameterTerminal;

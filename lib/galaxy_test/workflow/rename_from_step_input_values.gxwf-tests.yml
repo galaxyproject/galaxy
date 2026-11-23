@@ -1,0 +1,17 @@
+- doc: |
+    The integer is formatted as written, the default fills the unconnected input
+    and the unset optional parameter renames to an empty string.
+  job:
+    reads:
+      class: File
+      contents: "ACGT\n"
+      filetype: txt
+    lane_file:
+      class: File
+      contents: "7\n"
+      filetype: txt
+  outputs:
+    final_output:
+      class: File
+      metadata:
+        name: "b1_L7"

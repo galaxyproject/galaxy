@@ -1,6 +1,9 @@
 import pytest
 
-from galaxy.job_execution.actions.post import RenameDatasetAction
+from galaxy.job_execution.actions.post import (
+    RenameDatasetAction,
+    STEP_INPUT_VALUES_ARGUMENT,
+)
 from galaxy.model import PostJobAction
 
 
@@ -55,3 +58,24 @@ def test_rename_input_references(template, input_names, expected):
 def test_rename_applies_replacement_dict_after_input_references():
     action = PostJobAction("RenameDatasetAction", action_arguments={"newname": "#{a} ${sample}"})
     assert RenameDatasetAction._gen_new_name(action, {"a": "reads"}, {"sample": "S1"}) == "reads S1"
+
+
+@pytest.mark.parametrize(
+    "template,step_input_values,expected",
+    [
+        ("$(inputs.sample)_processed", {"sample": "S1"}, "S1_processed"),
+        ("$(inputs.sample)-#{input1}", {"sample": "S1"}, "S1-reads.fastq"),
+        # Values are substituted once, never expanded as references themselves.
+        ("$(inputs.sample)", {"sample": "#{input1}"}, "#{input1}"),
+        ("#{input1}", {"sample": "S1"}, "reads.fastq"),
+        # A reference without a value is left as written.
+        ("$(inputs.missing)_x", {"sample": "S1"}, "$(inputs.missing)_x"),
+        ("$(inputs.cond.input1)", {"cond": "S1"}, "$(inputs.cond.input1)"),
+    ],
+)
+def test_rename_step_input_references(template, step_input_values, expected):
+    action = PostJobAction(
+        "RenameDatasetAction",
+        action_arguments={"newname": template, STEP_INPUT_VALUES_ARGUMENT: step_input_values},
+    )
+    assert RenameDatasetAction._gen_new_name(action, {"input1": "reads.fastq"}, {}) == expected

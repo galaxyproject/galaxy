@@ -1,0 +1,35 @@
+class: GalaxyWorkflow
+doc: |
+  Rename an output with $(inputs.sample_name), the value of a parameter
+  computed from an intermediate output and connected to the renamed step
+  as an extra (non-tool) input.
+inputs:
+  sample_sheet:
+    type: data
+  reads:
+    type: data
+outputs:
+  final_output:
+    outputSource: process/out_file1
+steps:
+  get_sample_name:
+    tool_id: head
+    in:
+      input: sample_sheet
+    state:
+      lineNum: 1
+  sample_name_param:
+    tool_id: param_value_from_file
+    in:
+      input1: get_sample_name/out_file1
+    state:
+      param_type: text
+      remove_newlines: true
+  process:
+    tool_id: cat
+    in:
+      input1: reads
+      sample_name: sample_name_param/text_param
+    out:
+      out_file1:
+        rename: "$(inputs.sample_name)_processed"
