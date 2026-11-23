@@ -785,6 +785,9 @@ pages:
   view:
     selectors:
       history_link: '[data-description="history import link"][data-history-id="${history_id}"]'
+      history_imported:
+        type: xpath
+        selector: '//div[contains(@class, "text-success")][contains(., "Successfully Imported History")]'
 
   history:
     selectors:
