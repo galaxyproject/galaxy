@@ -41,6 +41,7 @@ const values = ref<Record<TextAttribute, string>>({
 // CreatorEditor pushes new entries onto the array it is given, so hand it a copy.
 const creators = ref<Creator[]>([...(props.work.creator ?? [])]);
 const nameMissing = ref(false);
+const urlInvalid = ref(false);
 
 const nameState = computed(() => (nameMissing.value ? false : null));
 
@@ -49,8 +50,11 @@ function onCreators(newCreators: Creator[]) {
 }
 
 function onSave() {
-    if (!values.value.name.trim()) {
-        nameMissing.value = true;
+    nameMissing.value = !values.value.name.trim();
+    // The server accepts only absolute http(s) URLs here.
+    const url = values.value.url.trim();
+    urlInvalid.value = Boolean(url) && !/^https?:\/\/\S+$/i.test(url);
+    if (nameMissing.value || urlInvalid.value) {
         return;
     }
     // Keep attributes this form does not edit (e.g. description) and drop emptied ones.
@@ -90,7 +94,12 @@ function onSave() {
                 :id="`based-on-${attribute.key}`"
                 v-model="values[attribute.key]"
                 :type="attribute.type"
-                :placeholder="attribute.placeholder" />
+                :placeholder="attribute.placeholder"
+                :state="attribute.key === 'url' && urlInvalid ? false : null"
+                @focus="attribute.key === 'url' && (urlInvalid = false)" />
+            <div v-if="attribute.key === 'url' && urlInvalid" class="error">
+                Please provide a URL starting with http:// or https://
+            </div>
         </div>
         <div role="group" class="form-group">
             <label>Upstream creators</label>

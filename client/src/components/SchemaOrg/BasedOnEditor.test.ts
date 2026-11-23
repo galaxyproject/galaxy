@@ -47,6 +47,25 @@ describe("BasedOnEditor", () => {
         expect(wrapper.find(".based-on-form").text()).toContain("Please provide a name");
     });
 
+    it("requires an http(s) URL before saving", async () => {
+        const wrapper = mountEditor();
+
+        await wrapper.find("#based-on-add").trigger("click");
+        await wrapper.find("#based-on-name").setValue("nf-core/rnaseq");
+        await wrapper.find("#based-on-url").setValue("github.com/nf-core/rnaseq");
+        await wrapper.find("#based-on-save").trigger("click");
+
+        expect(wrapper.emitted("onBasedOn")).toBeUndefined();
+        expect(wrapper.find(".based-on-form").text()).toContain("starting with http:// or https://");
+
+        await wrapper.find("#based-on-url").setValue("https://github.com/nf-core/rnaseq");
+        await wrapper.find("#based-on-save").trigger("click");
+
+        expect(wrapper.emitted("onBasedOn")).toEqual([
+            [[{ class: "SoftwareSourceCode", name: "nf-core/rnaseq", url: "https://github.com/nf-core/rnaseq" }]],
+        ]);
+    });
+
     it("keeps attributes the form does not edit and drops cleared ones", async () => {
         const wrapper = mountEditor([NF_CORE_DEMO]);
 
