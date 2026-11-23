@@ -648,3 +648,28 @@ def test_strip_url_userinfo_scales_linearly(text):
     assert util.strip_url_userinfo(text) == text
     assert time.perf_counter() - start < 1.0
 
+
+@pytest.mark.parametrize(
+    "url,expected",
+    [
+        ("https://example.org/data/a.bed", "a.bed"),
+        ("https://example.org/a.bed?x=1", "a.bed?x=1"),
+        ("https://user:secret@example.org", "example.org"),
+        ("https://user:sec ret@example.org:8080", "example.org:8080"),
+        ("ftp://user:secret@ftp.example.org/pub/a.bed", "a.bed"),
+        ("https://example.org/a?next=ftp://user:secret@ftp.example.org", "ftp.example.org"),
+        ("https://example.org/a?next=ftp://user:se?cret@ftp.example.org", "ftp.example.org"),
+        ("https://example.org/a#ftp://user:se#cret@ftp.example.org", "ftp.example.org"),
+        ("https://example.org/a?next=ftp://user:sec ret@ftp.example.org", "ftp.example.org"),
+        ("https://example.org/dir/user@file.txt", "user@file.txt"),
+        ("https://example.org/a?next=//user:secret@ftp.example.org", "ftp.example.org"),
+        ("https://example.org/a?next=///user:secret@ftp.example.org", "ftp.example.org"),
+        ("https://example.org/a?next=ftp:///user:secret@ftp.example.org", "ftp.example.org"),
+        ("https:///user:secret@example.org", "example.org"),
+        ("file:///data/a.bed", "a.bed"),
+        # A "//" in a path starts an authority too, so a name after it loses the part up to its "@".
+        ("https://example.org/a//b@c.txt", "c.txt"),
+    ],
+)
+def test_name_from_url(url, expected):
+    assert util.name_from_url(url) == expected
