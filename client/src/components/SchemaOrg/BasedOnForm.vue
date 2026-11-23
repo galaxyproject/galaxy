@@ -58,10 +58,15 @@ function onSave() {
         return;
     }
     // Keep attributes this form does not edit (e.g. description) and drop emptied ones.
-    const work: BasedOnWork = { ...props.work, class: props.work.class || "SoftwareSourceCode" };
-    for (const [key, value] of Object.entries(values.value) as [TextAttribute, string][]) {
-        if (value.trim()) {
-            work[key] = value.trim();
+    const work: BasedOnWork = {
+        ...props.work,
+        class: props.work.class || "SoftwareSourceCode",
+        name: values.value.name.trim(),
+    };
+    for (const { key } of ATTRIBUTES) {
+        const value = values.value[key].trim();
+        if (value) {
+            work[key] = value;
         } else {
             delete work[key];
         }

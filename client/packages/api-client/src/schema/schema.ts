@@ -8539,9 +8539,9 @@ export interface components {
             license?: string | null;
             /**
              * Name
-             * @description The name of the thing.
+             * @description The name of the upstream work.
              */
-            name?: string | null;
+            name: string;
             /** URL */
             url?: string | null;
             /**

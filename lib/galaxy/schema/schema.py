@@ -3019,6 +3019,7 @@ class BasedOnWork(Thing):
         alias="class",
         description="The schema.org class of the upstream work, e.g. SoftwareSourceCode or ComputationalWorkflow.",
     )
+    name: str = Field(..., title="Name", description="The name of the upstream work.")
     version: str | None = Field(None, title="Version", description="The version of the upstream work.")
     license: str | None = Field(
         None, title="License", description="SPDX Identifier of the license of the upstream work."

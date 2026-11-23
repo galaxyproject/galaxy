@@ -2118,13 +2118,17 @@ steps:
         assert workflow_show["is_based_on"][0]["creator"][0]["name"] == "Christopher Hakkaart"
 
     def test_is_based_on_invalid(self):
-        base_workflow_json = json.loads(workflow_str)
-        base_workflow_json["is_based_on"] = [{"name": "nf-core/demo", "creator": "not a list"}]
-        workflow_with_metadata_str = json.dumps(base_workflow_json)
-        base64_url = "base64://" + base64.b64encode(workflow_with_metadata_str.encode("utf-8")).decode("utf-8")
-        response = self._post("workflows", data={"archive_source": base64_url})
-        self._assert_status_code_is(response, 400)
-        self._assert_error_code_is(response, error_codes.error_codes_by_name["USER_REQUEST_INVALID_PARAMETER"])
+        for invalid_work in (
+            {"name": "nf-core/demo", "creator": "not a list"},
+            {"url": "https://github.com/nf-core/demo"},
+        ):
+            base_workflow_json = json.loads(workflow_str)
+            base_workflow_json["is_based_on"] = [invalid_work]
+            workflow_with_metadata_str = json.dumps(base_workflow_json)
+            base64_url = "base64://" + base64.b64encode(workflow_with_metadata_str.encode("utf-8")).decode("utf-8")
+            response = self._post("workflows", data={"archive_source": base64_url})
+            self._assert_status_code_is(response, 400)
+            self._assert_error_code_is(response, error_codes.error_codes_by_name["USER_REQUEST_INVALID_PARAMETER"])
 
     def test_readme_too_large(self):
         big_but_valid_readme = "READ_" * 3999
