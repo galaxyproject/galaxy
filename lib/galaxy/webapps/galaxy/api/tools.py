@@ -77,6 +77,7 @@ from galaxy.tools.fetch.workbooks import (
     ParsedFetchWorkbook,
     ParseFetchWorkbook,
 )
+from galaxy.tools.help_images import HELP_IMAGE_SECURITY_HEADERS
 from galaxy.tools.job_parameters import TARGET_DATATYPE
 from galaxy.tools.parameters.pagination import OptionsPaginationT
 from galaxy.util.zipstream import ZipstreamWrapper
@@ -120,9 +121,7 @@ ICON_HEADERS = {"Cache-Control": "public, max-age=86400"}  # 1 day
 HELP_IMAGE_HEADERS = {
     # Private: the tool may be access controlled.
     "Cache-Control": "private, max-age=3600",
-    # SVG can carry script; keep it from running if a help image is opened directly.
-    "Content-Security-Policy": "default-src 'none'; img-src data:; font-src data:; style-src 'unsafe-inline'; sandbox",
-    "X-Content-Type-Options": "nosniff",
+    **HELP_IMAGE_SECURITY_HEADERS,
 }
 
 

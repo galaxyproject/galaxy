@@ -10,6 +10,11 @@ from galaxy.util.path import (
 )
 
 STATIC_IMAGES = "static/images"
+# SVG can carry script; keep it from running if a help image is opened directly.
+HELP_IMAGE_SECURITY_HEADERS = {
+    "Content-Security-Policy": "default-src 'none'; img-src data:; font-src data:; style-src 'unsafe-inline'; sandbox",
+    "X-Content-Type-Options": "nosniff",
+}
 
 
 def find_tool_file(base_dir: StrPath, file_path: str) -> str | None:

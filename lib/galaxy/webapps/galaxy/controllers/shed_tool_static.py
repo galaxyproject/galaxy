@@ -6,7 +6,10 @@ from galaxy.exceptions import (
     ObjectNotFound,
     RequestParameterInvalidException,
 )
-from galaxy.tools.help_images import find_tool_asset
+from galaxy.tools.help_images import (
+    find_tool_asset,
+    HELP_IMAGE_SECURITY_HEADERS,
+)
 from galaxy.webapps.base.controller import BaseUIController
 from galaxy.webapps.base.webapp import GalaxyWebTransaction
 
@@ -39,6 +42,7 @@ class ShedToolStatic(BaseUIController):
                 mime = trans.app.datatypes_registry.get_mimetype_by_extension(ext)
                 if mime:
                     trans.response.set_content_type(mime)
+            trans.response.headers.update(HELP_IMAGE_SECURITY_HEADERS)
             return open(found_path, "rb")
         else:
             raise RequestParameterInvalidException()
