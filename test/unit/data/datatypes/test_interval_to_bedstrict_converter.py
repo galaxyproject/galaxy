@@ -35,11 +35,11 @@ def test_unstranded_bed6(tmp_path):
 
 
 @pytest.mark.parametrize(
-    "extension,force_num_columns,expected",
+    "force_num_columns,expected",
     [
-        ("bed", 6, "chr1\t100\t500\tp1\t10\t.\n"),
-        ("bed", 12, "chr1\t100\t500\tp1\t10\t.\t100\t500\t0\t0\t,\t,\n"),
+        (6, "chr1\t100\t500\tp1\t10\t.\n"),
+        (12, "chr1\t100\t500\tp1\t10\t.\t100\t500\t0\t0\t,\t,\n"),
     ],
 )
-def test_padding_does_not_invent_a_strand(tmp_path, extension, force_num_columns, expected):
-    assert convert(tmp_path, "chr1\t100\t500\tp1\t10\n", extension, force_num_columns) == expected
+def test_padding_does_not_invent_a_strand(tmp_path, force_num_columns, expected):
+    assert convert(tmp_path, "chr1\t100\t500\tp1\t10\n", "bed", force_num_columns) == expected
