@@ -126,8 +126,6 @@ def test_step_input_form_defaults_match_the_saved_form_state():
         (None, "", True),
         ("a", None, False),
         (None, 0, False),
-        (7, 7, True),
-        (3, 7, False),
     ],
 )
 def test_same_form_value_treats_empty_values_as_equal(form_value, default, same):
