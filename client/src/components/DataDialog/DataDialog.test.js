@@ -190,4 +190,56 @@ describe("DataDialog.vue", () => {
         // The model, not just hasValue, must be empty: formatRows reads it for the reloaded rows
         expect(rowVariant()).toBe("default");
     });
+
+    it("ignores a slow response for the previous history", async () => {
+        const deferred = () => {
+            const handlers = {};
+            const promise = new Promise((resolve, reject) => Object.assign(handlers, { resolve, reject }));
+            return { promise, ...handlers };
+        };
+        const pending = [deferred(), deferred()];
+        let call = 0;
+        const get = vi.spyOn(Services.prototype, "get").mockImplementation(() => pending[call++].promise);
+        wrapper = shallowMount(DataDialog, {
+            propsData: { ...mockOptions, history: "first", library: false },
+            stubs: { Icon: true },
+        });
+        await wrapper.setProps({ history: "second" });
+        expect(get).toHaveBeenCalledTimes(2);
+
+        pending[1].resolve([{ id: "second_1", label: "second dataset", isLeaf: true }]);
+        await flushPromises();
+        pending[0].resolve([{ id: "first_1", label: "first dataset", isLeaf: true }]);
+        await flushPromises();
+
+        const labels = wrapper
+            .findComponent(SelectionDialog)
+            .props("items")
+            .map((item) => item.label);
+        expect(labels).toEqual(["second dataset"]);
+    });
+
+    it("ignores a failed response for the previous history", async () => {
+        const leaf = { id: "second_1", label: "second dataset", isLeaf: true };
+        let rejectFirst;
+        let call = 0;
+        vi.spyOn(Services.prototype, "get").mockImplementation(() => {
+            if (call++ === 0) {
+                return new Promise((_, reject) => {
+                    rejectFirst = reject;
+                });
+            }
+            return Promise.resolve([leaf]);
+        });
+        wrapper = shallowMount(DataDialog, {
+            propsData: { ...mockOptions, history: "first", library: false },
+            stubs: { Icon: true },
+        });
+        await wrapper.setProps({ history: "second" });
+        await flushPromises();
+        rejectFirst(new Error("stale failure"));
+        await flushPromises();
+
+        expect(wrapper.findComponent(SelectionDialog).props("errorMessage")).toBe("");
+    });
 });
