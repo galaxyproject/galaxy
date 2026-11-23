@@ -368,6 +368,47 @@ describe("GridList", () => {
         expect(testGrid.getData).toHaveBeenCalledTimes(2);
     });
 
+    it("keeps the tags of rows without an id apart", async () => {
+        const testGrid = createTestGrid();
+        const tagsHandler = vi.fn(async (_row: RowData) => {});
+        testGrid.fields = [{ key: "tags", title: "tags", type: "tags", handler: tagsHandler }];
+        testGrid.getData = vi.fn(async (): Promise<[RowData[], number]> => [[{ tags: ["a"] }, { tags: ["b"] }], 2]);
+        const wrapper = createTarget({ gridConfig: testGrid });
+        await flushPromises();
+
+        const [firstTags, secondTags] = wrapper.findAllComponents(StatelessTags);
+        secondTags!.vm.$emit("update:modelValue", ["b", "edited"]);
+        await flushPromises();
+
+        expect(firstTags!.props("modelValue")).toEqual(["a"]);
+        expect(secondTags!.props("modelValue")).toEqual(["b", "edited"]);
+    });
+
+    it("saves the tag edits of a row without an id one after another", async () => {
+        const testGrid = createTestGrid();
+        const saves = [deferred<void>(), deferred<void>()];
+        const tagsHandler = vi.fn((_row: RowData) => saves[tagsHandler.mock.calls.length - 1]!.promise);
+        testGrid.fields = [{ key: "tags", title: "tags", type: "tags", handler: tagsHandler }];
+        testGrid.getData = vi.fn(async (): Promise<[RowData[], number]> => [[{ tags: ["a"] }], 1]);
+        const wrapper = createTarget({ gridConfig: testGrid });
+        await flushPromises();
+
+        const tags = wrapper.findComponent(StatelessTags);
+        tags.vm.$emit("update:modelValue", ["first"]);
+        tags.vm.$emit("update:modelValue", ["first", "second"]);
+        await flushPromises();
+        expect(tagsHandler).toHaveBeenCalledTimes(1);
+        expect(tags.props("modelValue")).toEqual(["first", "second"]);
+
+        saves[0]!.resolve();
+        await flushPromises();
+        expect(tagsHandler).toHaveBeenCalledTimes(2);
+        expect(tagsHandler.mock.calls[1]![0].tags).toEqual(["first", "second"]);
+        saves[1]!.resolve();
+        await flushPromises();
+        expect(tags.props("modelValue")).toEqual(["first", "second"]);
+    });
+
     it("pagination", async () => {
         const testGrid = createTestGrid();
         const wrapper = createTarget({

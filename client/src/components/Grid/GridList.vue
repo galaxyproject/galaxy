@@ -75,6 +75,8 @@ const gridData = ref();
 
 // one tag save queue per row id, so an older tag list of a row never lands after a newer one
 const tagSaves = new Map<unknown, ReturnType<typeof useSerialTagSaves>["saveTags"]>();
+// rows without an id have no id to look up, so their queue is keyed by the row object
+const rowTagSaves = new WeakMap<RowData, ReturnType<typeof useSerialTagSaves>["saveTags"]>();
 
 // message references
 const errorMessage = ref("");
@@ -347,21 +349,27 @@ function onTagInput(data: RowData, tags: Array<string>, tagsHandler?: FieldHandl
 }
 
 function tagSavesFor(data: RowData) {
-    let saveTags = tagSaves.get(data.id);
+    const id = data.id;
+    let saveTags = id === undefined ? rowTagSaves.get(data) : tagSaves.get(id);
     if (!saveTags) {
-        const id = data.id;
         saveTags = useSerialTagSaves({
             // looked up by id: a grid load during the saves replaces the row objects
             setTags: (tags) => {
-                const row = (gridData.value as RowData[] | undefined)?.find((entry) => entry.id === id) ?? data;
+                const rows: RowData[] = id === undefined ? [] : (gridData.value ?? []);
+                const row = rows.find((entry) => entry.id === id) ?? data;
                 row.tags = tags;
             },
             onFailed: () => getGridData(),
         }).saveTags;
-        tagSaves.set(id, saveTags);
+        if (id === undefined) {
+            rowTagSaves.set(data, saveTags);
+        } else {
+            tagSaves.set(id, saveTags);
+        }
     }
     return saveTags;
 }
+
 function onFilter(filter?: string) {
     if (filter) {
         applyFilter(filter, true);
