@@ -110,4 +110,38 @@ describe("WorkflowList", () => {
         expect((wrapper.find("#workflow-list-filter input").element as HTMLInputElement).value).toBe("");
         await flushPromises();
     });
+
+    it("scrolls the card list back to the top when the page changes", async () => {
+        const FAKE_WORKFLOWS = generateRandomWorkflowList(FAKE_USERNAME, 24);
+        mockedLoadWorkflows.mockResolvedValue({ data: FAKE_WORKFLOWS, totalMatches: 50 });
+        const wrapper = await mountWorkflowList();
+
+        const cardList = wrapper.find(".workflow-card-list").element;
+        cardList.scrollTop = 500;
+        expect(cardList.scrollTop).toBe(500);
+
+        const pageTwo = wrapper.findAll(".workflow-list-footer-pagination .page-link").filter((b) => b.text() === "2");
+        expect(pageTwo).toHaveLength(1);
+        await pageTwo.at(0).trigger("click");
+        await flushPromises();
+
+        expect(mockedLoadWorkflows).toHaveBeenLastCalledWith(expect.objectContaining({ offset: 24 }));
+        expect(wrapper.find(".workflow-card-list").element.scrollTop).toBe(0);
+    });
+
+    it("scrolls the card list back to the top when the filter changes", async () => {
+        const FAKE_WORKFLOWS = generateRandomWorkflowList(FAKE_USERNAME, 24);
+        mockedLoadWorkflows.mockResolvedValue({ data: FAKE_WORKFLOWS, totalMatches: 50 });
+        const wrapper = await mountWorkflowList();
+
+        const cardList = wrapper.find(".workflow-card-list").element;
+        cardList.scrollTop = 500;
+        expect(cardList.scrollTop).toBe(500);
+
+        await wrapper.find("#show-deleted").trigger("click");
+        await flushPromises();
+
+        expect((wrapper.find("#workflow-list-filter input").element as HTMLInputElement).value).toBe("is:deleted");
+        expect(wrapper.find(".workflow-card-list").element.scrollTop).toBe(0);
+    });
 });
