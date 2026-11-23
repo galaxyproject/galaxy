@@ -1251,12 +1251,8 @@ class WorkflowContentsManager(UsesAnnotations):
     @staticmethod
     def _add_step_in(step: model.WorkflowStep, step_dict: dict[str, Any]) -> None:
         """Serialize step input defaults as the ``in`` block that ``__module_from_dict`` reads back."""
-        step_in = {}
-        for step_input in step.inputs:
-            if step_input.default_value_set:
-                step_in[step_input.name] = {"default": step_input.default_value}
-        if step_in:
-            step_dict["in"] = step_in
+        if input_defaults := step.input_defaults:
+            step_dict["in"] = {name: {"default": default} for name, default in input_defaults.items()}
 
     def _workflow_to_dict_editor(
         self,
@@ -1302,9 +1298,8 @@ class WorkflowContentsManager(UsesAnnotations):
                 upgrade_message_dict[module.get_name()] = "\n".join(version_changes)
             if isinstance(module, ToolModule):
                 # Show the step input defaults that replace the tool state at run time in the tool form.
-                defaults = {si.name: si.default_value for si in step.inputs if si.default_value_set}
                 connected_input_names = {conn.input_name for conn in step.input_connections}
-                module.show_step_input_defaults(defaults, connected_input_names)
+                module.show_step_input_defaults(step.input_defaults, connected_input_names)
             # Get user annotation.
             config_form = module.get_config_form(step=step)
             annotation_str = self.get_item_annotation_str(trans.sa_session, trans.user, step) or ""
