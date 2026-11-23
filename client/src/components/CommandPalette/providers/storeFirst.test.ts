@@ -220,6 +220,49 @@ describe("rootListItems", () => {
         expect(items).toHaveLength(PALETTE_LIMITS.section);
     });
 
+    it("keeps room for the rows the other listings matched when own rows fill the section", async () => {
+        const own = fakeList();
+        await own.fetchListing();
+        own.cachedItems = () => Array.from({ length: 8 }, (_, index) => row(`own${index}`, `alpine ${index}`));
+        const shared = Array.from({ length: 3 }, (_, index) => row(`shared${index}`, `alpine ${index} shared`));
+        const published = Array.from({ length: 3 }, (_, index) => row(`published${index}`, `alpine ${index} public`));
+
+        const items = await rootListItems("alp", own, [async () => shared, async () => published]);
+
+        expect(items).toHaveLength(PALETTE_LIMITS.section);
+        expect(items.filter((item) => shared.includes(item) || published.includes(item)).length).toBeGreaterThanOrEqual(
+            PALETTE_LIMITS.rootListing,
+        );
+    });
+
+    it("reserves only the slots the matched listing rows need", async () => {
+        const own = fakeList();
+        await own.fetchListing();
+        own.cachedItems = () => Array.from({ length: 8 }, (_, index) => row(`own${index}`, `alpine ${index}`));
+        const shared = row("shared", "alpine shared");
+
+        const items = await rootListItems("alp", own, [async () => [shared]]);
+
+        expect(items).toHaveLength(PALETTE_LIMITS.section);
+        expect(items).toContain(shared);
+        expect(items.filter((item) => item !== shared)).toHaveLength(PALETTE_LIMITS.section - 1);
+    });
+
+    it("keeps a matched listing row when another listing only holds a copy of a cut own row", async () => {
+        const own = fakeList();
+        await own.fetchListing();
+        const ownRows = Array.from({ length: 8 }, (_, index) => row(`own${index}`, `alpine ${index}`));
+        own.cachedItems = () => ownRows;
+        const copy: PaletteItem = { id: "fake:copy", mru: { type: "fake", id: "own7" }, title: "alpine 7" };
+        const shared = row("shared", "alpine shared");
+
+        const items = await rootListItems("alp", own, [async () => [copy, shared]]);
+
+        expect(items).toHaveLength(PALETTE_LIMITS.section);
+        expect(items).toContain(shared);
+        expect(items).not.toContain(copy);
+    });
+
     it("skips the listing searches and the hydration for a short or local-only query", async () => {
         const listing = vi.fn(async () => [REMOTE]);
         const own = fakeList();

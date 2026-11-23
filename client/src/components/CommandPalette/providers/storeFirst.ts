@@ -125,7 +125,11 @@ export async function rootListItems(
     if (own && !options.localOnly) {
         await hydrateOnce(own);
     }
-    const ownItems = own ? await storeFirstItems(own, query, PALETTE_LIMITS.section, { cacheOnly: true }) : [];
-    const merged = dedupePaletteItemsByEntity([ownItems, ...(await listed)].flat());
+    const ownRows = own ? await storeFirstItems(own, query, PALETTE_LIMITS.section, { cacheOnly: true }) : [];
+    const found = (await listed).flat();
+    // own rows may fill the section, but never crowd out the rows the other listings matched (copies of own rows aside)
+    const others = dedupePaletteItemsByEntity([ownRows, found].flat()).slice(ownRows.length);
+    const reserved = Math.min(others.length, PALETTE_LIMITS.rootListing);
+    const merged = [ownRows.slice(0, PALETTE_LIMITS.section - reserved), others].flat();
     return rankPaletteItems(merged, query).slice(0, PALETTE_LIMITS.section);
 }
