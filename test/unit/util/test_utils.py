@@ -285,6 +285,10 @@ def test_strip_url_userinfo(text, expected):
         ("https://example.org/a@b.bed?mail=me@example.org", "https://example.org/a@b.bed?mail=me@example.org"),
         ("example.org/a.bed", "example.org/a.bed"),
         ("", ""),
+        ("https://example.org:bad/a?next=ftp://u:secret@inner/b", "https://example.org:bad/a?next=ftp://inner/b"),
+        ("https://u1:s1@example.org/proxy/ftp://u2:s2@inner/b", "https://example.org/proxy/ftp://inner/b"),
+        ("https://example.org/a?next=//u:secret@inner/b", "https://example.org/a?next=//inner/b"),
+        ("https://example.org/a?next=ftp:///u:secret@inner/b", "https://example.org/a?next=ftp:///inner/b"),
     ],
 )
 def test_url_without_userinfo(url, expected):

@@ -67,6 +67,9 @@ def test_validate_non_local_rejects_malformed_host(bad_url):
         "https://user:secret@..example.com/x",
         "https://user:secret@example.org:notaport/x",
         "https://user:sec ret@..example.com/x",
+        "https://example.org:notaport/a?next=ftp://user:secret@inner.example.org/b",
+        "https://example.org:notaport/a?next=//user:secret@inner.example.org/b",
+        "https://..example.com/a?next=ftp://user:secret@inner.example.org/b",
     ],
 )
 def test_validate_non_local_errors_hide_userinfo(bad_url, caplog):

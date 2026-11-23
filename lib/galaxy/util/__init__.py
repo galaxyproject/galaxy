@@ -895,17 +895,32 @@ def _known_url_userinfo_span(url: str, start: int = 0) -> tuple[int, int]:
 
 def url_without_userinfo(url: str) -> str:
     """
-    Remove the userinfo (``user:password@``) of a single ``url``, even if it holds unencoded whitespace.
+    Remove the userinfo (``user:password@``) of a single ``url`` and of every URL nested in it, such as in its
+    query, even if it holds unencoded whitespace.
 
     >>> url_without_userinfo('https://user:sec ret@example.org/a.bed')
     'https://example.org/a.bed'
     >>> url_without_userinfo('https://user:secret@example.org')
     'https://example.org'
+    >>> url_without_userinfo('https://example.org/a?next=ftp://user:secret@inner/b')
+    'https://example.org/a?next=ftp://inner/b'
     """
-    authority_start, userinfo_end = _known_url_userinfo_span(url)
-    if userinfo_end == -1:
-        return url
-    return url[:authority_start] + url[userinfo_end + 1 :]
+    parts = []
+    pos = 0
+    while (separator := url.find("//", pos)) != -1:
+        # Any run of slashes starts an authority, as in a scheme-relative "//user@host" or in "ftp:///user@host".
+        authority_start = separator + 2
+        while authority_start < len(url) and url[authority_start] == "/":
+            authority_start += 1
+        # A URL is a single token, so "?", "#" or whitespace before the next "/" may belong to a password.
+        authority_end = url.find("/", authority_start)
+        if authority_end == -1:
+            authority_end = len(url)
+        userinfo_end = url.rfind("@", authority_start, authority_end)
+        parts.append(url[pos:authority_start])
+        pos = userinfo_end + 1 if userinfo_end != -1 else authority_start
+    parts.append(url[pos:])
+    return "".join(parts)
 
 
 def _known_url_userinfos(url: str) -> Iterator[str]:
@@ -1134,26 +1149,6 @@ def strip_url_userinfo(text: str, known_urls: Iterable[str] = ()) -> str:
     return "".join(parts)
 
 
-def _url_token_without_userinfo(url: str) -> str:
-    """Remove the userinfo of ``url`` and of every URL nested in it, such as in its query."""
-    parts = []
-    pos = 0
-    while (separator := url.find("//", pos)) != -1:
-        # Any run of slashes starts an authority, as in a scheme-relative "//user@host" or in "ftp:///user@host".
-        authority_start = separator + 2
-        while authority_start < len(url) and url[authority_start] == "/":
-            authority_start += 1
-        # A URL is a single token, so "?", "#" or whitespace before the next "/" may belong to a password.
-        authority_end = url.find("/", authority_start)
-        if authority_end == -1:
-            authority_end = len(url)
-        userinfo_end = url.rfind("@", authority_start, authority_end)
-        parts.append(url[pos:authority_start])
-        pos = userinfo_end + 1 if userinfo_end != -1 else authority_start
-    parts.append(url[pos:])
-    return "".join(parts)
-
-
 def name_from_url(url: str) -> str:
     """
     Last path segment of ``url`` (its host if it has no path), as a default dataset name without userinfo.
@@ -1165,7 +1160,7 @@ def name_from_url(url: str) -> str:
     >>> name_from_url('https://example.org/a?next=ftp://user:se?cret@ftp.example.org')
     'ftp.example.org'
     """
-    return _url_token_without_userinfo(url).split("/")[-1]
+    return url_without_userinfo(url).split("/")[-1]
 
 
 def ready_name_for_url(raw_name):
