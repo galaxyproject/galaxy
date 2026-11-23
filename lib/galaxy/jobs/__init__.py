@@ -118,6 +118,11 @@ from galaxy.tools.evaluation import (
     ToolEvaluator,
     UserToolEvaluator,
 )
+from galaxy.tools.job_parameters import (
+    DBKEY,
+    ELEMENT_IDENTIFIER_SUFFIX,
+    is_element_identifier_parameter,
+)
 from galaxy.tools.parameters import params_to_json_internal
 from galaxy.util import (
     parse_xml_string,
@@ -1333,9 +1338,9 @@ class MinimalJobWrapper(HasResourceParameters):
             element_identifiers = None
             if tool_evaluator.consumes_identifiers:
                 element_identifiers = {
-                    name.removesuffix("|__identifier__"): json.loads(value)
+                    name.removesuffix(ELEMENT_IDENTIFIER_SUFFIX): json.loads(value)
                     for name, value in param_dump.items()
-                    if name.endswith("|__identifier__")
+                    if is_element_identifier_parameter(name)
                 }
             job_to_copy = self.app.job_search.by_tool_input(
                 job.user,
@@ -2281,9 +2286,16 @@ class MinimalJobWrapper(HasResourceParameters):
         job_context = ExpressionContext(dict(stdout=tool_stdout, stderr=tool_stderr))
         if extended_metadata:
             try:
-                import_options = store.ImportOptions(allow_dataset_object_edit=True, allow_edit=True)
+                metadata_directory = os.path.join(self.working_directory, "metadata")
+                import_options = store.ImportOptions(
+                    allow_dataset_object_edit=True,
+                    allow_edit=True,
+                    datasets_attrs_at_job_setup=store.load_datasets_attrs_by_id(
+                        os.path.join(metadata_directory, "outputs_new")
+                    ),
+                )
                 import_model_store = store.get_import_model_store_for_directory(
-                    os.path.join(self.working_directory, "metadata", "outputs_populated"),
+                    os.path.join(metadata_directory, "outputs_populated"),
                     app=self.app,
                     import_options=import_options,
                     user=job.user,
@@ -2530,7 +2542,7 @@ class MinimalJobWrapper(HasResourceParameters):
         # before persisting them.
         input_params = job.raw_param_dict()
         input_ext = input_params.get("__input_ext")
-        input_dbkey = input_params.get("dbkey")
+        input_dbkey = input_params.get(DBKEY)
         if input_ext is not None:
             input_ext = loads(input_ext)
             input_dbkey = loads(input_dbkey)

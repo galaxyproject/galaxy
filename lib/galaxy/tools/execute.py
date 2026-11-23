@@ -49,6 +49,7 @@ from galaxy.tools.execution_helpers import (
     on_text_for_dataset_and_collections,
     ToolExecutionCache,
 )
+from galaxy.tools.job_parameters import DATA_MANAGER_MODE
 from galaxy.tools.parameters import visit_input_values
 from galaxy.tools.parameters.workflow_utils import (
     is_runtime_value,
@@ -303,8 +304,8 @@ def _execute(
         )
         params = execution_slice.param_combination
         request_state = mapping_params.param_template
-        if "__data_manager_mode" in request_state:
-            params["__data_manager_mode"] = request_state["__data_manager_mode"]
+        if DATA_MANAGER_MODE in request_state:
+            params[DATA_MANAGER_MODE] = request_state[DATA_MANAGER_MODE]
         if "__use_cached_job__" in request_state:
             params["__use_cached_job__"] = request_state["__use_cached_job__"]
         if workflow_invocation_uuid:
@@ -538,6 +539,8 @@ class ExecutionTracker:
         for _, hda in self.output_datasets:
             tag_handler.apply_item_tags(user=user, item=hda, tags_str=tags_str, flush=False)
         for _, hdca in self.output_collections:
+            tag_handler.apply_item_tags(user=user, item=hdca, tags_str=tags_str, flush=False)
+        for hdca in self.implicit_collections.values():
             tag_handler.apply_item_tags(user=user, item=hdca, tags_str=tags_str, flush=False)
 
     def apply_email_action(self, user) -> None:

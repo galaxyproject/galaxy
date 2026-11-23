@@ -28,6 +28,7 @@ from galaxy.model.dataset_collections.adapters import (
     PromoteCollectionElementToCollectionAdapter,
 )
 from galaxy.tool_util.parameters import RequestInternalDereferencedToolState
+from galaxy.tools.job_parameters import is_element_identifier_parameter
 from galaxy.util.permutations import (
     build_combos,
     input_classification,
@@ -216,7 +217,7 @@ def expand_meta_parameters(
     """
 
     for key in list(incoming.keys()):
-        if key.endswith("|__identifier__"):
+        if is_element_identifier_parameter(key):
             incoming.pop(key)
 
     # If we're going to multiply input dataset combinations
