@@ -122,6 +122,7 @@ from galaxy.util import (
     ExecutionTimer,
     listify,
     string_as_bool_or_none,
+    strip_url_userinfo,
     url_without_userinfo,
 )
 from galaxy.util.search import (
@@ -1541,12 +1542,22 @@ class JobSearch:
             return stmt
 
 
+_FETCH_REQUEST_URL_KEYS = frozenset(("url", "location"))
+
+
+def _displayed_fetch_request_value(key: Any, value: Any) -> Any:
+    if not isinstance(value, str):
+        return value
+    # A URL value is one URL, whose userinfo may hold whitespace; other text such as pasted content is scanned.
+    return url_without_userinfo(value) if key in _FETCH_REQUEST_URL_KEYS else strip_url_userinfo(value)
+
+
 def _displayed_fetch_request(request: Any, encode_id: Callable[[int], Any]) -> Any:
     """Copy of a stored fetch request to show: database ids encoded, URL userinfo removed from every string."""
     # The job keeps the stored request with its full URLs to run and rerun with.
     return remap(
         encode_fetch_request_ids(request, encode_id),
-        visit=lambda path, key, value: (key, url_without_userinfo(value) if isinstance(value, str) else value),
+        visit=lambda path, key, value: (key, _displayed_fetch_request_value(key, value)),
     )
 
 

@@ -83,3 +83,28 @@ def test_data_fetch_job_params_mask_url_userinfo():
     assert elements[0]["url"] == "https://example.org/a.bed"
     assert elements[1]["url"] == "https://example.org/b?next=ftp://inner/b.bed"
     assert elements[2] == {"src": "url", "url": "https://example.org/d.bed", "object_id": "encoded_5"}
+
+
+def test_data_fetch_job_params_keep_pasted_text():
+    pasted = "see http://example.org\ncontact alice@other.org/x"
+    request = {
+        "targets": [
+            {
+                "destination": {"type": "hdas"},
+                "elements": [
+                    {"src": "pasted", "paste_content": pasted},
+                    {"src": "pasted", "paste_content": "line one\nhttps://user:secret@example.org/a.bed\nline three"},
+                ],
+            }
+        ]
+    }
+    job = mock.Mock(tool_id="__DATA_FETCH__")
+    security = mock.Mock()
+    security.encode_id = lambda id: f"encoded_{id}"
+    job_dict = {"params": {"request_json": json.dumps(json.dumps(request))}}
+
+    shown = encode_job_params(security, job, job_dict)
+
+    elements = json.loads(json.loads(shown["params"]["request_json"]))["targets"][0]["elements"]
+    assert elements[0]["paste_content"] == pasted
+    assert elements[1]["paste_content"] == "line one\nhttps://example.org/a.bed\nline three"
