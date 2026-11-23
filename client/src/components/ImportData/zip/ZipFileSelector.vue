@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { BPagination } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 
@@ -8,6 +7,7 @@ import type { ArchiveSource, ImportableFile, ImportableZipContents } from "@/com
 import { useUserStore } from "@/stores/userStore";
 
 import GAlert from "@/components/BaseComponents/GAlert.vue";
+import GPagination from "@/components/BaseComponents/GPagination.vue";
 import DelayedInput from "@/components/Common/DelayedInput.vue";
 import Heading from "@/components/Common/Heading.vue";
 import ListHeader from "@/components/Common/ListHeader.vue";
@@ -194,12 +194,12 @@ function onSearch(value: string) {
         </GAlert>
 
         <div v-if="showPagination" class="d-flex justify-content-center py-3 mt-3">
-            <BPagination
-                :value="currentPage"
+            <GPagination
+                :model-value="currentPage"
                 :total-rows="totalItems"
                 :per-page="itemsPerPage"
                 align="center"
-                size="sm"
+                size="small"
                 first-number
                 last-number
                 @change="onPageChange" />

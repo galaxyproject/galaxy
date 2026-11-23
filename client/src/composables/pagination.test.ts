@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { computed, ref } from "vue";
+import { computed, nextTick, ref } from "vue";
 
 import { usePagination } from "./pagination";
 
@@ -83,5 +83,31 @@ describe("usePagination", () => {
 
         onPageChange(3);
         expect(paginatedItems.value).toEqual([21, 22, 23, 24, 25]);
+    });
+
+    it.each([
+        { label: "the last page left", remaining: 25, page: 3 },
+        { label: "page 1 when everything fits", remaining: 5, page: 1 },
+        { label: "page 1 when the list empties", remaining: 0, page: 1 },
+    ])("should move to $label when the list shrinks past the current page", async ({ remaining, page }) => {
+        const items = ref(Array.from({ length: 50 }, (_, i) => i + 1));
+        const { currentPage, onPageChange } = usePagination(items, { itemsPerPage: 10 });
+        onPageChange(5);
+
+        items.value = items.value.slice(0, remaining);
+        await nextTick();
+
+        expect(currentPage.value).toBe(page);
+    });
+
+    it("should keep the current page when the list shrinks but the page still exists", async () => {
+        const items = ref(Array.from({ length: 50 }, (_, i) => i + 1));
+        const { currentPage, onPageChange } = usePagination(items, { itemsPerPage: 10 });
+        onPageChange(2);
+
+        items.value = items.value.slice(0, 25);
+        await nextTick();
+
+        expect(currentPage.value).toBe(2);
     });
 });
