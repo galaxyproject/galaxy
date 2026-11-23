@@ -29,6 +29,10 @@ export function usePaletteModifiers(onToggle: () => void) {
     }
 
     useEventListener(window, "keydown", (event: KeyboardEvent) => {
+        // Chrome's autofill fires a plain `Event` named keydown, which has no key
+        if (typeof event.key !== "string") {
+            return;
+        }
         if (isNewTabModifier(event.key)) {
             modifierHeld.value = true;
         }
