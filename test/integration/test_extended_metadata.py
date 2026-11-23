@@ -168,6 +168,18 @@ class TestExtendedMetadataIntegration(integration_util.IntegrationTestCase):
         self.dataset_populator.wait_for_job(response["jobs"][0]["id"], assert_ok=True)
         self.dataset_populator.assert_history_datasets_permissions(history_id, expected_count=6, access_private=True)
 
+    def test_unknown_output_extension_job_message(self, history_id):
+        self._assert_unknown_datatype_job_message("discover_unknown_ext", history_id, "2 output datasets")
+
+    def _assert_unknown_datatype_job_message(self, tool_id: str, history_id: str, datasets: str) -> None:
+        response = self.dataset_populator.run_tool(tool_id, {}, history_id)
+        job_id = response["jobs"][0]["id"]
+        self.dataset_populator.wait_for_job(job_id, assert_ok=True)
+        job_messages = self.dataset_populator.get_job_details(job_id, full=True).json()["job_messages"]
+        assert [message["desc"] for message in job_messages if message["type"] == "unknown_datatype"] == [
+            f"Extension 'notadatatype' is not a datatype on this Galaxy server, {datasets} set to 'data'"
+        ]
+
     def test_fetch_data_library(self):
         history_id, library, destination = self.library_populator.setup_fetch_to_folder("extended_metadata")
         items = [{"src": "files", "dbkey": "hg19", "info": "my cool bed", "created_from_basename": "4.bed"}]
