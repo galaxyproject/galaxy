@@ -6324,6 +6324,129 @@ default_file_input:
             content = self.dataset_populator.get_history_dataset_content(history_id)
             assert "chr1" in content
 
+    def _history_contents_named(self, history_id: str, name: str) -> list[dict]:
+        contents = self.dataset_populator.get_history_contents(history_id)
+        return [c for c in contents if c["name"] == name]
+
+    def _default_file_location(self, mock_http_server) -> str:
+        return mock_http_server.get_url(
+            remote_url="https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bed",
+            body="chr1\t147962192\t147962580\tCCDS989.1_cds_0_0_chr1_147962193_r\t0\t-\n",
+        )
+
+    def test_run_subworkflow_step_with_default_file_over_several_passes(self, mock_http_server):
+        with self.dataset_populator.test_history() as history_id:
+            self._run_workflow(
+                f"""
+class: GalaxyWorkflow
+inputs:
+  outer_input: data
+outputs:
+  out:
+    outputSource: subworkflow/out
+steps:
+  subworkflow:
+    in:
+      inner_input: outer_input
+      inner_data:
+        default:
+          class: File
+          basename: a file
+          format: txt
+          location: {self._default_file_location(mock_http_server)}
+    run:
+      class: GalaxyWorkflow
+      inputs:
+        inner_input: data
+        inner_data:
+          type: data
+          optional: true
+      outputs:
+        out:
+          outputSource: cat_list/out_file1
+      steps:
+        split:
+          tool_id: split
+          in:
+            input1: inner_input
+        cat_list:
+          tool_id: cat_list
+          in:
+            input1: split/output
+test_data:
+  outer_input:
+    value: 1.bed
+    type: File
+    file_type: txt
+""",
+                history_id=history_id,
+                wait=True,
+                assert_ok=True,
+            )
+            default_datasets = self._history_contents_named(history_id, "a file")
+            assert not default_datasets, default_datasets
+
+    def test_run_delayed_tool_step_with_default_file(self, mock_http_server):
+        with self.dataset_populator.test_history() as history_id:
+            self._run_workflow(
+                f"""
+class: GalaxyWorkflow
+inputs:
+  outer_input: data
+steps:
+  split:
+    tool_id: split
+    in:
+      input1: outer_input
+  create_10:
+    tool_id: create_10
+    in:
+      input1: split/output
+      input2:
+        default:
+          class: File
+          basename: a file
+          format: txt
+          location: {self._default_file_location(mock_http_server)}
+test_data:
+  outer_input:
+    value: 1.bed
+    type: File
+    file_type: txt
+""",
+                history_id=history_id,
+                wait=True,
+                assert_ok=True,
+            )
+            default_datasets = self._history_contents_named(history_id, "a file")
+            assert len(default_datasets) == 1, default_datasets
+
+    def test_run_tool_step_with_default_file_and_pending_parameter_connection(self, mock_http_server):
+        with self.dataset_populator.test_history() as history_id:
+            self._run_workflow(
+                f"""
+class: GalaxyWorkflow
+steps:
+  forty_two:
+    tool_id: expression_forty_two
+  cat:
+    tool_id: cat_data_and_sleep
+    in:
+      sleep_time: forty_two/out1
+      input1:
+        default:
+          class: File
+          basename: a file
+          format: txt
+          location: {self._default_file_location(mock_http_server)}
+""",
+                history_id=history_id,
+                wait=True,
+                assert_ok=True,
+            )
+            default_datasets = self._history_contents_named(history_id, "a file")
+            assert len(default_datasets) == 1, default_datasets
+
     def test_conditional_skip_on_database_operation_collection_output(self):
         with self.dataset_populator.test_history() as history_id:
             summary = self._run_workflow(

@@ -670,7 +670,7 @@ class WorkflowModule:
             for step_input in step.inputs:
                 step_input_name = step_input.name
                 input_in_execution_state = step_input_name not in known_input_names
-                if input_in_execution_state:
+                if input_in_execution_state and step_input_name in step.input_connections_by_name:
                     maybe_collection = progress.replacement_for_connection(
                         step.input_connections_by_name[step_input_name][0]
                     )
@@ -838,7 +838,12 @@ class SubWorkflowModule(WorkflowModule):
         inputs, etc...
         """
         step = invocation_step.workflow_step
-        all_inputs = self.get_all_inputs()
+        # The subworkflow invocation receives only connected inputs, so only those can be mapped over.
+        # Evaluating an unconnected input would materialize its data default into the history on every
+        # scheduling pass while this step is delayed.
+        all_inputs = [
+            input_dict for input_dict in self.get_all_inputs() if input_dict["name"] in step.input_connections_by_name
+        ]
         collection_info = self.compute_collection_info(progress, step, all_inputs)
 
         if collection_info:
@@ -2383,6 +2388,12 @@ class ToolModule(WorkflowModule):
             # TODO: why do we even create an invocation, seems like something we could check on submit?
             message = f"Specified tool [{tool.id}] in step {step.order_index + 1} is not workflow-compatible."
             raise exceptions.MessageException(message)
+        if any(step_input.default_value_set for step_input in step.inputs):
+            # Replacing default values creates a history dataset for each data default. A delayed step
+            # runs again on the next scheduling pass, so delay before that while connected inputs are not ready.
+            for input_dict in self.get_all_inputs():
+                if input_dict["name"] in step.input_connections_by_name:
+                    progress.replacement_for_input(trans, step, input_dict)
         self.state, _ = self.compute_runtime_state(
             trans, step, step_updates=progress.param_map.get(step.id), replace_default_values=True
         )
