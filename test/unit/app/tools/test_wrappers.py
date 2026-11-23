@@ -448,10 +448,10 @@ def _hda_at(path, ext="bam", metadata_files=()):
     hda = model.HistoryDatasetAssociation(extension=ext, dataset=model.Dataset(external_filename=path))
     # Metadata files live in the object store, which these tests don't have.
     files = [
-        (file_ext, f"{file_ext}_index", SimpleNamespace(get_file_name=lambda path=path: path))
+        (file_ext, f"{file_ext}_index", cast(model.MetadataFile, SimpleNamespace(get_file_name=lambda path=path: path)))
         for file_ext, path in metadata_files
     ]
-    hda.get_metadata_files_and_extensions = lambda: list(files)  # type: ignore[method-assign, misc]
+    hda.get_metadata_files_and_extensions = lambda: list(files)  # type: ignore[method-assign]
     return hda
 
 
