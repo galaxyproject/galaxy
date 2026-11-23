@@ -637,6 +637,20 @@ describe("buildUploadPayload", () => {
         expect(element.name).toBe("ftp://inner");
     });
 
+    test("sends no userinfo of a URL in a Galaxy file name in the name", () => {
+        const url = "https://example.org/a.bed";
+        const items: ApiUploadItem[] = [
+            createUrlUploadItem(url, "historyId", { name: "Galaxy1-[ftp://u:secret@inner].bed" }),
+            createUrlUploadItem(url, "historyId", {
+                name: "Galaxy2-[https://example.org/a?next=//u:secret@inner].bed",
+            }),
+        ];
+
+        const result = buildUploadPayload(items);
+        const elements = result.targets[0]!.elements! as { name: string | null; url: string }[];
+        expect(elements.map((element) => element.name)).toEqual(["ftp://inner", "https://example.org/a?next=//inner"]);
+    });
+
     test("rejects network URL with empty DNS labels", () => {
         const items: ApiUploadItem[] = [createUrlUploadItem("https://.../SRR1957099.fastq.gz", "historyId")];
 

@@ -292,7 +292,8 @@ function normalizeFileName(filename: string): string | null {
         return null;
     }
     if (isGalaxyFileName(filename)) {
-        return stripGalaxyFilePrefix(filename);
+        // The original name may be a URL with userinfo
+        return urlWithoutUserinfo(stripGalaxyFilePrefix(filename));
     }
     return cleanUrlFilename(filename);
 }
