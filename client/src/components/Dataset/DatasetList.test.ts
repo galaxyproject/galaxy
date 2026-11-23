@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { loadDatasets } from "@/api/datasets";
 import { updateTags } from "@/api/tags";
+import { Toast } from "@/composables/toast";
 
 import DatasetList from "./DatasetList.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
@@ -18,6 +19,8 @@ vi.mock("@/api/datasets", async (importOriginal) => ({
 vi.mock("@/api/tags", () => ({
     updateTags: vi.fn(),
 }));
+
+vi.mock("@/composables/toast");
 
 const DATASET = {
     id: "dataset-1",
@@ -67,6 +70,21 @@ async function mountList(items: object[] = [DATASET]) {
 describe("DatasetList", () => {
     beforeEach(() => {
         vi.mocked(updateTags).mockReset();
+        vi.mocked(loadDatasets).mockReset();
+        vi.mocked(Toast.error).mockClear();
+    });
+
+    it("reports a failed tag save and reloads the list", async () => {
+        vi.mocked(updateTags).mockRejectedValue(new Error("save failed"));
+        const wrapper = await mountList();
+        expect(loadDatasets).toHaveBeenCalledTimes(1);
+
+        wrapper.findComponent(StatelessTags).vm.$emit("update:modelValue", ["first"]);
+        await flushPromises();
+
+        expect(updateTags).toHaveBeenCalledTimes(1);
+        expect(Toast.error).toHaveBeenCalledWith("Failed to save tags: save failed");
+        expect(loadDatasets).toHaveBeenCalledTimes(2);
     });
 
     it("saves the tag edits of a dataset one after another", async () => {
