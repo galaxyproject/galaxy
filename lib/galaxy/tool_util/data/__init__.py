@@ -27,13 +27,13 @@ from tempfile import NamedTemporaryFile
 from typing import (
     Any,
     BinaryIO,
+    NotRequired,
     overload,
     TYPE_CHECKING,
     Union,
 )
 
 from typing_extensions import (
-    NotRequired,
     Protocol,
     TypedDict,
 )
@@ -1388,8 +1388,7 @@ class ToolDataTableManager(Dictifiable):
             log.debug(message, exc_info=True)
             return [], message
         self.to_xml_file(destination, table_elems)
-        names = list(staging.data_tables)
-        if names:
+        if names := list(staging.data_tables):
             try:
                 self.reload_tables(names)
             except Exception as exc:

@@ -1,7 +1,7 @@
 import logging
 from collections.abc import Callable
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 from threading import Event
 from typing import (
     cast,
@@ -903,7 +903,7 @@ class NoOpNotificationChannelPlugin(NotificationChannelPlugin):
         pass
 
 
-class TemplateFormats(str, Enum):
+class TemplateFormats(StrEnum):
     HTML = "html"
     TXT = "txt"
 

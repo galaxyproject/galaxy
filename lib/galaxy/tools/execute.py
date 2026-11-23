@@ -890,8 +890,7 @@ class ExecutionTracker:
             self.output_collections.append((job_output.name, job_output.dataset_collection_instance))
         for output_name, collection_instance in self.implicit_collections.items():
             job.add_output_dataset_collection(output_name, collection_instance)
-        implicit_collection_jobs = self.implicit_collection_jobs
-        if implicit_collection_jobs is not None:
+        if (implicit_collection_jobs := self.implicit_collection_jobs) is not None:
             job_assoc = model.ImplicitCollectionJobsJobAssociation()
             job_assoc.order_index = execution_slice.job_index
             job_assoc.implicit_collection_jobs = implicit_collection_jobs

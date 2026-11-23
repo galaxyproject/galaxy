@@ -78,7 +78,7 @@ class ToolRecommendations:
                 self.dropout1 = Dropout(rate)
                 self.dropout2 = Dropout(rate)
 
-            def call(self, inputs, training):
+            def call(self, inputs, training: bool = False):
                 attn_output, attention_scores = self.att(
                     inputs, inputs, inputs, return_attention_scores=True, training=training
                 )

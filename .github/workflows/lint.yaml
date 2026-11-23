@@ -40,7 +40,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ['3.10', '3.14']
+        python-version: ['3.11', '3.14']
     env:
       LINT_PATH: 'packages/app/src/galaxy/dependencies/pinned-lint-requirements.txt'
       TYPE_PATH: 'packages/app/src/galaxy/dependencies/pinned-typecheck-requirements.txt'
@@ -54,6 +54,7 @@ jobs:
         with:
           version-file: .tool-versions
           python-version: ${{ matrix.python-version }}
+          prune-cache: true
       - name: Install tox
         run: uv tool install tox --with tox-uv
       - name: Run linting

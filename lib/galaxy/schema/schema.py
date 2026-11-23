@@ -5,11 +5,12 @@ from datetime import (
     date,
     datetime,
 )
-from enum import Enum
+from enum import StrEnum
 from typing import (
     Annotated,
     Any,
     Literal,
+    NotRequired,
     Optional,
     TypeAlias,
 )
@@ -33,7 +34,6 @@ from pydantic import (
 )
 from pydantic_core import core_schema
 from typing_extensions import (
-    NotRequired,
     TypedDict,
 )
 
@@ -582,7 +582,7 @@ class FavoriteObject(Model):
     )
 
 
-class FavoriteObjectType(str, Enum):
+class FavoriteObjectType(StrEnum):
     tools = "tools"
     tags = "tags"
     edam_operations = "edam_operations"
@@ -648,7 +648,7 @@ class CustomBuildBaseModel(Model):
     name: str = Field(default=..., title="Name", description="The name of the custom build.")
 
 
-class CustomBuildLenType(str, Enum):
+class CustomBuildLenType(StrEnum):
     file = "file"
     fasta = "fasta"
     text = "text"
@@ -707,7 +707,7 @@ class GroupModel(Model, WithModelClass):
     )
 
 
-class JobSourceType(str, Enum):
+class JobSourceType(StrEnum):
     """Available types of job sources (model classes) that produce dataset collections."""
 
     Job = "Job"
@@ -715,33 +715,33 @@ class JobSourceType(str, Enum):
     WorkflowInvocation = "WorkflowInvocation"
 
 
-class HistoryContentType(str, Enum):
+class HistoryContentType(StrEnum):
     """Available types of History contents."""
 
     dataset = "dataset"
     dataset_collection = "dataset_collection"
 
 
-class HistoryImportArchiveSourceType(str, Enum):
+class HistoryImportArchiveSourceType(StrEnum):
     """Available types of History archive sources."""
 
     url = "url"
     file = "file"
 
 
-class DCEType(str, Enum):  # TODO: suspiciously similar to HistoryContentType
+class DCEType(StrEnum):  # TODO: suspiciously similar to HistoryContentType
     """Available types of dataset collection elements."""
 
     hda = "hda"
     dataset_collection = "dataset_collection"
 
 
-class DatasetSourceType(str, Enum):
+class DatasetSourceType(StrEnum):
     hda = "hda"
     ldda = "ldda"
 
 
-class DataItemSourceType(str, Enum):
+class DataItemSourceType(StrEnum):
     hda = "hda"
     ldda = "ldda"
     hdca = "hdca"
@@ -749,14 +749,14 @@ class DataItemSourceType(str, Enum):
     dc = "dc"
 
 
-class CollectionSourceType(str, Enum):
+class CollectionSourceType(StrEnum):
     hda = "hda"
     ldda = "ldda"
     hdca = "hdca"
     new_collection = "new_collection"
 
 
-class HistoryContentSource(str, Enum):
+class HistoryContentSource(StrEnum):
     hda = "hda"
     hdca = "hdca"
     library = "library"
@@ -1489,7 +1489,7 @@ class UpdateHistoryContentsBatchPayload(Model):
     )
 
 
-class HistoryContentItemOperation(str, Enum):
+class HistoryContentItemOperation(StrEnum):
     hide = "hide"
     unhide = "unhide"
     delete = "delete"
@@ -1825,7 +1825,7 @@ class WorkflowIndexPayload(WorkflowIndexQueryPayload):
     missing_tools: bool = False
 
 
-class CuratedWorkflowSourceEnum(str, Enum):
+class CuratedWorkflowSourceEnum(StrEnum):
     """Where the curated workflow listing was drawn from."""
 
     iwc = "iwc"
@@ -1964,7 +1964,7 @@ class CuratedWorkflowsIndexResponse(Model):
     )
 
 
-class JobIndexSortByEnum(str, Enum):
+class JobIndexSortByEnum(StrEnum):
     create_time = "create_time"
     update_time = "update_time"
 
@@ -1988,10 +1988,9 @@ class JobIndexQueryPayload(Model):
     offset: int = 0
 
 
-class InvocationSortByEnum(str, Enum):
+class InvocationSortByEnum(StrEnum):
     create_time = "create_time"
     update_time = "update_time"
-    none = None
 
 
 class InvocationIndexQueryPayload(Model):
@@ -2158,7 +2157,7 @@ class CreateNewCollectionPayload(Model):
     )
 
 
-class ModelStoreFormat(str, Enum):
+class ModelStoreFormat(StrEnum):
     """Available types of model stores for export."""
 
     TGZ = "tgz"
@@ -2179,7 +2178,7 @@ class ModelStoreFormat(str, Enum):
         return value in [cls.BAG_DOT_TAR, cls.BAG_DOT_TGZ, cls.BAG_DOT_ZIP]
 
 
-class DiscardedDataType(str, Enum):
+class DiscardedDataType(StrEnum):
     """Options for handling discarded datasets on import."""
 
     # Don't allow discarded 'okay' datasets on import, datasets will be marked deleted.
@@ -2318,7 +2317,7 @@ class JobExportHistoryArchiveModel(ObjectExportResponseBase):
     )
 
 
-class ExportObjectType(str, Enum):
+class ExportObjectType(StrEnum):
     """Types of objects that can be exported."""
 
     HISTORY = "history"
@@ -3402,7 +3401,7 @@ class CheckForUpdatesResponse(Model):
 # Libraries -----------------------------------------------------------------
 
 
-class LibraryPermissionScope(str, Enum):
+class LibraryPermissionScope(StrEnum):
     current = "current"
     available = "available"
 
@@ -3581,12 +3580,12 @@ class LegacyLibraryPermissionsPayload(RequireOneSetOption):
     )
 
 
-class LibraryPermissionAction(str, Enum):
+class LibraryPermissionAction(StrEnum):
     set_permissions = "set_permissions"
     remove_restrictions = "remove_restrictions"  # name inconsistency? should be `make_public`?
 
 
-class DatasetPermissionAction(str, Enum):
+class DatasetPermissionAction(StrEnum):
     set_permissions = "set_permissions"
     make_private = "make_private"
     remove_restrictions = "remove_restrictions"
@@ -3630,7 +3629,7 @@ class LibraryPermissionsPayload(LibraryPermissionsPayloadBase):
 # Library Folders -----------------------------------------------------------------
 
 
-class LibraryFolderPermissionAction(str, Enum):
+class LibraryFolderPermissionAction(StrEnum):
     set_permissions = "set_permissions"
 
 
@@ -4045,7 +4044,7 @@ class HistoryContentsWithStatsResult(Model):
 
 
 # Sharing -----------------------------------------------------------------
-class SharingOptions(str, Enum):
+class SharingOptions(StrEnum):
     """Options for sharing resources that may have restricted access to all or part of their contents."""
 
     make_public = "make_public"
@@ -4216,7 +4215,7 @@ class ShareHistoryWithStatus(ShareWithStatus):
 # Pages -------------------------------------------------------
 
 
-class PageContentFormat(str, Enum):
+class PageContentFormat(StrEnum):
     markdown = "markdown"
     html = "html"
 
@@ -4697,7 +4696,7 @@ class PageRevisionList(RootModel):
     root: list[PageRevisionSummary] = Field(default=[])
 
 
-class LandingRequestState(str, Enum):
+class LandingRequestState(StrEnum):
     UNCLAIMED = "unclaimed"
     CLAIMED = "claimed"
 

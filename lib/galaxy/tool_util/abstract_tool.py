@@ -72,6 +72,24 @@ if TYPE_CHECKING:
 
 log = logging.getLogger(__name__)
 
+# Tools whose code file is valid Python 3 syntax but calls Python 2 APIs (e.g.
+# ``dict.iteritems()``) when its hooks run. Executing it untranslated succeeds,
+# so the fallback translation below never triggers; for these tool ids the code
+# file is always translated before it is executed.
+TRANSLATE_PYTHON2_CODE_FILE_TOOL_IDS = frozenset(
+    (
+        "gops_basecoverage_1",
+        "gops_cluster_1",
+        "gops_complement_1",
+        "gops_concat_1",
+        "gops_coverage_1",
+        "gops_intersect_1",
+        "gops_join_1",
+        "gops_merge_1",
+        "gops_subtract_1",
+    )
+)
+
 
 class RawToolSource(NamedTuple):
     """Compact representation of a tool's raw source for transport/serialization.
@@ -207,6 +225,9 @@ class AbstractTool:
             if self._allow_code_files:
                 with open(code_path) as f:
                     code_string = f.read()
+                if self.old_id in TRANSLATE_PYTHON2_CODE_FILE_TOOL_IDS:
+                    self._exec_translated_code_file(code_string, code_path)
+                    continue
                 try:
                     compiled_code = compile(code_string, code_path, "exec")
                     exec(compiled_code, self.code_namespace)
@@ -217,13 +238,14 @@ class AbstractTool:
                         and self.python_template_version.release[0] < 3
                     ):
                         # Could be a code file that uses python 2 syntax
-                        translated_code = str(
-                            refactoring_tool.refactor_string(code_string, name="auto_translated_code_file")
-                        )
-                        compiled_code = compile(translated_code, f"futurized_{code_path}", "exec")
-                        exec(compiled_code, self.code_namespace)
+                        self._exec_translated_code_file(code_string, code_path)
                     else:
                         raise
+
+    def _exec_translated_code_file(self, code_string: str, code_path: str) -> None:
+        translated_code = str(refactoring_tool.refactor_string(code_string, name="auto_translated_code_file"))
+        compiled_code = compile(translated_code, f"futurized_{code_path}", "exec")
+        exec(compiled_code, self.code_namespace)
 
     def _parse_config_files(self, tool_source: "ToolSource") -> None:
         self.config_files = []

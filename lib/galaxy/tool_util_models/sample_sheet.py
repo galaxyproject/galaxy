@@ -7,6 +7,7 @@ These types are used across the codebase for sample sheet metadata in collection
 from typing import (
     Any,
     Literal,
+    NotRequired,
 )
 
 from pydantic import (
@@ -14,7 +15,6 @@ from pydantic import (
     with_config,
 )
 from typing_extensions import (
-    NotRequired,
     TypedDict,
 )
 

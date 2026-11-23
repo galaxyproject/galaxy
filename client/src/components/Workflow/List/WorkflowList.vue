@@ -233,7 +233,7 @@ function validatedFilterText() {
         return filterText.value;
     }
     // there are valid filters derived from the `filterText`
-    return workflowFilters.value.getFilterText(validFilters.value, true);
+    return workflowFilters.value.getFilterText(validFilters.value, true, filterText.value);
 }
 
 function onSelectWorkflow(w: WorkflowSummary) {

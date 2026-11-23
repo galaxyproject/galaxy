@@ -43,7 +43,7 @@ async def async_request_with_timeout(
                 timeout=timeout,
             )
             return result
-        except asyncio.TimeoutError:
+        except TimeoutError:
             log.debug("Request timed out after %s second", timeout)
             return None
 

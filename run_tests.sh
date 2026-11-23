@@ -243,6 +243,9 @@ GALAXY_TEST_SAVE                Location to save certain test files (such as
                                 tool outputs).
 GALAXY_TEST_EXTERNAL            Target an external Galaxy as part of testing.
 GALAXY_TEST_JOB_CONFIG_FILE     Job config file to use for the test.
+GALAXY_TEST_METADATA_STRATEGY   Default metadata_strategy for the test Galaxy
+                                (e.g. extended). Tests that set a strategy
+                                themselves keep it.
 GALAXY_CONFIG_MASTER_API_KEY    Master or admin API key to use as part of
                                 testing with GALAXY_TEST_EXTERNAL.
 GALAXY_TEST_USER_API_KEY        User API key to use as part of testing with

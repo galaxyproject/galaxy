@@ -3,9 +3,9 @@ import builtins
 import os
 from datetime import (
     datetime,
-    timezone,
+    UTC,
 )
-from enum import Enum
+from enum import StrEnum
 from typing import (
     Any,
     ClassVar,
@@ -49,7 +49,7 @@ if TYPE_CHECKING:
     )
 
 
-class PluginKind(str, Enum):
+class PluginKind(StrEnum):
     """Enum to distinguish between different kinds or categories of plugins."""
 
     rfs = "rfs"
@@ -382,7 +382,7 @@ class BaseFilesSource(FilesSource, Generic[TTemplateConfig, TResolvedConfig]):
         )
 
     def _check_credentials_fresh(self) -> None:
-        if self._auth_expires_at and datetime.now(timezone.utc) > self._auth_expires_at:
+        if self._auth_expires_at and datetime.now(UTC) > self._auth_expires_at:
             from galaxy.exceptions import FileSourceCredentialExpired
 
             raise FileSourceCredentialExpired()

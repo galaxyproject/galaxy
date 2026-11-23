@@ -32,7 +32,7 @@ from collections.abc import (
 )
 from datetime import (
     datetime,
-    timezone,
+    UTC,
 )
 from decimal import Decimal
 from email.message import EmailMessage
@@ -44,6 +44,7 @@ from typing import (
     cast,
     Literal,
     overload,
+    Self,
     TYPE_CHECKING,
     TypeVar,
     Union,
@@ -61,16 +62,13 @@ from boltons.iterutils import (
     default_enter,
     remap,
 )
-from typing_extensions import (
-    Self,
-)
 
 
 def now() -> datetime:
     """
     Return the current time in UTC without any timezone information.
     """
-    return datetime.now(timezone.utc).replace(tzinfo=None)
+    return datetime.now(UTC).replace(tzinfo=None)
 
 
 try:
@@ -160,6 +158,7 @@ from .path import (  # noqa: F401
     safe_relpath,
     StrPath,
 )
+from .renamed_temporary_file import RenamedTemporaryFile
 from .rst_to_html import rst_to_html  # noqa: F401
 
 if TYPE_CHECKING:
@@ -1862,9 +1861,9 @@ def send_mail(frm, to, subject, body, config, html=None, reply_to=None, timeout=
         email_json = json.to_json_string(email_dict)
         if os.path.isdir(path):
             # One file per email, named in sending order, so tests can tell how many were sent.
-            fd, path = tempfile.mkstemp(prefix=f"{time.time_ns()}-", suffix=".json", dir=path)
-            os.close(fd)
-        with open(path, "w") as f:
+            path = os.path.join(path, f"{time.time_ns()}-{uuid.uuid4().hex}.json")
+        # Move the email into place once written, so tests polling for it never read a partial one.
+        with RenamedTemporaryFile(path, mode="w") as f:
             f.write(email_json)
         return
 
@@ -2144,7 +2143,7 @@ def check_github_api_response_rate_limit(response):
         message = "GitHub API rate limit exceeded."
         rate_limit_reset_UTC_timestamp = response.headers.get("X-RateLimit-Reset")
         if rate_limit_reset_UTC_timestamp:
-            rate_limit_reset_datetime = datetime.fromtimestamp(int(rate_limit_reset_UTC_timestamp), tz=timezone.utc)
+            rate_limit_reset_datetime = datetime.fromtimestamp(int(rate_limit_reset_UTC_timestamp), tz=UTC)
             message += f" The rate limit window will reset at {rate_limit_reset_datetime.isoformat()}."
         raise Exception(message)
 

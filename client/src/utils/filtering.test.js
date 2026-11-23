@@ -518,3 +518,36 @@ describe("plain text next to a MultiTags filter (history list advanced search)",
         });
     });
 });
+
+describe("plain text without an autoFilterKey (workflow list)", () => {
+    const filters = new Filtering(
+        {
+            name: { handler: contains("name"), menuItem: true },
+            tag: { type: "MultiTags", handler: contains("tag", "tag"), menuItem: true },
+            deleted: { type: Boolean, boolType: "is", handler: equals("deleted", "deleted"), menuItem: true },
+        },
+        undefined,
+        false,
+    );
+    const parsed = (text) => Object.fromEntries(filters.getFiltersForText(text, true, false));
+
+    test("plain words are kept when the query is rebuilt from its filters", () => {
+        expect(filters.getFilterText(parsed("rna tag:qc"), true, "rna tag:qc")).toBe("rna tag:qc");
+        expect(filters.getFilterText(parsed("rna seq is:deleted"), true, "rna seq is:deleted")).toBe(
+            "rna seq is:deleted",
+        );
+    });
+
+    test("setting a filter keeps the words already typed", () => {
+        expect(filters.applyFiltersToText({ tag: ["qc"] }, "rna")).toBe("rna tag:qc");
+        expect(filters.setFilterValue("rna", "deleted", true)).toBe("rna is:deleted");
+    });
+
+    test("removing a filter keeps the words already typed", () => {
+        expect(filters.applyFiltersToText({ tag: undefined }, "rna tag:qc", true)).toBe("rna");
+    });
+
+    test("without the typed text, only the filters are written", () => {
+        expect(filters.getFilterText(parsed("rna tag:qc"), true)).toBe("tag:qc");
+    });
+});

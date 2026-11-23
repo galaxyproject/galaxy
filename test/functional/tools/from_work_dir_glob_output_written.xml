@@ -1,0 +1,49 @@
+<tool id="from_work_dir_glob_output_written" name="from_work_dir_glob_output_written" version="1.0.0" profile="24.0">
+    <!-- The command writes the output itself, from_work_dir only applies if it matches exactly one file. -->
+    <command><![CDATA[
+#for $i in range(int($stray_files)):
+echo "stray $i" > 'stray.${i}.txt' &&
+#end for
+#if $write_output:
+echo "written to output" > '$output1'
+#else:
+true
+#end if
+    ]]></command>
+    <inputs>
+        <param name="stray_files" type="integer" value="0" min="0" />
+        <param name="write_output" type="boolean" checked="true" />
+    </inputs>
+    <outputs>
+        <data name="output1" format="txt" from_work_dir="stray.*.txt" />
+    </outputs>
+    <tests>
+        <test>
+            <param name="stray_files" value="0" />
+            <output name="output1">
+                <assert_contents>
+                    <has_text text="written to output" />
+                    <has_n_lines n="1" />
+                </assert_contents>
+            </output>
+        </test>
+        <test>
+            <param name="stray_files" value="1" />
+            <output name="output1">
+                <assert_contents>
+                    <has_text text="stray 0" />
+                    <has_n_lines n="1" />
+                </assert_contents>
+            </output>
+        </test>
+        <test>
+            <param name="stray_files" value="2" />
+            <output name="output1">
+                <assert_contents>
+                    <has_text text="written to output" />
+                    <has_n_lines n="1" />
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+</tool>

@@ -224,8 +224,6 @@ if (props.watchOnPageChanges) {
     );
 }
 
-const dialog = ref<InstanceType<typeof GModal> | null>(null);
-
 watch(
     [
         () => props.itemsProvider,
@@ -250,16 +248,6 @@ watch(filter, () => {
 });
 
 watch(
-    () => dialog.value,
-    (newValue) => {
-        if (newValue) {
-            dialog.value?.showModal();
-        }
-    },
-    { immediate: true },
-);
-
-watch(
     tableItems,
     () => {
         syncSelectedItems();
@@ -276,7 +264,6 @@ defineExpose({
 
 <template>
     <GModal
-        ref="dialog"
         class="selection-dialog-modal"
         size="medium"
         :show="props.modalShow"

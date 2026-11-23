@@ -1,11 +1,11 @@
 from typing import (
     Any,
+    NotRequired,
     TYPE_CHECKING,
 )
 
 from requests import Session
 from typing_extensions import (
-    NotRequired,
     TypedDict,
 )
 

@@ -31,7 +31,7 @@ from datetime import (
     timedelta,
 )
 from decimal import Decimal
-from enum import Enum
+from enum import StrEnum
 from secrets import token_hex
 from string import Template
 from typing import (
@@ -41,6 +41,7 @@ from typing import (
     Generic,
     Literal,
     NamedTuple,
+    NotRequired,
     Optional,
     overload,
     TYPE_CHECKING,
@@ -151,7 +152,6 @@ from sqlalchemy.sql.expression import (
 )
 from typing_extensions import (
     deprecated,
-    NotRequired,
     Protocol,
     TypedDict,
 )
@@ -191,6 +191,7 @@ from galaxy.objectstore.templates import (
     ObjectStoreTemplate,
     template_to_configuration as object_store_template_to_configuration,
 )
+from galaxy.schema.fetch_data import encode_fetch_request_ids
 from galaxy.schema.invocation import InvocationCancellationUserRequest
 from galaxy.schema.schema import (
     InvocationsStateCounts,
@@ -2537,6 +2538,12 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
             return (k, obj)
 
         params_objects = remap(params_objects, remap_objects)
+        if self.tool_id == "__DATA_FETCH__" and isinstance(params_objects.get("request_json"), str):
+            request = encode_fetch_request_ids(
+                json.loads(params_objects["request_json"]),
+                lambda obj_id: serialization_options.get_identifier_for_id(id_encoder, obj_id),
+            )
+            params_objects["request_json"] = json.dumps(request)
 
         params_dict = {}
         for name, value in params_objects.items():
@@ -2821,7 +2828,7 @@ class Task(Base, JobLike, RepresentById):
     _numeric_metric = TaskMetricNumeric
     _text_metric = TaskMetricText
 
-    class states(str, Enum):
+    class states(StrEnum):
         NEW = "new"
         WAITING = "waiting"
         QUEUED = "queued"
@@ -3221,7 +3228,7 @@ class ImplicitCollectionJobs(Base, Serializable):
     populated_state: Mapped[str] = mapped_column(TrimmedString(64), default="new")
     jobs: Mapped[list["ImplicitCollectionJobsJobAssociation"]] = relationship(back_populates="implicit_collection_jobs")
 
-    class populated_states(str, Enum):
+    class populated_states(StrEnum):
         NEW = "new"  # New implicit jobs object, unpopulated job associations
         OK = "ok"  # Job associations are set and fixed.
         FAILED = "failed"  # There were issues populating job associations, object is in error.
@@ -4155,8 +4162,7 @@ class History(Base, HasTags, UsesAnnotations, HasName, Serializable, UsesCreateA
 
         Outputs of jobs that haven't finished are skipped, they are charged when the job finishes.
         """
-        user = self.user
-        if user:
+        if user := self.user:
             added = [hda for hda in hdas if isinstance(hda, HistoryDatasetAssociation) and hda.history is self]
             user.adjust_disk_usage_for_datasets(user.sole_dataset_sizes(added))
 
@@ -4800,7 +4806,7 @@ class Role(Base, Dictifiable, RepresentById):
     dict_element_visible_keys = ["id", "name", "description", "type"]
     private_id = None
 
-    class types(str, Enum):
+    class types(StrEnum):
         PRIVATE = "private"
         SYSTEM = "system"
         USER = "user"
@@ -4947,7 +4953,7 @@ class DefaultQuotaAssociation(Base, Dictifiable, RepresentById):
 
     dict_element_visible_keys = ["type"]
 
-    class types(str, Enum):
+    class types(StrEnum):
         UNREGISTERED = "unregistered"
         REGISTERED = "registered"
 
@@ -5198,7 +5204,7 @@ class Dataset(Base, StorableObject, Serializable):
         states.FAILED_METADATA,
     )
 
-    class conversion_messages(str, Enum):
+    class conversion_messages(StrEnum):
         PENDING = "pending"
         NO_DATA = "no data"
         NO_CHROMOSOME = "no chromosome"
@@ -5742,8 +5748,7 @@ class HasHashFunctionName:
 
     @property
     def hash_func_name(self) -> HashFunctionNameEnum:
-        as_str = self.hash_function
-        assert as_str
+        assert self.hash_function
         return HashFunctionNameEnum(self.hash_function)
 
 
@@ -5800,12 +5805,6 @@ class DatasetHash(Base, Dictifiable, Serializable, HasHashFunctionName):
         new_hash.hash_value = self.hash_value
         new_hash.extra_files_path = self.extra_files_path
         return new_hash
-
-    @property
-    def hash_func_name(self) -> HashFunctionNameEnum:
-        as_str = self.hash_function
-        assert as_str
-        return HashFunctionNameEnum(self.hash_function)
 
 
 DescribesHash = DatasetSourceHash | DatasetHash
@@ -6065,15 +6064,13 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
                 meta_types.append(meta_type)
         return meta_types
 
-    def get_metadata_file_paths_and_extensions(self) -> list[tuple[str, str]]:
+    def get_metadata_files_and_extensions(self) -> list[tuple[str, str, "MetadataFile"]]:
+        """``(file extension, metadata name, metadata file)`` of each metadata file that is set."""
         metadata = self.metadata
         metadata_files = []
         for metadata_name in self.metadata_file_types:
-            file_ext = metadata.spec[metadata_name].file_ext
-            metadata_file = metadata[metadata_name]
-            if metadata_file:
-                path = metadata_file.get_file_name()
-                metadata_files.append((file_ext, path))
+            if metadata_file := metadata[metadata_name]:
+                metadata_files.append((metadata.spec[metadata_name].file_ext, metadata_name, metadata_file))
         return metadata_files
 
     # This provide backwards compatibility with using the old dbkey
@@ -8279,38 +8276,6 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
         return self._dataset_action_tuples
 
     @property
-    def element_identifiers_extensions_paths_and_metadata_files(
-        self,
-    ) -> list[list[Any]]:
-        results = []
-        if session := object_session(self):
-            stmt = self._build_nested_collection_attributes_stmt(
-                element_attributes=("element_identifier",),
-                hda_attributes=("extension",),
-                return_entities=(HistoryDatasetAssociation, Dataset),
-            )
-            tuples = session.execute(stmt)
-            # element_identifiers, extension, path
-            for row in tuples:
-                result = [row[:-3], row.extension, row.Dataset.get_file_name()]
-                hda = row.HistoryDatasetAssociation
-                result.append(hda.get_metadata_file_paths_and_extensions())
-                results.append(result)
-        else:
-            # This will be in a remote tool evaluation context, so can't query database
-            for dataset_element in self.dataset_elements_and_identifiers():
-                # Let's pretend name is element identifier
-                results.append(
-                    [
-                        dataset_element._identifiers,
-                        dataset_element.hda.extension,
-                        dataset_element.hda.get_file_name(),
-                        dataset_element.hda.get_metadata_file_paths_and_extensions(),
-                    ]
-                )
-        return results
-
-    @property
     def waiting_for_elements(self):
         return bool(self.unpopulated_collection_ids())
 
@@ -9822,6 +9787,7 @@ class WorkflowStep(Base, RepresentById, UsesCreateAndUpdateTime):
         self.module: WorkflowModule | None
         self.state: DefaultToolState | None
         self.upgrade_messages: dict | None
+        self.filled_defaults: dict
 
     @reconstructor
     def init_on_load(self):
@@ -11488,7 +11454,7 @@ class WorkflowRequestInputParameter(Base, Dictifiable, Serializable):
 
     dict_collection_visible_keys = ["id", "name", "value", "type"]
 
-    class types(str, Enum):
+    class types(StrEnum):
         REPLACEMENT_PARAMETERS = "replacements"
         STEP_PARAMETERS = "step"
         META_PARAMETERS = "meta"
@@ -11891,7 +11857,7 @@ class FormDefinition(Base, Dictifiable, RepresentById):
         HistoryField,
     ]
 
-    class types(str, Enum):
+    class types(StrEnum):
         USER_INFO = "User Information"
 
     dict_collection_visible_keys = ["id", "name"]
