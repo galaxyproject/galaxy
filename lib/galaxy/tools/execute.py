@@ -43,6 +43,7 @@ from galaxy.tools.execution_helpers import (
     on_text_for_dataset_and_collections,
     ToolExecutionCache,
 )
+from galaxy.tools.job_parameters import DATA_MANAGER_MODE
 from galaxy.tools.parameters.workflow_utils import is_runtime_value
 from galaxy.work.context import WorkRequestContext
 from ._types import (
@@ -292,8 +293,8 @@ def _execute(
         )
         params = execution_slice.param_combination
         request_state = mapping_params.param_template
-        if "__data_manager_mode" in request_state:
-            params["__data_manager_mode"] = request_state["__data_manager_mode"]
+        if DATA_MANAGER_MODE in request_state:
+            params[DATA_MANAGER_MODE] = request_state[DATA_MANAGER_MODE]
         if "__use_cached_job__" in request_state:
             params["__use_cached_job__"] = request_state["__use_cached_job__"]
         if workflow_invocation_uuid:
