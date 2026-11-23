@@ -1,7 +1,9 @@
 import errno
+import http.client
 import os
 import tempfile
 import time
+import urllib.request
 from enum import Enum
 from io import (
     BytesIO,
@@ -646,6 +648,57 @@ def test_strip_url_userinfo_scales_linearly_with_known_urls_holding_nested_urls(
 def test_strip_url_userinfo_scales_linearly(text):
     start = time.perf_counter()
     assert util.strip_url_userinfo(text) == text
+    assert time.perf_counter() - start < 1.0
+
+
+def _urllib_port_error(url):
+    # urllib takes the netloc after its last ":" as the port, so the error quotes the password and host.
+    with pytest.raises(http.client.InvalidURL) as exc_info:
+        urllib.request.urlopen(url, timeout=1)
+    return str(exc_info.value)
+
+
+@pytest.mark.parametrize(
+    "url,secret,host",
+    [
+        ("https://fetchuser:s3cret@example.invalid/a.bed", "s3cret", "example.invalid"),
+        ("https://fetchuser:sec ret@example.invalid/a.bed", "sec ret", "example.invalid"),
+        ("https://fetchuser:s3cr@t@example.invalid/a.bed", "s3cr@t", "example.invalid"),
+        ("https://fetchuser:se:cret@example.invalid/a.bed", "cret", "example.invalid"),
+        ("https://fetchuser:p%40ss@example.invalid/a.bed", "p@ss", "example.invalid"),
+        ("https://fetchuser:s3cret@example.invalid?x=1", "s3cret", "example.invalid"),
+        (" https://fetchuser:s3cret@example.invalid/a.bed ", "s3cret", "example.invalid"),
+    ],
+)
+def test_strip_url_userinfo_known_url_password_and_host(url, secret, host):
+    error = _urllib_port_error(url.strip())
+    assert f"{secret}@{host}" in error
+    stripped = util.strip_url_userinfo(f"Failed to fetch url: {error} ({url})", [url])
+    assert f"nonnumeric port: '{host}'" in stripped
+    assert secret not in stripped
+    assert "fetchuser" not in stripped
+
+
+def test_strip_url_userinfo_known_url_password_only_with_its_host():
+    url = "https://fetchuser:s3cret@example.org/a.bed"
+    text = "s3cret is not s3cret@other.org nor s3cret@ but s3cret@example.org"
+    expected = "s3cret is not s3cret@other.org nor s3cret@ but example.org"
+    assert util.strip_url_userinfo(text, [url]) == expected
+
+
+def test_strip_url_userinfo_scales_linearly_with_known_passwords_and_hosts():
+    urls = [f"https://user{i}:pw{i}@example.org/a" for i in range(10_000)]
+    text = "pw9999@example.org " * 10_000 + "@" * 100_000
+    start = time.perf_counter()
+    assert util.strip_url_userinfo(text, urls) == "example.org " * 10_000 + "@" * 100_000
+    assert time.perf_counter() - start < 1.0
+
+
+def test_strip_url_userinfo_scales_linearly_with_colons_in_known_userinfo():
+    url = "https://u" + ":" * 50_000 + "@example.org/a"
+    text = ":" * 200_000 + "@example.org"
+    start = time.perf_counter()
+    assert util.strip_url_userinfo(text, [url]) == ":" * 150_001 + "example.org"
     assert time.perf_counter() - start < 1.0
 
 

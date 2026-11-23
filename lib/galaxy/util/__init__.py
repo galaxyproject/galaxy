@@ -52,6 +52,7 @@ from typing import (
 )
 from urllib.parse import (
     quote,
+    unquote,
     urlencode,
     urlparse,
     urlsplit,
@@ -870,6 +871,10 @@ _KEEP = 0
 _USERINFO = 1
 _PARSER_ERROR = 2
 _MARK_RUN_RE = re.compile(b"\x00+|\x01+|\x02+")
+_KEEP_TO_USERINFO = bytes.maketrans(bytes([_KEEP]), bytes([_USERINFO]))
+_KNOWN_URL_AUTHORITY_END_RE = re.compile(r"/")
+# urllib ends the netloc it quotes in errors at the first "/", "?" or "#".
+_URLLIB_NETLOC_END_RE = re.compile(r"[/?#]")
 
 
 def _known_url_userinfo_span(url: str, start: int = 0) -> tuple[int, int]:
@@ -983,6 +988,97 @@ def _mark_url_parser_errors(text: str, urls: Iterable[str], marks: bytearray) ->
     return True
 
 
+def _known_password_host_sequences(urls: Iterable[str]) -> dict[str, int]:
+    """
+    Map each ``password@host`` sequence of ``urls`` to the length of its ``password@`` part.
+
+    The password is the userinfo after its first or after its last ``:``, as urllib quotes the netloc after its
+    last ``:`` as an invalid port. The host ends at the first ``/``, or at ``?`` or ``#`` as urllib ends it, and
+    the netloc is also taken percent-decoded, as urllib decodes it.
+    """
+    sequences: dict[str, int] = {}
+    for url in urls:
+        for variant in {url, url.translate(_URLSPLIT_REMOVED_CHARACTERS)}:
+            authority_start, _ = _known_url_userinfo_span(variant)
+            if authority_start == -1:
+                continue
+            for end_re in (_KNOWN_URL_AUTHORITY_END_RE, _URLLIB_NETLOC_END_RE):
+                authority_end_match = end_re.search(variant, authority_start)
+                authority_end = authority_end_match.start() if authority_end_match else len(variant)
+                authority = variant[authority_start:authority_end]
+                for netloc in {authority, unquote(authority)}:
+                    userinfo, at, host = netloc.rpartition("@")
+                    if not at or not host:
+                        continue
+                    for colon in {userinfo.find(":"), userinfo.rfind(":")}:
+                        password = userinfo[colon + 1 :]
+                        if colon == -1 or not password:
+                            continue
+                        sequence = f"{password}@{host}"
+                        sequences[sequence] = max(sequences.get(sequence, 0), len(password) + 1)
+    return sequences
+
+
+def _mark_known_password_hosts(text: str, urls: Iterable[str], marks: bytearray) -> None:
+    """
+    Mark the ``password@`` part of each occurrence in ``text`` of a ``password@host`` sequence of ``urls`` as
+    ``_USERINFO``, wherever it is, e.g. in an invalid port error of urllib that quotes it without the ``://``.
+
+    The sequences are matched in a single pass (Aho-Corasick), so the text is scanned once however many are known.
+    """
+    sequences = _known_password_host_sequences(urls)
+    if not sequences:
+        return
+    children: list[dict[str, int]] = [{}]
+    # Per node: length of the longest sequence ending there, and the length of its "password@" part.
+    longest: list[tuple[int, int]] = [(0, 0)]
+    for sequence, marked_length in sequences.items():
+        node = 0
+        for char in sequence:
+            child = children[node].get(char)
+            if child is None:
+                child = len(children)
+                children[node][char] = child
+                children.append({})
+                longest.append((0, 0))
+            node = child
+        longest[node] = (len(sequence), marked_length)
+    fail = [0] * len(children)
+    queue = collections.deque(children[0].values())
+    while queue:
+        node = queue.popleft()
+        for char, child in children[node].items():
+            state = fail[node]
+            while state and char not in children[state]:
+                state = fail[state]
+            fail[child] = children[state].get(char, 0)
+            if longest[child][0] == 0:
+                longest[child] = longest[fail[child]]
+            queue.append(child)
+    # Marks reaching furthest from each start, merged in one sweep so overlapping matches cost no rescans.
+    reach: dict[int, int] = {}
+    state = 0
+    for pos, char in enumerate(text):
+        while state and char not in children[state]:
+            state = fail[state]
+        state = children[state].get(char, 0)
+        length, marked_length = longest[state]
+        if length:
+            start = pos + 1 - length
+            reach[start] = max(reach.get(start, 0), start + marked_length)
+    runs: list[list[int]] = []
+    mark_end = -1
+    for start in sorted(reach):
+        if start > mark_end:
+            runs.append([start, reach[start]])
+        else:
+            runs[-1][1] = max(runs[-1][1], reach[start])
+        mark_end = runs[-1][1]
+    for start, end in runs:
+        # A parser error run is replaced whole, so only kept characters are marked.
+        marks[start:end] = marks[start:end].translate(_KEEP_TO_USERINFO)
+
+
 def strip_url_userinfo(text: str, known_urls: Iterable[str] = ()) -> str:
     """
     Remove the userinfo (``user:password@``) of every URL in ``text``.
@@ -991,8 +1087,9 @@ def strip_url_userinfo(text: str, known_urls: Iterable[str] = ()) -> str:
     wherever it follows a ``://``, which also covers userinfo the scan of ``text`` cannot delimit, such as
     unencoded whitespace, in every form of that URL (e.g. trimmed). Each run of text covered by ``urlsplit()`` errors of known URLs, which quote their netloc
     without the ``://``, is replaced by ``URL_PARSER_ERROR``, which quotes nothing of the URLs. Both are found
-    in the original ``text``, so neither can hide the other. Returns ``URL_PARSER_ERRORS_WITHHELD`` if too many
-    such errors may be in ``text``.
+    in the original ``text``, so neither can hide the other. The ``password@`` part of each known URL's
+    ``password@host`` sequence is removed wherever it is, as urllib quotes it without the ``://`` in invalid port
+    errors. Returns ``URL_PARSER_ERRORS_WITHHELD`` if too many such errors may be in ``text``.
 
     >>> strip_url_userinfo('Failed to fetch https://user:secret@example.org/a.bed')
     'Failed to fetch https://example.org/a.bed'
@@ -1002,6 +1099,8 @@ def strip_url_userinfo(text: str, known_urls: Iterable[str] = ()) -> str:
     'Invalid uri [ftp://example.org/a]'
     >>> strip_url_userinfo('Invalid url https://example.org/a?next=ftp://u:sec ret@h/b', ['https://example.org/a?next=ftp://u:sec ret@h/b'])
     'Invalid url https://example.org/a?next=ftp://h/b'
+    >>> strip_url_userinfo("nonnumeric port: 'secret@example.org'", ['https://user:secret@example.org/a.bed'])
+    "nonnumeric port: 'example.org'"
     >>> strip_url_userinfo('https://example.org/a.bed')
     'https://example.org/a.bed'
     """
@@ -1009,6 +1108,7 @@ def strip_url_userinfo(text: str, known_urls: Iterable[str] = ()) -> str:
     marks = bytearray(len(text))
     if not _mark_url_parser_errors(text, known_urls, marks):
         return URL_PARSER_ERRORS_WITHHELD
+    _mark_known_password_hosts(text, known_urls, marks)
     known_userinfo = _userinfo_trie(known_urls)
     pos = 0
     while (separator := text.find("://", pos)) != -1:

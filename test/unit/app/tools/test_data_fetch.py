@@ -454,6 +454,24 @@ def test_hdas_url_error_hides_userinfo(mock_http_server):
         assert "s3cr" not in error
 
 
+def test_hdas_url_port_error_hides_password():
+    # urllib rejects this netloc before connecting, quoting "s3cret@example.invalid" as an invalid port.
+    with _execute_context() as execute_context:
+        request = {
+            "targets": [
+                {
+                    "destination": {"type": "hdas"},
+                    "elements": [{"src": "url", "url": "https://fetchuser:s3cret@example.invalid/a.bed"}],
+                }
+            ]
+        }
+        execute_context.execute_request(request)
+        error = _unnamed_output(execute_context)["elements"][0]["error_message"]
+        assert "nonnumeric port: 'example.invalid'" in error
+        assert "fetchuser" not in error
+        assert "s3cret" not in error
+
+
 def test_hdas_unknown_uri_error_hides_userinfo():
     with _execute_context() as execute_context:
         request = {
