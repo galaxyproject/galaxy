@@ -34,6 +34,9 @@ const modulesToTransform = [
     // @vueuse reaches Vue through vue-demi's `export * from "vue"`.
     "vue-demi",
     "@vueuse",
+    // Icons call `inject()`, which only finds the rendering component through
+    // the same Vue instance.
+    "@lucide/vue",
     // The `vue` alias below points at compat's ESM build; inline it too so it's
     // one transformed module (with plugin-vue's feature-flag defines) rather
     // than a second copy Node loads on its own.
@@ -114,6 +117,8 @@ export default defineConfig({
                 __dirname,
                 "node_modules/@fortawesome/vue-fontawesome/index.es.js",
             ),
+            // @lucide/vue's Node entry is CJS too, whose `require("vue")` skips the `vue` alias.
+            "@lucide/vue": path.resolve(__dirname, "node_modules/@lucide/vue/dist/esm/lucide-vue.mjs"),
             // portal-vue (bootstrap-vue's toasts) resolves to its UMD build here, which reads
             // `Vue.extend` off the `vue` module namespace. Its ESM build, which the app uses,
             // imports compat's default export instead.

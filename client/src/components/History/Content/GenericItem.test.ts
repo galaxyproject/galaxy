@@ -1,5 +1,5 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue, suppressLucideVue2Deprecation } from "@tests/vitest/helpers";
+import { getLocalVue } from "@tests/vitest/helpers";
 import { mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -47,7 +47,6 @@ describe.each(["hda", "hdca"])("GenericItem (%s)", (itemSrc) => {
     };
 
     beforeEach(() => {
-        suppressLucideVue2Deprecation();
         vi.stubGlobal("IntersectionObserver", VisibleIntersectionObserver);
         fetchItem.mockReset();
     });

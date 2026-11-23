@@ -1,5 +1,5 @@
 import { getFakeRegisteredUser } from "@tests/test-data";
-import { getLocalVue, suppressLucideVue2Deprecation } from "@tests/vitest/helpers";
+import { getLocalVue } from "@tests/vitest/helpers";
 import { setupMockConfig } from "@tests/vitest/mockConfig";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
@@ -117,7 +117,6 @@ async function createWrapper(localVue, currentUserId, history, itemOverrides = {
 describe("History center panel View", () => {
     beforeEach(() => {
         localVue = getLocalVue();
-        suppressLucideVue2Deprecation();
     });
 
     it.each([false, true])("restores an item after a rate-limited deletion (recursive: %s)", async (recursive) => {
