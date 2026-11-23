@@ -9,8 +9,8 @@ Every model exposes ``to_internal()`` returning the matching internal
 ``GalaxyParameterT`` instance so callers that need the internal metamodel (e.g.
 round-trip tests) can construct it directly without re-parsing through
 ``YamlToolSource``. The primary production path still builds internal models via
-``input_models_for_tool_source`` from the raw validated dict, so ``to_internal()``
-is not load-bearing for execution today.
+``input_models_for_tool_source`` from the raw validated dict; only
+``reference_data`` loads through its ``to_internal()`` today.
 """
 
 from typing import (
@@ -276,7 +276,7 @@ class YamlTextParameter(_YamlParamBase):
     def to_internal(self) -> TextParameterModel:
         return TextParameterModel(
             type="text",
-            default_value=self.value,
+            value=self.value,
             area=self.area,
             validators=list(self.validators),
             **_common_internal_kwargs(self),

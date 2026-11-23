@@ -383,6 +383,10 @@ class ToolDataTable(Dictifiable):
     def is_current_version(self, other_version):
         return self._loaded_content_version == other_version
 
+    def readable_by(self, *, trusted: bool) -> bool:
+        """Whether a tool of the given trust may read this table's entries."""
+        return trusted or self.user_accessible
+
     def get_fields(self) -> list[list[str]]:
         raise NotImplementedError("Abstract method")
 
