@@ -10,7 +10,11 @@ from galaxy.util import (
     unicodify,
 )
 from galaxy.util.bunch import Bunch
-from .local import LocalShell
+from .local import (
+    LocalShell,
+    TIMEOUT_ERROR_MESSAGE,
+    TIMEOUT_RETURN_CODE,
+)
 
 log = logging.getLogger(__name__)
 logging.getLogger("paramiko").setLevel(logging.WARNING)  # paramiko logging is very verbose
@@ -103,7 +107,14 @@ class ParamikoShell:
             return stdout, stderr
 
         stdout, stderr = self.retry_action_executor.execute(retry)
-        return_code = stdout.channel.recv_exit_status()
+        channel = stdout.channel
+        # recv_exit_status() waits without a timeout, and exec_command's timeout only covers reads,
+        # so a server that never sends an exit status would block this thread forever.
+        if not channel.status_event.wait(timeout):
+            log.error("No exit status received within %s seconds for command [%s]", timeout, cmd)
+            channel.close()
+            return Bunch(stdout="", stderr=TIMEOUT_ERROR_MESSAGE, returncode=TIMEOUT_RETURN_CODE)
+        return_code = channel.recv_exit_status()
         return Bunch(stdout=unicodify(stdout.read()), stderr=unicodify(stderr.read()), returncode=return_code)
 
     def _execute(self, cmd, timeout):
