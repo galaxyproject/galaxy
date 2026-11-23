@@ -111,7 +111,9 @@ class TestToolDiscoveryViewAnonymous(SeleniumTestCase):
         # the rendered cards with the hits of the search the pick triggers.
         with self.page.expect_response(is_get_data_tag_search) as response_info:
             suggestions.nth(matching_index).click()
-        hit_ids = response_info.value.json()
+        response = response_info.value
+        assert response.ok, f"Tag search failed: {response.status} {response.text()}"
+        hit_ids = response.json()
 
         search_input = self.page.locator('.tools-list [data-description="filter text input"]')
         self._wait_on(
