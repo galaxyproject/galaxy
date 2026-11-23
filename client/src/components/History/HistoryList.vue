@@ -75,10 +75,16 @@ interface Props {
      * Can be "my", "shared", "published", or "archived".
      */
     activeList?: "my" | "shared" | "published" | "archived";
+    /**
+     * Username to filter the list by when it first loads
+     * (set from the `f-username` query by the router).
+     */
+    username?: string;
 }
 
 const props = withDefaults(defineProps<Props>(), {
     activeList: "my",
+    username: undefined,
 });
 
 const breadcrumbItems = [{ title: "Histories", to: "/histories/list" }];
@@ -478,8 +484,9 @@ watch([filterText, sortBy, sortDesc], async () => {
 });
 
 onMounted(async () => {
-    if (router.currentRoute.query.owner) {
-        updateFilterValue("user", `'${router.currentRoute.query.owner}'`);
+    const owner = router.currentRoute.query.owner || props.username;
+    if (owner) {
+        updateFilterValue("user", `'${owner}'`);
     }
 
     await load();
