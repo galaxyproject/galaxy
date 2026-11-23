@@ -18,7 +18,10 @@ from galaxy.agents.base import (
 )
 from galaxy.managers.hdas import HDAManager
 from galaxy.managers.tools import DynamicToolManager
-from galaxy.model import UserDynamicToolAssociation
+from galaxy.model import (
+    Job,
+    UserDynamicToolAssociation,
+)
 from galaxy.schema import (
     FilterQueryParams,
     SerializationParams,
@@ -39,6 +42,7 @@ from galaxy.schema.schema import (
     UpdatePagePayload,
     WorkflowIndexPayload,
 )
+from galaxy.schema.states import JobState
 from galaxy.schema.workflows import InvokeWorkflowPayload
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.tool_util.toolbox.base import (
@@ -64,7 +68,10 @@ ID_FIELDS = {
     "collection_id",
     "creating_job",
     "implicit_collection_jobs_id",
+    "subworkflow_invocation_id",
 }
+
+MAX_JOB_LIST_LIMIT = 100
 
 
 class AgentOperationsManager:
@@ -316,7 +323,7 @@ class AgentOperationsManager:
         result = self.tools_service.create(self.trans, payload)
         return self._encode_ids_in_response(result)
 
-    def get_job_status(self, job_id: str) -> dict[str, Any]:
+    def get_job_status(self, job_id: str, include_logs: bool = False) -> dict[str, Any]:
         decoded_job_id = self.trans.security.decode_id(job_id)
 
         job_details = self.jobs_service.show(
@@ -325,7 +332,53 @@ class AgentOperationsManager:
             full=False,
         )
 
-        return {"job": self._encode_ids_in_response(job_details), "job_id": job_id}
+        result: dict[str, Any] = {"job": self._encode_ids_in_response(job_details), "job_id": job_id}
+        if include_logs:
+            # jobs_service.show() has already checked access to this job.
+            job = self.trans.sa_session.get(Job, decoded_job_id)
+            assert job is not None
+            result["logs"] = self._job_log_excerpts(job)
+        return result
+
+    def list_jobs(
+        self,
+        invocation_id: str | None = None,
+        history_id: str | None = None,
+        states: list[JobState] | None = None,
+        tool_id: str | None = None,
+        limit: int = 20,
+        offset: int = 0,
+    ) -> dict[str, Any]:
+        # Package cycle: galaxy.agents ships in galaxy-app, and galaxy-web-apps depends on galaxy-app.
+        from galaxy.webapps.galaxy.services.jobs import JobIndexPayload
+
+        user = self.trans.user
+        if not user:
+            raise ValueError("User must be authenticated")
+        if not 1 <= limit <= MAX_JOB_LIST_LIMIT:
+            raise ValueError(f"limit must be between 1 and {MAX_JOB_LIST_LIMIT}")
+        # Without an invocation or history filter the index would list every user's jobs for an admin.
+        scoped_user_id = None if invocation_id or history_id else self._encode_id(user.id)
+        # The payload's id fields take encoded ids and decode them on validation.
+        payload = JobIndexPayload(
+            invocation_id=invocation_id,
+            history_id=history_id,
+            user_id=scoped_user_id,
+            states=[state.value for state in states] if states else None,
+            tool_ids=[tool_id] if tool_id else None,
+            limit=limit,
+            offset=offset,
+        )
+        # The index adds command lines and tracebacks for admins; get_job_status is the drill-down for those.
+        jobs = [
+            {key: job[key] for key in Job.dict_collection_visible_keys if key in job}
+            for job in self.jobs_service.index(self.trans, payload)
+        ]
+        return {
+            "jobs": self._encode_ids_in_response(jobs),
+            "count": len(jobs),
+            "pagination": {"limit": limit, "offset": offset},
+        }
 
     def create_history(self, name: str) -> dict[str, Any]:
         payload = CreateHistoryPayload(name=name)
@@ -631,17 +684,13 @@ class AgentOperationsManager:
         }
 
     def get_invocation_step_jobs_summary(self, invocation_id: str) -> dict[str, Any]:
-        """Get job-state summaries for a workflow invocation."""
         decoded_id = self.trans.security.decode_id(invocation_id)
-
-        # Verify the user has access to this invocation.
-        self.invocations_service.get_invocation(self.trans, decoded_id)
-
-        summaries = self.invocations_service.show_invocation_step_jobs_summary(self.trans, decoded_id)
-
+        invocation = self.invocations_service.get_invocation(self.trans, decoded_id)
+        steps = self.invocations_service.show_invocation_step_job_states(self.trans, decoded_id)
         return {
             "invocation_id": invocation_id,
-            "step_jobs_summary": self._encode_ids_in_response(summaries),
+            "invocation_state": invocation.state,
+            "steps": self._encode_ids_in_response(steps),
         }
 
     def cancel_workflow_invocation(self, invocation_id: str) -> dict[str, Any]:
@@ -842,10 +891,6 @@ class AgentOperationsManager:
                 "error": "No creating job found for this dataset",
             }
 
-        stderr = job.stderr or ""
-        stdout = job.stdout or ""
-        info = job.info or ""
-
         return {
             "dataset_id": dataset_id,
             "job_id": self.trans.security.encode_id(job.id),
@@ -853,11 +898,22 @@ class AgentOperationsManager:
             "tool_version": job.tool_version,
             "state": job.state,
             "exit_code": job.exit_code,
+            **self._job_log_excerpts(job),
+        }
+
+    @staticmethod
+    def _job_log_excerpts(job: Job) -> dict[str, Any]:
+        stderr = job.stderr or ""
+        stdout = job.stdout or ""
+        info = job.info or ""
+        return {
             # Job.info is a TrimmedString(255), but that only trims on the way to the
             # database -- a live ORM object can still hold a full exception message.
             "info": truncate_middle(info, JOB_LOG_EXCERPT_CHARS) if info else None,
             "stderr": truncate_middle(stderr, JOB_LOG_EXCERPT_CHARS) if stderr else None,
             "stdout": truncate_middle(stdout, JOB_LOG_EXCERPT_CHARS) if stdout else None,
+            # Exit code and regex rules record why they failed the job here, not in stderr.
+            "job_messages": job.job_messages or None,
             "truncated": (
                 len(stderr) > JOB_LOG_EXCERPT_CHARS
                 or len(stdout) > JOB_LOG_EXCERPT_CHARS
