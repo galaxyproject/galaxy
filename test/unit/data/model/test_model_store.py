@@ -607,6 +607,8 @@ def validate_based_on(ro_crate: ROCrate):
     assert based_on[0]["version"] == "1.0.2"
     assert [creator["name"] for creator in based_on[0]["creator"]] == ["Carol"]
     assert "Carol" not in [creator["name"] for creator in ro_crate.mainEntity.get("creator")]
+    assert [work["version"] for work in based_on] == ["1.0.2", "1.0.1", "1.0.0"]
+    assert based_on[1].id == "https://github.com/nf-core/demo"
 
 
 def validate_steps(ro_crate: ROCrate):
@@ -1904,7 +1906,19 @@ def _setup_invocation(app):
             "version": "1.0.2",
             "identifier": "https://doi.org/10.5281/zenodo.12192442",
             "creator": [{"class": "Person", "name": "Carol", "identifier": "https://orcid.org/0000-0003-4567-8901"}],
-        }
+        },
+        {
+            "class": "SoftwareSourceCode",
+            "name": "nf-core/demo",
+            "url": "https://github.com/nf-core/demo",
+            "version": "1.0.1",
+        },
+        {
+            "class": "SoftwareSourceCode",
+            "name": "nf-core/demo",
+            "url": "https://github.com/nf-core/demo",
+            "version": "1.0.0",
+        },
     ]
 
     # Create and associate a data_input step

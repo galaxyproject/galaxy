@@ -328,7 +328,10 @@ class WorkflowRunCrateProfileBuilder:
         for index, work in enumerate(is_based_on or []):
             identifier = work.get("identifier")
             # Prefer a resolvable identifier (e.g. a DOI URL) as @id - it pins the upstream version.
-            entity_id = identifier if identifier and "://" in identifier else work.get("url") or f"#based-on-{index}"
+            entity_id = identifier if identifier and "://" in identifier else work.get("url")
+            # Two versions of one pipeline without DOIs share a URL; crate.add would replace the first.
+            if not entity_id or crate.get(entity_id) is not None:
+                entity_id = f"#based-on-{index}"
             properties = {"@type": work.get("class", "SoftwareSourceCode")}
             for key in ("name", "url", "identifier", "version", "license", "description"):
                 if work.get(key):
