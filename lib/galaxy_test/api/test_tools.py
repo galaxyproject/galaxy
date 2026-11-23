@@ -1742,6 +1742,18 @@ class TestToolsApi(ApiTestCase, TestsTools):
                 assert name in response.json()["err_data"]
 
     @skip_without_tool("color_param")
+    def test_color_param_rgb_rejects_color_name(self, history_id):
+        response = self._run("color_param", history_id, {"color_rgb": "grey"})
+        self._assert_status_code_is(response, 400)
+        assert "color_rgb" in response.json()["err_data"]
+
+    @skip_without_tool("color_param")
+    def test_color_param_required_rejects_null(self, history_id):
+        response = self._run("color_param", history_id, {"color_default": None})
+        self._assert_status_code_is(response, 400)
+        assert "color_default" in response.json()["err_data"]
+
+    @skip_without_tool("color_param")
     def test_color_param_accepts_uppercase_hex(self, history_id):
         response = self._run(
             "color_param", history_id, {"color_default": "#AABBCC", "color_rgb": "#AABBCC"}, assert_ok=True

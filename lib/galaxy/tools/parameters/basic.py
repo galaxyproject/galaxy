@@ -870,6 +870,7 @@ class ColorToolParameter(ToolParameter):
     (255, 255, 255)
     >>> with assert_throws_param_value_error("Parameter '_name': Failed to convert 'None' to RGB."):
     ...      p.to_param_dict_string(None)
+    >>> p = ColorToolParameter(None, XML('<param name="_name" type="color" value="#ffffff"/>'))
     >>> print(p.from_json("#AABBCC", trans), p.from_json("grey", trans), p.from_json("ff0000", trans))
     #AABBCC grey ff0000
     >>> with assert_throws_param_value_error("Parameter '_name': a color in the format #RRGGBB or a color name is required"):
@@ -880,6 +881,13 @@ class ColorToolParameter(ToolParameter):
     >>> assert p.from_json(None, trans) is None
     >>> p = ColorToolParameter(None, XML('<param name="_name" type="color" value=""/>'))
     >>> assert p.from_json(p.get_initial_value(trans, {}), trans) == ""
+    >>> with assert_throws_param_value_error("Parameter '_name': a color is required"):
+    ...      p.from_json(None, trans)
+    >>> p = ColorToolParameter(None, XML('<param name="_name" type="color" value="#ffffff" rgb="True"/>'))
+    >>> print(p.from_json("#AABBCC", trans), p.from_json("ff0000", trans))
+    #AABBCC ff0000
+    >>> with assert_throws_param_value_error("Parameter '_name': a color in the format #RRGGBB is required"):
+    ...      p.from_json("grey", trans)
     """
 
     def __init__(self, tool: Optional["Tool"], input_source):
@@ -895,6 +903,11 @@ class ColorToolParameter(ToolParameter):
     def _ensure_color(self, value):
         if value in ("", None):
             return
+        if self.rgb:
+            # to_param_dict_string converts six hex digits, a color name has no RGB form.
+            if isinstance(value, str) and re.fullmatch(r"#?[0-9a-fA-F]{6}", value):
+                return
+            raise ParameterValueError("a color in the format #RRGGBB is required", self.name, value)
         # Tools declare color names ("grey") and bare hex ("ff0000") as defaults.
         if isinstance(value, str) and value.isascii() and value.isalnum():
             return
@@ -908,6 +921,8 @@ class ColorToolParameter(ToolParameter):
     def from_json(self, value, trans, other_values=None):
         if contains_workflow_parameter(value) and trans.workflow_building_mode is workflow_building_modes.ENABLED:
             return value
+        if value is None and not self.optional:
+            raise ParameterValueError("a color is required", self.name, value)
         self._ensure_color(value)
         return value
 
