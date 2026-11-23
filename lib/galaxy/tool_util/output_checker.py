@@ -2,16 +2,16 @@ import os
 import re
 import stat
 from collections.abc import Iterable
-from enum import Enum
+from enum import StrEnum
 from logging import getLogger
 from pathlib import Path
 from typing import (
     Literal,
+    NotRequired,
     TYPE_CHECKING,
 )
 
 from typing_extensions import (
-    NotRequired,
     TypedDict,
 )
 
@@ -27,7 +27,7 @@ if TYPE_CHECKING:
 log = getLogger(__name__)
 
 
-class DETECTED_JOB_STATE(str, Enum):
+class DETECTED_JOB_STATE(StrEnum):
     OK = "ok"
     OUT_OF_MEMORY_ERROR = "oom_error"
     GENERIC_ERROR = "generic_error"

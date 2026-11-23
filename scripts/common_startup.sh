@@ -12,7 +12,7 @@ SET_VENV=1
 SKIP_CLIENT_BUILD=${GALAXY_SKIP_CLIENT_BUILD:-0}
 INSTALL_PREBUILT_CLIENT=${GALAXY_INSTALL_PREBUILT_CLIENT:-0}
 : "${PNPM_INSTALL_OPTS:=--frozen-lockfile}"
-: "${GALAXY_CONDA_PYTHON_VERSION:=3.10}"
+: "${GALAXY_CONDA_PYTHON_VERSION:=3.13}"
 
 for arg in "$@"; do
     if [ "$arg" = "--skip-venv" ]; then
@@ -37,7 +37,7 @@ RMFILES="
     lib/pkg_resources.pyc
 "
 
-MIN_PYTHON_VERSION=3.10
+MIN_PYTHON_VERSION=3.11
 MIN_PIP_VERSION=20.3
 
 # return true if $1 is in $2 else false
@@ -172,9 +172,11 @@ fi
 if command -v uv >/dev/null; then
     PIP_CMD="$(command -v uv) pip"
     UNINSTALL_OPTIONS=''
+    CONDITIONAL_OVERRIDE_OPTIONS='--override lib/galaxy/dependencies/conditional-overrides.txt'
 else
     PIP_CMD='python -m pip'
     UNINSTALL_OPTIONS='--yes'
+    CONDITIONAL_OVERRIDE_OPTIONS=''
 fi
 
 # activate virtualenv or conda env, sets $GALAXY_VIRTUAL_ENV and $GALAXY_CONDA_ENV
@@ -220,7 +222,8 @@ if [ $FETCH_WHEELS -eq 1 ]; then
             echo "An older version of psycopg2 (non-binary, version 2.7.3) has been detected.  Galaxy now uses psycopg2-binary, which will be installed after removing psycopg2."
             ${PIP_CMD} uninstall ${UNINSTALL_OPTIONS} psycopg2 psycopg2-binary
         fi
-        echo "$GALAXY_CONDITIONAL_DEPENDENCIES" | ${PIP_CMD} install -r /dev/stdin --extra-index-url "${GALAXY_WHEELS_INDEX_URL}" --constraint lib/galaxy/dependencies/conditional-constraints.txt
+        # shellcheck disable=SC2086
+        echo "$GALAXY_CONDITIONAL_DEPENDENCIES" | ${PIP_CMD} install -r /dev/stdin --extra-index-url "${GALAXY_WHEELS_INDEX_URL}" --constraint lib/galaxy/dependencies/conditional-constraints.txt $CONDITIONAL_OVERRIDE_OPTIONS
     fi
 fi
 

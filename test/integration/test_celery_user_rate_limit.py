@@ -79,7 +79,7 @@ class TestCeleryUserRateLimitIntegration(IntegrationTestCase):
             expected_duration = secs_between_tasks_per_user * (num_calls - 1)
             expected_duration_lbound = expected_duration - 4
         expected_duration_hbound = expected_duration + 4
-        start_time = datetime.datetime.now(datetime.timezone.utc)
+        start_time = datetime.datetime.now(datetime.UTC)
         timer = ExecutionTimer()
         #  Invoke test task num_calls times for each user
         results: dict[int, list[AsyncResult]] = {}

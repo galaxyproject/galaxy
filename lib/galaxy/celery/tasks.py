@@ -436,7 +436,6 @@ def setup_fetch_data(
     mini_job_wrapper._pause_job_if_over_quota(job)
     if job.state == model.Job.states.PAUSED:
         sa_session.commit()
-        mini_job_wrapper.run_after_commit_actions()
         return None
     request_json = Path(mini_job_wrapper.working_directory) / "request.json"
     request_json_value = next(iter(p.value for p in job.parameters if p.name == "request_json"))
@@ -771,6 +770,12 @@ def send_notification_to_recipients_async(
     _, notifications_sent = notification_manager.send_notification_to_recipients(request=request)
 
     log.info(f"Successfully sent {notifications_sent} notifications.")
+
+
+@galaxy_task(action="dispatch a notification")
+def dispatch_notification(notification_id: int, notification_manager: NotificationManager):
+    """Deliver one notification through the other channels, e.g. email."""
+    notification_manager.dispatch_notification_via_channels(notification_id)
 
 
 @galaxy_task(action="dispatch pending notifications")

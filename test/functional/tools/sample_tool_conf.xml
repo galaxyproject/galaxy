@@ -55,6 +55,8 @@
   <tool file="tool_provided_metadata_12.xml" />
   <tool file="tool_provided_metadata_13.xml" />
   <tool file="tool_provided_metadata_security.xml" />
+  <tool file="output_symlink_containment.xml" />
+  <tool file="output_symlink_containment_timeout.xml" />
   <tool file="empty_datasets.xml" />
   <tool file="is_of_type.xml" />
   <tool file="data_optional.xml" />
@@ -88,6 +90,7 @@
   <tool file="metadata.xml" />
   <tool file="metadata_defaults.xml" />
   <tool file="metadata_bam.xml" />
+  <tool file="collection_input_paths.xml" />
   <tool file="discover_metadata_files.xml" />
   <tool file="metadata_bcf.xml" />
   <tool file="metadata_bed.xml" />
@@ -164,6 +167,8 @@
   <tool file="param_text_option.xml" />
   <tool file="column_param.xml" />
   <tool file="column_param_configfile.xml" />
+  <tool file="command_reads_input_size.xml" />
+  <tool file="command_reads_configfile.xml" />
   <tool file="column_param_list.xml" />
   <tool file="column_multi_param.xml" />
   <tool file="select_optional_legacy.xml" />
@@ -388,6 +393,7 @@
   <tool file="cat_multiple_user_defined.yml" />
   <tool file="configfile_user_defined.yml" />
   <tool file="from_work_dir_glob.xml" />
+  <tool file="from_work_dir_glob_output_written.xml" />
   <tool file="secret_tool.xml" />
   <tool file="credentials_test.xml" />
 

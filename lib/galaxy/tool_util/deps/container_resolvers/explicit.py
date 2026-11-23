@@ -115,8 +115,7 @@ class CachedExplicitSingularityContainerResolver(CliContainerResolver):
             image_id = container_description.identifier
             if self.namespace:
                 prefix = f"docker://quay.io/{self.namespace}/"
-                if image_id.startswith(prefix):
-                    image_id = image_id[len(prefix) :]
+                image_id = image_id.removeprefix(prefix)
                 parsed = identifier_to_cached_target(image_id, "v2")
                 if parsed and isinstance(parsed, CachedMulledImageSingleTarget):
                     cached_images = self.cache_directory.list_cached_mulled_images_from_path()

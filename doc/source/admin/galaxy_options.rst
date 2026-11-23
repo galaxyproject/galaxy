@@ -1920,7 +1920,7 @@
 
 :Description:
     Email address to use in the 'From' field when sending emails for
-    account activations, workflow step notifications, password resets,
+    account activations, completion notifications, password resets,
     and tool error reports.  We recommend using a string in the
     following format: Galaxy Project <galaxy-no-reply@example.com>. If
     not configured, '<galaxy-no-reply@HOSTNAME>' will be used.
@@ -4491,10 +4491,10 @@
     parent-side JSON decoding also adds overhead. Simple parameter
     references resolve in Python without starting a worker. When empty
     (the default), the worker runs without an OS-level jail.
-    Full JavaScript evaluation requires Python 3.10+ and the
-    quickjs-ng package. Without QuickJS, expressions requiring
-    JavaScript fail with an error; literals and simple parameter
-    references continue to work without it.
+    Full JavaScript evaluation requires the quickjs-ng package.
+    Without QuickJS, expressions requiring JavaScript fail with an
+    error; literals and simple parameter references continue to work
+    without it.
     Set this to ``bubblewrap`` to use a built-in bubblewrap jail. It
     clears the environment, unshares the PID/IPC/UTS namespaces, and
     read-only-binds only what the worker needs to run: the Python
@@ -5226,10 +5226,20 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Time in seconds between workflow completion monitor iterations.
-    The completion monitor checks for workflows that have all jobs
-    completed and triggers completion hooks (e.g., exports,
-    notifications). Float values are allowed.
+    Time in seconds between workflow and tool completion monitor
+    iterations. Workflow handlers check up to 100 of their assigned
+    invocations per iteration and trigger completion hooks, such as
+    exports. When notifications or SMTP are configured, one elected
+    web process checks tool and workflow runs that requested
+    notifications, reporting when attention is needed and when they
+    finish. It checks an unfinished run again after this interval or a
+    tenth of the time the run has been pending, whichever is longer,
+    and at least every 5 minutes. Once the user has been told that a
+    run has paused jobs, its checks back off the same way from that
+    moment, but up to once an hour. Runs in deleted histories are not
+    reported. With SMTP configured, that process also dispatches
+    queued completion emails in a separate thread at this interval.
+    Float values are allowed.
 :Default: ``5.0``
 :Type: float
 
@@ -5360,9 +5370,7 @@
     If set to ``remote`` the tool command line will be built as part
     of the submitted job. Note that ``remote`` is a beta setting that
     will be useful for materializing deferred datasets as part of the
-    submitted job. Note also that you have to set
-    ``metadata_strategy`` to ``extended`` if you set this option to
-    ``remote``.
+    submitted job. The job then needs a Galaxy runtime where it runs.
 :Default: ``local``
 :Type: str
 

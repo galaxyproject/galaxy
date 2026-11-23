@@ -1,5 +1,15 @@
 """Integration tests for the Pulsar embedded runner."""
 
+import json
+import os
+from collections.abc import (
+    Callable,
+    Iterator,
+)
+from contextlib import contextmanager
+from typing import Any
+from unittest import mock
+
 from sqlalchemy import (
     func,
     select,
@@ -9,17 +19,21 @@ from galaxy.model import (
     DatasetCollectionElement,
     HistoryDatasetCollectionAssociation,
     Job,
+    store,
 )
+from galaxy.tool_util_models import UserToolSource
 from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
     DatasetPopulator,
     LibraryPopulator,
+    TOOL_WITH_SHELL_COMMAND,
 )
 from galaxy_test.driver import integration_util
 from .objectstore._purged_handling import purge_while_job_running
 
 TEST_TOOL_IDS = [
     "from_work_dir_glob",
+    "from_work_dir_glob_output_written",
     "job_properties",
     "multi_output",
     "multi_output_configured",
@@ -63,6 +77,33 @@ TEST_TOOL_IDS = [
     "zarr_store_in_wrapper_folder",
     "discover_zarr_store_in_wrapper_folder",
 ]
+
+
+def _rewrite_attrs(archive_dir: str, filename: str, rewrite: Callable[[list[dict[str, Any]]], None]) -> None:
+    path = os.path.join(archive_dir, filename)
+    with open(path) as f:
+        attrs = json.load(f)
+    rewrite(attrs)
+    with open(path, "w") as f:
+        json.dump(attrs, f)
+
+
+@contextmanager
+def _tamper_outputs_populated(tamper: Callable[[str], None]) -> Iterator[list[str]]:
+    """Rewrite the model store a job wrote to ``metadata/outputs_populated`` before Galaxy imports it."""
+    tampered: list[str] = []
+    get_import_model_store_for_directory = store.get_import_model_store_for_directory
+
+    def tampering_get_import_model_store_for_directory(archive_dir, **kwd):
+        if archive_dir.endswith(os.path.join("metadata", "outputs_populated")):
+            tamper(archive_dir)
+            tampered.append(archive_dir)
+        return get_import_model_store_for_directory(archive_dir, **kwd)
+
+    with mock.patch.object(
+        store, "get_import_model_store_for_directory", tampering_get_import_model_store_for_directory
+    ):
+        yield tampered
 
 
 class TestExtendedMetadataIntegration(integration_util.IntegrationTestCase):
@@ -354,6 +395,7 @@ class TestExtendedMetadataSecurityIntegration(integration_util.IntegrationTestCa
     def setUp(self):
         super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
+        self.dataset_collection_populator = DatasetCollectionPopulator(self.galaxy_interactor)
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
@@ -381,6 +423,142 @@ class TestExtendedMetadataSecurityIntegration(integration_util.IntegrationTestCa
 
             history_contents = self.dataset_populator.get_history_contents(history_id)
             assert "outside working directory sentinel" not in {content["name"] for content in history_contents}
+
+    def _run_tampered_job(
+        self, history_id: str, tool_id: str | None, inputs: dict[str, Any], tamper: Callable[[str], None], **kwds
+    ) -> dict[str, Any]:
+        """Run a job whose ``outputs_populated`` is rewritten by ``tamper`` and check that Galaxy refuses it."""
+        contents_before = {content["id"] for content in self.dataset_populator.get_history_contents(history_id)}
+        with _tamper_outputs_populated(tamper) as tampered:
+            response = self.dataset_populator.run_tool_raw(tool_id, inputs, history_id, **kwds).json()
+            job_id = response["jobs"][0]["id"]
+            self.dataset_populator.wait_for_job(job_id, assert_ok=False)
+        assert len(tampered) == 1
+        # Nothing the refused import created before the refusal is kept.
+        new_contents = {content["id"] for content in self.dataset_populator.get_history_contents(history_id)}
+        assert new_contents - contents_before == {
+            output["id"] for output in response["outputs"] + response["output_collections"]
+        }
+        assert self.dataset_populator.get_job_details(job_id).json()["state"] == "error"
+        for output in response["outputs"]:
+            output = self.dataset_populator.get_history_dataset_details(
+                history_id, content_id=output["id"], assert_ok=False
+            )
+            assert output["state"] == "error"
+            assert "Model store may not" in output["misc_info"], output
+        return response
+
+    def _run_tampered_cat(self, history_id: str, tamper: Callable[[str], None]) -> dict[str, Any]:
+        hda = self.dataset_populator.new_dataset(history_id, content="mine\n", wait=True)
+        return self._run_tampered_job(history_id, "cat1", {"input1": {"src": "hda", "id": hda["id"]}}, tamper)
+
+    def test_job_cannot_edit_another_users_dataset(self):
+        with self._different_user_history() as other_history_id:
+            victim = self.dataset_populator.new_dataset(other_history_id, content="victim\n", wait=True)
+        victim_id = self._app.security.decode_id(victim["id"])
+
+        def tamper(archive_dir):
+            def rewrite(datasets_attrs):
+                datasets_attrs[0].update(id=victim_id, name="pwned")
+                datasets_attrs[0].pop("dataset", None)
+
+            _rewrite_attrs(archive_dir, store.ATTRS_FILENAME_DATASETS, rewrite)
+
+        with self.dataset_populator.test_history() as history_id:
+            self._run_tampered_cat(history_id, tamper)
+
+        with self._different_user():
+            details = self.dataset_populator.get_history_dataset_details(other_history_id, content_id=victim["id"])
+            assert details["name"] == victim["name"]
+            content = self.dataset_populator.get_history_dataset_content(other_history_id, content_id=victim["id"])
+            assert content == "victim\n"
+
+    def test_job_cannot_edit_another_users_job(self):
+        with self._different_user_history() as other_history_id:
+            victim_hda = self.dataset_populator.new_dataset(other_history_id, content="victim\n", wait=True)
+            victim_run = self.dataset_populator.run_tool(
+                "cat1", inputs={"input1": {"src": "hda", "id": victim_hda["id"]}}, history_id=other_history_id
+            )
+            victim_job_id = victim_run["jobs"][0]["id"]
+            self.dataset_populator.wait_for_job(victim_job_id, assert_ok=True)
+            victim_job = self.dataset_populator.get_job_details(victim_job_id, full=True).json()
+            victim_outputs = self.dataset_populator.job_outputs(victim_job_id)
+
+        def tamper(archive_dir):
+            def rewrite(jobs_attrs):
+                jobs_attrs[0].update(id=self._app.security.decode_id(victim_job_id), info="pwned", stdout="pwned")
+
+            _rewrite_attrs(archive_dir, store.ATTRS_FILENAME_JOBS, rewrite)
+
+        with self.dataset_populator.test_history() as history_id:
+            # multi_output discovers a dataset, which the import creates before it refuses the job edit.
+            self._run_tampered_job(history_id, "multi_output", {"input": 7}, tamper)
+
+        with self._different_user():
+            job = self.dataset_populator.get_job_details(victim_job_id, full=True).json()
+            assert job["tool_stdout"] == victim_job["tool_stdout"] != "pwned"
+            assert self.dataset_populator.job_outputs(victim_job_id) == victim_outputs
+
+    def test_job_cannot_edit_another_users_collection(self):
+        with self._different_user_history() as other_history_id:
+            victim = self.dataset_collection_populator.create_list_in_history(
+                other_history_id, contents=["a\n", "b\n"], wait=True
+            ).json()["outputs"][0]
+            victim_elements = self.dataset_populator.get_history_collection_details(
+                other_history_id, content_id=victim["id"]
+            )["elements"]
+        victim_hdca = self._app.model.session.get(
+            HistoryDatasetCollectionAssociation, self._app.security.decode_id(victim["id"])
+        )
+        assert victim_hdca
+        victim_collection_id = victim_hdca.collection_id
+
+        def tamper(archive_dir):
+            def rewrite(collections_attrs):
+                (hdca_attrs,) = collections_attrs
+                hdca_attrs["collection"]["id"] = victim_collection_id
+
+            _rewrite_attrs(archive_dir, store.ATTRS_FILENAME_COLLECTIONS, rewrite)
+
+        with self.dataset_populator.test_history() as history_id:
+            self._run_tampered_job(history_id, "collection_creates_dynamic_list_of_pairs", {"foo": "bar"}, tamper)
+
+        with self._different_user():
+            elements = self.dataset_populator.get_history_collection_details(other_history_id, content_id=victim["id"])[
+                "elements"
+            ]
+            assert [(e["element_identifier"], e["object"]["id"]) for e in elements] == [
+                (e["element_identifier"], e["object"]["id"]) for e in victim_elements
+            ]
+
+    def test_user_defined_tool_cannot_link_output_to_server_file(self):
+        server_file = os.path.join(self._tempdir, "server_secret.txt")
+        with open(server_file, "w") as f:
+            f.write("server secret\n")
+
+        def tamper(archive_dir):
+            def rewrite(datasets_attrs):
+                datasets_attrs[0]["dataset"]["external_filename"] = server_file
+
+            _rewrite_attrs(archive_dir, store.ATTRS_FILENAME_DATASETS, rewrite)
+
+        with (
+            self.dataset_populator.test_history() as history_id,
+            self.dataset_populator.user_tool_execute_permissions(),
+        ):
+            dynamic_tool = self.dataset_populator.create_unprivileged_tool(UserToolSource(**TOOL_WITH_SHELL_COMMAND))
+            hda = self.dataset_populator.new_dataset(history_id, content="abc", wait=True)
+            inputs = {"input": {"src": "hda", "id": hda["id"]}}
+            # The restrictions on user-defined tools leave their untampered outputs alone.
+            untampered = self.dataset_populator.run_tool_raw(
+                None, inputs, history_id, tool_uuid=dynamic_tool["uuid"]
+            ).json()
+            self.dataset_populator.wait_for_job(untampered["jobs"][0]["id"], assert_ok=True)
+            response = self._run_tampered_job(history_id, None, inputs, tamper, tool_uuid=dynamic_tool["uuid"])
+            output_content = self.dataset_populator.get_history_dataset_content_raw(
+                history_id, content_id=response["outputs"][0]["id"], assert_ok=False
+            ).text
+            assert "server secret" not in output_content
 
 
 class TestExtendedMetadataDeferredIntegration(integration_util.IntegrationTestCase):

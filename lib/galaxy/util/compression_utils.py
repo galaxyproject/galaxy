@@ -18,9 +18,6 @@ from typing import (
     IO,
     Literal,
     overload,
-)
-
-from typing_extensions import (
     Self,
 )
 

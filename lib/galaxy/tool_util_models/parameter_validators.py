@@ -2,6 +2,7 @@ from typing import (
     Annotated,
     Any,
     Literal,
+    Self,
 )
 
 from pydantic import (
@@ -15,7 +16,6 @@ from pydantic import (
 )
 from typing_extensions import (
     Protocol,
-    Self,
 )
 
 from .untrusted import is_loading_untrusted_tools

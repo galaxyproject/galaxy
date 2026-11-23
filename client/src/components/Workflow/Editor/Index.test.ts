@@ -24,10 +24,11 @@ import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
 import { useWorkflowStepStore } from "@/stores/workflowStepStore";
 
 import { getModule, getVersions, saveWorkflow } from "./modules/services";
-import { getStateUpgradeMessages } from "./modules/utilities";
+import { getFilledDefaults, getStateUpgradeMessages } from "./modules/utilities";
 
 import Index from "./Index.vue";
 import SaveChangesModal from "./SaveChangesModal.vue";
+import StateUpgradeModal from "./StateUpgradeModal.vue";
 import ActivityBar from "@/components/ActivityBar/ActivityBar.vue";
 import GFormInput from "@/components/BaseComponents/Form/GFormInput.vue";
 import GAlert from "@/components/BaseComponents/GAlert.vue";
@@ -119,6 +120,7 @@ const { server, http } = useServerMock();
 
 const mockGetAppRoot = vi.mocked(getAppRoot);
 const mockGetStateUpgradeMessages = vi.mocked(getStateUpgradeMessages);
+const mockGetFilledDefaults = vi.mocked(getFilledDefaults);
 const mockLoadWorkflow = vi.mocked(getWorkflowFull);
 const mockGetVersions = vi.mocked(getVersions);
 const mockSaveWorkflow = vi.mocked(saveWorkflow);
@@ -141,6 +143,7 @@ describe("Index", () => {
         mockLoadWorkflow.mockResolvedValue({ steps: {}, comments: [], tags: [] });
         mockGetVersions.mockResolvedValue([]);
         mockGetStateUpgradeMessages.mockImplementation(() => []);
+        mockGetFilledDefaults.mockImplementation(() => []);
         mockGetAppRoot.mockImplementation(() => GET_APP_ROOT_PREFIX);
         mockUnprivilegedToolsRequest(server, http);
     });
@@ -692,6 +695,23 @@ describe("Index", () => {
             expect(stateStore.hasChanges).toBe(true);
 
             resolveVersions([]);
+            await flushPromises();
+            expect(stateStore.hasChanges).toBe(true);
+        });
+
+        it("shows filled defaults once loading settles, so accepting them isn't reset", async () => {
+            const filled = [{ stepIndex: "0", name: "cat1", details: ["filled"], iconType: "tool", label: "" }];
+            mockGetFilledDefaults.mockImplementation(() => filled);
+            const wrapper = await mountWithPendingVersions();
+            const modal = wrapper.findComponent(StateUpgradeModal);
+            expect(modal.props("filledDefaults")).toEqual([]);
+
+            resolveVersions([]);
+            await flushPromises();
+            expect(modal.props("filledDefaults")).toEqual(filled);
+            expect(stateStore.hasChanges).toBe(false);
+
+            modal.vm.$emit("accept");
             await flushPromises();
             expect(stateStore.hasChanges).toBe(true);
         });

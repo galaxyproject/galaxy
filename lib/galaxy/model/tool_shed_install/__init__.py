@@ -2,7 +2,7 @@ import logging
 import os
 from collections.abc import Callable
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 from typing import (
     Any,
 )
@@ -127,7 +127,7 @@ class ToolShedRepository(Base):
         "description",
     ]
 
-    class installation_status(str, Enum):
+    class installation_status(StrEnum):
         NEW = "New"
         CLONING = "Cloning"
         SETTING_TOOL_VERSIONS = "Setting tool versions"
@@ -139,7 +139,7 @@ class ToolShedRepository(Base):
         ERROR = "Error"
         UNINSTALLED = "Uninstalled"
 
-    class states(str, Enum):
+    class states(StrEnum):
         INSTALLING = "running"
         OK = "ok"
         WARNING = "queued"
@@ -701,7 +701,7 @@ class ToolDependency(Base):
         UNINSTALLED="Uninstalled",
     )
 
-    class states(str, Enum):
+    class states(StrEnum):
         INSTALLING = "running"
         OK = "ok"
         WARNING = "queued"

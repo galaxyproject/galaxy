@@ -1,7 +1,7 @@
 import abc
 import re
 import string
-from enum import Enum
+from enum import StrEnum
 from typing import (
     NamedTuple,
 )
@@ -9,7 +9,7 @@ from typing import (
 from galaxy.util.bunch import Bunch
 
 
-class ComponentBy(str, Enum):
+class ComponentBy(StrEnum):
     ID = "id"
     XPATH = "xpath"
     CSS_SELECTOR = "css selector"

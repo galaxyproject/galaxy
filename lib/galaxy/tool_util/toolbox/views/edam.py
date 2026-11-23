@@ -1,5 +1,5 @@
 import logging
-from enum import Enum
+from enum import StrEnum
 
 from galaxy.tool_util.edam_util import (
     ROOT_OPERATION,
@@ -21,7 +21,7 @@ from ..panel import (
 log = logging.getLogger(__name__)
 
 
-class EdamPanelMode(str, Enum):
+class EdamPanelMode(StrEnum):
     merged = "merged"
     topics = "topics"
     operations = "operations"

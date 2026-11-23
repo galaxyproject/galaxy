@@ -15,8 +15,7 @@ from ._pyfilesystem2 import PyFilesystem2FilesSource
 
 
 def remove_prefix(prefix: str, string: str) -> str:
-    if string.startswith(prefix):
-        string = string[len(prefix) :]
+    string = string.removeprefix(prefix)
     return string
 
 

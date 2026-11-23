@@ -1,4 +1,4 @@
-from enum import Enum
+from enum import StrEnum
 from typing import (
     Annotated,
     Any,
@@ -267,7 +267,7 @@ class RefactorActions(BaseModel):
     dry_run: bool = False
 
 
-class RefactorActionExecutionMessageTypeEnum(str, Enum):
+class RefactorActionExecutionMessageTypeEnum(StrEnum):
     tool_version_change = "tool_version_change"
     tool_state_adjustment = "tool_state_adjustment"
     connection_drop_forced = "connection_drop_forced"

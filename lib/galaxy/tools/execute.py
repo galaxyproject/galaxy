@@ -24,7 +24,7 @@ from packaging.version import Version
 from galaxy import model
 from galaxy.exceptions import ToolInputsNotOKException
 from galaxy.model import (
-    PostJobAction,
+    RunNotificationRequest,
     ToolRequest,
 )
 from galaxy.model.dataset_collections.matching import MatchingCollections
@@ -546,11 +546,23 @@ class ExecutionTracker:
         for _, hdca in self.output_collections:
             tag_handler.apply_item_tags(user=user, item=hdca, tags_str=tags_str, flush=False)
 
-    def apply_email_action(self, user) -> None:
+    def request_completion_notification(self, user, history) -> None:
+        if not (self.trans.app.config.enable_notification_system or self.trans.app.config.smtp_server):
+            return
         if user is None:
-            raise Exception("Anonymously run jobs cannot send an email notification.")
-        for job in self.successful_jobs:
-            job.add_post_job_action(PostJobAction("EmailAction"))
+            raise Exception("Anonymously run jobs cannot request completion notifications.")
+        collection_jobs = self.implicit_collection_jobs
+        if collection_jobs is not None:
+            self.trans.sa_session.add(
+                RunNotificationRequest(
+                    user=user,
+                    history=history,
+                    implicit_collection_jobs=collection_jobs,
+                )
+            )
+        else:
+            for job in self.successful_jobs:
+                self.trans.sa_session.add(RunNotificationRequest(user=user, history=job.history, job=job))
 
     @staticmethod
     def _collection_info_to_collection_hids_element_ids(
@@ -878,8 +890,7 @@ class ExecutionTracker:
             self.output_collections.append((job_output.name, job_output.dataset_collection_instance))
         for output_name, collection_instance in self.implicit_collections.items():
             job.add_output_dataset_collection(output_name, collection_instance)
-        implicit_collection_jobs = self.implicit_collection_jobs
-        if implicit_collection_jobs is not None:
+        if (implicit_collection_jobs := self.implicit_collection_jobs) is not None:
             job_assoc = model.ImplicitCollectionJobsJobAssociation()
             job_assoc.order_index = execution_slice.job_index
             job_assoc.implicit_collection_jobs = implicit_collection_jobs

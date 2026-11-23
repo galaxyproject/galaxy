@@ -323,8 +323,7 @@ class _InputReferences:
     def __init__(self, tool_xml: "ElementTree") -> None:
         self.references: list[_InputReference] = []
         self.repeat_names: set[str] = set()
-        inputs = tool_xml.find("./inputs")
-        if inputs is not None:
+        if (inputs := tool_xml.find("./inputs")) is not None:
             self._visit(inputs, [], [], False)
 
     def _visit(self, element: "Element", qualified: list[str], legacy: list[str], in_repeat: bool) -> None:

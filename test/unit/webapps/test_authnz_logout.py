@@ -5,6 +5,7 @@ to answer before it reaches out to one instead of dereferencing ``None``.
 """
 
 from galaxy.util.bunch import Bunch
+from galaxy.webapps.base.webapp import GalaxyWebTransaction
 from galaxy.webapps.galaxy.controllers.authnz import OIDC
 
 # ``@web.json`` wraps the method; ``_orig`` is the undecorated function.
@@ -12,11 +13,15 @@ logout = OIDC.logout._orig
 
 
 class StubTrans:
+    check_csrf_token = GalaxyWebTransaction.check_csrf_token
+
     def __init__(self, enable_oidc, authnz_manager):
         self.app = Bunch(
             config=Bunch(enable_oidc=enable_oidc, post_user_logout_href=None),
             authnz_manager=authnz_manager,
         )
+        self.user = object()
+        self.session_csrf_token = "csrf"
         self.logged_out = False
 
     def handle_user_logout(self, logout_all=False):
@@ -33,6 +38,6 @@ def test_logout_reports_when_oidc_is_disabled():
 def test_logout_delegates_when_oidc_is_enabled():
     manager = Bunch(logout=lambda provider, trans, post_user_logout_href=None: (True, None, "/bye"))
     trans = StubTrans(enable_oidc=True, authnz_manager=manager)
-    rval = logout(None, trans, "keycloak")
+    rval = logout(None, trans, "keycloak", session_csrf_token="csrf")
     assert rval == {"redirect_uri": "/bye"}
     assert trans.logged_out is True

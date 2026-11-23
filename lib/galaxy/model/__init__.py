@@ -31,7 +31,7 @@ from datetime import (
     timedelta,
 )
 from decimal import Decimal
-from enum import Enum
+from enum import StrEnum
 from secrets import token_hex
 from string import Template
 from typing import (
@@ -41,6 +41,7 @@ from typing import (
     Generic,
     Literal,
     NamedTuple,
+    NotRequired,
     Optional,
     overload,
     TYPE_CHECKING,
@@ -73,6 +74,7 @@ from sqlalchemy import (
     Boolean,
     case,
     Cast,
+    CheckConstraint,
     Column,
     column,
     ColumnElement,
@@ -150,7 +152,6 @@ from sqlalchemy.sql.expression import (
 )
 from typing_extensions import (
     deprecated,
-    NotRequired,
     Protocol,
     TypedDict,
 )
@@ -190,6 +191,7 @@ from galaxy.objectstore.templates import (
     ObjectStoreTemplate,
     template_to_configuration as object_store_template_to_configuration,
 )
+from galaxy.schema.fetch_data import encode_fetch_request_ids
 from galaxy.schema.invocation import InvocationCancellationUserRequest
 from galaxy.schema.schema import (
     InvocationsStateCounts,
@@ -2538,6 +2540,12 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
             return (k, obj)
 
         params_objects = remap(params_objects, remap_objects)
+        if self.tool_id == "__DATA_FETCH__" and isinstance(params_objects.get("request_json"), str):
+            request = encode_fetch_request_ids(
+                json.loads(params_objects["request_json"]),
+                lambda obj_id: serialization_options.get_identifier_for_id(id_encoder, obj_id),
+            )
+            params_objects["request_json"] = json.dumps(request)
 
         params_dict = {}
         for name, value in params_objects.items():
@@ -2822,7 +2830,7 @@ class Task(Base, JobLike, RepresentById):
     _numeric_metric = TaskMetricNumeric
     _text_metric = TaskMetricText
 
-    class states(str, Enum):
+    class states(StrEnum):
         NEW = "new"
         WAITING = "waiting"
         QUEUED = "queued"
@@ -3222,7 +3230,7 @@ class ImplicitCollectionJobs(Base, Serializable):
     populated_state: Mapped[str] = mapped_column(TrimmedString(64), default="new")
     jobs: Mapped[list["ImplicitCollectionJobsJobAssociation"]] = relationship(back_populates="implicit_collection_jobs")
 
-    class populated_states(str, Enum):
+    class populated_states(StrEnum):
         NEW = "new"  # New implicit jobs object, unpopulated job associations
         OK = "ok"  # Job associations are set and fixed.
         FAILED = "failed"  # There were issues populating job associations, object is in error.
@@ -3241,6 +3249,10 @@ class ImplicitCollectionJobs(Base, Serializable):
     def has_job_not_in_states(self, states: Iterable[str]) -> bool:
         """Whether any of these jobs is in a state not in ``states``."""
         stmt = select(self._job_states_stmt().where(Job.state.not_in(states)).exists())
+        return bool(required_object_session(self).scalar(stmt))
+
+    def has_job_in_states(self, states: Iterable[str]) -> bool:
+        stmt = select(self._job_states_stmt().where(Job.state.in_(states)).exists())
         return bool(required_object_session(self).scalar(stmt))
 
     def job_state_counts(self) -> dict[str, int]:
@@ -3341,6 +3353,40 @@ class ImplicitCollectionJobsJobAssociation(Base, RepresentById):
     order_index: Mapped[int]
     implicit_collection_jobs = relationship("ImplicitCollectionJobs", back_populates="jobs")
     job: Mapped["Job"] = relationship(back_populates="implicit_collection_jobs_association")
+
+
+class RunNotificationRequest(Base):
+    """A durable notification request for one tool run or workflow invocation."""
+
+    __tablename__ = "run_notification_request"
+    __table_args__ = (
+        CheckConstraint(
+            "(job_id IS NOT NULL AND implicit_collection_jobs_id IS NULL AND workflow_invocation_id IS NULL) OR "
+            "(job_id IS NULL AND implicit_collection_jobs_id IS NOT NULL AND workflow_invocation_id IS NULL) OR "
+            "(job_id IS NULL AND implicit_collection_jobs_id IS NULL AND workflow_invocation_id IS NOT NULL)",
+            name="ck_run_notification_request_target",
+        ),
+        Index("ix_run_notification_request_pending", "completed", "id"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("galaxy_user.id", ondelete="CASCADE"), index=True)
+    # Empty maps can have no job from which to recover the destination history.
+    history_id: Mapped[int] = mapped_column(ForeignKey("history.id", ondelete="CASCADE"), index=True)
+    job_id: Mapped[int | None] = mapped_column(ForeignKey("job.id", ondelete="CASCADE"), unique=True)
+    implicit_collection_jobs_id: Mapped[int | None] = mapped_column(
+        ForeignKey("implicit_collection_jobs.id", ondelete="CASCADE"), unique=True
+    )
+    workflow_invocation_id: Mapped[int | None] = mapped_column(
+        ForeignKey("workflow_invocation.id", ondelete="CASCADE"), unique=True
+    )
+    attention_sent: Mapped[bool] = mapped_column(default=False)
+    completed: Mapped[bool] = mapped_column(default=False)
+    workflow_invocation: Mapped[Optional["WorkflowInvocation"]] = relationship(back_populates="notification_request")
+    user: Mapped["User"] = relationship()
+    history: Mapped["History"] = relationship()
+    job: Mapped[Optional["Job"]] = relationship()
+    implicit_collection_jobs: Mapped[Optional["ImplicitCollectionJobs"]] = relationship()
 
 
 class PostJobAction(Base, RepresentById):
@@ -3780,6 +3826,10 @@ class Notification(Base, Dictifiable, RepresentById):
     dispatched: Mapped[bool] = mapped_column(
         Boolean, index=True, default=False
     )  # Whether the notification has been dispatched to users via other channels
+    # Explicit completion emails queued while the notification system is disabled.
+    email_only: Mapped[bool] = mapped_column(Boolean, default=False, server_default=false())
+    __table_args__ = (Index("ix_notification_completion_email", "email_only", "dispatched", "id"),)
+
     galaxy_url: Mapped[str | None] = mapped_column(
         String(255)
     )  # The URL to the Galaxy instance, used for generating links in the notification
@@ -4114,8 +4164,7 @@ class History(Base, HasTags, UsesAnnotations, HasName, Serializable, UsesCreateA
 
         Outputs of jobs that haven't finished are skipped, they are charged when the job finishes.
         """
-        user = self.user
-        if user:
+        if user := self.user:
             added = [hda for hda in hdas if isinstance(hda, HistoryDatasetAssociation) and hda.history is self]
             user.adjust_disk_usage_for_datasets(user.sole_dataset_sizes(added))
 
@@ -4759,7 +4808,7 @@ class Role(Base, Dictifiable, RepresentById):
     dict_element_visible_keys = ["id", "name", "description", "type"]
     private_id = None
 
-    class types(str, Enum):
+    class types(StrEnum):
         PRIVATE = "private"
         SYSTEM = "system"
         USER = "user"
@@ -4906,7 +4955,7 @@ class DefaultQuotaAssociation(Base, Dictifiable, RepresentById):
 
     dict_element_visible_keys = ["type"]
 
-    class types(str, Enum):
+    class types(StrEnum):
         UNREGISTERED = "unregistered"
         REGISTERED = "registered"
 
@@ -5157,7 +5206,7 @@ class Dataset(Base, StorableObject, Serializable):
         states.FAILED_METADATA,
     )
 
-    class conversion_messages(str, Enum):
+    class conversion_messages(StrEnum):
         PENDING = "pending"
         NO_DATA = "no data"
         NO_CHROMOSOME = "no chromosome"
@@ -5701,8 +5750,7 @@ class HasHashFunctionName:
 
     @property
     def hash_func_name(self) -> HashFunctionNameEnum:
-        as_str = self.hash_function
-        assert as_str
+        assert self.hash_function
         return HashFunctionNameEnum(self.hash_function)
 
 
@@ -5759,12 +5807,6 @@ class DatasetHash(Base, Dictifiable, Serializable, HasHashFunctionName):
         new_hash.hash_value = self.hash_value
         new_hash.extra_files_path = self.extra_files_path
         return new_hash
-
-    @property
-    def hash_func_name(self) -> HashFunctionNameEnum:
-        as_str = self.hash_function
-        assert as_str
-        return HashFunctionNameEnum(self.hash_function)
 
 
 DescribesHash = DatasetSourceHash | DatasetHash
@@ -6024,15 +6066,13 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
                 meta_types.append(meta_type)
         return meta_types
 
-    def get_metadata_file_paths_and_extensions(self) -> list[tuple[str, str]]:
+    def get_metadata_files_and_extensions(self) -> list[tuple[str, str, "MetadataFile"]]:
+        """``(file extension, metadata name, metadata file)`` of each metadata file that is set."""
         metadata = self.metadata
         metadata_files = []
         for metadata_name in self.metadata_file_types:
-            file_ext = metadata.spec[metadata_name].file_ext
-            metadata_file = metadata[metadata_name]
-            if metadata_file:
-                path = metadata_file.get_file_name()
-                metadata_files.append((file_ext, path))
+            if metadata_file := metadata[metadata_name]:
+                metadata_files.append((metadata.spec[metadata_name].file_ext, metadata_name, metadata_file))
         return metadata_files
 
     # This provide backwards compatibility with using the old dbkey
@@ -8238,38 +8278,6 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
         return self._dataset_action_tuples
 
     @property
-    def element_identifiers_extensions_paths_and_metadata_files(
-        self,
-    ) -> list[list[Any]]:
-        results = []
-        if session := object_session(self):
-            stmt = self._build_nested_collection_attributes_stmt(
-                element_attributes=("element_identifier",),
-                hda_attributes=("extension",),
-                return_entities=(HistoryDatasetAssociation, Dataset),
-            )
-            tuples = session.execute(stmt)
-            # element_identifiers, extension, path
-            for row in tuples:
-                result = [row[:-3], row.extension, row.Dataset.get_file_name()]
-                hda = row.HistoryDatasetAssociation
-                result.append(hda.get_metadata_file_paths_and_extensions())
-                results.append(result)
-        else:
-            # This will be in a remote tool evaluation context, so can't query database
-            for dataset_element in self.dataset_elements_and_identifiers():
-                # Let's pretend name is element identifier
-                results.append(
-                    [
-                        dataset_element._identifiers,
-                        dataset_element.hda.extension,
-                        dataset_element.hda.get_file_name(),
-                        dataset_element.hda.get_metadata_file_paths_and_extensions(),
-                    ]
-                )
-        return results
-
-    @property
     def waiting_for_elements(self):
         return bool(self.unpopulated_collection_ids())
 
@@ -9780,6 +9788,7 @@ class WorkflowStep(Base, RepresentById, UsesCreateAndUpdateTime):
         self.module: WorkflowModule | None
         self.state: DefaultToolState | None
         self.upgrade_messages: dict | None
+        self.filled_defaults: dict
 
     @reconstructor
     def init_on_load(self):
@@ -10369,6 +10378,9 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
         back_populates="workflow_invocation",
         uselist=False,
     )
+    notification_request: Mapped[Optional["RunNotificationRequest"]] = relationship(
+        back_populates="workflow_invocation", uselist=False
+    )
     completion: Mapped[Optional["WorkflowInvocationCompletion"]] = relationship(
         "WorkflowInvocationCompletion",
         back_populates="workflow_invocation",
@@ -10400,6 +10412,16 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
     def __strict_check_before_flush__(self):
         if self.state is None:
             raise Exception("Workflow invocation without state, this should not happen")
+
+    def request_notifications(self) -> None:
+        """Register once, independently of completion hooks and invocation state."""
+        if not self.history or not self.history.user:
+            return
+        if not any(isinstance(action, dict) and "send_notification" in action for action in self.on_complete or []):
+            return
+        if self.notification_request is None:
+            request = RunNotificationRequest(user=self.history.user, history=self.history, workflow_invocation=self)
+            required_object_session(self).add(request)
 
     def get_last_workflow_invocation_step_update_time(self) -> datetime | None:
         session = required_object_session(self)
@@ -10483,11 +10505,12 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
                     )
                     if subworkflow_assoc:
                         collect_jobs(subworkflow_assoc.subworkflow_invocation)
-                else:
-                    # Collect job states from this step
-                    for job in step.jobs:
-                        state = str(job.state)
-                        summary[state] = summary.get(state, 0) + 1
+                elif step.implicit_collection_jobs:
+                    for state, count in step.implicit_collection_jobs.job_state_counts().items():
+                        summary[state] = summary.get(state, 0) + count
+                elif step.job:
+                    state = str(step.job.state)
+                    summary[state] = summary.get(state, 0) + 1
 
         collect_jobs(self)
         return summary
@@ -11266,14 +11289,18 @@ class WorkflowInvocationStep(Base, Dictifiable, Serializable):
         if self.workflow_step.type == "subworkflow":
             return self._is_subworkflow_step_complete()
 
-        # Tool/module step - check job states
-        jobs = self.jobs
-        if not jobs:
-            # Steps without jobs (e.g., input steps, pause steps, parameter steps)
-            # are considered complete once they're in SCHEDULED state
-            return self.state == self.states.SCHEDULED
-
-        return all(job.is_terminal for job in jobs)
+        if self.implicit_collection_jobs:
+            # Check once per monitor poll without materializing mapped Job objects.
+            collection_jobs = self.implicit_collection_jobs
+            return (
+                collection_jobs.populated_state != collection_jobs.populated_states.NEW
+                and self.state == self.states.SCHEDULED
+                and not collection_jobs.has_job_not_in_states(Job.settled_states)
+            )
+        if self.job:
+            return self.job.is_terminal
+        # Input, pause and parameter steps have no jobs.
+        return self.state == self.states.SCHEDULED
 
     def _is_subworkflow_step_complete(self) -> bool:
         """Check if a subworkflow step is complete."""
@@ -11428,7 +11455,7 @@ class WorkflowRequestInputParameter(Base, Dictifiable, Serializable):
 
     dict_collection_visible_keys = ["id", "name", "value", "type"]
 
-    class types(str, Enum):
+    class types(StrEnum):
         REPLACEMENT_PARAMETERS = "replacements"
         STEP_PARAMETERS = "step"
         META_PARAMETERS = "meta"
@@ -11831,7 +11858,7 @@ class FormDefinition(Base, Dictifiable, RepresentById):
         HistoryField,
     ]
 
-    class types(str, Enum):
+    class types(StrEnum):
         USER_INFO = "User Information"
 
     dict_collection_visible_keys = ["id", "name"]

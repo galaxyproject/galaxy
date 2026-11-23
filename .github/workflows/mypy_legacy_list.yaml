@@ -17,13 +17,14 @@ jobs:
         uses: astral-sh/setup-uv@v10.2.0
         with:
           version-file: .tool-versions
+          prune-cache: true
       - name: Create mypy environments
         # One per Python version the mypy job in lint.yaml uses
         env:
           UV_EXTRA_INDEX_URL: https://wheels.galaxyproject.org/simple
           UV_INDEX_STRATEGY: unsafe-best-match
         run: |
-          for version in 3.10 3.14; do
+          for version in 3.11 3.14; do
             uv venv --python "$version" "$RUNNER_TEMP/venv-$version"
             uv pip install --python "$RUNNER_TEMP/venv-$version" \
               -r lib/galaxy/dependencies/pinned-typecheck-requirements.txt \
@@ -33,7 +34,7 @@ jobs:
       - name: Remove stale entries
         run: |
           "$RUNNER_TEMP/venv-3.14/bin/python" .ci/check_mypy_legacy_list.py --fix \
-            --python "$RUNNER_TEMP/venv-3.10/bin/python" \
+            --python "$RUNNER_TEMP/venv-3.11/bin/python" \
             --python "$RUNNER_TEMP/venv-3.14/bin/python" \
             --summary "$RUNNER_TEMP/summary.md"
       - name: Create pull request
@@ -45,7 +46,7 @@ jobs:
           commit-message: |
             Remove stale mypy red list entries
 
-            by running `.ci/check_mypy_legacy_list.py --fix` with Python 3.10 and 3.14.
+            by running `.ci/check_mypy_legacy_list.py --fix` with Python 3.11 and 3.14.
           branch: dev_auto_prune_mypy_red_list
           delete-branch: true
           push-to-fork: galaxybot/galaxy

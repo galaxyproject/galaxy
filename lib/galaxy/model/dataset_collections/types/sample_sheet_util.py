@@ -1,4 +1,5 @@
 import re
+from typing import Self
 
 from pydantic import (
     BaseModel,
@@ -7,7 +8,6 @@ from pydantic import (
     RootModel,
     ValidationError,
 )
-from typing_extensions import Self
 
 from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.tool_util_models.parameter_validators import AnySafeValidatorModel

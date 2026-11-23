@@ -222,7 +222,10 @@ from galaxy.tools.parameters.meta import (
 )
 from galaxy.tools.parameters.pagination import OptionsPaginationT
 from galaxy.tools.parameters.populate_model import populate_model
-from galaxy.tools.parameters.workflow_utils import workflow_building_modes
+from galaxy.tools.parameters.workflow_utils import (
+    RuntimeValue,
+    workflow_building_modes,
+)
 from galaxy.tools.parameters.wrapped_json import json_wrap
 from galaxy.util import (
     asbool,
@@ -461,6 +464,10 @@ def tool_runner_link(url_prefix: str, tool_id: str, is_data_source: bool) -> str
 REQUIRE_FULL_DIRECTORY = {
     "includes": [{"path": "**", "path_type": "glob"}],
 }
+# Main script at the top level, helper modules imported from utils/
+REQUIRE_PY_SCRIPTS_AND_UTILS = {
+    "includes": [{"path": "*.py", "path_type": "glob"}, {"path": "utils/*", "path_type": "glob"}],
+}
 IMPLICITLY_REQUIRED_TOOL_FILES: dict[str, dict] = {
     "deseq2": {
         "version": parse_version("2.11.40.6"),
@@ -472,19 +479,27 @@ IMPLICITLY_REQUIRED_TOOL_FILES: dict[str, dict] = {
     "circos": {"required": REQUIRE_FULL_DIRECTORY},
     "cp_image_math": {"required": {"includes": [{"path": "*.py", "path_type": "glob"}]}},
     "enumerate_charges": {"required": REQUIRE_FULL_DIRECTORY},
-    "fasta_compute_length": {"required": {"includes": [{"path": "utils/*", "path_type": "glob"}]}},
-    "fasta_concatenate0": {"required": {"includes": [{"path": "utils/*", "path_type": "glob"}]}},
+    "fasta_compute_length": {"required": REQUIRE_PY_SCRIPTS_AND_UTILS},
+    "fasta_concatenate0": {"required": REQUIRE_PY_SCRIPTS_AND_UTILS},
     "filter_tabular": {"required": {"includes": [{"path": "*.py", "path_type": "glob"}]}},
-    "flanking_features_1": {"required": {"includes": [{"path": "utils/*", "path_type": "glob"}]}},
-    "gops_intersect_1": {"required": {"includes": [{"path": "utils/*", "path_type": "glob"}]}},
-    "gops_subtract_1": {"required": {"includes": [{"path": "utils/*", "path_type": "glob"}]}},
+    "flanking_features_1": {"required": REQUIRE_PY_SCRIPTS_AND_UTILS},
+    "gops_intersect_1": {"required": REQUIRE_PY_SCRIPTS_AND_UTILS},
+    "gops_subtract_1": {"required": REQUIRE_PY_SCRIPTS_AND_UTILS},
     "maxquant": {"required": {"includes": [{"path": "*.py", "path_type": "glob"}]}},
     "maxquant_mqpar": {"required": {"includes": [{"path": "*.py", "path_type": "glob"}]}},
     "query_tabular": {"required": {"includes": [{"path": "*.py", "path_type": "glob"}]}},
     "shasta": {"required": {"includes": [{"path": "configs/*", "path_type": "glob"}]}},
     "sqlite_to_tabular": {"required": {"includes": [{"path": "*.py", "path_type": "glob"}]}},
     "sucos_max_score": {"required": {"includes": [{"path": "*.py", "path_type": "glob"}]}},
+    "translate_bed": {"required": {"includes": [{"path": "*.py", "path_type": "glob"}]}},
 }
+
+
+def _describe_default(value: Any) -> str:
+    """How a parameter's default reads in an upgrade message; runtime markers have no useful repr."""
+    if isinstance(value, RuntimeValue):
+        return "a value set at runtime"
+    return f"'{value}'"
 
 
 def get_safe_version(tool: "Tool", requested_tool_version: str) -> str | None:
@@ -1127,8 +1142,7 @@ class JobContext(BaseJobContext):
     def get_library_folder(self, destination: dict[str, Any]):
         folder_id = destination.get("library_folder_id")
         assert folder_id
-        decoded_folder_id = self.app.security.decode_id(folder_id) if isinstance(folder_id, str) else folder_id
-        library_folder = self.app.library_folder_manager.get(self.work_context, decoded_folder_id)
+        library_folder = self.app.library_folder_manager.get_for_adding(self.work_context, folder_id)
         return library_folder
 
     def get_hdca(self, object_id):
@@ -1230,6 +1244,9 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
     default_tool_action = DefaultToolAction
     tool_action: ToolAction
     tool_type_local = False
+    # Files the tool writes to the job directory while the job is prepared; runners
+    # that stage the job elsewhere (Pulsar) transfer them with the job.
+    job_directory_files: tuple[str, ...] = ()
     dict_collection_visible_keys = ["id", "name", "version", "description", "labels"]
     _conf_tool_shed_repository: ToolConfRepository | None = None
     job_search: "JobSearch"
@@ -2406,6 +2423,7 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
         input_format: InputFormatT = "legacy",
         tags: list[str] | None = None,
         send_email_notification: bool = False,
+        send_notification: bool = False,
     ):
         """
         Process incoming parameters for this tool from the dict `incoming`,
@@ -2440,8 +2458,9 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
         if tags:
             execution_tracker.apply_tags(trans.tag_handler, trans.user, tags)
             trans.sa_session.commit()
-        if send_email_notification:
-            execution_tracker.apply_email_action(trans.user)
+        # Completion requests are recorded only when notifications or SMTP are configured.
+        if send_notification or send_email_notification:
+            execution_tracker.request_completion_notification(trans.user, request_context.history)
             trans.sa_session.commit()
 
         # Raise an exception if there were jobs to execute and none of them were submitted,
@@ -2684,12 +2703,20 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
         return self.params_from_strings(param_dict, ignore_errors=ignore_errors)
 
     def check_and_update_param_values(
-        self, values, trans: "ProvidesHistoryContext", update_values: bool = True, workflow_building_mode: bool = False
+        self,
+        values,
+        trans: "ProvidesHistoryContext",
+        update_values: bool = True,
+        workflow_building_mode: bool = False,
+        filled_defaults: dict[str, str] | None = None,
     ):
         """
         Check that all parameters have values, and fill in with default
         values where necessary. This could be called after loading values
         from a database in case new parameters have been added.
+
+        If ``filled_defaults`` is given, parameters that had no value and got their default are reported
+        there instead of in the returned messages, which then only hold values that had to be replaced.
         """
         messages: dict[str, Any] = {}
         request_context = proxy_work_context_for_history(trans, workflow_building_mode=workflow_building_mode)
@@ -2703,9 +2730,18 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
                         previous_value = value
                         value = input.get_initial_value(request_context, context)
                         if not prefixed_name.startswith("__"):
-                            messages[prefixed_name] = (
-                                error if previous_value == value else f"{error} Using default: '{value}'."
+                            message = (
+                                error
+                                if previous_value == value
+                                else f"{error} Using default: {_describe_default(value)}."
                             )
+                            # a required parameter whose default lookup gave None was not filled; it stays a problem
+                            missing = input.name not in parent
+                            if missing and filled_defaults is not None and (value is not None or input.optional):
+                                default = "no value" if value is None else _describe_default(value)
+                                filled_defaults[prefixed_name] = f"Default for '{prefixed_label}': {default}."
+                            else:
+                                messages[prefixed_name] = message
                         parent[input.name] = value
                     except Exception:
                         messages[prefixed_name] = f"Attempt to replace invalid value for '{prefixed_label}' failed."
@@ -3387,6 +3423,7 @@ class ExpressionTool(Tool):
     tool_type = "expression"
     tool_type_local = True
     EXPRESSION_INPUTS_NAME = "_expression_inputs_.json"
+    job_directory_files = (expressions.EXPRESSION_SCRIPT_NAME, EXPRESSION_INPUTS_NAME)
 
     def parse(self, tool_source: ToolSource, guid: str | None = None, dynamic: bool = False) -> None:
         super().parse(tool_source, guid, dynamic)
