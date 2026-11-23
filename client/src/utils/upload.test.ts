@@ -339,6 +339,24 @@ describe("cleanUrlFilename", () => {
     test("returns null for URL with no filename", () => {
         expect(cleanUrlFilename("http://example.com/")).toBeNull();
     });
+
+    test("leaves out the userinfo of a URL without a path", () => {
+        expect(cleanUrlFilename("https://user:secret@example.org")).toBe("example.org");
+        expect(cleanUrlFilename("https://user:secret@example.org/a.bed")).toBe("a.bed");
+    });
+
+    test("leaves out the userinfo of a URL nested in the query", () => {
+        expect(cleanUrlFilename("https://example.org/a?next=ftp://user:secret@ftp.example.org")).toBe(
+            "ftp.example.org",
+        );
+    });
+
+    test("leaves out the userinfo of a scheme-relative URL nested in the query", () => {
+        expect(cleanUrlFilename("https://example.org/a?next=//user:secret@ftp.example.org")).toBe("ftp.example.org");
+        expect(cleanUrlFilename("https://example.org/a?next=ftp:///user:secret@ftp.example.org")).toBe(
+            "ftp.example.org",
+        );
+    });
 });
 
 describe("createFileUploadItem", () => {
@@ -432,6 +450,26 @@ describe("createUrlUploadItem", () => {
 
         expect(item.url).toBe("http://example.com/data.bed");
         expect(item.name).toBe("data.bed");
+    });
+
+    test("names a URL without a path after its host, not its userinfo", () => {
+        const item = createUrlUploadItem("https://user:secret@example.org", "historyId");
+
+        expect(item.url).toBe("https://user:secret@example.org");
+        expect(item.name).toBe("example.org");
+    });
+
+    test("names a URL after a nested URL's host, not its userinfo", () => {
+        const item = createUrlUploadItem("https://example.org/a?next=ftp://user:se?cret@ftp.example.org", "historyId");
+
+        expect(item.name).toBe("ftp.example.org");
+    });
+
+    test("names a URL after a scheme-relative nested URL's host, not its userinfo", () => {
+        const item = createUrlUploadItem("https://example.org/a?next=//user:secret@ftp.example.org", "historyId");
+
+        expect(item.url).toBe("https://example.org/a?next=//user:secret@ftp.example.org");
+        expect(item.name).toBe("ftp.example.org");
     });
 });
 
@@ -558,6 +596,30 @@ describe("buildUploadPayload", () => {
         const items: ApiUploadItem[] = [createUrlUploadItem("not-a-valid-url", "historyId")];
 
         expect(() => buildUploadPayload(items)).toThrow("Invalid URL: not-a-valid-url");
+    });
+
+    test("sends no userinfo in the name of a URL without a path", () => {
+        const url = "https://user:secret@example.org";
+        // A stored or typed name may be the whole URL.
+        const items: ApiUploadItem[] = [createUrlUploadItem(url, "historyId", { name: url })];
+
+        const result = buildUploadPayload(items);
+        const element = result.targets[0]!.elements![0] as { name: string | null; url: string };
+        expect(element.url).toBe(url);
+        expect(element.name).toBe("example.org");
+    });
+
+    test("sends no userinfo of a URL nested in the query in the name", () => {
+        const url = "https://example.org/a?next=ftp://user:secret@ftp.example.org";
+        const items: ApiUploadItem[] = [
+            createUrlUploadItem(url, "historyId"),
+            createUrlUploadItem(url, "historyId", { name: url }),
+        ];
+
+        const result = buildUploadPayload(items);
+        const elements = result.targets[0]!.elements! as { name: string | null; url: string }[];
+        expect(elements.map((element) => element.url)).toEqual([url, url]);
+        expect(elements.map((element) => element.name)).toEqual(["ftp.example.org", "ftp.example.org"]);
     });
 
     test("rejects network URL with empty DNS labels", () => {

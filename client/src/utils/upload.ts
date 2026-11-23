@@ -48,7 +48,7 @@ import type { UploadRowModel } from "@/components/Upload/model";
 import type { NewUploadItem } from "@/composables/upload/uploadItemTypes";
 import { getAppRoot } from "@/onload/loadConfig";
 import { errorMessageAsString } from "@/utils/simple-error";
-import { isUrl, isValidUrl } from "@/utils/url";
+import { isUrl, isValidUrl, urlWithoutUserinfo } from "@/utils/url";
 
 import { createTusUpload, type FileStream, type NamedBlob, type UploadableFile } from "./tusUpload";
 
@@ -267,8 +267,8 @@ export function stripGalaxyFilePrefix(filename: string): string {
  * cleanUrlFilename("normal.txt") → "normal.txt"
  */
 export function cleanUrlFilename(filename: string): string | null {
-    // Remove query parameters
-    const defaultName = filename.split("/").pop()?.split("?")[0];
+    // Remove userinfo, which is the last segment of a URL without a path, and query parameters
+    const defaultName = urlWithoutUserinfo(filename).split("/").pop()?.split("?")[0];
     if (!defaultName) {
         return null;
     }
@@ -399,7 +399,7 @@ export function createUrlUploadItem(
 ): UrlUploadItem {
     const trimmedUrl = url.trim();
     // Extract filename from URL if not provided
-    const defaultName = trimmedUrl.split("/").pop()?.split("?")[0] || DEFAULT_FILE_NAME;
+    const defaultName = urlWithoutUserinfo(trimmedUrl).split("/").pop()?.split("?")[0] || DEFAULT_FILE_NAME;
 
     return {
         src: "url",
