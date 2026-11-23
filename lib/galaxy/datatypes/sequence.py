@@ -575,7 +575,7 @@ class PearsonFasta(Sequence):
     lines before the first '>' header removed.
     """
 
-    edam_format = "format_1954"
+    edam_format = "format_2200"
     file_ext = "pearson_fasta"
 
     def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
