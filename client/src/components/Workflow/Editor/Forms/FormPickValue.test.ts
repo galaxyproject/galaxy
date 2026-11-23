@@ -39,9 +39,6 @@ function mountPickValue(step?: Step, datatypes?: unknown[]): VueWrapper {
         },
         localVue,
         pinia: createTestingPinia({ createSpy: vi.fn }),
-        provide: {
-            workflowId: "mock-workflow",
-        },
     });
 }
 
