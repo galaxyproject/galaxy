@@ -41,6 +41,24 @@ execution:
       - condition: any_failure
         environment: retry_test_generic
 
+    fail_first_node_failure_or_preempted:
+      runner: failure_runner
+      resubmit:
+      - condition: 'node_failure or preempted'
+        environment: retry_test_generic
+
+    fail_first_unknown_error_only:
+      runner: failure_runner
+      resubmit:
+      - condition: unknown_error
+        environment: retry_test_generic
+
+    fail_first_runner_state_by_name:
+      runner: failure_runner
+      resubmit:
+      - condition: "runner_state == 'from_the_future'"
+        environment: retry_test_generic
+
     # This will fail twice and succeed on walltime reached and will fail twice and fail hard else.
     fail_two_attempts:
       runner: failure_runner

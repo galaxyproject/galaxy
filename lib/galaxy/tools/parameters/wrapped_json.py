@@ -9,7 +9,7 @@ from typing import (
 from packaging.version import Version
 
 if TYPE_CHECKING:
-    from galaxy.tools.parameters.wrappers import (
+    from galaxy.tools.wrappers import (
         DatasetCollectionWrapper,
         DatasetFilenameWrapper,
     )
@@ -131,7 +131,7 @@ def _json_wrap_input(input, value_wrapper, profile, handle_files=None):
                     value_wrapper = value_wrapper[0]
                 json_value = _hda_to_object(value_wrapper)
                 if input.load_contents:
-                    with open(str(value_wrapper), mode="rb") as fh:
+                    with open(_galaxy_file_name(value_wrapper), mode="rb") as fh:
                         json_value["contents"] = fh.read(input.load_contents).decode("utf-8", errors="replace")
                 return json_value
             else:
@@ -182,10 +182,16 @@ def _json_wrap_input(input, value_wrapper, profile, handle_files=None):
     return json_value
 
 
+def _galaxy_file_name(value_wrapper: "DatasetFilenameWrapper") -> str:
+    # str(value_wrapper) is the path where the job runs (e.g. a Pulsar staging
+    # path), which need not exist on the Galaxy host while the job is prepared.
+    return value_wrapper.unsanitized.get_file_name()
+
+
 def _hda_to_object(hda):
     if hda.extension == "expression.json":
         # We may have a null data value
-        with open(str(hda)) as inp:
+        with open(_galaxy_file_name(hda)) as inp:
             try:
                 rval = json.loads(inp.read(5))
                 if rval is None:

@@ -85,6 +85,12 @@ class BaseJobExec(metaclass=ABCMeta):
         """
         return None
 
+    def parse_failure_message(self, reason, job_id):
+        """
+        Parses details for the user out of the failure reason, if there are any.
+        """
+        return None
+
 
 __all__ = (
     "BaseJobExec",

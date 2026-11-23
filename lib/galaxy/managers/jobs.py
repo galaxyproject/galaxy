@@ -118,6 +118,13 @@ from galaxy.tools._types import (
     ToolStateDumpedToJsonInternalT,
     ToolStateJobInstancePopulatedT,
 )
+from galaxy.tools.job_parameters import (
+    CHROM_INFO,
+    DATA_MANAGER_MODE,
+    DBKEY,
+    element_identifier_parameter,
+    is_element_identifier_parameter,
+)
 from galaxy.util import (
     defaultdict,
     ExecutionTimer,
@@ -646,10 +653,10 @@ class JobSearch:
                     if v == {"__class__": "RuntimeValue"}:
                         # TODO: verify this is always None. e.g. run with runtime input input
                         v = None
-                    elif k.endswith("|__identifier__"):
+                    elif is_element_identifier_parameter(k):
                         # We've taken care of this while constructing the conditions based on ``input_data`` above
                         continue
-                    elif k == "chromInfo" and "?.len" in v:
+                    elif k == CHROM_INFO and "?.len" in v:
                         continue
                     elif k in self.IGNORED_NON_JOB_PARAMETERS:
                         continue
@@ -674,13 +681,13 @@ class JobSearch:
             for parameter in job.parameters:
                 if parameter.name.startswith("__"):
                     continue
-                if parameter.name in {"chromInfo", "dbkey"} or parameter.name.endswith("|__identifier__"):
+                if parameter.name in (CHROM_INFO, DBKEY) or is_element_identifier_parameter(parameter.name):
                     continue
                 n_parameters += 1
             if not n_parameters == sum(
                 1
                 for k in param_dump
-                if not k.startswith("__") and not k.endswith("|__identifier__") and k not in {"chromInfo", "dbkey"}
+                if not k.startswith("__") and not is_element_identifier_parameter(k) and k not in (CHROM_INFO, DBKEY)
             ):
                 continue
             log.info("Found equivalent job %s", search_timer)
@@ -748,10 +755,10 @@ class JobSearch:
             if v == {"__class__": "RuntimeValue"}:
                 # TODO: verify this is always None. e.g. run with runtime input input
                 v = None
-            elif k.endswith("|__identifier__"):
+            elif is_element_identifier_parameter(k):
                 # We've taken care of this while constructing the conditions based on ``input_data`` above
                 continue
-            elif k == "chromInfo" and "?.len" in v:
+            elif k == CHROM_INFO and "?.len" in v:
                 continue
             elif k in self.IGNORED_NON_JOB_PARAMETERS:
                 # TODO: really need to separate this.
@@ -854,7 +861,7 @@ class JobSearch:
         if require_name_match:
             hda_history_join_conditions.append(e.name == c.name)
             name_condition.append(b.name == c.name)
-        identifier_key = f"{k}|__identifier__"
+        identifier_key = element_identifier_parameter(k)
         if identifier:
             stmt = stmt.join(d)
             data_conditions.append(
@@ -2358,7 +2365,7 @@ class JobSubmitter:
                         f"Failed to fetch dataset from '{to_materialize.request.url}'"
                     )
             if request.data_manager_mode:
-                tool_request.request["__data_manager_mode"] = request.data_manager_mode
+                tool_request.request[DATA_MANAGER_MODE] = request.data_manager_mode
             credentials_context = (
                 CredentialsContext(root=cast(Any, request.credentials_context)) if request.credentials_context else None
             )

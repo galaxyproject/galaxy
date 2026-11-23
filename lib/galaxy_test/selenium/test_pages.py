@@ -76,7 +76,8 @@ class TestPages(SeleniumTestCase, UsesUploadActivity):
         self.page_open_and_screenshot(page_name, "page_view_with_history_link")
         view = self.components.pages.view
         view.history_link(history_id=history_id).wait_for_and_click()
-        self.sleep_for(self.wait_types.UX_RENDER)
+        # The copy is created by an async POST; wait for it before leaving the page.
+        view.history_imported.wait_for_visible()
         self.navigate_to_histories_page()
         history_names = self.get_history_titles(1)
         assert f"Copy of '{new_history_name}'" in history_names
