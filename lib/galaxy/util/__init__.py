@@ -856,7 +856,9 @@ def mask_password_from_url(url):
     return url
 
 
-# A "/" ends every authority and starts every "://", and no known userinfo holds a "/",
+# A run of two or more slashes starts every authority, also of a scheme-relative URL.
+_URL_AUTHORITY_START_RE = re.compile(r"//+")
+# A "/" ends every authority and starts the next one, and no known userinfo holds a "/",
 # so each character is visited once.
 _URL_AUTHORITY_END_RE = re.compile(r"[/?#\s]")
 # urlsplit() drops these characters anywhere in a URL, so text may hold a userinfo without them.
@@ -879,13 +881,14 @@ _URLLIB_NETLOC_END_RE = re.compile(r"[/?#]")
 
 def _known_url_userinfo_span(url: str, start: int = 0) -> tuple[int, int]:
     """
-    Start of the authority after the first ``://`` from ``start`` of a single ``url`` and the index of the ``@``
-    ending its userinfo (-1 if none).
+    Start of the first authority from ``start`` of a single ``url`` and the index of the ``@`` ending its userinfo
+    (-1 if none). An authority starts after any run of two or more slashes, as in ``ftp://``, in a scheme-relative
+    ``//user@host`` or in ``ftp:///user@host``.
     """
-    separator = url.find("://", start)
-    if separator == -1:
+    separator = _URL_AUTHORITY_START_RE.search(url, start)
+    if separator is None:
         return -1, -1
-    authority_start = separator + 3
+    authority_start = separator.end()
     # A known URL is a single token, so whitespace, "?" or "#" may belong to its (malformed) userinfo.
     authority_end = url.find("/", authority_start)
     if authority_end == -1:
@@ -907,16 +910,10 @@ def url_without_userinfo(url: str) -> str:
     """
     parts = []
     pos = 0
-    while (separator := url.find("//", pos)) != -1:
-        # Any run of slashes starts an authority, as in a scheme-relative "//user@host" or in "ftp:///user@host".
-        authority_start = separator + 2
-        while authority_start < len(url) and url[authority_start] == "/":
-            authority_start += 1
-        # A URL is a single token, so "?", "#" or whitespace before the next "/" may belong to a password.
-        authority_end = url.find("/", authority_start)
-        if authority_end == -1:
-            authority_end = len(url)
-        userinfo_end = url.rfind("@", authority_start, authority_end)
+    while True:
+        authority_start, userinfo_end = _known_url_userinfo_span(url, pos)
+        if authority_start == -1:
+            break
         parts.append(url[pos:authority_start])
         pos = userinfo_end + 1 if userinfo_end != -1 else authority_start
     parts.append(url[pos:])
@@ -1096,10 +1093,10 @@ def _mark_known_password_hosts(text: str, urls: Iterable[str], marks: bytearray)
 
 def strip_url_userinfo(text: str, known_urls: Iterable[str] = ()) -> str:
     """
-    Remove the userinfo (``user:password@``) of every URL in ``text``.
+    Remove the userinfo (``user:password@``) of every URL in ``text``, scheme-relative ``//user@host`` included.
 
     The userinfo of each URL in ``known_urls``, and of every URL nested in it (e.g. in its query), is removed
-    wherever it follows a ``://``, which also covers userinfo the scan of ``text`` cannot delimit, such as
+    wherever it follows a ``//``, which also covers userinfo the scan of ``text`` cannot delimit, such as
     unencoded whitespace, in every form of that URL (e.g. trimmed). Each run of text covered by ``urlsplit()`` errors of known URLs, which quote their netloc
     without the ``://``, is replaced by ``URL_PARSER_ERROR``, which quotes nothing of the URLs. Both are found
     in the original ``text``, so neither can hide the other. The ``password@`` part of each known URL's
@@ -1126,8 +1123,8 @@ def strip_url_userinfo(text: str, known_urls: Iterable[str] = ()) -> str:
     _mark_known_password_hosts(text, known_urls, marks)
     known_userinfo = _userinfo_trie(known_urls)
     pos = 0
-    while (separator := text.find("://", pos)) != -1:
-        authority_start = separator + 3
+    while (separator := _URL_AUTHORITY_START_RE.search(text, pos)) is not None:
+        authority_start = separator.end()
         authority_end_match = _URL_AUTHORITY_END_RE.search(text, authority_start)
         authority_end = authority_end_match.start() if authority_end_match else len(text)
         # Up to the last "@", so unencoded "@" in a password is stripped too.

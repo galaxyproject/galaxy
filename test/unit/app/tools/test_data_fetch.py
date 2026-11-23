@@ -454,6 +454,32 @@ def test_hdas_url_error_hides_userinfo(mock_http_server):
         assert "s3cr" not in error
 
 
+@pytest.mark.parametrize("password", ["s3cret", "s3c r3t"])
+def test_hdas_url_error_hides_userinfo_of_scheme_relative_url_in_query(mock_http_server, password):
+    url = mock_http_server.get_url(
+        remote_url="https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/12.bed",
+        status=404,
+        body="Not Found",
+    )
+    with _execute_context(allow_localhost=True) as execute_context:
+        request = {
+            "targets": [
+                {
+                    "destination": {"type": "hdas"},
+                    "elements": [
+                        {"src": "url", "url": f"{url}?next=//fetchuser:{password}@inner.example.org/b"},
+                    ],
+                }
+            ]
+        }
+        execute_context.execute_request(request)
+        error = _unnamed_output(execute_context)["elements"][0]["error_message"]
+        assert f"{url}?next=//inner.example.org/b" in error
+        assert "fetchuser" not in error
+        for part in password.split():
+            assert part not in error
+
+
 def test_hdas_url_port_error_hides_password():
     # urllib rejects this netloc before connecting, quoting "s3cret@example.invalid" as an invalid port.
     with _execute_context() as execute_context:

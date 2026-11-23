@@ -262,6 +262,9 @@ def test_to_content_disposition(target, expected_substring):
             "404 Client Error: Not Found for url: https://example.org/a.bed (https://example.org/a.bed)",
         ),
         ("Invalid uri [s3://key:secret@bucket/a.bed]", "Invalid uri [s3://bucket/a.bed]"),
+        ("https://example.org/a?next=//u:secret@inner/b", "https://example.org/a?next=//inner/b"),
+        ("https://example.org/a?next=ftp:///u:secret@inner/b", "https://example.org/a?next=ftp:///inner/b"),
+        ("Failed to fetch //u:secret@inner/b", "Failed to fetch //inner/b"),
         ("https://example.org/a.bed", "https://example.org/a.bed"),
         ("https://example.org/a@b.bed?mail=me@example.org", "https://example.org/a@b.bed?mail=me@example.org"),
         ("https://example.org/a.bed contact admin@example.org", "https://example.org/a.bed contact admin@example.org"),
@@ -586,6 +589,10 @@ def test_strip_url_userinfo_urls_nested_in_known_url(placements, spaced, form):
             "https://example.org/a?next=https://example.com/b?next=ftp://u:sec ret@h/c",
             "https://example.org/a?next=https://example.com/b?next=ftp://h/c",
         ),
+        ("https://example.org/a?next=//u:sec ret@h/b", "https://example.org/a?next=//h/b"),
+        ("https://example.org/a?next=///u:sec ret@h/b", "https://example.org/a?next=///h/b"),
+        ("https://example.org/a?next=ftp:///u:sec ret@h/b", "https://example.org/a?next=ftp:///h/b"),
+        ("//u:sec ret@example.org/a", "//example.org/a"),
     ],
 )
 def test_strip_url_userinfo_userinfo_of_url_nested_in_known_url(url, expected):
@@ -646,8 +653,10 @@ def test_strip_url_userinfo_scales_linearly_with_known_urls_holding_nested_urls(
         "https://example.org/" + "a." * 100_000,
         "https://" + "a" * 200_000,
         "a://" * 70_000,
+        "a//" * 70_000,
+        "/" * 200_000,
     ],
-    ids=["dotted-path", "long-netloc", "repeated-separator"],
+    ids=["dotted-path", "long-netloc", "repeated-separator", "repeated-scheme-relative-separator", "slash-run"],
 )
 def test_strip_url_userinfo_scales_linearly(text):
     start = time.perf_counter()
