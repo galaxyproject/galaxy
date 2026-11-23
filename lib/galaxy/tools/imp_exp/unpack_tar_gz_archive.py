@@ -16,6 +16,7 @@ from base64 import b64decode
 
 from galaxy.files import ConfiguredFileSources
 from galaxy.files.uris import stream_url_to_file
+from galaxy.util.checkers import is_zip
 from galaxy.util.compression_utils import CompressedFile
 
 # Set max size of archive/file that will be handled to be 100 GB. This is
@@ -37,7 +38,8 @@ def check_archive(archive_file, dest_dir):
     Ensure that a tar archive has no absolute paths or relative paths outside
     the archive.
     """
-    if zipfile.is_zipfile(archive_file):
+    # Pick the format the way CompressedFile does, so the paths checked here are the ones extracted.
+    if is_zip(archive_file):
         with zipfile.ZipFile(archive_file, "r") as archive_fp:
             for arc_path in archive_fp.namelist():
                 assert not os.path.isabs(arc_path), f"Archive member has absolute path: {arc_path}"
