@@ -150,17 +150,40 @@ export function isValidUrl(url: string): boolean {
     return validateUrl(url).isValid;
 }
 
+// Replaces an authority whose userinfo is ambiguous, see userinfoLengthOf().
+export const URL_AUTHORITY_REDACTED = "[redacted]";
+
+/**
+ * Length of the userinfo of `authority` before its "@" (-1 if none), or null if that userinfo is ambiguous.
+ * It is ambiguous if an "@" follows a "?" or "#": `u:12?34@host` may be a host `u` with port 12 and query `34@host`,
+ * or a userinfo `u:12?34` holding a "?", and `example.org?email=alice@other.org` has the same shape. No reading is
+ * safe for both, so the caller replaces the whole authority. Otherwise the userinfo ends at the last "@" before any
+ * "?" or "#", so an unencoded "@" in a password is removed too.
+ */
+function userinfoLengthOf(authority: string): number | null {
+    const queryOrFragment = authority.search(/[?#]/);
+    if (queryOrFragment === -1) {
+        return authority.lastIndexOf("@");
+    }
+    if (authority.indexOf("@", queryOrFragment) !== -1) {
+        return null;
+    }
+    return authority.slice(0, queryOrFragment).lastIndexOf("@");
+}
+
 /**
  * Removes the userinfo (`user:password@`) of a URL and of every URL nested in it (e.g. in its query),
  * so it is safe to show or use as a name.
  * Each authority starts after any run of two or more slashes (also a scheme-relative `//user@host`)
- * and ends at the next "/" only: an unencoded "@", "?" or "#" may belong to the password.
+ * and ends at the next "/". An authority whose userinfo is ambiguous, as an "@" follows a "?" or "#" in it,
+ * is replaced by URL_AUTHORITY_REDACTED.
  *
  * @example
  * ```typescript
  * urlWithoutUserinfo("https://user:secret@example.org/a.bed") // returns "https://example.org/a.bed"
  * urlWithoutUserinfo("https://example.org/a?next=ftp://user:secret@h") // returns "https://example.org/a?next=ftp://h"
  * urlWithoutUserinfo("https://example.org/a?next=//user:secret@h") // returns "https://example.org/a?next=//h"
+ * urlWithoutUserinfo("https://u:12?34@example.org/a.bed") // returns "https://[redacted]/a.bed"
  * ```
  */
 export function urlWithoutUserinfo(url: string): string {
@@ -175,9 +198,14 @@ export function urlWithoutUserinfo(url: string): string {
         const slash = url.indexOf("/", authorityStart);
         const authorityEnd = slash === -1 ? url.length : slash;
         // Search the authority only, so each character is visited a bounded number of times.
-        const userinfoLength = url.slice(authorityStart, authorityEnd).lastIndexOf("@");
+        const userinfoLength = userinfoLengthOf(url.slice(authorityStart, authorityEnd));
         result += url.slice(pos, authorityStart);
-        pos = userinfoLength === -1 ? authorityStart : authorityStart + userinfoLength + 1;
+        if (userinfoLength === null) {
+            result += URL_AUTHORITY_REDACTED;
+            pos = authorityEnd;
+        } else {
+            pos = userinfoLength === -1 ? authorityStart : authorityStart + userinfoLength + 1;
+        }
         separator = url.indexOf("//", pos);
     }
     return result + url.slice(pos);

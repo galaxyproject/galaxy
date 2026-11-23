@@ -281,8 +281,8 @@ def test_strip_url_userinfo(text, expected):
     [
         ("https://user:sec ret@example.org/a.bed", "https://example.org/a.bed"),
         ("https://user:se[cret@example.org/a.bed", "https://example.org/a.bed"),
-        ("https://user:se?cret@example.org/a.bed", "https://example.org/a.bed"),
-        ("https://user:se#cret@example.org", "https://example.org"),
+        ("https://user:se?cret@example.org/a.bed", "https://[redacted]/a.bed"),
+        ("https://user:se#cret@example.org", "https://[redacted]"),
         ("https://user:p@ss word@example.org", "https://example.org"),
         ("https://user:secret@[::1]:8080/a.bed", "https://[::1]:8080/a.bed"),
         ("https://example.org/a@b.bed?mail=me@example.org", "https://example.org/a@b.bed?mail=me@example.org"),
@@ -296,6 +296,58 @@ def test_strip_url_userinfo(text, expected):
 )
 def test_url_without_userinfo(url, expected):
     assert util.url_without_userinfo(url) == expected
+
+
+@pytest.mark.parametrize(
+    "url",
+    [
+        "https://example.org?x=1",
+        "https://example.org:8080?x=1#f",
+        "https://example.org:?x=1",
+        "https://[::1]:8080#f",
+        "https://example.org/a?email=alice@other.org",
+        "https://example.org/#alice@other.org",
+        "https://example.org/a?next=//example.com/b?email=alice@other.org",
+    ],
+)
+def test_url_helpers_keep_url_without_userinfo(url):
+    assert util.url_without_userinfo(url) == url
+    assert util.name_from_url(url) == url.split("/")[-1]
+    text = f"Failed to fetch url {url} : Not Found for url: {url}"
+    assert util.strip_url_userinfo(text) == text
+    assert util.strip_url_userinfo(text, [url]) == text
+
+
+def test_url_helpers_remove_userinfo_before_query():
+    url = "https://user:secret@example.org?x=1"
+    assert util.url_without_userinfo(url) == "https://example.org?x=1"
+    assert util.name_from_url(url) == "example.org?x=1"
+
+
+@pytest.mark.parametrize(
+    "url,expected",
+    [
+        ("https://u:12?34@example.org", "https://[redacted]"),
+        ("https://u:12#34@example.org", "https://[redacted]"),
+        ("https://u:?34@example.org", "https://[redacted]"),
+        ("https://u:12?34@example.org/a.bed", "https://[redacted]/a.bed"),
+        ("https://to?ken@example.org", "https://[redacted]"),
+        ("https://to#ken@example.org/a.bed", "https://[redacted]/a.bed"),
+        ("https://user.name:12?a=b@example.org", "https://[redacted]"),
+        ("https://alice@corp.org:pa?ss@example.org", "https://[redacted]"),
+        ("https://example.org/a?next=//u:12?34@inner.example.org", "https://example.org/a?next=//[redacted]"),
+        # The same shape without userinfo is redacted too, as no reading is safe for both.
+        ("https://example.org?email=alice@other.org", "https://[redacted]"),
+        ("https://example.org:?email=alice@other.org", "https://[redacted]"),
+        ("https://example.org#alice@other.org", "https://[redacted]"),
+        ("https://user:secret@example.org?email=alice@other.org", "https://[redacted]"),
+    ],
+)
+def test_url_helpers_redact_authority_with_ambiguous_userinfo(url, expected):
+    assert util.url_without_userinfo(url) == expected
+    assert util.name_from_url(url) == expected.split("/")[-1]
+    text = "Failed to fetch url {} : Not Found for url: {}"
+    assert util.strip_url_userinfo(text.format(url, url), [url]) == text.format(expected, expected)
 
 
 def test_strip_url_userinfo_known_url_with_whitespace():
@@ -329,7 +381,7 @@ def test_strip_url_userinfo_known_url_without_urlsplit_removed_characters():
 @pytest.mark.parametrize("url", ["https://user:se?cret@example.org/a.bed", "https://user:se#cret@example.org/a.bed"])
 def test_strip_url_userinfo_known_url_with_query_or_fragment_character(url):
     stripped = util.strip_url_userinfo(f"Invalid URL '{url}': No host supplied", [url])
-    assert stripped == "Invalid URL 'https://example.org/a.bed': No host supplied"
+    assert stripped == "Invalid URL 'https://[redacted]/a.bed': No host supplied"
 
 
 def test_strip_url_userinfo_known_userinfo_without_scheme():
@@ -581,8 +633,8 @@ def test_strip_url_userinfo_urls_nested_in_known_url(placements, spaced, form):
         ("https://example.org/a?next=ftp://u:sec ret@h/b", "https://example.org/a?next=ftp://h/b"),
         ("https://example.org/a#ftp://u:sec ret@h", "https://example.org/a#ftp://h"),
         ("https://example.org/ftp://u:sec ret@h/b", "https://example.org/ftp://h/b"),
-        ("https://example.org/a?next=ftp://u:se?c ret@h/b", "https://example.org/a?next=ftp://h/b"),
-        ("https://example.org/a?next=ftp://u:se#c ret@h/b", "https://example.org/a?next=ftp://h/b"),
+        ("https://example.org/a?next=ftp://u:se?c ret@h/b", "https://example.org/a?next=ftp://[redacted]/b"),
+        ("https://example.org/a?next=ftp://u:se#c ret@h/b", "https://example.org/a?next=ftp://[redacted]/b"),
         ("https://o:outer pw@example.org/a?next=ftp://u:sec ret@h/b", "https://example.org/a?next=ftp://h/b"),
         ("https://example.org?next=ftp://u:sec ret@h/b", "https://example.org?next=ftp://h/b"),
         (
@@ -664,6 +716,18 @@ def test_strip_url_userinfo_scales_linearly(text):
     assert time.perf_counter() - start < 1.0
 
 
+@pytest.mark.parametrize(
+    "url",
+    ["https://" + "a.b?=@" * 50_000, "https://" + "//a.b:1?=@" * 30_000, "https://" + "[" * 200_000 + "?@"],
+    ids=["query-in-authority", "nested-authorities", "unclosed-ipv6-literal"],
+)
+def test_url_helpers_scale_linearly_with_query_and_fragment_characters(url):
+    start = time.perf_counter()
+    util.url_without_userinfo(url)
+    util.strip_url_userinfo(url, [url])
+    assert time.perf_counter() - start < 1.0
+
+
 def _urllib_port_error(url):
     # urllib takes the netloc after its last ":" as the port, so the error quotes the password and host.
     with pytest.raises(http.client.InvalidURL) as exc_info:
@@ -724,8 +788,8 @@ def test_strip_url_userinfo_scales_linearly_with_colons_in_known_userinfo():
         ("https://user:sec ret@example.org:8080", "example.org:8080"),
         ("ftp://user:secret@ftp.example.org/pub/a.bed", "a.bed"),
         ("https://example.org/a?next=ftp://user:secret@ftp.example.org", "ftp.example.org"),
-        ("https://example.org/a?next=ftp://user:se?cret@ftp.example.org", "ftp.example.org"),
-        ("https://example.org/a#ftp://user:se#cret@ftp.example.org", "ftp.example.org"),
+        ("https://example.org/a?next=ftp://user:se?cret@ftp.example.org", "[redacted]"),
+        ("https://example.org/a#ftp://user:se#cret@ftp.example.org", "[redacted]"),
         ("https://example.org/a?next=ftp://user:sec ret@ftp.example.org", "ftp.example.org"),
         ("https://example.org/dir/user@file.txt", "user@file.txt"),
         ("https://example.org/a?next=//user:secret@ftp.example.org", "ftp.example.org"),
@@ -739,3 +803,4 @@ def test_strip_url_userinfo_scales_linearly_with_colons_in_known_userinfo():
 )
 def test_name_from_url(url, expected):
     assert util.name_from_url(url) == expected
+

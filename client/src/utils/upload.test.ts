@@ -363,6 +363,18 @@ describe("cleanUrlFilename", () => {
         expect(cleanUrlFilename("https://example.org/%2F%2Fu%3Asecret%40inner")).toBe("//inner");
         expect(cleanUrlFilename("ftp%3A%2F%2Fu%3Asecret%40inner%2Fa.bed")).toBe("ftp://inner/a.bed");
     });
+
+    test("keeps the host of a URL without userinfo or an address after its query or fragment", () => {
+        expect(cleanUrlFilename("https://example.org?x=1")).toBe("example.org");
+        expect(cleanUrlFilename("https://example.org:?x=1")).toBe("example.org:");
+        expect(cleanUrlFilename("https://example.org:8080#f")).toBe("example.org:8080#f");
+    });
+
+    test("redacts an authority whose userinfo is ambiguous", () => {
+        expect(cleanUrlFilename("https://u:12?34@example.org")).toBe("[redacted]");
+        expect(cleanUrlFilename("https://to#ken@example.org")).toBe("[redacted]");
+        expect(cleanUrlFilename("https://example.org?email=alice@other.org")).toBe("[redacted]");
+    });
 });
 
 describe("createFileUploadItem", () => {
@@ -466,7 +478,7 @@ describe("createUrlUploadItem", () => {
     });
 
     test("names a URL after a nested URL's host, not its userinfo", () => {
-        const item = createUrlUploadItem("https://example.org/a?next=ftp://user:se?cret@ftp.example.org", "historyId");
+        const item = createUrlUploadItem("https://example.org/a?next=ftp://user:secret@ftp.example.org", "historyId");
 
         expect(item.name).toBe("ftp.example.org");
     });
@@ -476,6 +488,13 @@ describe("createUrlUploadItem", () => {
 
         expect(item.url).toBe("https://example.org/a?next=//user:secret@ftp.example.org");
         expect(item.name).toBe("ftp.example.org");
+    });
+
+    test("names a URL without a path or userinfo after its host, not its query", () => {
+        const item = createUrlUploadItem("https://example.org?x=1", "historyId");
+
+        expect(item.url).toBe("https://example.org?x=1");
+        expect(item.name).toBe("example.org");
     });
 });
 
@@ -649,6 +668,15 @@ describe("buildUploadPayload", () => {
         const result = buildUploadPayload(items);
         const elements = result.targets[0]!.elements! as { name: string | null; url: string }[];
         expect(elements.map((element) => element.name)).toEqual(["ftp://inner", "https://example.org/a?next=//inner"]);
+    });
+
+    test("sends a redacted name for a URL whose userinfo is ambiguous", () => {
+        const url = "https://u:12?34@example.org";
+
+        const result = buildUploadPayload([createUrlUploadItem(url, "historyId")]);
+        const element = result.targets[0]!.elements![0] as { name: string | null; url: string };
+        expect(element.url).toBe(url);
+        expect(element.name).toBe("[redacted]");
     });
 
     test("rejects network URL with empty DNS labels", () => {
