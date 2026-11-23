@@ -641,6 +641,12 @@ class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin, Use
 class SeleniumTestCase(FunctionalTestCase, TestWithSeleniumMixin):
     galaxy_driver_class = GalaxyTestDriver
 
+    def setup_method(self):
+        # pytest skips teardown_method when setup_method raises, so tear the
+        # driver down here when a subclass setUp fails after allocating it.
+        with self._tear_down_driver_on_error():
+            super().setup_method()
+
     def setUp(self):
         super().setUp()
         self.setup_selenium()
