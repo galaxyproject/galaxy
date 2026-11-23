@@ -30,6 +30,7 @@ from galaxy.files.uris import (
 )
 from galaxy.util import (
     in_directory,
+    name_from_url,
     safe_contains,
     safe_makedirs,
     safe_relpath,
@@ -545,7 +546,7 @@ def _has_src_to_name(item) -> Optional[str]:
     if src == "url":
         url = item.get("url")
         if name is None:
-            name = url.split("/")[-1]
+            name = name_from_url(url)
     elif src == "path":
         path = item["path"]
         if name is None:
@@ -576,7 +577,7 @@ def _has_src_to_path(
                     rel_path = rel_path[1:]
                 path = os.path.abspath(os.path.join(file_source.root, rel_path))
                 if name is None:
-                    name = url.split("/")[-1]
+                    name = name_from_url(url)
                 is_link = True
                 return name, path, is_link
 
@@ -604,7 +605,7 @@ def _has_src_to_path(
                 if hash_value:
                     _handle_hash_validation(hash_function, hash_value, path)
         if name is None:
-            name = url.split("/")[-1]
+            name = name_from_url(url)
     elif src == "pasted":
         path = stream_to_file(StringIO(item["paste_content"]), dir=upload_config.working_directory)
         if name is None:

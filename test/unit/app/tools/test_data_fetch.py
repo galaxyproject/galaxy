@@ -260,6 +260,32 @@ def test_deferred_uri_get(mock_http_server):
         assert hda_result["ext"] == "bed"
 
 
+def test_deferred_pathless_url_name_hides_userinfo():
+    with _execute_context() as execute_context:
+        request = {
+            "targets": [
+                {
+                    "destination": {
+                        "type": "hdas",
+                    },
+                    "elements": [
+                        {
+                            "src": "url",
+                            "url": "https://fetchuser:s3cret@example.org",
+                            "deferred": True,
+                            "ext": "txt",
+                        }
+                    ],
+                }
+            ]
+        }
+        execute_context.execute_request(request)
+        output = _unnamed_output(execute_context)
+        hda_result = output["elements"][0]
+        assert hda_result["state"] == "deferred"
+        assert hda_result["name"] == "example.org"
+
+
 def test_simple_list_path_get():
     with _execute_context() as execute_context:
         job_directory = execute_context.job_directory
