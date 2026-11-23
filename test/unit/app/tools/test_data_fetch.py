@@ -10,8 +10,12 @@ from uuid import uuid4
 
 import pytest
 
+from galaxy.tools import data_fetch
 from galaxy.tools.data_fetch import main
-from galaxy.util import galaxy_directory
+from galaxy.util import (
+    galaxy_directory,
+    strip_url_userinfo,
+)
 
 B64_FOR_1_2_3 = b64encode(b"1 2 3").decode("utf-8")
 URI_FOR_1_2_3 = f"base64://{B64_FOR_1_2_3}"
@@ -390,6 +394,344 @@ def test_hdca_allow_failed_collections(mock_http_server):
         assert "error_message" in elements[1]
         error = elements[1]["error_message"]
         assert f"Failed to fetch url {url_12_bed}" in error
+
+
+def test_hdas_url_error_hides_userinfo(mock_http_server):
+    url = mock_http_server.get_url(
+        remote_url="https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/12.bed",
+        status=404,
+        body="Not Found",
+    )
+    scheme, rest = url.split("://", 1)
+    url_with_userinfo = f"{scheme}://fetchuser:s3cr@t@{rest}"
+    with _execute_context(allow_localhost=True) as execute_context:
+        request = {
+            "targets": [
+                {
+                    "destination": {
+                        "type": "hdas",
+                    },
+                    "elements": [
+                        {
+                            "src": "url",
+                            "url": url_with_userinfo,
+                        },
+                    ],
+                }
+            ]
+        }
+        execute_context.execute_request(request)
+        output = _unnamed_output(execute_context)
+        error = output["elements"][0]["error_message"]
+        assert error.startswith(f"Failed to fetch url {url}. ")
+        assert "fetchuser" not in error
+        assert "s3cr" not in error
+
+
+def test_hdas_unknown_uri_error_hides_userinfo():
+    with _execute_context() as execute_context:
+        request = {
+            "targets": [
+                {
+                    "destination": {
+                        "type": "hdas",
+                    },
+                    "elements": [
+                        {
+                            "src": "url",
+                            "url": "unknownscheme://fetchuser:s3cret@example.org/a.bed",
+                        },
+                    ],
+                }
+            ]
+        }
+        execute_context.execute_request(request)
+        output = _unnamed_output(execute_context)
+        error = output["elements"][0]["error_message"]
+        assert "unknownscheme://example.org/a.bed" in error
+        assert "fetchuser" not in error
+        assert "s3cret" not in error
+
+
+def test_hdca_expansion_url_error_hides_userinfo(mock_http_server):
+    url = mock_http_server.get_url(
+        remote_url="https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.zip",
+        status=404,
+        body="Not Found",
+    )
+    scheme, rest = url.split("://", 1)
+    with _execute_context(allow_localhost=True) as execute_context:
+        request = {
+            "targets": [
+                {
+                    "destination": {
+                        "type": "hdca",
+                        "object_id": 76,
+                    },
+                    "elements_from": "archive",
+                    "src": "url",
+                    "url": f"{scheme}://fetchuser:s3cret@{rest}",
+                }
+            ]
+        }
+        execute_context.execute_request(request)
+        output = _unnamed_output(execute_context)
+        error = output["error_message"]
+        assert url in error
+        assert "fetchuser" not in error
+        assert "s3cret" not in error
+
+
+@pytest.mark.parametrize("scheme_override", [None, "unknownscheme"])
+def test_hdas_url_error_hides_userinfo_with_whitespace(mock_http_server, scheme_override):
+    url = mock_http_server.get_url(
+        remote_url="https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/12.bed",
+        status=404,
+        body="Not Found",
+    )
+    scheme, rest = url.split("://", 1)
+    scheme = scheme_override or scheme
+    with _execute_context(allow_localhost=True) as execute_context:
+        request = {
+            "targets": [
+                {
+                    "destination": {
+                        "type": "hdas",
+                    },
+                    "elements": [
+                        {
+                            "src": "url",
+                            "url": f"{scheme}://fetchuser:sec ret@{rest}",
+                        },
+                    ],
+                }
+            ]
+        }
+        execute_context.execute_request(request)
+        output = _unnamed_output(execute_context)
+        error = output["elements"][0]["error_message"]
+        assert f"{scheme}://{rest}" in error
+        assert "fetchuser" not in error
+        assert "sec ret" not in error
+
+
+def test_hdca_expansion_url_error_hides_userinfo_with_whitespace():
+    with _execute_context() as execute_context:
+        request = {
+            "targets": [
+                {
+                    "destination": {
+                        "type": "hdca",
+                        "object_id": 76,
+                    },
+                    "elements_from": "archive",
+                    "src": "url",
+                    "url": "unknownscheme://fetchuser:sec ret@example.org/1.zip",
+                }
+            ]
+        }
+        execute_context.execute_request(request)
+        output = _unnamed_output(execute_context)
+        error = output["error_message"]
+        assert "unknownscheme://example.org/1.zip" in error
+        assert "fetchuser" not in error
+        assert "sec ret" not in error
+
+
+def test_hdas_unparsable_url_error_hides_userinfo():
+    with _execute_context() as execute_context:
+        request = {
+            "targets": [
+                {
+                    "destination": {
+                        "type": "hdas",
+                    },
+                    "elements": [
+                        {
+                            "src": "url",
+                            # urlparse() rejects this netloc with a ValueError that quotes it whole.
+                            "url": "ftp://fetchuser:secret@exa／mple.org/a",
+                        },
+                    ],
+                }
+            ]
+        }
+        execute_context.execute_request(request)
+        output = _unnamed_output(execute_context)
+        error = output["elements"][0]["error_message"]
+        assert "exa／mple.org" in error
+        assert "fetchuser" not in error
+        assert "secret" not in error
+
+
+def test_hdas_trimmed_url_error_hides_userinfo_with_whitespace():
+    with _execute_context() as execute_context:
+        request = {
+            "targets": [
+                {
+                    "destination": {
+                        "type": "hdas",
+                    },
+                    "elements": [
+                        {
+                            "src": "url",
+                            "url": " unknownscheme://user:sec ret@example.org/a ",
+                        },
+                    ],
+                }
+            ]
+        }
+        execute_context.execute_request(request)
+        output = _unnamed_output(execute_context)
+        error = output["elements"][0]["error_message"]
+        assert "unknownscheme://example.org/a" in error
+        assert "user:" not in error
+        assert "sec" not in error
+        assert "ret@" not in error
+
+
+def test_hdas_trimmed_http_url_error_hides_userinfo_with_whitespace(mock_http_server):
+    url = mock_http_server.get_url(
+        remote_url="https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/12.bed",
+        status=404,
+        body="Not Found",
+    )
+    scheme, rest = url.split("://", 1)
+    with _execute_context(allow_localhost=True) as execute_context:
+        request = {
+            "targets": [
+                {
+                    "destination": {
+                        "type": "hdas",
+                    },
+                    "elements": [
+                        {
+                            "src": "url",
+                            "url": f" {scheme}://fetchuser:sec ret@{rest} ",
+                        },
+                    ],
+                }
+            ]
+        }
+        execute_context.execute_request(request)
+        output = _unnamed_output(execute_context)
+        error = output["elements"][0]["error_message"]
+        assert f"{scheme}://{rest}" in error
+        assert "fetchuser" not in error
+        assert "sec" not in error
+        assert "ret@" not in error
+
+
+def test_hdca_expansion_trimmed_url_error_hides_userinfo_with_whitespace():
+    with _execute_context() as execute_context:
+        request = {
+            "targets": [
+                {
+                    "destination": {
+                        "type": "hdca",
+                        "object_id": 76,
+                    },
+                    "elements_from": "archive",
+                    "src": "url",
+                    "url": " unknownscheme://user:sec ret@example.org/a ",
+                }
+            ]
+        }
+        execute_context.execute_request(request)
+        output = _unnamed_output(execute_context)
+        error = output["error_message"]
+        assert "unknownscheme://example.org/a" in error
+        assert "user:" not in error
+        assert "sec" not in error
+        assert "ret@" not in error
+
+
+def test_hdca_expansion_error_strips_only_the_failing_item_url(monkeypatch):
+    known_url_batches = []
+
+    def spy_strip_url_userinfo(text, known_urls=()):
+        known_url_batches.append(list(known_urls))
+        return strip_url_userinfo(text, known_urls)
+
+    monkeypatch.setattr(data_fetch, "strip_url_userinfo", spy_strip_url_userinfo)
+    failing_url = "unknownscheme://user:sec ret@example.org/inner.zip"
+    sibling_elements = [
+        {"name": f"sibling{i}", "src": "url", "url": f"https://user{i}:secret{i}@example.org/{i}.txt"}
+        for i in range(100)
+    ]
+    with _execute_context() as execute_context:
+        request = {
+            "targets": [
+                {
+                    "destination": {
+                        "type": "hdca",
+                        "object_id": 76,
+                    },
+                    "elements": [
+                        *sibling_elements[:50],
+                        {"name": "inner", "elements_from": "archive", "src": "url", "url": failing_url},
+                        *sibling_elements[50:],
+                    ],
+                }
+            ]
+        }
+        execute_context.execute_request(request)
+        error = _unnamed_output(execute_context)["error_message"]
+        assert error.startswith("Error expanding elements/items for upload destination.")
+        assert "unknownscheme://example.org/inner.zip" in error
+        assert "sec ret" not in error
+        assert known_url_batches == [[failing_url]]
+
+
+def test_hdas_composite_url_error_hides_userinfo_with_whitespace():
+    with _execute_context() as execute_context:
+        conf_path = os.path.join(execute_context.job_directory, "test_datatypes_conf.xml")
+        with open(conf_path, "w") as f:
+            f.write(LPED_DATATYPES_CONF)
+        request = {
+            "targets": [
+                {
+                    "destination": {"type": "hdas"},
+                    "elements": [
+                        {
+                            "ext": "lped",
+                            "composite": {
+                                "elements": [
+                                    {"src": "url", "url": "unknownscheme://fetchuser:sec ret@example.org/a.ped"}
+                                ]
+                            },
+                        }
+                    ],
+                }
+            ]
+        }
+        execute_context.execute_request(request, datatypes_registry=conf_path, galaxy_root=GALAXY_ROOT)
+        error = _unnamed_output(execute_context)["elements"][0]["error_message"]
+        assert "unknownscheme://example.org/a.ped" in error
+        assert "fetchuser" not in error
+        assert "sec" not in error
+        assert "ret@" not in error
+
+
+def test_hdas_http_url_error_hides_userinfo_of_url_in_query():
+    # Only the outer URL is requested; the HTTP source rejects the space before fetching it.
+    url = "https://example.org/a?next=ftp://fetchuser:sec ret@ftp.example.org/b"
+    with _execute_context() as execute_context:
+        request = {
+            "targets": [
+                {
+                    "destination": {"type": "hdas"},
+                    "elements": [{"src": "url", "url": url}],
+                }
+            ]
+        }
+        execute_context.execute_request(request)
+        error = _unnamed_output(execute_context)["elements"][0]["error_message"]
+        assert "URL contains unencoded characters" in error
+        assert "https://example.org/a?next=ftp://ftp.example.org/b" in error
+        assert "fetchuser" not in error
+        assert "sec" not in error
+        assert "ret@" not in error
 
 
 def test_hdca_failed_expansion():
