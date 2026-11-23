@@ -1,7 +1,7 @@
 """add is_based_on column to workflow
 
 Revision ID: fa5e55c14f6e
-Revises: 64d49ad328d4
+Revises: b9467a8c12de
 Create Date: 2026-11-11 10:00:00.000000
 
 """
@@ -18,7 +18,7 @@ from galaxy.model.migrations.util import (
 
 # revision identifiers, used by Alembic.
 revision = "fa5e55c14f6e"
-down_revision = "64d49ad328d4"
+down_revision = "b9467a8c12de"
 branch_labels = None
 depends_on = None
 
