@@ -19,6 +19,7 @@ from galaxy.files.models import FilesSourceOptions
 from galaxy.util import (
     stream_to_open_named_file,
     unicodify,
+    url_without_userinfo,
 )
 from galaxy.util.config_parsers import IpAllowedListEntryT
 
@@ -99,10 +100,16 @@ def validate_non_local(uri: str, ip_allowlist: list[IpAllowedListEntryT]) -> str
 
     # Strip surrounding whitespace before passing url to urlparse()
     url = uri.strip()
+    # Errors and logs may reach other users, so they never show the URL's credentials.
+    display_url = url_without_userinfo(url)
     # Extract hostname component
-    parsed_url = urlparse(url).netloc
+    try:
+        parsed_url = urlparse(url).netloc
+    except ValueError:
+        # Its message quotes the netloc, credentials included, so it is not raised or chained.
+        parsed_url = ""
     if not parsed_url:
-        raise RequestParameterInvalidException(f"Could not verify url '{url}'.")
+        raise RequestParameterInvalidException(f"Could not verify url '{display_url}'.")
     # If credentials are in this URL, we need to strip those.
     if parsed_url.count("@") > 0:
         # credentials.
@@ -122,14 +129,14 @@ def validate_non_local(uri: str, ip_allowlist: list[IpAllowedListEntryT]) -> str
             # However if it ends with a ']' then there is no port after it and
             # they've wrapped it in brackets just for fun.
             if "]" in parsed_url and not parsed_url.endswith("]"):
-                parsed_url, port = split_port(parsed_url=parsed_url, url=url)
+                parsed_url, port = split_port(parsed_url=parsed_url, url=display_url)
             else:
                 # Plain ipv6 without port
                 pass
         else:
             # This should finally be ipv4 with port. It cannot be IPv6 as that
             # was caught by earlier cases, and it cannot be due to credentials.
-            parsed_url, port = split_port(parsed_url=parsed_url, url=url)
+            parsed_url, port = split_port(parsed_url=parsed_url, url=display_url)
 
     # safe to log out, no credentials/request path, just an IP + port
     log.debug("parsed url %s, port:  %s", parsed_url, port)
@@ -139,8 +146,8 @@ def validate_non_local(uri: str, ip_allowlist: list[IpAllowedListEntryT]) -> str
     except (socket.gaierror, UnicodeError) as e:
         # UnicodeError covers idna codec failures (e.g. empty DNS labels in hosts like '...' or '..example.com')
         # which are not wrapped as socket.gaierror.
-        log.debug("Could not resolve url '%s': '%s'", url, e)
-        raise RequestParameterInvalidException(f"Could not verify url '{url}'.")
+        log.debug("Could not resolve url '%s': '%s'", display_url, e)
+        raise RequestParameterInvalidException(f"Could not verify url '{display_url}'.")
     # Get the IP addresses that this entry resolves to (uniquely)
     # We drop:
     #   AF_* family: It will resolve to AF_INET or AF_INET6, getaddrinfo(3) doesn't even mention AF_UNIX,

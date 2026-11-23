@@ -1,4 +1,6 @@
 import ipaddress
+import logging
+import traceback
 
 import pytest
 
@@ -57,6 +59,37 @@ def test_validate():
 def test_validate_non_local_rejects_malformed_host(bad_url):
     with pytest.raises(RequestParameterInvalidException):
         validate_non_local(bad_url, [])
+
+
+@pytest.mark.parametrize(
+    "bad_url",
+    [
+        "https://user:secret@..example.com/x",
+        "https://user:secret@example.org:notaport/x",
+        "https://user:sec ret@..example.com/x",
+    ],
+)
+def test_validate_non_local_errors_hide_userinfo(bad_url, caplog):
+    caplog.set_level(logging.DEBUG, logger="galaxy.files.uris")
+    with pytest.raises(RequestParameterInvalidException) as exc_info:
+        validate_non_local(bad_url, [])
+    assert "secret" not in str(exc_info.value)
+    assert "sec ret" not in str(exc_info.value)
+    assert "secret" not in caplog.text
+    assert "sec ret" not in caplog.text
+
+
+def test_validate_non_local_parser_error_hides_userinfo(caplog):
+    caplog.set_level(logging.DEBUG, logger="galaxy.files.uris")
+    # urlparse() rejects this netloc with a ValueError that quotes it whole.
+    bad_url = "https://user:secret@exa／mple.org/x"
+    with pytest.raises(RequestParameterInvalidException) as exc_info:
+        validate_non_local(bad_url, [])
+    assert "secret" not in str(exc_info.value)
+    assert exc_info.value.__cause__ is None
+    assert exc_info.value.__context__ is None
+    assert "secret" not in "".join(traceback.format_exception(exc_info.value))
+    assert "secret" not in caplog.text
 
 
 @pytest.mark.usefixtures("fake_public_dns")
