@@ -85,6 +85,7 @@ export default {
     data() {
         return {
             ...getDefaultValues(),
+            emittedValue: undefined,
             modalKey: 0,
             selectText: _l("Select"),
             faFolderOpen,
@@ -99,13 +100,27 @@ export default {
             return regex.test(this.currentDirectoryName);
         },
     },
+    watch: {
+        modelValue(value) {
+            // the parent passes our own emits back; only an outside change replaces the breadcrumb
+            if (value !== this.emittedValue) {
+                this.showDirectory(value);
+            }
+        },
+    },
     created() {
-        // show the saved directory, or clear a missing or unparseable one
-        if (!this.modelValue || !this.parseUrl(this.modelValue)) {
-            this.updateURL(true);
-        }
+        this.showDirectory(this.modelValue);
     },
     methods: {
+        /** Shows the given directory as breadcrumb, or clears a missing or unparseable one */
+        showDirectory(value) {
+            this.currentDirectoryName = "";
+            if (!value || !this.parseUrl(value)) {
+                this.url = "";
+                this.pathChunks = "";
+                this.updateURL(true);
+            }
+        },
         removePath(index) {
             this.pathChunks = this.pathChunks.slice(0, index);
             this.updateURL();
@@ -189,6 +204,7 @@ export default {
                 );
                 url = decodeURI(url);
             }
+            this.emittedValue = url;
             this.$emit("update:modelValue", url);
         },
     },

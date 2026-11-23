@@ -202,6 +202,29 @@ describe("DirectoryPathEditableBreadcrumb", () => {
         expect(wrapper.find("#select-btn").exists()).toBe(true);
     });
 
+    it("shows a directory the parent sets after mounting", async () => {
+        await mountFormDirectory("gxfiles://directory/subdirectory");
+        const input = wrapper.find("#path-input-breadcrumb");
+        await input.setValue("unsaved");
+
+        await wrapper.setProps({ modelValue: "gxftp://other" });
+
+        const pathChunks = wrapper.findAll("li.breadcrumb-item button.regular-path-chunk");
+        expect(pathChunks.map((chunk) => chunk.text())).toEqual(["other"]);
+        expect(wrapper.find(".pathname").text()).toBe("gxftp:");
+        expect(input.element.value).toBe("");
+        expect(wrapper.emitted("update:modelValue")).toBeUndefined();
+    });
+
+    it("shows the Select button when the parent clears the value", async () => {
+        await mountFormDirectory("gxfiles://directory/subdirectory");
+
+        await wrapper.setProps({ modelValue: null });
+
+        expect(wrapper.find("#select-btn").exists()).toBe(true);
+        expect(wrapper.find("ol.breadcrumb").exists()).toBe(false);
+    });
+
     it("does not load the files dialog before Select is clicked", () => {
         expect(wrapper.findComponent(FilesDialog).exists()).toBe(false);
     });
