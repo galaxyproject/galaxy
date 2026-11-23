@@ -48,19 +48,29 @@ export function defineListingProvider<V extends string>(config: ListingProviderC
          * shows its listing alone. The palette remembers one list per entity type, not per scope, so private
          * entities stay out of the shared and public scopes. The query filters every section.
          */
-        async searchScoped(scope, query) {
+        async searchScoped(scope, query, _ctx, options) {
             const variant = listVariant(scope.variant);
             const own = variant === "my";
-            const [leading, results] = await Promise.all([
-                own && config.leadingSections ? config.leadingSections(query) : [],
-                storeFirstItems(config.list(variant), query, PALETTE_LIMITS.section),
-            ]);
             const title = query ? (scope.variant ? scope.label : config.title) : "Latest";
-            return [
-                ...leading,
+            const leading = own && config.leadingSections ? config.leadingSections(query) : Promise.resolve([]);
+            const sections = (above: ScopedSection[], results: PaletteItem[]): ScopedSection[] => [
+                ...above,
                 { id: "recent", items: own ? recentItems(query) : [], title: "Recent" },
                 { id: variant, items: results, title },
             ];
+            const onLocal = options?.onLocal;
+            // the early answer waits for the leading sections, so they never push in above rows already on screen
+            const renderLocal = (items: PaletteItem[]) => {
+                leading.then((rows) => onLocal?.(sections(rows, items))).catch(() => {});
+            };
+            const [above, results] = await Promise.all([
+                leading,
+                storeFirstItems(config.list(variant), query, PALETTE_LIMITS.section, {
+                    onLocal: onLocal && renderLocal,
+                    signal: options?.signal,
+                }),
+            ]);
+            return sections(above, results);
         },
     };
 }

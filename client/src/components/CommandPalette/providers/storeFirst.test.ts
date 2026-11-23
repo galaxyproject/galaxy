@@ -97,6 +97,66 @@ describe("storeFirstItems", () => {
 
         expect(items.map((item) => item.title).sort()).toEqual(["alpha", "alpine"]);
     });
+
+    describe("with a signal a newer search can abort", () => {
+        beforeEach(() => {
+            vi.useFakeTimers();
+        });
+
+        afterEach(() => {
+            vi.useRealTimers();
+        });
+
+        it("waits for the input to settle before searching the backend", async () => {
+            const list = fakeList();
+            const controller = new AbortController();
+
+            const answer = storeFirstItems(list, "alp", 8, { signal: controller.signal });
+            await vi.advanceTimersByTimeAsync(PALETTE_LIMITS.backendSettle - 1);
+            expect(list.searchItems).not.toHaveBeenCalled();
+            await vi.advanceTimersByTimeAsync(1);
+
+            expect((await answer).map((item) => item.title).sort()).toEqual(["alpaca", "alpha", "alpine"]);
+            expect(list.searchItems).toHaveBeenCalledWith("alp");
+        });
+
+        it("never searches the backend once a newer search took over, and answers from the cache", async () => {
+            const list = fakeList();
+            const controller = new AbortController();
+
+            const answer = storeFirstItems(list, "alp", 8, { signal: controller.signal });
+            controller.abort();
+            await vi.advanceTimersByTimeAsync(PALETTE_LIMITS.backendSettle);
+
+            expect((await answer).map((item) => item.title).sort()).toEqual(["alpha", "alpine"]);
+            expect(list.searchItems).not.toHaveBeenCalled();
+        });
+
+        it("hands the cached rows over before the pause ends", async () => {
+            const list = fakeList();
+            const onLocal = vi.fn<(items: PaletteItem[]) => void>();
+
+            const answer = storeFirstItems(list, "alp", 8, { onLocal, signal: new AbortController().signal });
+            await vi.advanceTimersByTimeAsync(0);
+
+            expect(onLocal).toHaveBeenCalledTimes(1);
+            expect(onLocal.mock.calls[0]![0].map((item) => item.title).sort()).toEqual(["alpha", "alpine"]);
+            expect(list.searchItems).not.toHaveBeenCalled();
+            await vi.advanceTimersByTimeAsync(PALETTE_LIMITS.backendSettle);
+            expect((await answer).map((item) => item.title)).toContain("alpaca");
+            expect(onLocal).toHaveBeenCalledTimes(1);
+        });
+
+        it("skips the early answer when the cache answers alone", async () => {
+            const list = fakeList();
+            list.state.complete = true;
+            const onLocal = vi.fn();
+
+            await storeFirstItems(list, "alp", 8, { onLocal, signal: new AbortController().signal });
+
+            expect(onLocal).not.toHaveBeenCalled();
+        });
+    });
 });
 
 describe("rootListItems", () => {

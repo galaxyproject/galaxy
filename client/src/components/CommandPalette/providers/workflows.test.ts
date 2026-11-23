@@ -1,3 +1,4 @@
+import flushPromises from "flush-promises";
 import { createPinia, setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -199,6 +200,35 @@ describe("workflowsProvider", () => {
 
         expect(sections.at(-1)?.items.map((i) => i.title)).toEqual(["Zebrafish pipeline"]);
         expect(vi.mocked(loadWorkflows).mock.calls.some(([args]) => args.filterText === "zebrafish")).toBe(true);
+    });
+
+    it("hands the cached sections over only once the bookmarked rows are in", async () => {
+        // a full page keeps the cache incomplete, so the backend search follows the early answer
+        const page = Array.from({ length: 25 }, (_, index) => workflow(`filler-${index}`, `Assembly filler ${index}`));
+        let landBookmarked: () => void = () => {};
+        const bookmarkedHeld = new Promise<void>((resolve) => {
+            landBookmarked = resolve;
+        });
+        vi.mocked(loadWorkflows).mockImplementation(async ({ filterText = "" }: LoadArgs) => {
+            if (filterText.includes("is:bookmarked")) {
+                await bookmarkedHeld;
+                return { data: [BOOKMARKED], totalMatches: 1 };
+            }
+            return { data: page, totalMatches: page.length };
+        });
+        const early: string[][] = [];
+
+        const answer = workflowsProvider.searchScoped?.(OWN_SCOPE, "assembly", makeCtx(), {
+            onLocal: (local) => early.push(renderedSections(local).map((section) => section.title)),
+        });
+        await flushPromises();
+        // the own rows are cached, the bookmarks are not: nothing may render above them later
+        expect(early).toEqual([]);
+
+        landBookmarked();
+        await answer;
+
+        expect(early).toEqual([["Bookmarked", "Workflows"]]);
     });
 
     it("stays local for a single character", async () => {

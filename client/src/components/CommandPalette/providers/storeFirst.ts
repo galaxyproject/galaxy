@@ -57,13 +57,15 @@ export async function ensureListHydrated(list: StoreFirstList): Promise<void> {
 
 /**
  * Rows of `list` matching `query`; the backend is asked for any long enough query while the cache is incomplete,
- * and its loose matches are ranked locally too. `cacheOnly` never requests, not even to hydrate.
+ * and its loose matches are ranked locally too. `cacheOnly` never requests, not even to hydrate. A `signal` a newer
+ * search aborts holds the backend search back until the input settles, and a superseded one answers from the cache.
+ * `onLocal` takes the cached matches before that wait, so they render while the backend search is still to come.
  */
 export async function storeFirstItems(
     list: StoreFirstList,
     query: string,
     limit: number,
-    options: { cacheOnly?: boolean } = {},
+    options: { cacheOnly?: boolean; onLocal?: (items: PaletteItem[]) => void; signal?: AbortSignal } = {},
 ): Promise<PaletteItem[]> {
     if (!options.cacheOnly) {
         await ensureListHydrated(list);
@@ -72,6 +74,10 @@ export async function storeFirstItems(
     const search = list.searchItems;
     // a full page of loose cached matches can still hide an exact match the cache lacks
     if (options.cacheOnly || !search || query.length < PALETTE_LIMITS.minBackendQuery || list.isComplete()) {
+        return local.slice(0, limit);
+    }
+    options.onLocal?.(local.slice(0, limit));
+    if (!(await backendSettled(options.signal))) {
         return local.slice(0, limit);
     }
     const found = await searchQuietly(() => search(query));

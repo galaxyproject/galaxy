@@ -431,6 +431,29 @@ describe("historiesProvider", () => {
         expect(getHistoryList.mock.calls.some(([, , queryString]) => queryString?.includes("zebrafish"))).toBe(true);
     });
 
+    it("hands the cached sections over before the backend search of `h:` starts", async () => {
+        const historyStore = useHistoryStore();
+        await historyStore.loadHistories(false);
+        historyStore.totalHistoryCount = 42;
+        const searchedEarly: boolean[] = [];
+        const early: string[][] = [];
+
+        const sections = renderedSections(
+            await historiesProvider.searchScoped?.(OWN_SCOPE, "rna", makeCtx(), {
+                onLocal: (local) => {
+                    searchedEarly.push(getHistoryList.mock.calls.some(([, , query]) => query?.includes("rna")));
+                    early.push(renderedSections(local).flatMap((section) => section.items.map((i) => i.title)));
+                },
+                signal: new AbortController().signal,
+            }),
+        );
+
+        expect(searchedEarly).toEqual([false]);
+        expect(early).toEqual([["RNA-seq analysis"]]);
+        expect(sections.at(-1)?.items.map((i) => i.title)).toEqual(["RNA-seq analysis"]);
+        expect(getHistoryList.mock.calls.some(([, , query]) => query?.includes("rna"))).toBe(true);
+    });
+
     it("queries a listing whose cache is a full page", async () => {
         const page = Array.from({ length: 25 }, (_, index) =>
             history(`filler-${index}`, `Filler ${index}`, "2026-08-01T10:00:00", { username: "colleague" }),
