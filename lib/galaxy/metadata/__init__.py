@@ -45,6 +45,11 @@ except Exception:
 """
 
 
+# Where remote tool evaluation writes the command line it built, relative to the job's metadata
+# directory. Pulsar stages outputs_populated/ back with either metadata strategy.
+REMOTE_COMMAND_LINE_FILE = os.path.join("outputs_populated", "remote_command_line.txt")
+
+
 def job_metadata_directory(working_directory) -> str:
     """Directory in a job's working directory for external metadata files, temp files included."""
     return os.path.join(working_directory, "metadata")

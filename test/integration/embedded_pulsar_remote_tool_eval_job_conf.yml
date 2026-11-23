@@ -1,0 +1,34 @@
+runners:
+  local:
+    load: galaxy.jobs.runners.local:LocalJobRunner
+  pulsar_embed:
+    load: galaxy.jobs.runners.pulsar:PulsarEmbeddedJobRunner
+    pulsar_app_config:
+      tool_dependency_dir: none
+      conda_auto_init: false
+      conda_auto_install: false
+
+execution:
+  default: pulsar_embed
+  environments:
+    local:
+      runner: local
+    pulsar_embed:
+      runner: pulsar_embed
+      remote_metadata: true
+      metadata_strategy: extended
+      tool_evaluation_strategy: remote
+      rewrite_parameters: true
+      default_file_action: copy
+      env:
+      # Pulsar's setup route drops preserve_galaxy_python_environment, so tools that need
+      # Galaxy's Python environment (expression tools) would not get it on this client.
+      - name: PYTHONPATH
+        value: $GALAXY_LIB
+
+tools:
+# Expression tools are in the local tool class; run this one on Pulsar.
+- id: param_value_from_file
+  environment: pulsar_embed
+- class: local
+  environment: local

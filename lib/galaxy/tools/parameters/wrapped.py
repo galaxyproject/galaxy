@@ -9,6 +9,7 @@ from typing import (
 )
 
 from galaxy.exceptions import RequestParameterInvalidException
+from galaxy.tools.job_parameters import is_element_identifier_parameter
 from galaxy.tools.parameters.basic import (
     DataCollectionToolParameter,
     DataToolParameter,
@@ -73,7 +74,7 @@ class LegacyUnprefixedDict(UserDict[str, Any]):
 def copy_identifiers(source, destination):
     if isinstance(source, dict):
         for k, v in source.items():
-            if k.endswith("|__identifier__"):
+            if is_element_identifier_parameter(k):
                 if isinstance(destination, dict):
                     destination[k] = v
 

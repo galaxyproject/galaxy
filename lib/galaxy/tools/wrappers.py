@@ -32,11 +32,13 @@ from galaxy.model import (
     DatasetInstance,
     HasTags,
     HistoryDatasetCollectionAssociation,
+    MetadataFile,
 )
 from galaxy.model.metadata import FileParameter
 from galaxy.model.none_like import NoneDataset
 from galaxy.security.object_wrapper import wrap_with_safe_string
 from galaxy.tool_util_models.sample_sheet import SampleSheetRow
+from galaxy.tools.job_parameters import element_identifier_parameter
 from galaxy.tools.parameters.basic import (
     BooleanToolParameter,
     TextToolParameter,
@@ -304,13 +306,16 @@ class SelectToolParameterWrapper(ToolParameterValueWrapper):
         return self.value.__iter__()
 
 
-def _job_metadata_path(compute_environment: Optional["ComputeEnvironment"], dataset: DatasetInstance, path: str) -> str:
-    """Where the job finds ``dataset``'s metadata file stored at ``path``."""
+def _job_metadata_rewrite(
+    compute_environment: Optional["ComputeEnvironment"],
+    dataset: DatasetInstance,
+    metadata_name: str,
+    metadata_file: MetadataFile,
+) -> str | None:
+    """Where the job finds ``dataset``'s metadata file, if not at its Galaxy path."""
     if compute_environment:
-        rewrite: str | None = compute_environment.input_metadata_rewrite(dataset, path)
-        if rewrite is not None:
-            return rewrite
-    return path
+        return compute_environment.input_metadata_rewrite(dataset, metadata_name, metadata_file)
+    return None
 
 
 class DatasetFilenameWrapper(ToolParameterValueWrapper):
@@ -344,9 +349,10 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
                     rval = self.metadata.spec[name].no_value
                 metadata_param = self.metadata.spec[name].param
 
-                rval = metadata_param.to_safe_string(rval)
-                if isinstance(metadata_param, FileParameter):
-                    rval = _job_metadata_path(self.compute_environment, self.dataset, rval)
+                rewrite = None
+                if isinstance(metadata_param, FileParameter) and rval:
+                    rewrite = _job_metadata_rewrite(self.compute_environment, self.dataset, name, rval)
+                rval = metadata_param.to_safe_string(rval) if rewrite is None else rewrite
 
                 # Store this value, so we don't need to recalculate if needed
                 # again
@@ -500,8 +506,12 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
         # Only inputs are staged for the job; an output's metadata files don't exist yet.
         compute_environment = self.compute_environment if self.__io_type == "input" else None
         return tuple(
-            (file_ext, _job_metadata_path(compute_environment, self.unsanitized, path))
-            for file_ext, path in self.unsanitized.get_metadata_file_paths_and_extensions()
+            (
+                file_ext,
+                _job_metadata_rewrite(compute_environment, self.unsanitized, metadata_name, metadata_file)
+                or metadata_file.get_file_name(),
+            )
+            for file_ext, metadata_name, metadata_file in self.unsanitized.get_metadata_files_and_extensions()
         )
 
     def serialize(self, invalid_chars: Sequence[str] = ("/",)) -> dict[str, Any]:
@@ -935,7 +945,7 @@ class ElementIdentifierMapper:
 
     def __init__(self, input_datasets: dict[str, Any] | None = None) -> None:
         if input_datasets is not None:
-            self.identifier_key_dict = {v: f"{k}|__identifier__" for k, v in input_datasets.items()}
+            self.identifier_key_dict = {v: element_identifier_parameter(k) for k, v in input_datasets.items()}
         else:
             self.identifier_key_dict = {}
 

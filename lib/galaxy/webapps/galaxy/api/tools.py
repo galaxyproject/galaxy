@@ -81,6 +81,7 @@ from galaxy.tools.fetch.workbooks import (
     ParsedFetchWorkbook,
     ParseFetchWorkbook,
 )
+from galaxy.tools.job_parameters import TARGET_DATATYPE
 from galaxy.tools.parameters.pagination import OptionsPaginationT
 from galaxy.util.hash_util import (
     HashFunctionNameEnum,
@@ -1010,7 +1011,7 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         self.history_manager.error_unless_mutable(target_history)
 
         # Make the target datatype available to the converter
-        params["__target_datatype__"] = target_type
+        params[TARGET_DATATYPE] = target_type
         vars = converter.handle_input(trans, params, history=target_history)
         return self.service._handle_inputs_output_to_api_response(trans, converter, target_history, vars)
 

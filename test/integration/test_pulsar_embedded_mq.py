@@ -43,11 +43,32 @@ execution:
       jobs_directory: ${jobs_directory}
       remote_metadata: true
       remote_property_galaxy_home: ${galaxy_home}
+    pulsar_mq_tool_error_environment:
+      runner: pulsar
+      rewrite_parameters: true
+      dependency_resolution: none
+      default_file_action: remote_transfer
+      jobs_directory: ${jobs_directory}
+      remote_metadata: true
+      remote_property_galaxy_home: ${galaxy_home}
+      env:
+        - name: GX_TARGET_EXIT_CODE
+          value: "4"
+      resubmit:
+        - condition: tool_detected_failure
+          environment: local_ok_environment
     local_environment:
       runner: local
+    local_ok_environment:
+      runner: local
+      env:
+        - name: GX_TARGET_EXIT_CODE
+          value: "0"
 tools:
   - id: __DATA_FETCH__
     environment: local_environment
+  - id: exit_code_from_env
+    environment: pulsar_mq_tool_error_environment
 """
 
 
@@ -101,6 +122,29 @@ class TestEmbeddedMessageQueuePulsarExtendedMetadataPurge(TestEmbeddedMessageQue
     def handle_galaxy_config_kwds(cls, config):
         config["metadata_strategy"] = "extended"
         _handle_galaxy_config_kwds(cls, config)
+
+
+class TestEmbeddedMessageQueuePulsarResubmission(integration_util.IntegrationTestCase):
+    """Jobs updated over the message queue keep their destination's resubmit rules."""
+
+    dataset_populator: DatasetPopulator
+    framework_tool_and_types = True
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
+
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        _handle_galaxy_config_kwds(cls, config)
+
+    def test_tool_detected_error_resubmits_to_local(self):
+        with self.dataset_populator.test_history() as history_id:
+            run = self.dataset_populator.run_tool("exit_code_from_env", {"input": 5}, history_id)
+            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+            job = self.dataset_populator.get_job_details(run["jobs"][0]["id"], full=True).json()
+            assert job["state"] == "ok"
+            assert job["exit_code"] == 0
 
 
 class EmbeddedMessageQueuePulsarIntegrationInstance(integration_util.IntegrationInstance):

@@ -167,6 +167,8 @@
   <tool file="param_text_option.xml" />
   <tool file="column_param.xml" />
   <tool file="column_param_configfile.xml" />
+  <tool file="command_reads_input_size.xml" />
+  <tool file="command_reads_configfile.xml" />
   <tool file="column_param_list.xml" />
   <tool file="column_multi_param.xml" />
   <tool file="select_optional_legacy.xml" />
@@ -202,6 +204,7 @@
   <tool file="explicit_conversion.xml" />
   <tool file="identifier_source.xml" />
   <tool file="identifier_single.xml" />
+  <tool file="template_macro_undeclared_name.xml" />
   <tool file="identifier_single_in_repeat.xml" />
   <tool file="identifier_in_conditional.xml" />
   <tool file="identifier_multiple.xml" />

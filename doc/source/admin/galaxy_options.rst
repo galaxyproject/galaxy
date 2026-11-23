@@ -5401,9 +5401,7 @@
     If set to ``remote`` the tool command line will be built as part
     of the submitted job. Note that ``remote`` is a beta setting that
     will be useful for materializing deferred datasets as part of the
-    submitted job. Note also that you have to set
-    ``metadata_strategy`` to ``extended`` if you set this option to
-    ``remote``.
+    submitted job. The job then needs a Galaxy runtime where it runs.
 :Default: ``local``
 :Type: str
 

@@ -6,6 +6,7 @@
         <inputs name="inputs" data_style="staging_path_and_source_path" />
         <configfile name="check_inputs"><![CDATA[
 import json
+import os
 import sys
 
 input_json_path = sys.argv[1]
@@ -30,6 +31,11 @@ assert collection_input_with_staging_details[0]['element_identifier'] == ["list"
 assert collection_input_with_staging_details[0]['ext'] == "bam"
 assert collection_input_with_staging_details[0]['staging_path'] == "list/element1.bam"
 assert collection_input_with_staging_details[0]['metadata_files'][0]['staging_path'] == "list/element1.bam.bai"
+
+for staging_details in [data_input_with_staging_details, *multiple_data_input_with_staging_details, *collection_input_with_staging_details]:
+    assert os.path.exists(staging_details['source_path']), staging_details
+    for metadata_file in staging_details['metadata_files']:
+        assert os.path.exists(metadata_file['source_path']), metadata_file
 
 with open("output", "w") as f:
     f.write("okay\n")
