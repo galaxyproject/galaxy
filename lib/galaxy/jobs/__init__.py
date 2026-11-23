@@ -3367,7 +3367,15 @@ class TaskWrapper(JobWrapper):
         return self.extra_filenames
 
     def fail(
-        self, message, exception=False, tool_stdout="", tool_stderr="", exit_code=None, job_stdout=None, job_stderr=None
+        self,
+        message,
+        exception=False,
+        tool_stdout="",
+        tool_stderr="",
+        exit_code=None,
+        job_stdout=None,
+        job_stderr=None,
+        job_metrics_directory=None,
     ):
         log.error(f"TaskWrapper Failure {message}")
         self.status = "error"
@@ -3379,6 +3387,7 @@ class TaskWrapper(JobWrapper):
             exit_code=exit_code,
             job_stdout=job_stdout,
             job_stderr=job_stderr,
+            job_metrics_directory=job_metrics_directory,
         )
         # How do we want to handle task failure?  Fail the job and let it clean up?
 
