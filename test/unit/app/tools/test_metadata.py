@@ -601,29 +601,7 @@ class TestMetadata(TestCase, tools_support.UsesTools):
         assert self._exported_dataset_state(output_dataset) == model.Dataset.states.ERROR
 
     def test_extended_metadata_uncollected_output_imports_with_file_size(self):
-        self.app.config.metadata_strategy = "extended"
-        source_file_name = os.path.join(galaxy_directory(), "test/functional/tools/for_workflows/cat.xml")
-        self._init_tool_for_path(source_file_name)
-        output_dataset = self._create_output_dataset(extension="txt")
-        self.job.add_output_dataset("out_file1", output_dataset)
-        self.app.model.session.commit()
-        outputs_directory = os.path.join(self.job_working_directory, "outputs")
-        output_fnames = [
-            DatasetPath(
-                output_dataset.dataset.id,
-                output_dataset.dataset.get_file_name(sync_cache=False),
-                false_path=os.path.join(self.tool_working_directory, "stray.*.txt"),
-                fallback_path=os.path.join(outputs_directory, f"dataset_{output_dataset.dataset.uuid}.dat"),
-            )
-        ]
-        command = self.metadata_command({"out_file1": output_dataset}, output_fnames=output_fnames)
-        outside_path = os.path.join(self.test_directory, "outside.txt")
-        self._write_file(outside_path, "outside job directory\n")
-        os.symlink(outside_path, os.path.join(self.tool_working_directory, "stray.0.txt"))
-        self._write_file(os.path.join(outputs_directory, "tool_stdout"), "")
-        self._write_file(os.path.join(outputs_directory, "tool_stderr"), "")
-        self._write_job_files()
-        self.exec_metadata_command(command)
+        output_dataset = self._run_from_work_dir_output(0, write_output=False, stray_outside_link=True)
         assert self._exported_dataset_state(output_dataset) == model.Dataset.states.ERROR
 
         import_model_store = get_import_model_store_for_directory(
@@ -640,11 +618,12 @@ class TestMetadata(TestCase, tools_support.UsesTools):
         assert output_dataset.dataset.state == model.Dataset.states.ERROR
         output_dataset.__strict_check_before_flush__()
 
-    def _run_from_work_dir_output(self, stray_files, write_output=True):
+    def _run_from_work_dir_output(self, stray_files, write_output=True, stray_outside_link=False):
         self.app.config.metadata_strategy = "extended"
         source_file_name = os.path.join(galaxy_directory(), "test/functional/tools/for_workflows/cat.xml")
         self._init_tool_for_path(source_file_name)
         output_dataset = self._create_output_dataset(extension="txt")
+        self.job.add_output_dataset("out_file1", output_dataset)
         self.app.model.session.commit()
         outputs_directory = os.path.join(self.job_working_directory, "outputs")
         output_path = os.path.join(outputs_directory, f"dataset_{output_dataset.dataset.uuid}.dat")
@@ -659,6 +638,10 @@ class TestMetadata(TestCase, tools_support.UsesTools):
         command = self.metadata_command({"out_file1": output_dataset}, output_fnames=output_fnames)
         for i in range(stray_files):
             self._write_work_dir_file(f"stray.{i}.txt", f"stray {i}\n")
+        if stray_outside_link:
+            outside_path = os.path.join(self.test_directory, "outside.txt")
+            self._write_file(outside_path, "outside job directory\n")
+            os.symlink(outside_path, os.path.join(self.tool_working_directory, "stray.0.txt"))
         if write_output:
             self._write_file(output_path, "written to output\n")
         self._write_file(os.path.join(outputs_directory, "tool_stdout"), "")
