@@ -22,9 +22,7 @@ async function init(wrapper, data) {
     // the file dialog modal should exist
     const filesDialogComponent = wrapper.findComponent(FilesDialog);
     expect(filesDialogComponent.exists()).toBe(true);
-    filesDialogComponent.vm.callback({ url: data.url });
-    // HACK: URL implementation in test environment is not the same as global node
-    wrapper.vm.pathChunks = [...data.pathChunks];
+    filesDialogComponent.props("callback")({ url: data.url });
     await flushPromises();
     await validateLatestEmittedPath(wrapper, data.url);
 }
@@ -41,9 +39,6 @@ async function validateLatestEmittedPath(wrapper, expectedPath) {
 
 describe("DirectoryPathEditableBreadcrumb", () => {
     let wrapper;
-    let spyOnUrlSet;
-    let spyOnAddPath;
-    let spyOnUpdateURL;
 
     const testingData = {
         url: "gxfiles://directory/subdirectory",
@@ -56,7 +51,6 @@ describe("DirectoryPathEditableBreadcrumb", () => {
 
     const testingDataWithSpecialChars = {
         url: "gxfiles://directory/sub directory/with%20percent",
-        pathChunks: [{ pathChunk: "directory" }, { pathChunk: "sub%20directory" }, { pathChunk: "with%2520percent" }],
     };
 
     const saveNewChunk = async (path) => {
@@ -79,10 +73,6 @@ describe("DirectoryPathEditableBreadcrumb", () => {
     }
 
     beforeEach(async () => {
-        spyOnUrlSet = vi.spyOn(FormDirectory.methods, "setUrl");
-        spyOnAddPath = vi.spyOn(FormDirectory.methods, "addPath");
-        spyOnUpdateURL = vi.spyOn(FormDirectory.methods, "updateURL");
-
         server.use(
             http.get("/api/remote_files/plugins", ({ response }) => {
                 return response(200).json(rootResponse);
@@ -100,8 +90,7 @@ describe("DirectoryPathEditableBreadcrumb", () => {
 
     it("should render Breadcrumb", async () => {
         await init(wrapper, testingData);
-        // after initial folder is chosen, setUrl() should be called and modal disappear
-        expect(spyOnUrlSet).toHaveBeenCalled();
+        // after the initial folder is chosen, the modal disappears
         expect(wrapper.findComponent(FilesDialog).exists()).toBe(false);
         expect(wrapper.find("ol.breadcrumb").exists()).toBe(true);
 
@@ -140,7 +129,6 @@ describe("DirectoryPathEditableBreadcrumb", () => {
         const input = await saveNewChunk(validPath);
 
         await flushPromises();
-        expect(spyOnAddPath).toHaveBeenCalled();
         // after new entry is entered the value of input should be an empty string
         expect(input.element.value).toBe("");
 
@@ -158,16 +146,6 @@ describe("DirectoryPathEditableBreadcrumb", () => {
         expect(wrapper.findAll("li.breadcrumb-item").length).toBe(testingData.expectedNumberOfPaths);
 
         await validateLatestEmittedPath(wrapper, testingData.url);
-    });
-
-    it("should update new path", async () => {
-        await init(wrapper, testingData);
-        // enter a new path chunk
-        expect(spyOnUpdateURL).toHaveBeenCalled();
-        await saveNewChunk(validPath);
-        await flushPromises();
-
-        expect(spyOnUpdateURL).toHaveBeenCalled();
     });
 
     it("should retain special characters in path", async () => {
@@ -239,7 +217,6 @@ describe("DirectoryPathEditableBreadcrumb", () => {
         await input.trigger("blur");
         await flushPromises();
 
-        expect(spyOnAddPath).toHaveBeenCalled();
         expect(input.element.value).toBe("");
         expect(wrapper.findAll("li.breadcrumb-item").length).toBe(testingData.expectedNumberOfPaths + 1);
         await validateLatestEmittedPath(wrapper, `${testingData.url}/${validPath}`);
