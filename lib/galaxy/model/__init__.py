@@ -458,6 +458,11 @@ def set_datatypes_registry(d_registry):
     _datatypes_registry = d_registry
 
 
+def tag_strings(tags: Iterable["ItemTagAssociation"]) -> list[str]:
+    """Render each tag as ``name`` or ``name:value``."""
+    return [f"{tag.user_tname}" if tag.value is None else f"{tag.user_tname}:{tag.user_value}" for tag in tags]
+
+
 class HasTags(Dictifiable):
     dict_collection_visible_keys = ["tags"]
     dict_element_visible_keys = ["tags"]
@@ -468,14 +473,7 @@ class HasTags(Dictifiable):
         return rval
 
     def make_tag_string_list(self):
-        # add tags string list
-        tags_str_list = []
-        for tag in self.tags:
-            tag_str = tag.user_tname
-            if tag.value is not None:
-                tag_str += f":{tag.user_value}"
-            tags_str_list.append(tag_str)
-        return tags_str_list
+        return tag_strings(self.tags)
 
     def copy_tags_from(self, target_user, source):
         existing = {(t.tag_id, t.value) for t in self.tags}
