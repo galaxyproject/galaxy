@@ -85,14 +85,18 @@ const canEdit = computed(
 );
 // History items are listed without their annotation, so it is loaded when a collection is opened.
 const annotation = ref<string>();
+// Until the annotation is known it cannot be edited, so a save never replaces one the user has not seen.
+const annotationLoaded = ref(false);
 watch(
     () => rootCollection.value.id,
     async (hdcaId) => {
         annotation.value = undefined;
+        annotationLoaded.value = false;
         try {
             const loaded = await fetchCollectionAnnotation({ hdca_id: hdcaId });
             if (hdcaId === rootCollection.value.id) {
                 annotation.value = loaded ?? undefined;
+                annotationLoaded.value = true;
             }
         } catch (e) {
             // The annotation is optional detail; the panel works without it.
@@ -178,7 +182,7 @@ watch(rootCollectionStates, refreshCollectionElements);
                     :dsc="dsc"
                     :writeable="canEdit"
                     :annotation="isRoot ? annotation : undefined"
-                    :show-annotation="isRoot"
+                    :show-annotation="isRoot && annotationLoaded"
                     @update:dsc="updateDsc(dsc, $event)" />
                 <CollectionOperations v-if="canEdit && showControls" :dsc="dsc" />
             </section>

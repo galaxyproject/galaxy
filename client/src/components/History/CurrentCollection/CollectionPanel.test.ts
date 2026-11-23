@@ -123,7 +123,7 @@ describe("CollectionPanel", () => {
             http.put("/api/histories/{history_id}/contents/{type}s/{id}", async ({ request, response }) => {
                 const body = await request.json();
                 updateSpy(body);
-                return response(200).json({ ...mockCollection(), ...body });
+                return response(200).json({ ...mockCollection(), elements: [], annotation: body.annotation ?? null });
             }),
             http.get("/api/dataset_collections/{hdca_id}/contents/{parent_id}", ({ response }) => {
                 fetchElementsSpy();
@@ -178,6 +178,29 @@ describe("CollectionPanel", () => {
         const details = wrapper.findComponent(CollectionDetails);
         expect(details.props("showAnnotation")).toBe(true);
         expect(details.props("annotation")).toBe("Reads after trimming");
+    });
+
+    it("offers the annotation for editing only once it has loaded", async () => {
+        annotation = "Reads after trimming";
+        const wrapper = mountPanel(mockCollection());
+        const details = wrapper.findComponent(CollectionDetails);
+        // Saving from an editor opened now would replace an annotation the user has not seen.
+        expect(details.props("showAnnotation")).toBe(false);
+
+        await waitForFetch();
+        expect(details.props("showAnnotation")).toBe(true);
+    });
+
+    it("does not offer the annotation for editing when it could not be loaded", async () => {
+        server.use(
+            http.get("/api/dataset_collections/{hdca_id}", ({ response }) =>
+                response("5XX").json({ err_msg: "unavailable", err_code: 500 }, { status: 500 }),
+            ),
+        );
+        const wrapper = mountPanel(mockCollection());
+        await waitForFetch();
+
+        expect(wrapper.findComponent(CollectionDetails).props("showAnnotation")).toBe(false);
     });
 
     it("saves an edited annotation and shows it", async () => {

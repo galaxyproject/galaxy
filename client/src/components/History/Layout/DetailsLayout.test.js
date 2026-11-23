@@ -90,6 +90,34 @@ describe("DetailsLayout", () => {
         expect(wrapper.emitted("save")).toEqual([[{ annotation: "new annotation" }]]);
     });
 
+    it("takes up an annotation that arrives while the editor is open", async () => {
+        const wrapper = await createWrapper(DetailsLayout, localVue, { id: "user.id", email: "user.email" }, false, {
+            name: "history name",
+            tags: [],
+        });
+
+        await wrapper.find("[data-description='editor toggle']").trigger("click");
+        await wrapper.setProps({ annotation: "stored annotation" });
+        expect(wrapper.get("[data-description='annotation input']").element.value).toBe("stored annotation");
+        await wrapper.find("[data-description='editor save button']").trigger("click");
+
+        expect(wrapper.emitted("save")).toBeUndefined();
+    });
+
+    it("keeps an annotation being typed when another one arrives", async () => {
+        const wrapper = await createWrapper(DetailsLayout, localVue, { id: "user.id", email: "user.email" }, false, {
+            name: "history name",
+            tags: [],
+        });
+
+        await wrapper.find("[data-description='editor toggle']").trigger("click");
+        await wrapper.find("[data-description='annotation input']").setValue("new annotation");
+        await wrapper.setProps({ annotation: "stored annotation" });
+        await wrapper.find("[data-description='editor save button']").trigger("click");
+
+        expect(wrapper.emitted("save")).toEqual([[{ annotation: "new annotation" }]]);
+    });
+
     it("edits the name in a GFormInput and saves it trimmed", async () => {
         const wrapper = await createWrapper(DetailsLayout, localVue, { id: "user.id", email: "user.email" }, false, {
             name: "history name",
