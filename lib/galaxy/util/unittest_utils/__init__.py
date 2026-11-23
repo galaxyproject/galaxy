@@ -153,14 +153,15 @@ def transient_failure(issue: int, potentially_fixed: bool = False) -> Callable[[
     displayed error message and help us know if the issue can be potentially
     closed after a month of not being reported.
 
+    When ``GALAXY_TEST_SKIP_FLAKEY_TESTS_ON_ERROR`` is set (``run_tests.sh --skip_flakey_fails``),
+    a failure is reported as a skip, as with ``@flakey``, and the skip reason includes the error.
+    Tests marked ``potentially_fixed`` still fail, so the failure gets reported on the tracking issue.
+
     Args:
         issue: GitHub issue number tracking this transient failure
         potentially_fixed: If True, indicates that the underlying issue may have been fixed,
             and the test failure comment will require the PR reviewer to report
             potential failures on the tracking issue and remove potentially_fixed.
-
-    Like ``@flakey``, the test is skipped instead of failing when
-    ``GALAXY_TEST_SKIP_FLAKEY_TESTS_ON_ERROR`` is set (``run_tests.sh --skip_flakey_fails``).
 
     Example:
         @transient_failure(issue=12345)
@@ -174,9 +175,11 @@ def transient_failure(issue: int, potentially_fixed: bool = False) -> Callable[[
         def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
             try:
                 return func(*args, **kwargs)
+            except SkipTest:
+                raise
             except Exception as e:
-                if SKIP_FLAKEY_TESTS_ON_ERROR and not isinstance(e, SkipTest):
-                    raise SkipTest(f"Skipping known transient failure [Issue #{issue}]") from e
+                if SKIP_FLAKEY_TESTS_ON_ERROR and not potentially_fixed:
+                    raise SkipTest(f"Skipping known transient failure [Issue #{issue}]: {e}") from e
                 if potentially_fixed:
                     current_datetime = datetime.now().isoformat()
                     report_this = (
