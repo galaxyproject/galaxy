@@ -701,6 +701,15 @@ class TestMetadata(TestCase, tools_support.UsesTools):
 
         assert self._exported_dataset_state(output_dataset) == model.Dataset.states.ERROR
 
+    def test_extended_metadata_from_work_dir_rejects_fallback_symlink_outside_job_directory(self):
+        output_dataset = self._run_from_work_dir_output(0, write_output=False, output_link=self._write_outside_file())
+
+        self._assert_extended_metadata_security_failure(
+            output_dataset, "Job output refers to a file outside its allowed working directory."
+        )
+        with open(output_dataset.dataset.get_file_name()) as f:
+            assert f.read() != "outside job directory\n"
+
     def _setup_output_in_working_directory(self):
         source_file_name = os.path.join(galaxy_directory(), "test/functional/tools/for_workflows/cat.xml")
         self._init_tool_for_path(source_file_name)
@@ -721,7 +730,7 @@ class TestMetadata(TestCase, tools_support.UsesTools):
             outside_file.write("outside job directory\n")
         return outside_path
 
-    def _run_from_work_dir_output(self, stray_files, write_output=True):
+    def _run_from_work_dir_output(self, stray_files, write_output=True, output_link=None):
         self.app.config.metadata_strategy = "extended"
         source_file_name = os.path.join(galaxy_directory(), "test/functional/tools/for_workflows/cat.xml")
         self._init_tool_for_path(source_file_name)
@@ -742,6 +751,9 @@ class TestMetadata(TestCase, tools_support.UsesTools):
             self._write_work_dir_file(f"stray.{i}.txt", f"stray {i}\n")
         if write_output:
             self._write_file(output_path, "written to output\n")
+        if output_link:
+            safe_makedirs(outputs_directory)
+            os.symlink(output_link, output_path)
         self._write_file(os.path.join(outputs_directory, "tool_stdout"), "")
         self._write_file(os.path.join(outputs_directory, "tool_stderr"), "")
         self._write_job_files()

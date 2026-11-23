@@ -364,8 +364,9 @@ def set_metadata_portable(
     try:
         unnamed_outputs = validate_unnamed_outputs(job_context)
         for output_dict in outputs.values():
-            if output_dict["filename_override"]:
-                ensure_job_path_in_job_directory(output_dict["filename_override"], tool_job_working_directory)
+            for output_path in (output_dict["filename_override"], output_dict.get("filename_fallback")):
+                if output_path:
+                    ensure_job_path_in_job_directory(output_path, tool_job_working_directory)
     except OutputCollectionSecurityError as e:
         output_collection_security_error = e
         unnamed_outputs = []
