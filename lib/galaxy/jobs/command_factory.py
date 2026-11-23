@@ -1,4 +1,6 @@
 import json
+import re
+import shlex
 import typing
 from logging import getLogger
 from os import (
@@ -315,14 +317,24 @@ def __copy_if_exists_command(work_dir_output):
 
 def __copy_directory_if_exists_command(directory_output, tool_stderr_path, exit_code_path):
     source_directory, destination, precreated = directory_output
-    source_directory = __unquote_glob_characters(source_directory)
+    # This runs outside the tool's container and from_work_dir comes from the tool, so every path is shell-quoted.
+    source_contents = __quote_preserving_globs(f"{source_directory}/.")
+    source_directory = __quote_preserving_globs(source_directory)
+    destination = shlex.quote(destination)
+    tool_stderr_path = shlex.quote(tool_stderr_path)
+    exit_code_path = shlex.quote(exit_code_path)
     # Like __copy_if_exists_command, skips a precreated destination that is gone because the output was purged
     # during the job. Other destinations, e.g. on a remote host, are created.
-    test = f'[ -d "{source_directory}" -a -d "{destination}" ]' if precreated else f'[ -d "{source_directory}" ]'
-    copy_command = f'mkdir -p "{destination}" && cp -r "{source_directory}/." "{destination}"'
+    test = f"[ -d {source_directory} -a -d {destination} ]" if precreated else f"[ -d {source_directory} ]"
+    copy_command = f"mkdir -p {destination} && cp -r {source_contents} {destination}"
     # A failed copy fails the job like a failed tool, keeping the tool's exit code if it already failed.
-    fail_job = f'{{ [ "$return_code" -ne 0 ] || return_code=1 ; echo $return_code > "{exit_code_path}" ; }}'
-    return f'\nif {test} ; then {{ {copy_command} ; }} 2>> "{tool_stderr_path}" || {fail_job} ; fi'
+    fail_job = f'{{ [ "$return_code" -ne 0 ] || return_code=1 ; echo $return_code > {exit_code_path} ; }}'
+    return f"\nif {test} ; then {{ {copy_command} ; }} 2>> {tool_stderr_path} || {fail_job} ; fi"
+
+
+def __quote_preserving_globs(path):
+    # Shell-quotes the path except for ``*`` and ``?``, so the shell still expands from_work_dir globs.
+    return "".join(part if part in ("*", "?") else shlex.quote(part) for part in re.split(r"([*?])", path) if part)
 
 
 def __unquote_glob_characters(path):
