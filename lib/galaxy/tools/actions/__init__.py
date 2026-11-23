@@ -64,6 +64,12 @@ from galaxy.tools.execution_helpers import (
     on_text_for_dataset_and_collections,
     ToolExecutionCache,
 )
+from galaxy.tools.job_parameters import (
+    CHROM_INFO,
+    DBKEY,
+    element_identifier_parameter,
+    is_element_identifier_parameter,
+)
 from galaxy.tools.parameters import update_dataset_ids
 from galaxy.tools.parameters.basic import (
     BaseDataToolParameter,
@@ -524,7 +530,7 @@ class DefaultToolAction(ToolAction):
         # the input extensions, now it should just give "input" as the output
         # format.
         input_ext = "data" if Version(str(tool.profile)) < Version("16.04") else "input"
-        input_dbkey = incoming.get("dbkey", "?")
+        input_dbkey = incoming.get(DBKEY, "?")
         for name, data in reversed(list(inp_data.items())):
             if not data:
                 data = NoneDataset(datatypes_registry=app.datatypes_registry)
@@ -543,14 +549,14 @@ class DefaultToolAction(ToolAction):
 
             identifier = getattr(data, "element_identifier", None)
             if identifier is not None:
-                incoming[f"{name}|__identifier__"] = identifier
+                incoming[element_identifier_parameter(name)] = identifier
 
         # Collect chromInfo dataset and add as parameters to incoming
         chrom_info, db_dataset = execution_cache.get_chrom_info(tool.id, input_dbkey)
 
         if db_dataset:
-            inp_data.update({"chromInfo": db_dataset})
-        incoming["chromInfo"] = chrom_info
+            inp_data.update({CHROM_INFO: db_dataset})
+        incoming[CHROM_INFO] = chrom_info
 
         if not completed_job:
             # Determine output dataset permission/roles list
@@ -569,7 +575,7 @@ class DefaultToolAction(ToolAction):
                 output_permissions = default_history_permissions
 
         # Add the dbkey to the incoming parameters
-        incoming["dbkey"] = input_dbkey
+        incoming[DBKEY] = input_dbkey
         incoming["__input_ext"] = input_ext
         # wrapped params are used by change_format action and by output.label; only perform this wrapping once, as needed
         wrapped_params = self._wrapped_params(trans, tool, incoming, inp_data)
@@ -908,7 +914,7 @@ class DefaultToolAction(ToolAction):
                     if pja.action_type in ActionBox.immediate_actions:
                         ActionBox.execute(trans.app, trans.sa_session, pja, current_job, replacement_dict)
             for p in old_job.parameters:
-                if p.name.endswith("|__identifier__"):
+                if is_element_identifier_parameter(p.name):
                     current_job.parameters.append(p.copy())
             remapped_hdas = self.__remap_data_inputs(old_job=old_job, current_job=current_job)
             for jtod in old_job.output_datasets:
