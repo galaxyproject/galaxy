@@ -726,6 +726,7 @@ class PurgeDeletedUsersGDPR(PurgesHDAs, RemovesMetadataFiles, Action):
     """
     - Perform all steps in the PurgeDeletedUsers/purge_deleted_users action
     - Obfuscate User.email and User.username for all users purged in this step.
+    - Clear User.display_name for all users purged in this step.
     - Obfuscate the email in the name and description of the private Role of all users purged in
       this step (private roles created before 24.2 are named after the user's email).
     - Delete all OIDC user authnz tokens (external identity associations) whose user_ids are purged
@@ -749,7 +750,8 @@ class PurgeDeletedUsersGDPR(PurgesHDAs, RemovesMetadataFiles, Action):
                       SET purged = true,
                           disk_usage = 0,
                           email = users_to_purge.email_hash,
-                          username = users_to_purge.username_hash{update_time_sql}
+                          username = users_to_purge.username_hash,
+                          display_name = NULL{update_time_sql}
                      FROM users_to_purge
                     WHERE galaxy_user.id = users_to_purge.id
                 RETURNING galaxy_user.id AS id),
