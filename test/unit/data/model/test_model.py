@@ -4,10 +4,15 @@ from uuid import (
 )
 
 import pytest
+from sqlalchemy import event
 
 from galaxy import model
 from galaxy.exceptions import RequestParameterInvalidException
-from galaxy.model.item_attrs import add_item_annotation
+from galaxy.model.item_attrs import (
+    add_item_annotation,
+    get_item_annotation_str,
+    new_item_annotation,
+)
 from galaxy.schema.schema import MAX_ANNOTATION_SIZE
 
 
@@ -119,6 +124,32 @@ def test_update_item_annotation(session, item_class):
     assert add_item_annotation(session, None, first, "updated") is original
     assert original.annotation == "updated"
     assert other.annotation == "other"
+
+
+@pytest.mark.parametrize(
+    "item_class",
+    [model.HistoryDatasetAssociation, model.HistoryDatasetCollectionAssociation],
+    ids=lambda cls: cls.__name__,
+)
+def test_new_item_annotation_looks_nothing_up(session, item_class):
+    items = [item_class() for _ in range(3)]
+    session.add_all(items)
+    session.flush()
+    statements: list[str] = []
+
+    def record(conn, cursor, statement, *args):
+        statements.append(statement)
+
+    bind = session.get_bind()
+    event.listen(bind, "before_cursor_execute", record)
+    try:
+        session.add_all(new_item_annotation(None, item, "note") for item in items)
+        session.flush()
+    finally:
+        event.remove(bind, "before_cursor_execute", record)
+    assert statements
+    assert all(statement.startswith("INSERT") for statement in statements), statements
+    assert [get_item_annotation_str(session, None, item) for item in items] == ["note"] * 3
 
 
 def test_annotation_columns_are_not_indexed():

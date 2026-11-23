@@ -13,6 +13,7 @@ from galaxy.model.unittest_utils.store_fixtures import (
     history_model_store_dict,
     TEST_HISTORY_NAME,
 )
+from galaxy.schema.schema import MAX_ANNOTATION_SIZE
 from galaxy_test.api.sharable import SharingApiTests
 from galaxy_test.base.api_asserts import assert_has_keys
 from galaxy_test.base.api_mixins import (
@@ -560,8 +561,13 @@ class TestHistoriesApi(ApiTestCase, BaseHistories):
             create_response = self._post("histories", data=dict(name="Annotated", annotation=annotation), json=as_json)
             self._assert_status_code_is(create_response, 200)
             assert self._show(create_response.json()["id"])["annotation"] == annotation
-        unannotated = self._post("histories", data=dict(name="Unannotated"), json=True).json()
-        assert not self._show(unannotated["id"])["annotation"]
+            # An empty annotation is none, and one over the limit is refused, however the payload is sent.
+            for name, unannotated in [("Unannotated", {}), ("Empty", dict(annotation=""))]:
+                create_response = self._post("histories", data=dict(name=name, **unannotated), json=as_json)
+                self._assert_status_code_is(create_response, 200)
+                assert self._show(create_response.json()["id"])["annotation"] is None
+            too_long = dict(name="Too long", annotation="a" * (MAX_ANNOTATION_SIZE + 1))
+            self._assert_status_code_is(self._post("histories", data=too_long, json=as_json), 400)
 
     def test_copy_history_with_annotation(self):
         history_id = self._post("histories", data=dict(name="Source", annotation="Original"), json=True).json()["id"]
@@ -569,6 +575,9 @@ class TestHistoriesApi(ApiTestCase, BaseHistories):
         assert self._show(kept["id"])["annotation"] == "Original"
         replaced = self.dataset_populator.copy_history(history_id, annotation="Rerun with stricter filtering").json()
         assert self._show(replaced["id"])["annotation"] == "Rerun with stricter filtering"
+        # An empty form field is no field at all, so copying without the annotation takes JSON.
+        cleared = self._post("histories", data=dict(name="Cleared", history_id=history_id, annotation=""), json=True)
+        assert self._show(cleared.json()["id"])["annotation"] is None
         assert self._show(history_id)["annotation"] == "Original"
 
     def test_create_tag(self):

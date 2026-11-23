@@ -8,6 +8,7 @@ from unittest import SkipTest
 import requests
 from dateutil.parser import isoparse
 
+from galaxy.schema.schema import MAX_ANNOTATION_SIZE
 from galaxy.util import now
 from galaxy.util.unittest_utils import transient_failure
 from galaxy_test.base.api_asserts import assert_status_code_is_ok
@@ -825,9 +826,11 @@ steps:
                 history_id, content_id=tool_request["implicit_collections"][0]["id"]
             )
             assert implicit_collection["annotation"] == annotation
+            # The datasets inside it are not annotated one by one.
             output_id = implicit_collection["elements"][0]["object"]["id"]
-            output = self.dataset_populator.get_history_dataset_details(history_id, dataset_id=output_id)
-            assert output["annotation"] == annotation
+            assert not self.dataset_populator.get_history_dataset_details(history_id, dataset_id=output_id)[
+                "annotation"
+            ]
             # Only what the request creates is annotated.
             assert not self.dataset_populator.get_history_dataset_details(history_id, dataset_id=hda_id)["annotation"]
             assert not self.dataset_populator.get_history_collection_details(history_id, content_id=hdca_id)[
@@ -860,7 +863,7 @@ steps:
     def test_create_job_rejects_oversized_annotation(self):
         with self.dataset_populator.test_history() as history_id:
             response = self.dataset_populator.tool_request_raw(
-                tool_id="cat1", inputs={}, history_id=history_id, annotation="x" * 65537
+                tool_id="cat1", inputs={}, history_id=history_id, annotation="x" * (MAX_ANNOTATION_SIZE + 1)
             )
             self._assert_status_code_is(response, 400)
 

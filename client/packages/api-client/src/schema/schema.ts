@@ -19231,7 +19231,7 @@ export interface components {
         JobRequest: {
             /**
              * Annotation
-             * @description An annotation to add to each output dataset and collection this request creates. Ignored for anonymous users.
+             * @description An annotation for what this request adds to the history: its output datasets and collections, or for a request mapped over a collection the collections created in their place and not the datasets in them. Outputs discovered when a job finishes are not annotated. Ignored for anonymous users.
              */
             annotation?: string | null;
             /** Credentials Context */

@@ -1,6 +1,9 @@
 import logging
 
-from sqlalchemy import select
+from sqlalchemy import (
+    inspect,
+    select,
+)
 from sqlalchemy.sql.expression import func
 
 # Cannot import galaxy.model b/c it creates a circular import graph.
@@ -168,6 +171,19 @@ def add_item_annotation(db_session, user, item, annotation):
     # Set annotation.
     annotation_assoc.annotation = annotation
     return annotation_assoc
+
+
+def new_item_annotation(user, item, annotation):
+    """An annotation for an item that cannot have one yet, such as one the current request created.
+
+    Unlike `add_item_annotation` this looks nothing up and leaves `item.annotations` unloaded, so
+    annotating many items costs one batched INSERT. The caller adds the result to the session.
+    """
+    annotation_assoc_class = _get_annotation_assoc_class(item)
+    if not annotation_assoc_class:
+        return None
+    item_attribute = inspect(type(item)).relationships["annotations"].back_populates
+    return annotation_assoc_class(**{item_attribute: item}, user=user, annotation=annotation)
 
 
 def _get_annotation_assoc_class(item):
