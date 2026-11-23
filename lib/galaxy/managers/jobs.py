@@ -116,6 +116,7 @@ from galaxy.tools._types import (
 )
 from galaxy.tools.job_parameters import (
     CHROM_INFO,
+    DATA_MANAGER_MODE,
     DBKEY,
     element_identifier_parameter,
     is_element_identifier_parameter,
@@ -2354,7 +2355,7 @@ class JobSubmitter:
                 # and avoid extra and confusing input copies
                 self.hda_manager.materialize(materialize_request, sa_session(), in_place=True)
             if request.data_manager_mode:
-                tool_request.request["__data_manager_mode"] = request.data_manager_mode
+                tool_request.request[DATA_MANAGER_MODE] = request.data_manager_mode
             credentials_context = (
                 CredentialsContext(root=cast(Any, request.credentials_context)) if request.credentials_context else None
             )
