@@ -119,3 +119,44 @@ class TestToolOutputFromLibraryImportWithPrivateObjectStore(BaseObjectStoreInteg
             assert (
                 output_storage["object_store_id"] == "private"
             ), f"Tool output should be in the private store, got {output_storage['object_store_id']}"
+
+    def test_tool_output_from_library_import_is_shared_with_history(self):
+        """Outputs made private by the history defaults stay manageable by the user,
+        so making the history accessible also makes them accessible."""
+        # A dataset in a public library, managed by its uploader rather than by the user running the tool.
+        library = self.library_populator.new_library("public_library")
+        self.library_populator.set_add_permission(library["id"], self.library_populator.user_private_role_id())
+        payload, files = self.library_populator.create_dataset_request(library, contents="1 2 3")
+        create_response = self.library_populator.raw_library_contents_create(library["id"], payload, files=files)
+        api_asserts.assert_status_code_is_ok(create_response)
+        library_dataset = self.library_populator.wait_on_library_dataset(library["id"], create_response.json()[0]["id"])
+        copy_payload = {"content": library_dataset["id"], "source": "library", "type": "dataset"}
+        with self.dataset_populator.test_history() as uploader_history_id:
+            uploader_copy_id = self._copy_to_history(uploader_history_id, copy_payload)
+            response = self.dataset_populator.make_dataset_public_raw(uploader_history_id, uploader_copy_id)
+            api_asserts.assert_status_code_is_ok(response)
+
+        with self._different_user("library_importer@bx.psu.edu"):
+            history_id = self.dataset_populator.new_history()
+            library_copy_id = self._copy_to_history(history_id, copy_payload)
+            run_response = self.dataset_populator.run_tool(
+                "cat1",
+                inputs={"input1": {"src": "hda", "id": library_copy_id}},
+                history_id=history_id,
+            )
+            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+            output_id = run_response["outputs"][0]["id"]
+
+            sharing_response = self._put(f"histories/{history_id}/enable_link_access")
+            api_asserts.assert_status_code_is_ok(sharing_response)
+
+        with self._different_user(anon=True):
+            library_copy_response = self._get(f"datasets/{library_copy_id}")
+            output_response = self._get(f"datasets/{output_id}")
+        api_asserts.assert_status_code_is_ok(library_copy_response)
+        api_asserts.assert_status_code_is_ok(output_response)
+
+    def _copy_to_history(self, history_id: str, payload: dict) -> str:
+        response = self._post(f"histories/{history_id}/contents", data=payload, json=True)
+        api_asserts.assert_status_code_is_ok(response)
+        return response.json()["id"]
