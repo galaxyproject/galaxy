@@ -425,7 +425,8 @@ export function validateInputs(index, values, rejectEmptyRequiredInputs = false)
         const inputValue = values[inputId];
         const isEmpty = !isDefined(inputValue) || inputValue === "";
         const hasValue = !isEmpty;
-        const isRequired = !inputDef.optional;
+        // A default file fills an empty data input on the server.
+        const isRequired = !inputDef.optional && !inputDef.default_location;
         if (!inputDef || inputDef.step_linked) {
             continue;
         }

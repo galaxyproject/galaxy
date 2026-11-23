@@ -71,6 +71,7 @@ const props = withDefaults(
         loading?: boolean;
         multiple?: boolean;
         optional?: boolean;
+        defaultLocation?: string;
         options: Record<string, Array<DataOption>>;
         pinned?: Record<string, Array<DataOption>>;
         optionsMeta?: Record<string, OptionsMetaEntry>;
@@ -91,6 +92,7 @@ const props = withDefaults(
         loading: false,
         multiple: false,
         optional: false,
+        defaultLocation: undefined,
         modelValue: undefined,
         extensions: () => [],
         type: "data",
@@ -107,6 +109,9 @@ const props = withDefaults(
 
 const eventStore = useEventStore();
 const { datatypesMapper } = useDatatypesMapper();
+
+/** An empty selection is valid for optional inputs and for inputs with a default file. */
+const acceptsEmpty = computed(() => props.optional || Boolean(props.defaultLocation));
 
 const $emit = defineEmits(["update:modelValue", "alert", "focus", "load-more", "search-change"]);
 
@@ -185,7 +190,7 @@ const currentValue = computed({
                 return value;
             }
         }
-        if (!currentVariant.value?.multiple && !props.optional && formattedOptions.value.length > 0) {
+        if (!currentVariant.value?.multiple && !acceptsEmpty.value && formattedOptions.value.length > 0) {
             const firstEntry = formattedOptions.value && formattedOptions.value[0];
             if (firstEntry && firstEntry.value) {
                 value.push(firstEntry.value);
@@ -313,9 +318,9 @@ const formattedOptions = computed(() => {
             }
         });
         // Add optional entry
-        if (!currentVariant.value?.multiple && props.optional) {
+        if (!currentVariant.value?.multiple && acceptsEmpty.value) {
             result.unshift({
-                label: "Nothing selected",
+                label: props.defaultLocation ? "Use default file" : "Nothing selected",
                 value: null,
             });
         }
@@ -1195,7 +1200,7 @@ const noOptionsWarningMessage = computed(() => {
                         'align-self-start': !props.workflowRun,
                     }"
                     :multiple="currentVariant.multiple"
-                    :optional="currentVariant.multiple || optional"
+                    :optional="currentVariant.multiple || acceptsEmpty"
                     :options="formattedOptions"
                     :placeholder="`Select a ${placeholder}`"
                     @search-change="onSearchChange">
@@ -1253,6 +1258,11 @@ const noOptionsWarningMessage = computed(() => {
                 show-view-create-options
                 @create-collection-type="handleCollectionTypeChange"
                 @uploaded-data="handleUploadedDataOptions" />
+        </div>
+
+        <div v-if="defaultLocation" class="default-file-location mt-2" role="status" aria-live="polite">
+            <strong>{{ currentValue?.length ? "Using selected dataset" : "Using default file" }}</strong>
+            <div class="text-muted"><span v-if="currentValue?.length">Default file: </span>{{ defaultLocation }}</div>
         </div>
 
         <div v-if="restrictsExtensions || showSelectionPreference" class="d-flex align-items-center flex-gapx-1 mt-1">
@@ -1322,6 +1332,12 @@ const noOptionsWarningMessage = computed(() => {
 
 <style scoped lang="scss">
 .form-data {
+    .default-file-location {
+        border-left: 3px solid var(--brand-primary, #2c6087);
+        padding-left: 0.75rem;
+        overflow-wrap: anywhere;
+    }
+
     .checkbox {
         grid-column: span 2;
     }

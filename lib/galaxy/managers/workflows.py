@@ -1477,6 +1477,9 @@ class WorkflowContentsManager(UsesAnnotations):
                     if isinstance(input, (DataToolParameter, DataCollectionToolParameter)):
                         accepted = input._acceptable_extensions()
                         input_dict["acceptable_extensions"] = sorted(accepted) if accepted else []
+                    if step.type == "data_input" and input_dict.get("default_location"):
+                        # Start with no selection so the default is used unless a dataset is picked.
+                        input_dict["value"] = None
                     input_dicts.append(input_dict)
                 step_model = {"inputs": input_dicts}
             step_model["when"] = step.when_expression
@@ -1720,6 +1723,8 @@ class WorkflowContentsManager(UsesAnnotations):
                 "when": step.when_expression,
                 "workflow_outputs": [],
             }
+            if step_defaults := step.input_defaults_dict():
+                step_dict["in"] = step_defaults
             if tooltip:
                 step_dict["tooltip"] = module.get_tooltip(static_path="/static")
             # Connections
@@ -2082,12 +2087,7 @@ class WorkflowContentsManager(UsesAnnotations):
                 for output in module.get_data_outputs():
                     step_dict["outputs"].append({"name": output["name"], "type": output["extensions"][0]})
 
-            step_in = {}
-            for step_input in step.inputs:
-                if step_input.default_value_set:
-                    step_in[step_input.name] = {"default": step_input.default_value}
-
-            if step_in:
+            if step_in := step.input_defaults_dict():
                 step_dict["in"] = step_in
 
             # Connections

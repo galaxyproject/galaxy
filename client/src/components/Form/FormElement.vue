@@ -253,7 +253,8 @@ const isEmpty = computed(() => {
     return false;
 });
 
-const isRequired = computed(() => attrs.value["optional"] === false);
+// A data input with a default file may be left empty.
+const isRequired = computed(() => attrs.value["optional"] === false && !attrs.value["default_location"]);
 const isRequiredType = computed(() => props.type !== "boolean");
 const isOptional = computed(() => !isRequired.value && attrs.value["optional"] !== undefined);
 const formAlert = ref<string>();
@@ -477,6 +478,7 @@ const extendedCollectionType = computed<ExtendedCollectionType>(() => {
                     :flavor="attrs.flavor"
                     :multiple="attrs.multiple"
                     :optional="attrs.optional"
+                    :default-location="attrs.default_location"
                     :options="attrs.options"
                     :pinned="attrs.pinned"
                     :options-meta="attrs.options_meta"

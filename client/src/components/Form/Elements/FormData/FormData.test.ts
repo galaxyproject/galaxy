@@ -135,6 +135,17 @@ describe("FormData", () => {
         expect(wrapper.findAll(SELECT_OPTIONS).length).toBe(7);
     });
 
+    it("lets a required input with a default file start empty", async () => {
+        const wrapper = createTarget({
+            modelValue: null,
+            optional: false,
+            defaultLocation: "https://example.org/reference.tsv",
+            options: defaultOptions,
+        });
+        await openMultiselect(wrapper);
+        expect(wrapper.find(SELECTED_VALUE).text()).toEqual("Use default file");
+    });
+
     it("names the collection type in the no-options alert", () => {
         const wrapper = createTarget({
             type: "data_collection",

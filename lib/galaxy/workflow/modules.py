@@ -1324,6 +1324,9 @@ class InputDataModule(InputModule):
         default = step.get_input_default_value(default_unset)
         if default is not default_unset:
             data_src["default"] = default
+            # A default supplies the value when the input is omitted. Tool data
+            # parameters cannot themselves be both optional and have a default.
+            data_src["optional"] = False
         input_param = DataToolParameter(None, data_src, self.trans)
         return dict(input=input_param)
 

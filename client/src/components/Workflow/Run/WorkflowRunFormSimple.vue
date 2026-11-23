@@ -13,7 +13,7 @@ import type { ToolIdentifier } from "@/api/tools";
 import type { DataOption } from "@/components/Form/Elements/FormData/types";
 import { DEFAULT_OPTIONS_PAGE_SIZE } from "@/components/Form/Elements/FormData/types";
 import type { FormParameterTypes } from "@/components/Form/parameterTypes";
-import { isWorkflowInput } from "@/components/Workflow/constants";
+import { isWorkflowInput, omitUnsetWorkflowInput } from "@/components/Workflow/constants";
 import { useConfig } from "@/composables/config";
 import { useFileSources } from "@/composables/fileSources";
 import { usePersistentToggle } from "@/composables/persistentToggle";
@@ -453,11 +453,8 @@ async function onExecute() {
             replacementParams[inputName] = value;
         } else if (inputType && isWorkflowInput(inputType as Step["type"])) {
             // Unset optional `data` / `data_collection` inputs surface here as `null`
-            // (FormData.vue's createValue returns null for `undefined`). Omit them so
-            // the server-side workflow scheduler sees a missing key rather than `None`,
-            // matching the working API submission shape and the rerun-branch filter above.
-            const isData = inputType === "data_input" || inputType === "data_collection_input";
-            if (isData && (value === null || value === undefined)) {
+            // (FormData.vue's createValue returns null for `undefined`).
+            if (omitUnsetWorkflowInput(inputType as Step["type"], value)) {
                 continue;
             }
             inputs[inputName] = value;
