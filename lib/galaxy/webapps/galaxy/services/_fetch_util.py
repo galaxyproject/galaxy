@@ -12,7 +12,10 @@ from galaxy.model.store.discover import (
     replace_request_syntax_sugar,
 )
 from galaxy.tools.actions.upload_common import validate_datatype_extension
-from galaxy.util import relpath
+from galaxy.util import (
+    relpath,
+    url_without_userinfo,
+)
 
 log = logging.getLogger(__name__)
 
@@ -164,7 +167,9 @@ def validate_and_normalize_targets(trans, payload, set_internal_fields=True):
                 looks_like_url = True
 
             if not looks_like_url:
-                raise RequestParameterInvalidException(f"Invalid URL [{url}] found in src definition.")
+                raise RequestParameterInvalidException(
+                    f"Invalid URL [{url_without_userinfo(url)}] found in src definition."
+                )
 
             validate_non_local(url, trans.app.config.fetch_url_allowlist_ips)
             if set_internal_fields:
