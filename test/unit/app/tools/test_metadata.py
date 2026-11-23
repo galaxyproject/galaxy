@@ -16,7 +16,10 @@ from galaxy.model.metadata import (
     MetadataTempFile,
     MetadataTempFilePathError,
 )
-from galaxy.model.store.discover import InvalidDiscoveredFilePathError
+from galaxy.model.store.discover import (
+    ensure_job_path_in_job_directory,
+    InvalidDiscoveredFilePathError,
+)
 from galaxy.objectstore import ObjectStorePopulator
 from galaxy.objectstore._caching_base import CachingConcreteObjectStore
 from galaxy.objectstore.caching import (
@@ -83,6 +86,66 @@ def test_extended_metadata_rejects_metadata_file_symlink_outside_working_directo
             uses_tool_provided_metadata=True,
             job_working_directory=working_directory,
         )
+
+
+def test_job_path_may_link_inside_job_directory(tmp_path):
+    job_directory = tmp_path / "job"
+    (job_directory / "working").mkdir(parents=True)
+    (job_directory / "outputs").mkdir()
+    (job_directory / "working" / "real.txt").write_text("real")
+    output = job_directory / "outputs" / "dataset.dat"
+    output.symlink_to("../working/real.txt")
+
+    ensure_job_path_in_job_directory(output, job_directory)
+
+
+@pytest.mark.parametrize("dangling", [False, True])
+def test_job_path_cannot_link_outside_job_directory(tmp_path, dangling):
+    job_directory = tmp_path / "job"
+    (job_directory / "outputs").mkdir(parents=True)
+    outside = tmp_path / "outside.txt"
+    if not dangling:
+        outside.write_text("outside")
+    output = job_directory / "outputs" / "dataset.dat"
+    output.symlink_to(outside)
+
+    with pytest.raises(InvalidDiscoveredFilePathError):
+        ensure_job_path_in_job_directory(output, job_directory)
+
+
+def test_job_path_cannot_escape_through_linked_directory(tmp_path):
+    job_directory = tmp_path / "job"
+    job_directory.mkdir()
+    outside_directory = tmp_path / "outside"
+    outside_directory.mkdir()
+    (outside_directory / "dataset.dat").write_text("outside")
+    (job_directory / "outputs").symlink_to(outside_directory)
+
+    with pytest.raises(InvalidDiscoveredFilePathError):
+        ensure_job_path_in_job_directory(job_directory / "outputs" / "dataset.dat", job_directory)
+
+
+def test_job_path_check_follows_links_above_job_directory(tmp_path):
+    real_jobs_directory = tmp_path / "real_jobs"
+    (real_jobs_directory / "job" / "outputs").mkdir(parents=True)
+    (tmp_path / "jobs").symlink_to(real_jobs_directory)
+    outside = tmp_path / "outside.txt"
+    outside.write_text("outside")
+    output = tmp_path / "jobs" / "job" / "outputs" / "dataset.dat"
+    output.symlink_to(outside)
+
+    with pytest.raises(InvalidDiscoveredFilePathError):
+        ensure_job_path_in_job_directory(output, real_jobs_directory / "job")
+
+
+def test_job_path_check_ignores_paths_outside_job_directory(tmp_path):
+    job_directory = tmp_path / "job"
+    job_directory.mkdir()
+    object_store_path = tmp_path / "objects" / "dataset.dat"
+    object_store_path.parent.mkdir()
+    object_store_path.symlink_to(tmp_path / "elsewhere.txt")
+
+    ensure_job_path_in_job_directory(object_store_path, job_directory)
 
 
 class TestMetadata(TestCase, tools_support.UsesTools):
@@ -574,6 +637,49 @@ class TestMetadata(TestCase, tools_support.UsesTools):
             metadata_set_successfully=True,
         )
 
+    def test_extended_metadata_rejects_output_symlink_outside_job_directory(self):
+        self.app.config.metadata_strategy = "extended"
+        output_dataset, false_path = self._setup_output_in_working_directory()
+        os.symlink(self._write_outside_file(), false_path)
+        command = self.metadata_command({"out_file1": output_dataset}, false_paths={"out_file1": false_path})
+
+        self.exec_metadata_command(command)
+
+        self._assert_extended_metadata_security_failure(
+            output_dataset, "Job output refers to a file outside its allowed working directory."
+        )
+        with open(output_dataset.dataset.get_file_name()) as f:
+            assert f.read() == ""
+
+    def test_directory_metadata_rejects_output_symlink_outside_job_directory(self):
+        self.app.config.metadata_strategy = "directory"
+        output_dataset, false_path = self._setup_output_in_working_directory()
+        os.symlink(self._write_outside_file(), false_path)
+        command = self.metadata_command({"out_file1": output_dataset}, false_paths={"out_file1": false_path})
+
+        self.exec_metadata_command(command)
+
+        assert self.metadata_compute_strategy
+        assert not self.metadata_compute_strategy.external_metadata_set_successfully(
+            output_dataset, "out_file1", self.app.model.session, working_directory=self.job_working_directory
+        )
+
+    def test_extended_metadata_collects_output_symlink_in_job_directory(self):
+        self.app.config.metadata_strategy = "extended"
+        output_dataset, false_path = self._setup_output_in_working_directory()
+        self._write_work_dir_file("real.txt", "in job directory\n")
+        os.symlink("../working/real.txt", false_path)
+        command = self.metadata_command({"out_file1": output_dataset}, false_paths={"out_file1": false_path})
+
+        self.exec_metadata_command(command)
+
+        assert self.metadata_compute_strategy
+        assert self.metadata_compute_strategy.external_metadata_set_successfully(
+            output_dataset, "out_file1", self.app.model.session, working_directory=self.job_working_directory
+        )
+        with open(output_dataset.dataset.get_file_name()) as f:
+            assert f.read() == "in job directory\n"
+
     @pytest.mark.parametrize("stray_files", [0, 2])
     def test_extended_metadata_from_work_dir_keeps_written_output(self, stray_files):
         output_dataset = self._run_from_work_dir_output(stray_files)
@@ -595,7 +701,36 @@ class TestMetadata(TestCase, tools_support.UsesTools):
 
         assert self._exported_dataset_state(output_dataset) == model.Dataset.states.ERROR
 
-    def _run_from_work_dir_output(self, stray_files, write_output=True):
+    def test_extended_metadata_from_work_dir_rejects_fallback_symlink_outside_job_directory(self):
+        output_dataset = self._run_from_work_dir_output(0, write_output=False, output_link=self._write_outside_file())
+
+        self._assert_extended_metadata_security_failure(
+            output_dataset, "Job output refers to a file outside its allowed working directory."
+        )
+        with open(output_dataset.dataset.get_file_name()) as f:
+            assert f.read() != "outside job directory\n"
+
+    def _setup_output_in_working_directory(self):
+        source_file_name = os.path.join(galaxy_directory(), "test/functional/tools/for_workflows/cat.xml")
+        self._init_tool_for_path(source_file_name)
+        output_dataset = self._create_output_dataset(extension="txt")
+        self.app.model.session.commit()
+        outputs_directory = os.path.join(self.job_working_directory, "outputs")
+        os.mkdir(outputs_directory)
+        self._write_output_dataset_contents(output_dataset, "")
+        self._write_job_files()
+        for stream in ("tool_stdout", "tool_stderr"):
+            with open(os.path.join(outputs_directory, stream), "w") as f:
+                f.write("")
+        return output_dataset, os.path.join(outputs_directory, f"dataset_{output_dataset.dataset.uuid}.dat")
+
+    def _write_outside_file(self):
+        outside_path = os.path.join(self.test_directory, "outside.txt")
+        with open(outside_path, "w") as outside_file:
+            outside_file.write("outside job directory\n")
+        return outside_path
+
+    def _run_from_work_dir_output(self, stray_files, write_output=True, output_link=None):
         self.app.config.metadata_strategy = "extended"
         source_file_name = os.path.join(galaxy_directory(), "test/functional/tools/for_workflows/cat.xml")
         self._init_tool_for_path(source_file_name)
@@ -616,6 +751,9 @@ class TestMetadata(TestCase, tools_support.UsesTools):
             self._write_work_dir_file(f"stray.{i}.txt", f"stray {i}\n")
         if write_output:
             self._write_file(output_path, "written to output\n")
+        if output_link:
+            safe_makedirs(outputs_directory)
+            os.symlink(output_link, output_path)
         self._write_file(os.path.join(outputs_directory, "tool_stdout"), "")
         self._write_file(os.path.join(outputs_directory, "tool_stderr"), "")
         self._write_job_files()
@@ -715,8 +853,9 @@ class TestMetadata(TestCase, tools_support.UsesTools):
         with open(os.path.join(self.job_working_directory, "tool_stderr"), "w") as f:
             f.write(stderr)
 
-    def metadata_command(self, output_datasets, output_collections=None, output_fnames=None):
+    def metadata_command(self, output_datasets, output_collections=None, false_paths=None, output_fnames=None):
         output_collections = output_collections or {}
+        false_paths = false_paths or {}
         metadata_compute_strategy = get_metadata_compute_strategy(self.app.config, self.job.id)
         self.metadata_compute_strategy = metadata_compute_strategy
 
@@ -729,7 +868,8 @@ class TestMetadata(TestCase, tools_support.UsesTools):
         self.app.datatypes_registry.to_xml_file(path=datatypes_config)
         job_metadata = os.path.join(self.tool_working_directory, self.tool.provided_metadata_file)
         output_fnames = output_fnames or [
-            DatasetPath(o.dataset.id, o.dataset.get_file_name(sync_cache=False), None) for o in output_datasets.values()
+            DatasetPath(o.dataset.id, o.dataset.get_file_name(sync_cache=False), false_paths.get(name))
+            for name, o in output_datasets.items()
         ]
         command = metadata_compute_strategy.setup_external_metadata(
             output_datasets,
