@@ -47,6 +47,11 @@ from galaxy_test.base.api import (
     UsesApiTestCaseMixin,
     UsesCeleryTasks,
 )
+from galaxy_test.base.populators import (
+    DatasetPopulator,
+    WorkflowPopulator,
+)
+from galaxy_test.base.sse import SSELineListener
 from galaxy_test.base.testcase import host_port_and_url
 from .driver_util import GalaxyTestDriver
 
@@ -296,6 +301,32 @@ class IntegrationInstance(UsesApiTestCaseMixin, UsesCeleryTasks):
 
 class IntegrationTestCase(IntegrationInstance, TestCase):
     """Unit TestCase with utilities for spinning up Galaxy."""
+
+
+class SSEIntegrationTestCase(IntegrationTestCase):
+    """IntegrationTestCase against a server with SSE updates enabled."""
+
+    dataset_populator: DatasetPopulator
+    workflow_populator: WorkflowPopulator
+    framework_tool_and_types = True
+
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
+        config["enable_sse_updates"] = True
+
+    def setUp(self):
+        super().setUp()
+        self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
+        self.workflow_populator = WorkflowPopulator(self.galaxy_interactor)
+
+    def _listener(self, api_key: str | None = None) -> SSELineListener:
+        """A started listener on the event stream of ``api_key``'s user, by default the test user."""
+        api_key = api_key or self.galaxy_interactor.api_key
+        assert api_key is not None
+        listener = SSELineListener(urljoin(self.url, "api/events/stream"), api_key)
+        listener.start()
+        return listener
 
 
 def integration_module_instance(clazz: type[IntegrationInstance]):

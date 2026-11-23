@@ -56,7 +56,10 @@ from collections.abc import (
     Callable,
     Generator,
 )
-from functools import wraps
+from functools import (
+    partial,
+    wraps,
+)
 from io import StringIO
 from operator import itemgetter
 from typing import (
@@ -135,6 +138,7 @@ from .api import (
 )
 from .api_util import random_name
 from .env import REQUIRE_ALL_NEEDED_TOOLS
+from .sse import SSEWaiter
 
 FILE_URL = "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/4.bed"
 FILE_MD5 = "37b59762b59fff860460522d271bc111"
@@ -466,6 +470,19 @@ class BasePopulator(metaclass=ABCMeta):
     def _delete(self, route, data=None, headers=None, admin=False, json: bool = False) -> Response:
         """DELETE against target Galaxy instance on specified route."""
 
+    @property
+    def sse_waiter(self) -> SSEWaiter:
+        """Event-driven waits; these populators have no interactor to open the event stream, so they poll."""
+        return SSEWaiter(None)
+
+    def subscribe_history_viewer(self, history_ids: list[str]) -> None:
+        response = self._post("events/history-subscriptions", {"history_ids": history_ids}, json=True)
+        api_asserts.assert_status_code_is(response, 204)
+
+    def unsubscribe_history_viewer(self, history_ids: list[str]) -> None:
+        response = self._delete("events/history-subscriptions", {"history_ids": history_ids}, json=True)
+        api_asserts.assert_status_code_is(response, 204)
+
     def _get_to_tempfile(self, route, suffix=None, **kwd) -> str:
         """Perform a _get and store the result in a tempfile."""
         get_response = self._get(route, **kwd)
@@ -780,7 +797,11 @@ class BaseDatasetPopulator(BasePopulator):
     ) -> str:
         try:
             return wait_on_state(
-                lambda: self.get_history_raw(history_id), desc="history state", assert_ok=assert_ok, timeout=timeout
+                lambda: self.get_history_raw(history_id),
+                desc="history state",
+                assert_ok=assert_ok,
+                timeout=timeout,
+                wait=partial(self.sse_waiter.wait_on_history, history_id),
             )
         except AssertionError:
             self._summarize_history(history_id)
@@ -795,7 +816,7 @@ class BaseDatasetPopulator(BasePopulator):
                 return None
 
         try:
-            wait_on(has_active_jobs, "active jobs", timeout=timeout)
+            self.sse_waiter.wait_on_history_jobs(history_id, has_active_jobs, "active jobs", timeout)
         except TimeoutAssertionError as e:
             jobs = self.history_jobs(history_id)
             message = f"Failed waiting on active jobs to complete, current jobs are [{jobs}]. {e}"
@@ -828,6 +849,7 @@ class BaseDatasetPopulator(BasePopulator):
             assert_ok=assert_ok,
             timeout=timeout,
             ok_states=ok_states,
+            wait=partial(self.sse_waiter.wait_on_job, job_id),
         )
 
     def get_job_details(self, job_id: str, full: bool = False) -> Response:
@@ -2490,6 +2512,14 @@ class BaseDatasetPopulator(BasePopulator):
 
 class GalaxyInteractorHttpMixin:
     galaxy_interactor: ApiTestInteractor
+    _sse_waiter: SSEWaiter | None = None
+
+    @property
+    def sse_waiter(self) -> SSEWaiter:
+        """Event-driven waits through this populator's interactor; they poll against servers without SSE updates."""
+        if self._sse_waiter is None:
+            self._sse_waiter = SSEWaiter(self.galaxy_interactor)
+        return self._sse_waiter
 
     @property
     def _api_key(self):
@@ -2845,7 +2875,13 @@ class BaseWorkflowPopulator(BasePopulator):
         def workflow_state():
             return self._get(url)
 
-        return wait_on_state(workflow_state, desc="workflow invocation state", timeout=timeout, assert_ok=assert_ok)
+        return wait_on_state(
+            workflow_state,
+            desc="workflow invocation state",
+            timeout=timeout,
+            assert_ok=assert_ok,
+            wait=partial(self.sse_waiter.wait_on_invocation, invocation_id),
+        )
 
     def workflow_invocations(self, workflow_id: str, include_nested_invocations=True) -> list[dict[str, Any]]:
         response = self._get(f"workflows/{workflow_id}/invocations")
@@ -3495,8 +3531,9 @@ steps: []
                 raise AssertionError(f"Invocation reached terminal state: {invocation['state']}")
             return None
 
-        invocation = wait_on(check_completed, "invocation to reach completed state", timeout=timeout)
-        return invocation
+        return self.sse_waiter.wait_on_invocation(
+            invocation_id, check_completed, "invocation to reach completed state", timeout
+        )
 
     def index(
         self,
@@ -4663,6 +4700,7 @@ def wait_on_state(
     ok_states=None,
     assert_ok: bool = False,
     timeout: timeout_type = DEFAULT_TIMEOUT,
+    wait: Callable[[Callable[[], str | None], str, timeout_type], str] = tool_util_wait_on,
 ) -> str:
     def get_state():
         response = state_func()
@@ -4696,7 +4734,7 @@ def wait_on_state(
     # Remove ok_states from skip_states, so we can wait for a state to becoming running
     skip_states = [s for s in skip_states if s not in ok_states]
     try:
-        return wait_on(get_state, desc=desc, timeout=timeout)
+        return wait(get_state, desc, timeout)
     except TimeoutAssertionError as e:
         response = state_func()
         raise TimeoutAssertionError(f"{e} Current response containing state [{response.json()}].")

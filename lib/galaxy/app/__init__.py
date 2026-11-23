@@ -51,6 +51,7 @@ from galaxy.job_metrics import JobMetrics
 from galaxy.jobs.manager import JobManager
 from galaxy.managers.admin_extensions import AdminExtensionsManager
 from galaxy.managers.api_keys import ApiKeyManager
+from galaxy.managers.change_events import ChangeEventPublisher
 from galaxy.managers.citations import CitationsManager
 from galaxy.managers.collections import DatasetCollectionManager
 from galaxy.managers.dbkeys import GenomeBuilds
@@ -853,6 +854,8 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
                 statsd_client=self.execution_timer_factory.galaxy_statsd_client,
             ),
         )
+        if self.config.enable_sse_updates:
+            ChangeEventPublisher(self[SSEEventDispatcher]).register(self.model.session)
         self.notification_manager = self._register_singleton(NotificationManager)
         self.interactivetool_manager = InteractiveToolManager(self)
 

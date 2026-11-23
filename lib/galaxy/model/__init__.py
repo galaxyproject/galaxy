@@ -181,6 +181,11 @@ from galaxy.model.item_attrs import (
     UsesAnnotations,
 )
 from galaxy.model.orm.util import add_object_to_object_session
+from galaxy.model.pending_changes import (
+    pending_changes,
+    record_invocation_change,
+    record_job_change,
+)
 from galaxy.model.tag_filter import build_tag_filter
 from galaxy.objectstore import (
     ObjectStoreAuth,
@@ -10543,14 +10548,21 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
             # parent's subworkflow step runs the child's invoker again, and a child whose completion
             # was already recorded must stay completed for the parent to complete.
             final_states = (*priority_states, WorkflowInvocation.states.COMPLETED)
-            session.execute(
-                update(WorkflowInvocation)
-                .where(
-                    WorkflowInvocation.id == self.id,
-                    or_(~WorkflowInvocation.state.in_(final_states), WorkflowInvocation.state.is_(None)),
-                )
-                .values(state=state)
+            previous_state = self.state
+            result = cast(
+                CursorResult,
+                session.execute(
+                    update(WorkflowInvocation)
+                    .where(
+                        WorkflowInvocation.id == self.id,
+                        or_(~WorkflowInvocation.state.in_(final_states), WorkflowInvocation.state.is_(None)),
+                    )
+                    .values(state=state)
+                ),
             )
+            # The bulk UPDATE bypasses the unit of work, so flush listeners never see this change.
+            if result.rowcount and previous_state != state:
+                record_invocation_change(session, self, state)
         else:
             # Not bound to a session, or setting cancelling/cancelled
             self.state = state
@@ -10572,7 +10584,7 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
             .filter(~Job.state.in_(Job.finished_states))
             .with_for_update()
         )
-        sa_session.execute(update(Job).where(Job.id.in_(job_subq)).values({"state": Job.states.DELETING}))
+        self._delete_jobs(sa_session, Job.id.in_(job_subq))
 
         job_collection_subq = (
             select(Job.id)
@@ -10587,9 +10599,7 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
             .subquery()
         )
 
-        sa_session.execute(
-            update(Job).where(Job.id.in_(job_collection_subq.element)).values({"state": Job.states.DELETING})
-        )
+        self._delete_jobs(sa_session, Job.id.in_(job_collection_subq.element))
 
         for invocation in self.subworkflow_invocations:
             subworkflow_invocation = invocation.subworkflow_invocation
@@ -10598,6 +10608,30 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
                 subworkflow_invocation.add_message(InvocationCancellationUserRequest(reason="user_request"))
             sa_session.add(subworkflow_invocation)
         sa_session.commit()
+
+    @staticmethod
+    def _delete_jobs(sa_session: Session, condition: ColumnElement[bool]) -> None:
+        statement = update(Job).where(condition).values({"state": Job.states.DELETING})
+        if pending_changes(sa_session) is None:
+            sa_session.execute(statement)
+            return
+        # The bulk UPDATE bypasses the unit of work, so it records the changed jobs itself.
+        columns = (Job.id, Job.user_id, Job.session_id, Job.history_id)
+        if sa_session.get_bind().dialect.update_returning:
+            rows = sa_session.execute(statement.returning(*columns)).all()
+        else:
+            # SQLite before 3.35 has no RETURNING.
+            rows = sa_session.execute(select(*columns).where(condition)).all()
+            sa_session.execute(statement)
+        for job_id, user_id, galaxy_session_id, history_id in rows:
+            record_job_change(
+                sa_session,
+                job_id=job_id,
+                user_id=user_id,
+                session_id=galaxy_session_id,
+                history_id=history_id,
+                state=Job.states.DELETING,
+            )
 
     def mark_cancelled(self):
         self.state = WorkflowInvocation.states.CANCELLED
