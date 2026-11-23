@@ -151,12 +151,45 @@ export function isValidUrl(url: string): boolean {
 }
 
 /**
+ * Removes the userinfo (`user:password@`) of a URL and of every URL nested in it (e.g. in its query),
+ * so it is safe to show or use as a name.
+ * Each authority starts after any run of two or more slashes (also a scheme-relative `//user@host`)
+ * and ends at the next "/" only: an unencoded "@", "?" or "#" may belong to the password.
+ *
+ * @example
+ * ```typescript
+ * urlWithoutUserinfo("https://user:secret@example.org/a.bed") // returns "https://example.org/a.bed"
+ * urlWithoutUserinfo("https://example.org/a?next=ftp://user:secret@h") // returns "https://example.org/a?next=ftp://h"
+ * urlWithoutUserinfo("https://example.org/a?next=//user:secret@h") // returns "https://example.org/a?next=//h"
+ * ```
+ */
+export function urlWithoutUserinfo(url: string): string {
+    let result = "";
+    let pos = 0;
+    let separator = url.indexOf("//");
+    while (separator !== -1) {
+        let authorityStart = separator + 2;
+        while (url[authorityStart] === "/") {
+            authorityStart++;
+        }
+        const slash = url.indexOf("/", authorityStart);
+        const authorityEnd = slash === -1 ? url.length : slash;
+        // Search the authority only, so each character is visited a bounded number of times.
+        const userinfoLength = url.slice(authorityStart, authorityEnd).lastIndexOf("@");
+        result += url.slice(pos, authorityStart);
+        pos = userinfoLength === -1 ? authorityStart : authorityStart + userinfoLength + 1;
+        separator = url.indexOf("//", pos);
+    }
+    return result + url.slice(pos);
+}
+
+/**
  * Extracts a meaningful filename from a URL.
  * Attempts to get the last path segment and decode it.
- * Falls back to the full URL if extraction fails.
+ * Falls back to the full URL without its userinfo if extraction fails.
  *
  * @param url - The URL to extract the name from
- * @returns The extracted filename or the full URL as fallback
+ * @returns The extracted filename or the full URL without userinfo as fallback
  *
  * @example
  * ```typescript
@@ -168,7 +201,8 @@ export function isValidUrl(url: string): boolean {
 export function extractNameFromUrl(url: string): string {
     try {
         const urlObj = new URL(url);
-        const pathname = urlObj.pathname;
+        // The path may hold a nested URL with userinfo of its own.
+        const pathname = urlWithoutUserinfo(urlObj.pathname);
         const segments = pathname.split("/").filter((s) => s.length > 0);
 
         if (segments.length > 0) {
@@ -181,5 +215,5 @@ export function extractNameFromUrl(url: string): string {
     } catch {
         // If URL parsing fails, fall through to return the full URL
     }
-    return url;
+    return urlWithoutUserinfo(url);
 }

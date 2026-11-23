@@ -1,6 +1,6 @@
 import { describe, expect, it, test } from "vitest";
 
-import { addSearchParams, isUrl, isValidNetworkUrl, isValidUrl } from "./url";
+import { addSearchParams, extractNameFromUrl, isUrl, isValidNetworkUrl, isValidUrl, urlWithoutUserinfo } from "./url";
 
 describe("test url utilities", () => {
     it("adding parameters to url", async () => {
@@ -68,5 +68,69 @@ describe("test url utilities", () => {
         expect(isValidUrl("   gxfiles://myftp/file.txt   ")).toBe(true);
         expect(isValidUrl("   ")).toBe(false);
         expect(isValidUrl("  https://.../x  ")).toBe(false);
+    });
+
+    test("urlWithoutUserinfo removes the userinfo of a url", () => {
+        expect(urlWithoutUserinfo("https://user:secret@example.org/a.bed")).toBe("https://example.org/a.bed");
+        expect(urlWithoutUserinfo("https://user:secret@example.org")).toBe("https://example.org");
+        expect(urlWithoutUserinfo("ftp://user:p@ss@example.org/a")).toBe("ftp://example.org/a");
+        expect(urlWithoutUserinfo("https://user:se?cret@example.org/a")).toBe("https://example.org/a");
+        expect(urlWithoutUserinfo("https://example.org/a@b")).toBe("https://example.org/a@b");
+        expect(urlWithoutUserinfo("not-a-url")).toBe("not-a-url");
+    });
+
+    test("urlWithoutUserinfo removes the userinfo of urls nested in a url", () => {
+        expect(urlWithoutUserinfo("https://example.org/a?next=ftp://user:secret@ftp.example.org")).toBe(
+            "https://example.org/a?next=ftp://ftp.example.org",
+        );
+        expect(urlWithoutUserinfo("https://example.org/a?next=ftp://user:se?cret@ftp.example.org")).toBe(
+            "https://example.org/a?next=ftp://ftp.example.org",
+        );
+        expect(urlWithoutUserinfo("https://example.org/a#ftp://user:se#cret@ftp.example.org")).toBe(
+            "https://example.org/a#ftp://ftp.example.org",
+        );
+        expect(urlWithoutUserinfo("https://u1:s1@example.org/proxy/ftp://u2:s2@ftp.example.org/b")).toBe(
+            "https://example.org/proxy/ftp://ftp.example.org/b",
+        );
+    });
+
+    test("urlWithoutUserinfo removes the userinfo after any run of slashes", () => {
+        expect(urlWithoutUserinfo("https://example.org/a?next=//user:secret@ftp.example.org")).toBe(
+            "https://example.org/a?next=//ftp.example.org",
+        );
+        expect(urlWithoutUserinfo("https://example.org/a?next=///user:secret@ftp.example.org")).toBe(
+            "https://example.org/a?next=///ftp.example.org",
+        );
+        expect(urlWithoutUserinfo("https://example.org/a?next=ftp:///user:secret@ftp.example.org")).toBe(
+            "https://example.org/a?next=ftp:///ftp.example.org",
+        );
+        expect(urlWithoutUserinfo("https:///user:secret@example.org")).toBe("https:///example.org");
+        expect(urlWithoutUserinfo("file:///data/a.bed")).toBe("file:///data/a.bed");
+        expect(urlWithoutUserinfo("https://example.org/dir/user@file.txt")).toBe(
+            "https://example.org/dir/user@file.txt",
+        );
+        // A "//" in a path starts an authority too, so a segment after it loses the part up to its "@".
+        expect(urlWithoutUserinfo("https://example.org/a//b@c.txt")).toBe("https://example.org/a//c.txt");
+    });
+
+    test("extractNameFromUrl never falls back to a url with userinfo", () => {
+        expect(extractNameFromUrl("https://user:secret@example.org/data/a.bed")).toBe("a.bed");
+        expect(extractNameFromUrl("https://user:secret@example.org")).toBe("https://example.org");
+        expect(extractNameFromUrl("https://user:secret@example.org/")).toBe("https://example.org/");
+        expect(extractNameFromUrl("https://example.org?next=ftp://user:secret@ftp.example.org")).toBe(
+            "https://example.org?next=ftp://ftp.example.org",
+        );
+        expect(extractNameFromUrl("https://example.org?next=//user:secret@ftp.example.org")).toBe(
+            "https://example.org?next=//ftp.example.org",
+        );
+        expect(extractNameFromUrl("https:///user:secret@example.org")).toBe("https:///example.org");
+    });
+
+    test("extractNameFromUrl leaves out the userinfo of a url nested in the path", () => {
+        expect(extractNameFromUrl("https://example.org/a?next=ftp://user:secret@ftp.example.org")).toBe("a");
+        expect(extractNameFromUrl("https://example.org/proxy/ftp://user:secret@ftp.example.org")).toBe(
+            "ftp.example.org",
+        );
+        expect(extractNameFromUrl("https://example.org/proxy//user:secret@ftp.example.org")).toBe("ftp.example.org");
     });
 });
