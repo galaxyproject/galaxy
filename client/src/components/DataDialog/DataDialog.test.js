@@ -1,6 +1,6 @@
 import { shallowMount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { Model } from "./model";
 import { Services } from "./services";
@@ -55,6 +55,18 @@ describe("model.js", () => {
     });
 });
 
+describe("model.js clear", () => {
+    it("drops every selected record", () => {
+        const model = new Model({ multiple: true });
+        model.add({ id: 1 });
+        model.add({ id: 2 });
+        model.clear();
+        expect(model.count()).toBe(0);
+        expect(model.exists(1)).toBe(false);
+        expect(model.finalize()).toEqual([]);
+    });
+});
+
 describe("services/Services:isDataset", () => {
     it("Test dataset identifier", () => {
         const services = new Services(mockOptions);
@@ -87,6 +99,10 @@ describe("services.js/Services", () => {
 
 describe("DataDialog.vue", () => {
     let wrapper;
+
+    afterEach(() => {
+        vi.restoreAllMocks();
+    });
     /*
     const rawData = [
         {
@@ -149,5 +165,29 @@ describe("DataDialog.vue", () => {
         expect(requestedUrls()).toHaveLength(2);
         expect(requestedUrls()[1]).toContain("api/histories/second/contents");
         get.mockRestore();
+    });
+
+    it("clears the selection when the history prop changes", async () => {
+        const leaf = { id: "dataset_1", label: "1: dataset", isLeaf: true };
+        vi.spyOn(Services.prototype, "get").mockResolvedValue([leaf]);
+        wrapper = shallowMount(DataDialog, {
+            propsData: { ...mockOptions, history: "first", library: false, multiple: true },
+            stubs: { Icon: true },
+        });
+        await flushPromises();
+        const dialog = () => wrapper.findComponent(SelectionDialog);
+        const rowVariant = () => dialog().props("items")[0]._rowVariant;
+        expect(dialog().props("disableOk")).toBe(true);
+
+        dialog().vm.$emit("onClick", leaf);
+        await flushPromises();
+        expect(dialog().props("disableOk")).toBe(false);
+        expect(rowVariant()).toBe("success");
+
+        await wrapper.setProps({ history: "second" });
+        await flushPromises();
+        expect(dialog().props("disableOk")).toBe(true);
+        // The model, not just hasValue, must be empty: formatRows reads it for the reloaded rows
+        expect(rowVariant()).toBe("default");
     });
 });

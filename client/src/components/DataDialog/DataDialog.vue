@@ -187,6 +187,8 @@ watch(
     () => props.history,
     () => {
         urlTracker.reset(getHistoryUrl());
+        model.clear();
+        hasValue.value = false;
         load();
     },
 );
