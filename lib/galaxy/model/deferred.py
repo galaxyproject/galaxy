@@ -38,6 +38,7 @@ from galaxy.objectstore import (
     ObjectStore,
     ObjectStorePopulator,
 )
+from galaxy.util import strip_url_userinfo
 from galaxy.util.hash_util import verify_hash
 from .dereference import get_replacement_dataset
 
@@ -218,7 +219,11 @@ class DatasetInstanceMaterializer:
             materialized_dataset_instance = dataset_instance
         if exception_materializing is not None:
             materialized_dataset.state = Dataset.states.ERROR
-            error_msg = f"Failed to materialize deferred dataset with exception: {exception_materializing}"
+            # The exception may quote a source URI with its userinfo, also without its "://".
+            source_uris = [source.source_uri for source in dataset.sources if source.source_uri]
+            error_msg = strip_url_userinfo(
+                f"Failed to materialize deferred dataset with exception: {exception_materializing}", source_uris
+            )
             materialized_dataset_instance.info = error_msg
             log.error(error_msg)
         if attached:

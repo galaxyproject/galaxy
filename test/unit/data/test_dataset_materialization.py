@@ -1,5 +1,7 @@
+import logging
 import os
 
+import pytest
 from pkg_resources import resource_string
 from sqlalchemy import select
 
@@ -173,6 +175,37 @@ def test_hash_invalid():
     materialized_hda = materializer.ensure_materialized(deferred_hda)
     materialized_dataset = materialized_hda.dataset
     assert materialized_dataset.state == "error"
+
+
+@pytest.mark.parametrize(
+    "error_template",
+    [
+        "nonnumeric port: '{password_host}'",
+        "Failed to fetch {source_uri}",
+    ],
+)
+def test_materialization_error_leaves_out_source_uri_userinfo(monkeypatch, caplog, error_template):
+    source_uri = "https://user:secret@example.org/2.bed"
+    error = error_template.format(password_host="secret@example.org", source_uri=source_uri)
+
+    def stream_url_to_file(*args, **kwargs):
+        raise ValueError(error)
+
+    monkeypatch.setattr("galaxy.model.deferred.stream_url_to_file", stream_url_to_file)
+    fixture_context = setup_fixture_context_with_history()
+    store_dict = deferred_hda_model_store_dict(source_uri=source_uri)
+    # Without a hash the in-place dataset is not its own replacement, so it is streamed.
+    store_dict["datasets"][0]["file_metadata"]["hashes"] = []
+    perform_import_from_store_dict(fixture_context, store_dict)
+    deferred_hda = fixture_context.history.datasets[0]
+    materializer = materializer_factory(True, object_store=fixture_context.app.object_store)
+    with caplog.at_level(logging.ERROR, logger="galaxy.model.deferred"):
+        materialized_hda = materializer.ensure_materialized(deferred_hda, in_place=True)
+    assert materialized_hda.dataset.state == "error"
+    assert "Failed to materialize deferred dataset" in materialized_hda.info
+    assert "secret" not in materialized_hda.info
+    assert "example.org" in materialized_hda.info
+    assert "secret" not in caplog.text
 
 
 def test_legacy_transform_actions_on_deferred_hdas_become_requested_actions():
