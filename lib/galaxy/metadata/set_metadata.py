@@ -622,6 +622,7 @@ def set_metadata_portable(
                 dataset.state = dataset.dataset.state = dataset.states.ERROR
                 if not metadata_params.get("link_data_only"):
                     object_store_update_actions.append(partial(reset_external_filename, dataset))
+                object_store_update_actions.append(partial(dataset.set_total_size))
                 object_store_update_actions.append(partial(export_store.add_dataset, dataset))
         finally:
             for action in object_store_update_actions:
