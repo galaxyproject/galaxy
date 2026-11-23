@@ -6059,17 +6059,6 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
                 meta_types.append(meta_type)
         return meta_types
 
-    def get_metadata_file_paths_and_extensions(self) -> list[tuple[str, str]]:
-        metadata = self.metadata
-        metadata_files = []
-        for metadata_name in self.metadata_file_types:
-            file_ext = metadata.spec[metadata_name].file_ext
-            metadata_file = metadata[metadata_name]
-            if metadata_file:
-                path = metadata_file.get_file_name()
-                metadata_files.append((file_ext, path))
-        return metadata_files
-
     # This provide backwards compatibility with using the old dbkey
     # field in the database.  That field now maps to "old_dbkey" (see mapping.py).
 
@@ -8271,38 +8260,6 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
             tuples = required_object_session(self).execute(stmt)
             self._dataset_action_tuples = [(action, role_id) for action, role_id in tuples if action is not None]
         return self._dataset_action_tuples
-
-    @property
-    def element_identifiers_extensions_paths_and_metadata_files(
-        self,
-    ) -> list[list[Any]]:
-        results = []
-        if session := object_session(self):
-            stmt = self._build_nested_collection_attributes_stmt(
-                element_attributes=("element_identifier",),
-                hda_attributes=("extension",),
-                return_entities=(HistoryDatasetAssociation, Dataset),
-            )
-            tuples = session.execute(stmt)
-            # element_identifiers, extension, path
-            for row in tuples:
-                result = [row[:-3], row.extension, row.Dataset.get_file_name()]
-                hda = row.HistoryDatasetAssociation
-                result.append(hda.get_metadata_file_paths_and_extensions())
-                results.append(result)
-        else:
-            # This will be in a remote tool evaluation context, so can't query database
-            for dataset_element in self.dataset_elements_and_identifiers():
-                # Let's pretend name is element identifier
-                results.append(
-                    [
-                        dataset_element._identifiers,
-                        dataset_element.hda.extension,
-                        dataset_element.hda.get_file_name(),
-                        dataset_element.hda.get_metadata_file_paths_and_extensions(),
-                    ]
-                )
-        return results
 
     @property
     def waiting_for_elements(self):
