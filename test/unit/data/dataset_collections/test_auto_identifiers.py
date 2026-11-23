@@ -50,8 +50,9 @@ def test_guess_filename_from_url_leaves_out_nested_userinfo():
     assert guess_filename_from_url("https://example.org/ftp://user:secret@inner/a.bed") == "a.bed"
 
 
-def test_guess_filename_from_url_leaves_out_userinfo_of_pathless_url():
-    assert "secret" not in guess_filename_from_url("https://user:secret@example.org")
+def test_guess_filename_from_url_leaves_out_userinfo_of_nested_pathless_url():
+    assert guess_filename_from_url("https://example.org/ftp://user:secret@inner?x=1") == "inner"
+    assert guess_filename_from_url("https://example.org/ftp://user:12?34@inner") == "[redacted]"
 
 
 def test_fill_in_identifiers_leaves_out_nested_userinfo():
