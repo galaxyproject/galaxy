@@ -1,5 +1,4 @@
 import json
-import re
 import shlex
 import typing
 from logging import getLogger
@@ -13,7 +12,11 @@ from os.path import (
 )
 
 from galaxy import util
-from galaxy.job_execution.output_collect import default_exit_code_file
+from galaxy.job_execution.output_collect import (
+    default_exit_code_file,
+    escape_preserving_wildcards,
+    rejected_work_dir_outputs_file,
+)
 from galaxy.jobs.runners.util.job_script import (
     INTEGRITY_INJECTION,
     ScriptIntegrityChecks,
@@ -268,11 +271,14 @@ def __handle_work_dir_outputs(
 ):
     # Append commands to copy job outputs based on from_work_dir attribute.
     work_dir_outputs_kwds = {}
+    job_directory = abspath(job_wrapper.working_directory)
     if "working_directory" in remote_command_params:
-        work_dir_outputs_kwds["job_working_directory"] = remote_command_params["working_directory"]
+        job_directory = work_dir_outputs_kwds["job_working_directory"] = remote_command_params["working_directory"]
     work_dir_outputs = runner.get_work_dir_outputs(job_wrapper, **work_dir_outputs_kwds)
     if work_dir_outputs:
-        copy_commands = map(__copy_if_exists_command, work_dir_outputs)
+        copy_commands = (
+            __copy_if_exists_command(work_dir_output, job_directory) for work_dir_output in work_dir_outputs
+        )
         commands_builder.append_commands(copy_commands)
 
 
@@ -325,25 +331,29 @@ def __handle_metadata(
         commands_builder.append_command(metadata_command)
 
 
-def __quote_preserving_globs(path: str) -> str:
-    # ``*`` and ``?`` stay unquoted so the shell still expands them, everything
-    # else is quoted.
-    return "".join(part if part in ("*", "?") else shlex.quote(part) for part in re.split(r"([*?])", path) if part)
-
-
-def __copy_if_exists_command(work_dir_output: tuple[str, str]) -> str:
+def __copy_if_exists_command(work_dir_output: tuple[str, str], job_directory: str) -> str:
     source_file, destination = work_dir_output
     is_directory = True if destination.endswith("_files") else False
     test_flag = "-d" if is_directory else "-f"
     recursive_flag = " -r" if is_directory else ""
-    source_file = __quote_preserving_globs(source_file)
+    message = shlex.quote(f"Not collecting {source_file}: it does not resolve to a path inside the job directory")
+    rejected_file = shlex.quote(rejected_work_dir_outputs_file(job_directory))
+    source_file = escape_preserving_wildcards(source_file, shlex.quote)
     destination = shlex.quote(destination)
-    delete_destination_dir = f" rmdir {destination}; " if is_directory else ""
+    job_directory = shlex.quote(job_directory)
+    delete_destination_dir = f" rmdir {destination};" if is_directory else ""
     # Check if source and destination exist.
     # Users can purge outputs before the job completes,
     # in that case we don't want to copy the output to a purged path.
     # Static, non work_dir_output files are handled in job_finish code.
-    return f"\nif [ {test_flag} {source_file} -a {test_flag} {destination} ] ; then{delete_destination_dir} cp{recursive_flag} {source_file} {destination} ; fi"
+    # This copy runs outside of the tool's container, so the source must not be
+    # a link (or inside a linked directory) leading out of the job directory.
+    return (
+        f"\nif [ {test_flag} {source_file} -a {test_flag} {destination} ] ; then "
+        f'case "$(realpath {source_file})" in "$(realpath {job_directory})"/*)'
+        f"{delete_destination_dir} cp{recursive_flag} {source_file} {destination} ;; "
+        f"*) echo {message} >&2 ; echo {message} >> {rejected_file} ;; esac ; fi"
+    )
 
 
 class CommandsBuilder:

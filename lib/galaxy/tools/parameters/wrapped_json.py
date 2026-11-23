@@ -50,24 +50,16 @@ def data_collection_input_to_staging_path_and_source_path(
     staging_paths = v.get_all_staging_paths(
         invalid_chars=invalid_chars, include_collection_name=include_collection_name
     )
-    if v.element_identifiers_extensions_paths_and_metadata_files:
-        element_identifiers, extensions, source_paths, metadata_files = zip(
-            *v.element_identifiers_extensions_paths_and_metadata_files
-        )
-    else:
-        element_identifiers, extensions, source_paths, metadata_files = (), (), (), ()
     return [
         {
             "element_identifier": element_identifier,
             "ext": extension,
             "staging_path": staging_path,
             "source_path": source_path,
-            "metadata_files": [
-                {"staging_path": f"{staging_path}.{mf[0]}", "source_path": mf[1]} for mf in metadata_files
-            ],
+            "metadata_files": _metadata_files_to_staging_path_and_source_path(staging_path, metadata_files),
         }
-        for element_identifier, extension, staging_path, source_path, metadata_files in zip(
-            element_identifiers, extensions, staging_paths, source_paths, metadata_files
+        for staging_path, (element_identifier, extension, source_path, metadata_files) in zip(
+            staging_paths, v.element_identifiers_extensions_paths_and_metadata_files
         )
     ]
 
@@ -81,10 +73,15 @@ def data_input_to_staging_path_and_source_path(
         "ext": v.file_ext,
         "staging_path": staging_path,
         "source_path": data_input_to_path(v),
-        "metadata_files": [
-            {"staging_path": f"{staging_path}.{mf[0]}", "source_path": mf[1]} for mf in v.all_metadata_files
-        ],
+        "metadata_files": _metadata_files_to_staging_path_and_source_path(staging_path, v.all_metadata_files),
     }
+
+
+def _metadata_files_to_staging_path_and_source_path(
+    staging_path: str, metadata_files: Sequence[tuple[str, str]]
+) -> list[dict[str, str]]:
+    """Stage each ``(file extension, path)`` metadata file next to its dataset's ``staging_path``."""
+    return [{"staging_path": f"{staging_path}.{ext}", "source_path": path} for ext, path in metadata_files]
 
 
 def _json_wrap_input(input, value_wrapper, profile, handle_files=None):
