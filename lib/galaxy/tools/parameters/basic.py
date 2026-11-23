@@ -9,7 +9,6 @@ import os
 import os.path
 import re
 import typing
-import urllib.parse
 from collections.abc import (
     MutableMapping,
     Sequence,
@@ -2921,6 +2920,11 @@ class RulesListToolParameter(BaseJsonToolParameter):
             return ""
 
 
+def _name_from_location(location: str) -> str:
+    # Userinfo goes first: an ambiguous one can hold the "?" that would start the query.
+    return util.name_from_url(util.url_without_userinfo(location).split("#", 1)[0].split("?", 1)[0])
+
+
 # Code from CWL branch to massage in order to be shared across tools and workflows,
 # and for CWL artifacts as well as Galaxy ones.
 def raw_to_galaxy(
@@ -2930,11 +2934,7 @@ def raw_to_galaxy(
     if object_class == "File":
         # TODO: relative_to = "/"
         location = as_dict_value.get("location")
-        name = (
-            as_dict_value.get("identifier")
-            or as_dict_value.get("basename")
-            or os.path.basename(urllib.parse.urlparse(location).path)
-        )
+        name = as_dict_value.get("identifier") or as_dict_value.get("basename") or _name_from_location(location or "")
         extension = as_dict_value.get("format") or "data"
         dataset = Dataset()
         source = DatasetSource()
