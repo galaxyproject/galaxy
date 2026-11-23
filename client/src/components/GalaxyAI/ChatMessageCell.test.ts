@@ -1,5 +1,6 @@
 import { mount } from "@vue/test-utils";
 import { describe, expect, it, vi } from "vitest";
+import { nextTick } from "vue";
 
 import type { ActionSuggestion } from "@/composables/agentActions";
 import { ActionType } from "@/composables/agentActions";
@@ -218,6 +219,122 @@ describe("ChatMessageCell", () => {
             const tags = wrapper.findAll(".meta-tag");
             const text = tags.map((w) => w.text()).join(" ");
             expect(text).toContain("150 tok");
+        });
+    });
+
+    describe("references", () => {
+        const tutorialUrl =
+            "https://training.galaxyproject.org/training-material/topics/transcriptomics/tutorials/ref-based/tutorial.html";
+
+        it("lists the response's verified sources, not URLs from the message text", async () => {
+            const message = makeAssistantMessage({
+                content: "Try [this](https://example.org/made-up) first.",
+                agentResponse: {
+                    content: "test",
+                    agent_type: "gtn_training",
+                    confidence: "high",
+                    suggestions: [],
+                    sources: [{ title: "Reference-based RNA-Seq", url: tutorialUrl, source_type: "gtn_tutorial" }],
+                    metadata: { docs_url: "https://example.org/metadata-link" },
+                },
+            });
+            const wrapper = mountCell(message);
+            expect(wrapper.find(".links-count").text()).toBe("1");
+
+            await wrapper.find(".links-toggle").trigger("click");
+            expect(wrapper.findAll(".reference-link").length).toBe(1);
+            const link = wrapper.find(".reference-link");
+            expect(link.attributes("href")).toBe(tutorialUrl);
+            expect(link.text()).toContain("Reference-based RNA-Seq");
+        });
+
+        it("drops sources whose URL isn't http(s)", async () => {
+            const message = makeAssistantMessage({
+                content: "test",
+                agentResponse: {
+                    content: "test",
+                    agent_type: "gtn_training",
+                    confidence: "high",
+                    suggestions: [],
+                    sources: [
+                        { title: "Reference-based RNA-Seq", url: tutorialUrl, source_type: "gtn_tutorial" },
+                        { title: "Forged", url: "javascript:alert(1)", source_type: "gtn_tutorial" },
+                    ],
+                    metadata: {},
+                },
+            });
+            const wrapper = mountCell(message);
+            expect(wrapper.find(".links-count").text()).toBe("1");
+
+            await wrapper.find(".links-toggle").trigger("click");
+            const links = wrapper.findAll(".reference-link");
+            expect(links.length).toBe(1);
+            expect(links[0]!.attributes("href")).toBe(tutorialUrl);
+        });
+
+        describe("popover", () => {
+            function mountWithSource() {
+                const message = makeAssistantMessage({
+                    content: "test",
+                    agentResponse: {
+                        content: "test",
+                        agent_type: "gtn_training",
+                        confidence: "high",
+                        suggestions: [],
+                        sources: [{ title: "Reference-based RNA-Seq", url: tutorialUrl, source_type: "gtn_tutorial" }],
+                        metadata: {},
+                    },
+                });
+                return mount(ChatMessageCell as any, {
+                    propsData: { message, renderMarkdown: defaultRenderMarkdown, processingAction: false },
+                    stubs: { FontAwesomeIcon: true, ActionCard: true },
+                    attachTo: document.body,
+                });
+            }
+
+            it("closes on Escape", async () => {
+                const wrapper = mountWithSource();
+                await wrapper.find(".links-toggle").trigger("click");
+                expect(wrapper.find(".links-popover").exists()).toBe(true);
+
+                const link = wrapper.find(".reference-link");
+                (link.element as HTMLElement).focus();
+                await link.trigger("keydown", { key: "Escape" });
+                expect(wrapper.find(".links-popover").exists()).toBe(false);
+                // focus would otherwise fall to <body> with the link gone
+                expect(document.activeElement).toBe(wrapper.find(".links-toggle").element);
+                wrapper.unmount();
+            });
+
+            it("closes on a click outside, but not on one inside", async () => {
+                const wrapper = mountWithSource();
+                await wrapper.find(".links-toggle").trigger("click");
+                // onClickOutside ignores clicks in the same task as the one that opened it
+                await new Promise((resolve) => setTimeout(resolve));
+
+                const inside = wrapper.find(".links-popover").element;
+                inside.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true }));
+                inside.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+                await nextTick();
+                expect(wrapper.find(".links-popover").exists()).toBe(true);
+                // and it handles at most one click per task
+                await new Promise((resolve) => setTimeout(resolve));
+
+                const outside = document.createElement("button");
+                document.body.appendChild(outside);
+                outside.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true }));
+                outside.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+                await nextTick();
+                expect(wrapper.find(".links-popover").exists()).toBe(false);
+
+                outside.remove();
+                wrapper.unmount();
+            });
+        });
+
+        it("hides the references button when there are no sources", () => {
+            const wrapper = mountCell(makeAssistantMessage({ content: "See https://example.org/page." }));
+            expect(wrapper.find(".reference-links").exists()).toBe(false);
         });
     });
 

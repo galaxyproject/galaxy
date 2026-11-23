@@ -1,11 +1,11 @@
 """State types shared by Galaxy models and API schemas."""
 
 from collections.abc import ValuesView
-from enum import Enum
+from enum import StrEnum
 from typing import Literal
 
 
-class DatasetState(str, Enum):
+class DatasetState(StrEnum):
     NEW = "new"
     UPLOAD = "upload"
     QUEUED = "queued"
@@ -30,7 +30,7 @@ class DatasetState(str, Enum):
         return self.__members__.values()
 
 
-class JobState(str, Enum):
+class JobState(StrEnum):
     NEW = "new"
     RESUBMITTED = "resubmitted"
     UPLOAD = "upload"
@@ -49,7 +49,7 @@ class JobState(str, Enum):
     SKIPPED = "skipped"
 
 
-class DatasetCollectionPopulatedState(str, Enum):
+class DatasetCollectionPopulatedState(StrEnum):
     NEW = "new"  # New dataset collection, unpopulated elements
     OK = "ok"  # Collection elements populated (HDAs may or may not have errors)
     FAILED = "failed"  # some problem populating state, won't be populated
@@ -60,25 +60,25 @@ class DatasetCollectionPopulatedState(str, Enum):
 DatasetSourceTransformActionTypeLiteral = Literal["to_posix_lines", "spaces_to_tabs", "datatype_groom"]
 
 
-class DatasetSourceTransformActionType(str, Enum):
+class DatasetSourceTransformActionType(StrEnum):
     TO_POSIX_LINES = "to_posix_lines"
     SPACES_TO_TABLES = "spaces_to_tabs"
     DATATYPE_GROOM = "datatype_groom"
 
 
-class DatasetValidatedState(str, Enum):
+class DatasetValidatedState(StrEnum):
     UNKNOWN = "unknown"
     INVALID = "invalid"
     OK = "ok"
 
 
-class ToolRequestState(str, Enum):
+class ToolRequestState(StrEnum):
     NEW = "new"
     SUBMITTED = "submitted"
     FAILED = "failed"
 
 
-class InvocationState(str, Enum):
+class InvocationState(StrEnum):
     NEW = "new"  # Brand new workflow invocation... maybe this should be same as READY
     REQUIRES_MATERIALIZATION = "requires_materialization"  # an otherwise NEW or READY workflow that requires inputs to be materialized (undeferred)
     READY = "ready"  # Workflow ready for another iteration of scheduling.
@@ -89,7 +89,7 @@ class InvocationState(str, Enum):
     COMPLETED = "completed"  # All jobs have reached terminal states (ok, error, deleted, skipped, paused, stopped)
 
 
-class InvocationStepState(str, Enum):
+class InvocationStepState(StrEnum):
     NEW = "new"  # Brand new workflow invocation step
     READY = "ready"  # Workflow invocation step ready for another iteration of scheduling.
     SCHEDULED = "scheduled"  # Workflow invocation step has been scheduled.

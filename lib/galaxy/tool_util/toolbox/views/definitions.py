@@ -1,4 +1,4 @@
-from enum import Enum
+from enum import StrEnum
 from typing import (
     Any,
     cast,
@@ -12,7 +12,7 @@ from pydantic import (
 )
 
 
-class StaticToolBoxViewTypeEnum(str, Enum):
+class StaticToolBoxViewTypeEnum(StrEnum):
     generic = "generic"
     activity = "activity"
     publication = "publication"

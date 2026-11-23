@@ -56,6 +56,13 @@ const hasUpgradeMessages = ref(false);
 const hasStepVersionChanges = ref(false);
 const invocations = ref([]);
 const simpleForm = ref(false);
+const sendNotification = ref(false);
+watch(
+    () => props.workflowId,
+    () => {
+        sendNotification.value = false;
+    },
+);
 const disableSimpleForm = ref(false);
 const disableSimpleFormReason = ref<
     "hasReplacementParameters" | "hasDisconnectedInputs" | "hasWorkflowResourceParameters" | undefined
@@ -286,6 +293,7 @@ defineExpose({
                     </GAlert>
                     <WorkflowRunFormSimple
                         v-if="fromVariant === 'simple'"
+                        v-model:send-notification="sendNotification"
                         :model="workflowModel"
                         :target-history="simpleFormTargetHistory"
                         :use-job-cache="simpleFormUseJobCache"
@@ -298,6 +306,7 @@ defineExpose({
                         @showAdvanced="showAdvanced" />
                     <WorkflowRunForm
                         v-else
+                        v-model:send-notification="sendNotification"
                         :model="workflowModel"
                         :can-mutate-current-history="canRunOnHistory"
                         :disable-simple-form="disableSimpleForm"

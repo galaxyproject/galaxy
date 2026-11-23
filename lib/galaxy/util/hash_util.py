@@ -7,7 +7,7 @@ import hashlib
 import hmac
 import logging
 from collections.abc import Callable
-from enum import Enum
+from enum import StrEnum
 from typing import (
     Any,
     Literal,
@@ -29,7 +29,7 @@ sha = sha1
 md5 = hashlib.md5
 
 
-class HashFunctionNameEnum(str, Enum):
+class HashFunctionNameEnum(StrEnum):
     """Hash function names that can be used to generate checksums for files."""
 
     md5 = "MD5"

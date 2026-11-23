@@ -21,6 +21,7 @@ from typing import (
 from axe_selenium_python import Axe
 from selenium.common.exceptions import (
     NoSuchElementException,
+    StaleElementReferenceException,
     TimeoutException as SeleniumTimeoutException,
 )
 from selenium.webdriver.common.action_chains import ActionChains
@@ -61,6 +62,10 @@ HasFindElement = WebDriver | WebElement
 DEFAULT_AXE_SCRIPT_URL = "https://cdnjs.cloudflare.com/ajax/libs/axe-core/4.7.1/axe.min.js"
 AXE_SCRIPT_HASH: dict[str, str] = {}
 AXE_SCRIPT_HASH_LOCK = threading.Lock()
+ARIA_DISABLED_SCRIPT = """
+const nearest = arguments[0].closest('[aria-disabled="true" i], [aria-disabled="false" i]');
+return nearest !== null && nearest.getAttribute("aria-disabled").toLowerCase() === "true";
+"""
 
 
 def get_axe_script(script_url: str) -> str:
@@ -100,6 +105,30 @@ def _webelements_to_protocol(elements: list[WebElement]) -> list[WebElementProto
 def _protocol_to_webelement(element: WebElementProtocol) -> WebElement:
     """See notes above for why these cannot be directly typed."""
     return cast(WebElement, element)
+
+
+def _element_to_be_clickable(locator_tuple: tuple):
+    """Like ``ec.element_to_be_clickable``, but not while the element is ``aria-disabled``.
+
+    Selenium only checks the native ``disabled`` attribute, so it clicks a disabled ``GButton``
+    (which only sets ``aria-disabled``) and the click is silently dropped. As in Playwright's
+    enabled check, the nearest ``aria-disabled="true"`` or ``"false"`` on the element or an
+    ancestor decides.
+    """
+    clickable = ec.element_to_be_clickable(locator_tuple)
+
+    def _predicate(driver):
+        element = clickable(driver)
+        if not element:
+            return False
+        try:
+            if driver.execute_script(ARIA_DISABLED_SCRIPT, element):
+                return False
+        except StaleElementReferenceException:
+            return False
+        return element
+
+    return _predicate
 
 
 def _cookies_to_typed(cookies: list[dict]) -> list[Cookie]:
@@ -333,7 +362,7 @@ class HasDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTypeT]):
 
     def _wait_on_condition_clickable(self, locator_tuple: tuple, message: str, **kwds) -> WebElement:
         """Wait for element to be clickable."""
-        return self._wait_on_selenium_condition(ec.element_to_be_clickable(locator_tuple), message, **kwds)
+        return self._wait_on_selenium_condition(_element_to_be_clickable(locator_tuple), message, **kwds)
 
     def _wait_on_condition_invisible(self, locator_tuple: tuple, message: str, **kwds) -> WebElement:
         """Wait for element to be invisible or absent."""

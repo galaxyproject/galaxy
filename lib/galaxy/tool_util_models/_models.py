@@ -13,6 +13,7 @@ from typing import (
     ClassVar,
     get_args,
     Literal,
+    NotRequired,
     Union,
 )
 
@@ -32,7 +33,6 @@ from pydantic import (
 )
 from pydantic_core import PydanticCustomError
 from typing_extensions import (
-    NotRequired,
     TypedDict,
 )
 

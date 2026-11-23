@@ -130,12 +130,14 @@ class WorkflowOrchestratorAgent(BaseGalaxyAgent):
                 responses = await self._execute_parallel(plan.agents, query, context)
 
             combined_content = self._combine_responses(responses, plan.reasoning)
+            sources = list({source.url: source for r in responses.values() for source in r.sources}.values())
 
             return self._build_response(
                 content=combined_content,
                 confidence=ConfidenceLevel.HIGH,
                 method="orchestrated",
                 query=query,
+                sources=sources,
                 agent_data={
                     "agents_used": plan.agents,
                     "execution_type": "sequential" if plan.sequential else "parallel",
@@ -213,14 +215,14 @@ class WorkflowOrchestratorAgent(BaseGalaxyAgent):
                 log.debug(f"Orchestrator: Agent '{agent_name}' completed. Response length: {len(response.content)}")
                 log.debug(f"Orchestrator: Agent '{agent_name}' response preview: {response.content[:500]}...")
 
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 log.error(f"Agent {agent_name} timed out after {timeout}s")
                 responses[agent_name] = _create_error_response(
                     agent_name,
                     f"Agent {agent_name} timed out after {timeout} seconds",
                     is_timeout=True,
                 )
-            except (ValueError, ConnectionError, TimeoutError) as e:
+            except (ValueError, ConnectionError) as e:
                 log.error(f"Error executing agent {agent_name}: {e}")
                 responses[agent_name] = _create_error_response(agent_name, f"Agent {agent_name} encountered an error")
 
@@ -238,14 +240,14 @@ class WorkflowOrchestratorAgent(BaseGalaxyAgent):
                 agent = await anyio.to_thread.run_sync(partial(self.deps.get_agent, agent_name, self.deps))
                 response = await asyncio.wait_for(agent.process(query, context or {}), timeout=timeout)
                 return agent_name, response
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 log.error(f"Agent {agent_name} timed out after {timeout}s")
                 return agent_name, _create_error_response(
                     agent_name,
                     f"Agent {agent_name} timed out after {timeout} seconds",
                     is_timeout=True,
                 )
-            except (ValueError, ConnectionError, TimeoutError) as e:
+            except (ValueError, ConnectionError) as e:
                 log.error(f"Error executing agent {agent_name}: {e}")
                 return agent_name, _create_error_response(agent_name, f"Agent {agent_name} encountered an error")
 

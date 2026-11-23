@@ -1,7 +1,7 @@
 import errno
 import os
 import tempfile
-from enum import Enum
+from enum import StrEnum
 from io import (
     BytesIO,
     StringIO,
@@ -193,7 +193,7 @@ def test_listify() -> None:
 
 
 def test_enum_values():
-    class Stuff(str, Enum):
+    class Stuff(StrEnum):
         A = "a"
         C = "c"
         B = "b"

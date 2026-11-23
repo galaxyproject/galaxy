@@ -786,8 +786,7 @@ class _ReferencedContentCollector(GalaxyInternalMarkdownDirectiveHandler):
         job-vs-ICJ here at the directive boundary: a job in an implicit collection
         is recorded as its ICJ id (a map-over step), a plain job as its job id.
         """
-        icj_assoc = job.implicit_collection_jobs_association
-        if icj_assoc is not None:
+        if (icj_assoc := job.implicit_collection_jobs_association) is not None:
             self.content._record_icj(icj_assoc.implicit_collection_jobs_id)
         else:
             self.content._record_job(job.id)

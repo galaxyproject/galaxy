@@ -7,7 +7,7 @@ dynamic = ["readme"]
 name = "galaxy-tool-shed-schema"
 version = "26.2.0rc1"
 description = "Pydantic models for the Galaxy Tool Shed"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 license = "MIT"
 license-files = [
     "LICENSE",
@@ -27,7 +27,6 @@ classifiers = [
     "Natural Language :: English",
     "Operating System :: POSIX",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",

@@ -351,6 +351,15 @@ runners:
     # by loading a separate file (using pulsar_config).
     #app: {}
     #pulsar_config: path/to/pulsar/app.yml
+    # Every job handler process loading this runner starts its own Pulsar app, and
+    # each app monitors and recovers all jobs recorded in its persistence_directory,
+    # so handlers must not share it. The default is
+    # <data_dir>/pulsar_persisted_data/<server_name>. If the Pulsar app configuration
+    # sets persistence_directory, include {server_name}, which is replaced with the
+    # handler's server name, e.g.:
+    #   persistence_directory: /srv/galaxy/pulsar_persisted_data/{server_name}
+    # scripts/migrate_embedded_pulsar_persistence.py moves jobs recorded in a shared
+    # directory to the per-handler directories.
 
   # Using Pulsar and co-execution to run jobs against a TES service.
   # - https://www.ga4gh.org/product/task-execution-service-tes/
@@ -1136,7 +1145,11 @@ execution:
 
     #   - "walltime_reached" (True if and only if the job runner indicates a walltime maximum was reached)
     #   - "memory_limit_reached" (True if and only if the job runner indicates a memory limit was hit)
+    #   - "node_failure" (True if and only if the job runner indicates a node the job was running on failed)
+    #   - "preempted" (True if and only if the job runner indicates the job was preempted by another job)
+    #   - "job_output_not_returned_from_cluster" (True if and only if the job runner indicates the job's outputs were not returned from the cluster)
     #   - "unknown_error" (True for job or job runner problems that aren't otherwise classified)
+    #   - "runner_state" (the reason reported by the job runner as a string, e.g. ``runner_state == 'node_failure'``)
     #   - "attempt" (the re-submission attempt number this is)
     #   - "seconds_since_queued" (the number of seconds since the last time the job was in a queued state within Galaxy)
     #   - "seconds_running" (the number of seconds the job was in a running state within Galaxy)

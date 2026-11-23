@@ -68,6 +68,7 @@ from galaxy.tool_util_models.parameters import (
 from galaxy.tools import Tool
 from galaxy.tools._types import InputFormatT
 from galaxy.tools.cached_toolbox import CachedToolBox
+from galaxy.tools.job_parameters import DATA_MANAGER_MODE
 from galaxy.tools.search import ToolBoxSearch
 from galaxy.util.path import safe_contains
 from galaxy.webapps.galaxy.services._fetch_util import validate_and_normalize_targets
@@ -271,6 +272,10 @@ class ToolsService(ServiceBase):
     ) -> CreateToolLandingRequestPayload:
         request_version = "1"
         payload = data_landing_payload.model_dump(exclude_unset=True)["request_state"]
+        for target in payload["targets"]:
+            # The claimant runs the landing, so it may only import into their own history.
+            if target["destination"]["type"] in ("library", "library_folder"):
+                raise exceptions.RequestParameterInvalidException("Data landings cannot target libraries.")
         validate_and_normalize_targets(trans, payload, set_internal_fields=False)
         validated_back_to_model = TargetsAdapter.validate_python(payload["targets"])
         request_state = {
@@ -414,7 +419,7 @@ class ToolsService(ServiceBase):
             raise exceptions.RequestParameterInvalidException(f"input_format invalid {input_format}")
         input_format = cast(InputFormatT, input_format)  # https://github.com/python/mypy/issues/15106
         if "data_manager_mode" in payload:
-            incoming["__data_manager_mode"] = payload["data_manager_mode"]
+            incoming[DATA_MANAGER_MODE] = payload["data_manager_mode"]
         tags = payload.get("__tags")
         vars = tool.handle_input(
             trans,
@@ -426,6 +431,7 @@ class ToolsService(ServiceBase):
             credentials_context=CredentialsContext(root=credentials_context) if credentials_context else None,
             tags=tags,
             send_email_notification=inputs.get("send_email_notification", False),
+            send_notification=inputs.get("send_notification", False),
         )
         return self._handle_inputs_output_to_api_response(trans, tool, target_history, vars)
 

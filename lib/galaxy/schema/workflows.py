@@ -1,5 +1,5 @@
 import json
-from enum import Enum
+from enum import StrEnum
 from typing import (
     Annotated,
     Any,
@@ -397,7 +397,7 @@ class StepLabelHint(Model):
     )
 
 
-class InvalidWorkflowExtractionJobReason(str, Enum):
+class InvalidWorkflowExtractionJobReason(StrEnum):
     """Reasons a workflow extraction job may be invalid and disabled for extraction."""
 
     TOOL_MISSING_OR_INACCESSIBLE = "tool_missing_or_inaccessible"

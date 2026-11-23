@@ -272,17 +272,24 @@ class DatasetInstanceMaterializer:
                 sa_session = required_object_session(dataset_instance)
             sa_session.add(materialized_dataset_instance)
         if not in_place:
+            source_instance = replacement_dataset or dataset_instance
             materialized_dataset_instance.copy_from(
-                replacement_dataset or dataset_instance,
+                source_instance,
                 new_dataset=replacement_dataset and replacement_dataset.dataset or materialized_dataset,
                 include_tags=attached,
-                include_metadata=True,
+                include_metadata=attached,
             )
             materialized_dataset_instance.name = dataset_instance.name
+            if not attached:
+                # A detached instance has no session and is never persisted, so it can't own MetadataFile
+                # rows; it reads the source's.
+                materialized_dataset_instance._metadata = source_instance._metadata
         elif replacement_dataset:
             materialized_dataset_instance.dataset = replacement_dataset.dataset
             materialized_dataset_instance.dataset_id = replacement_dataset.dataset_id
-            materialized_dataset_instance._metadata = replacement_dataset._metadata
+            # Only attached materialization finds a replacement. Copy its metadata files into rows this
+            # instance owns, as copy_from() does, so purging the replacement keeps them.
+            materialized_dataset_instance.metadata = replacement_dataset.metadata
         if exception_materializing is not None:
             # Set after copy_from, which would otherwise replace it with the source's info.
             error_msg = f"Failed to materialize deferred dataset with exception: {exception_materializing}"

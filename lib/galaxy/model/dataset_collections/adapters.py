@@ -1,10 +1,10 @@
 from collections import defaultdict
 from typing import (
+    Self,
     TYPE_CHECKING,
 )
 
 from pydantic import ValidationError
-from typing_extensions import Self
 
 from galaxy.model import CollectionStateSummary
 from galaxy.tool_util_models.parameters import (

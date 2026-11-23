@@ -710,6 +710,16 @@ def default_exit_code_file(files_dir, id_tag):
     return os.path.join(files_dir, f"galaxy_{id_tag}.ec")
 
 
+def escape_preserving_wildcards(path: str, escape: Callable[[str], str]) -> str:
+    """Escape ``path`` except for ``*`` and ``?``, which job scripts expand in ``from_work_dir``."""
+    return "".join(part if part in ("*", "?") else escape(part) for part in re.split(r"([*?])", path) if part)
+
+
+def rejected_work_dir_outputs_file(job_directory: str) -> str:
+    """File the job script appends to when it refuses to copy a ``from_work_dir`` output."""
+    return os.path.join(job_directory, "rejected_work_dir_outputs")
+
+
 def collect_extra_files(
     object_store: ObjectStore,
     dataset: "DatasetInstance",

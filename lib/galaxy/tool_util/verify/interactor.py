@@ -23,13 +23,13 @@ from typing import (
     cast,
     Literal,
     NamedTuple,
+    NotRequired,
 )
 
 from packaging.version import Version
 from requests import Response
 from requests.cookies import RequestsCookieJar
 from typing_extensions import (
-    NotRequired,
     Protocol,
     TypedDict,
 )
@@ -322,6 +322,16 @@ def split_declared_job_outputs(job_outputs: list[dict[str, Any]]) -> tuple[Outpu
         else:
             output_collections[job_output["name"]] = job_output["dataset_collection_instance"]
     return outputs, output_collections
+
+
+def _test_data_params(filename: str, tool_version: str | None) -> dict[str, str]:
+    # Passed as request params, not formatted into the URL: a literal "+" in a
+    # version such as "0.39+galaxy4" decodes to a space server-side, and the
+    # toolbox then silently resolves the newest version's test data instead.
+    params = {"filename": filename}
+    if tool_version:
+        params["tool_version"] = tool_version
+    return params
 
 
 class GalaxyInteractorApi:
@@ -661,8 +671,9 @@ class GalaxyInteractorApi:
 
     def test_data_path(self, tool_id, filename, tool_version=None) -> str | None:
         """Path the server can read this test file from, or None if it has none."""
-        version_fragment = f"&tool_version={tool_version}" if tool_version else ""
-        response = self._get(f"tools/{tool_id}/test_data_path?filename={filename}{version_fragment}", admin=True)
+        response = self._get(
+            f"tools/{tool_id}/test_data_path", data=_test_data_params(filename, tool_version), admin=True
+        )
         result = response.json()
         if response.status_code == 200:
             return result
@@ -678,8 +689,7 @@ class GalaxyInteractorApi:
         local_path: str | None = None
 
         if self.supports_test_data_download:
-            version_fragment = f"&tool_version={tool_version}" if tool_version else ""
-            response = self._get(f"tools/{tool_id}/test_data_download?filename={filename}{version_fragment}")
+            response = self._get(f"tools/{tool_id}/test_data_download", data=_test_data_params(filename, tool_version))
             if response.status_code == 200:
                 if mode == "file":
                     if path_only:
@@ -1372,12 +1382,13 @@ class GalaxyInteractorApi:
 
     def __dataset_fetcher(self, history_id):
         def fetcher(hda_id, base_name=None):
-            url = f"histories/{history_id}/contents/{hda_id}/display?raw=true"
+            url = f"histories/{history_id}/contents/{hda_id}/display"
+            params = {"raw": "true"}
             if base_name:
-                url += f"&filename={base_name}"
+                params["filename"] = base_name
             response = None
             for _ in range(self.download_attempts):
-                response = self._get(url)
+                response = self._get(url, data=params)
                 if response.status_code in (409, 500):
                     print(f"Retrying failed download with status code {response.status_code}")
                     time.sleep(self.download_sleep)

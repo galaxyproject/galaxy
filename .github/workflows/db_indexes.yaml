@@ -38,10 +38,10 @@ jobs:
       matrix:
         db: ['postgresql']
         postgresql-version: ['9.6', '10', '11', '14', '18']
-        python-version: ['3.10']
+        python-version: ['3.11']
         include:
           - db: sqlite
-            python-version: '3.10'
+            python-version: '3.11'
     services:
       postgres:
         image: ${{ matrix.db == 'postgresql' && format('postgres:{0}', matrix.postgresql-version) || '' }}  # zizmor: ignore[unpinned-images]
@@ -61,6 +61,7 @@ jobs:
         with:
           version-file: galaxy root/.tool-versions
           python-version: ${{ matrix.python-version }}
+          prune-cache: true
       - name: Install tox
         run: uv tool install tox --with tox-uv
       - name: Set database connection on PostgreSQL

@@ -24,6 +24,7 @@ from . import (
 from .util.process_groups import (
     check_pg,
     kill_pg,
+    kill_pgs,
 )
 
 if TYPE_CHECKING:
@@ -97,21 +98,29 @@ class LocalJobRunner(BaseJobRunner):
         try:
             stdout_file = tempfile.NamedTemporaryFile(mode="wb+", suffix="_stdout", dir=job_wrapper.working_directory)
             stderr_file = tempfile.NamedTemporaryFile(mode="wb+", suffix="_stderr", dir=job_wrapper.working_directory)
-            log.debug(f"({job_id}) executing job script: {job_file}")
-            # A new session gives the child a PGID equal to its PID, which is
-            # what check_pg() and kill_pg() are passed.
-            proc = subprocess.Popen(
-                args=[job_file],
-                cwd=job_wrapper.working_directory,
-                stdout=stdout_file,
-                stderr=stderr_file,
-                env=self._environ,
-                start_new_session=True,
-            )
-
-            # Add custom attribute to track if the job was terminated by a shutdown
-            proc.terminated_by_shutdown = False  # type: ignore[attr-defined]
+            # Starting the job and registering it under the lock means shutdown()
+            # either sees it in self._procs and kills it, or has already set
+            # _should_stop and the job is not started. A worker can still pick a
+            # job off the queue after _should_stop is set.
             with self._proc_lock:
+                if self._should_stop:
+                    # No external id is recorded, so the handler requeues the job on startup.
+                    log.info("(%s) Not starting job, %s is shutting down", job_id, self.runner_name)
+                    return
+                log.debug(f"({job_id}) executing job script: {job_file}")
+                # A new session gives the child a PGID equal to its PID, which is
+                # what check_pg() and kill_pg() are passed.
+                proc = subprocess.Popen(
+                    args=[job_file],
+                    cwd=job_wrapper.working_directory,
+                    stdout=stdout_file,
+                    stderr=stderr_file,
+                    env=self._environ,
+                    start_new_session=True,
+                )
+
+                # Add custom attribute to track if the job was terminated by a shutdown
+                proc.terminated_by_shutdown = False  # type: ignore[attr-defined]
                 self._procs.append(proc)
 
             try:
@@ -211,12 +220,19 @@ class LocalJobRunner(BaseJobRunner):
         )
 
     def shutdown(self) -> None:
-        super().shutdown()
+        # The worker threads are the ones waiting on the running jobs, so they
+        # can only be joined once the jobs are killed. Stop them first so they
+        # don't start queued jobs after the kill; they reap the killed jobs and
+        # record the failure before exiting.
+        self._stop_worker_threads()
         with self._proc_lock:
-            for proc in self._procs:
+            procs = list(self._procs)
+            for proc in procs:
                 proc.terminated_by_shutdown = True  # type: ignore[attr-defined]
-                kill_pg(proc.pid)
-                proc.wait()  # reap
+        if procs:
+            log.info("%s: Terminating %d running jobs", self.runner_name, len(procs))
+            kill_pgs([proc.pid for proc in procs])
+        self._join_worker_threads()
 
     def _fail_job_local(self, job_wrapper, message):
         job_destination = job_wrapper.job_destination

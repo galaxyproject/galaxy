@@ -8,6 +8,7 @@ user inputs - so these methods do not need to be escaped.
 import logging
 from typing import (
     Any,
+    LiteralString,
     Protocol,
     TYPE_CHECKING,
 )
@@ -18,7 +19,6 @@ from sqlalchemy import (
     func,
     select,
 )
-from typing_extensions import LiteralString
 
 from galaxy.objectstore import ObjectStore
 from galaxy.util.user_input import (

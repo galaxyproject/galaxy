@@ -1,5 +1,6 @@
 import json
-from enum import Enum
+from collections.abc import Callable
+from enum import StrEnum
 from typing import (
     Annotated,
     Any,
@@ -31,12 +32,15 @@ from galaxy.util.hash_util import HashFunctionNames
 
 HELP_TERMS = HelpTerms()
 
+# Fetch requests stored as __DATA_FETCH__ job parameters hold these as decoded database ids.
+FETCH_REQUEST_ID_KEYS = ("library_folder_id", "object_id")
+
 
 class FetchBaseModel(Model):
     model_config = ConfigDict(populate_by_name=True)
 
 
-class ElementsFromType(str, Enum):
+class ElementsFromType(StrEnum):
     archive = "archive"
     bagit = "bagit"
     bagit_archive = "bagit_archive"
@@ -50,7 +54,7 @@ class BaseFetchDataTarget(FetchBaseModel):
     auto_decompress: bool = AutoDecompressField
 
 
-class ItemsFromSrc(str, Enum):
+class ItemsFromSrc(StrEnum):
     url = "url"
     files = "files"
     path = "path"
@@ -58,7 +62,7 @@ class ItemsFromSrc(str, Enum):
     server_dir = "server_dir"
 
 
-class Src(str, Enum):
+class Src(StrEnum):
     url = "url"
     pasted = "pasted"
     files = "files"
@@ -68,7 +72,7 @@ class Src(str, Enum):
     server_dir = "server_dir"
 
 
-class DestinationType(str, Enum):
+class DestinationType(StrEnum):
     library = "library"
     library_folder = "library_folder"
     hdcas = "hdcas"
@@ -326,3 +330,19 @@ class CreateFileLandingPayload(Model):
     origin: HttpUrl | None = None
 
     model_config = ConfigDict(extra="forbid")
+
+
+def encode_fetch_request_ids(request: Any, encode_id: Callable[[int], Any]) -> Any:
+    """Return a copy of a stored fetch request with its database ids encoded."""
+    if isinstance(request, dict):
+        return {
+            key: (
+                encode_id(value)
+                if key in FETCH_REQUEST_ID_KEYS and isinstance(value, int)
+                else encode_fetch_request_ids(value, encode_id)
+            )
+            for key, value in request.items()
+        }
+    elif isinstance(request, list):
+        return [encode_fetch_request_ids(value, encode_id) for value in request]
+    return request

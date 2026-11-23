@@ -15,7 +15,6 @@ pathspec==1.1.1
 pycparser==3.1 ; implementation_name != 'PyPy' and platform_python_implementation != 'PyPy'
 pydantic==2.14.0
 pydantic-core==2.50.0
-tomli==2.5.0 ; python_full_version < '3.11'
 types-bleach==6.4.0.20260728
 types-boto==2.49.18.20241019
 types-cachetools==7.0.0.20260713
