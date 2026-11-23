@@ -33,6 +33,7 @@ from .objectstore._purged_handling import purge_while_job_running
 
 TEST_TOOL_IDS = [
     "from_work_dir_glob",
+    "from_work_dir_glob_output_written",
     "job_properties",
     "multi_output",
     "multi_output_configured",

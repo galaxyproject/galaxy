@@ -364,8 +364,9 @@ def set_metadata_portable(
     try:
         unnamed_outputs = validate_unnamed_outputs(job_context)
         for output_dict in outputs.values():
-            if output_dict["filename_override"]:
-                ensure_job_path_in_job_directory(output_dict["filename_override"], tool_job_working_directory)
+            for output_path in (output_dict["filename_override"], output_dict.get("filename_fallback")):
+                if output_path:
+                    ensure_job_path_in_job_directory(output_path, tool_job_working_directory)
     except OutputCollectionSecurityError as e:
         output_collection_security_error = e
         unnamed_outputs = []
@@ -470,6 +471,7 @@ def set_metadata_portable(
         filename_results_code = tool_job_working_directory / f"metadata/metadata_results_{output_name}"
         override_metadata = tool_job_working_directory / f"metadata/metadata_override_{output_name}"
         dataset_filename_override = output_dict["filename_override"]
+        dataset_filename_fallback = output_dict.get("filename_fallback")
         # Params written before this key existed are for job outputs, which are groomed.
         groom_directory_content = output_dict.get("groom_directory_content", True)
         # Same block as below...
@@ -484,6 +486,19 @@ def set_metadata_portable(
             dataset.metadata_deferred = is_deferred
             if not is_deferred:
                 external_filename = unnamed_id_to_path.get(dataset_instance_id, dataset_filename_override)
+                if dataset_filename_fallback and not os.path.exists(external_filename):
+                    # Same as the from_work_dir copy in the job script: unless exactly
+                    # one file matches, keep what the tool wrote to the output path.
+                    matches = glob.glob(external_filename)
+                    if len(matches) != 1:
+                        if matches:
+                            log.warning(
+                                "%s files matched by output glob '%s', using '%s'",
+                                len(matches),
+                                external_filename,
+                                dataset_filename_fallback,
+                            )
+                        external_filename = dataset_filename_fallback
                 if not os.path.exists(external_filename):
                     matches = glob.glob(external_filename)
                     if matches:
@@ -507,6 +522,9 @@ def set_metadata_portable(
                         # purged output ?
                         dataset.purged = True
                         dataset.dataset.purged = True
+                        # Galaxy doesn't import purged from this export, it keeps its own flag.
+                        # Without a final state an output that is really missing would stay queued.
+                        dataset.state = dataset.dataset.state = dataset.states.ERROR
                     else:
                         raise Exception(f"Output file '{external_filename}' not found")
 
@@ -604,6 +622,14 @@ def set_metadata_portable(
         except Exception:
             with open(filename_results_code, "w+") as tf:
                 json.dump((False, traceback.format_exc()), tf)  # setting metadata has failed somehow
+            if export_store and not object_store_update_actions and not output_collection_security_error:
+                # The output was not collected, export it in error state so it isn't left queued.
+                # A rejected output is not exported: the job is exported in error state with the
+                # security message, and Galaxy fails the job's outputs.
+                dataset.state = dataset.dataset.state = dataset.states.ERROR
+                if not metadata_params.get("link_data_only"):
+                    object_store_update_actions.append(partial(reset_external_filename, dataset))
+                object_store_update_actions.append(partial(export_store.add_dataset, dataset))
         finally:
             for action in object_store_update_actions:
                 action()

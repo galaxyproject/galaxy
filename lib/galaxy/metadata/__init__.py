@@ -214,8 +214,10 @@ class PortableDirectoryMetadataGenerator(MetadataCollectionStrategy):
                 dataset, _metadata_path, metadata_dir, kwds, real_metadata_object=self.write_object_store_conf
             )
 
+            file_name = dataset.get_file_name(sync_cache=False)
             outputs[name] = {
-                "filename_override": _get_filename_override(output_fnames, dataset.get_file_name(sync_cache=False)),
+                "filename_override": _get_filename_override(output_fnames, file_name),
+                "filename_fallback": _get_filename_fallback(output_fnames, file_name),
                 "validate": validate_outputs,
                 # False for existing datasets, whose content must stay where it is.
                 "groom_directory_content": groom_directory_content,
@@ -382,6 +384,13 @@ def _get_filename_override(output_fnames, file_name):
             if dataset_path.real_path == file_name:
                 return dataset_path.false_path or dataset_path.real_path
     return ""
+
+
+def _get_filename_fallback(output_fnames, file_name):
+    for dataset_path in output_fnames or []:
+        if dataset_path.real_path == file_name:
+            return dataset_path.fallback_path
+    return None
 
 
 def _init_tmp_dir(tmp_dir):

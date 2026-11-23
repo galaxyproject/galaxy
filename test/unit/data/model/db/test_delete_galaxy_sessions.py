@@ -1,8 +1,10 @@
 """Run the cleanup command against real disposable databases, without mocks."""
 
+import filecmp
 import json
 import os
 import shutil
+import sqlite3
 import subprocess
 import sys
 from datetime import (
@@ -15,10 +17,13 @@ from uuid import uuid4
 import pytest
 from sqlalchemy import (
     create_engine,
+    event,
+    insert,
     select,
     text,
     update,
 )
+from sqlalchemy.dialects import postgresql
 from sqlalchemy.engine import make_url
 from sqlalchemy.exc import DBAPIError
 
@@ -61,6 +66,18 @@ def cli(engine, tmp_path):
     )
     env = {k: v for k, v in os.environ.items() if not k.startswith("GALAXY_CONFIG_")}
     executable = shutil.which("galaxy-delete-sessions", path=os.path.dirname(sys.executable))
+    if executable:
+        # The installed command must run the code under test, not another version.
+        # Package tests import it from packages/data/src but install a site-packages copy.
+        installed = subprocess.run(
+            [sys.executable, "-c", f"import {cleanup.__name__} as m; print(m.__file__)"],
+            cwd=tmp_path,
+            env=env,
+            capture_output=True,
+            text=True,
+            check=True,
+        ).stdout.strip()
+        assert filecmp.cmp(installed, cleanup.__file__, shallow=False), installed
     command = [executable] if executable else [sys.executable, cleanup.__file__]
 
     def invoke(*args, expected_code=0):
@@ -156,12 +173,61 @@ def test_refreshed_session_is_rechecked(engine, session, make_galaxy_session):
     session.commit()
     predicate = cleanup._eligibility(False, False)
     with engine.begin() as conn:
-        ids = cleanup._eligible_ids(conn, [row_id], predicate, CUTOFF)
+        ids = cleanup._eligible_ids(conn, row_id - 1, row_id, predicate, CUTOFF)
     assert ids == [row_id]
     session.execute(update(m.GalaxySession).where(m.GalaxySession.id == row_id).values(update_time=CUTOFF))
     session.commit()
     with engine.begin() as conn:
-        assert cleanup._delete_batch(conn, ids, predicate, CUTOFF) == 0
+        assert cleanup._delete_batch(conn, row_id - 1, row_id, predicate, CUTOFF) == 0
+
+
+def test_interrupted_page_rolls_back(engine, session, make_galaxy_session, capsys):
+    # SIGTERM raises KeyboardInterrupt. Arriving after a page's DELETE but before its
+    # commit, it must leave that page in place for the next run.
+    ids = [make_galaxy_session(update_time=OLD).id for _ in range(2)]
+    session.commit()
+    deletes = 0
+
+    def interrupt(conn, cursor, statement, parameters, context, executemany):
+        nonlocal deletes
+        if "DELETE FROM galaxy_session AS s" in statement:
+            deletes += 1
+            if deletes == 2:
+                # Finish RETURNING before interrupting the uncommitted page.
+                cursor.fetchall()
+                cursor.close()
+                raise KeyboardInterrupt
+
+    event.listen(engine, "after_cursor_execute", interrupt)
+    try:
+        with pytest.raises(KeyboardInterrupt):
+            cleanup.run(engine, CUTOFF, batch_size=1, pause=0)
+    finally:
+        event.remove(engine, "after_cursor_execute", interrupt)
+    report = dict(item.split("=", 1) for item in capsys.readouterr().out.splitlines()[-1].split())
+    assert (report["status"], report["deleted"], report["after_id"]) == ("interrupted", "1", str(ids[0]))
+    assert set(session.scalars(select(m.GalaxySession.id))) == {ids[1]}
+
+
+def test_large_page_fits_sqlite_variable_limit(engine):
+    # Stock SQLite allows 32766 bind parameters per statement; binding each page ID
+    # twice failed for pages above 16383 sessions.
+    rows = 16384
+    page_engine = create_engine(engine.url)
+    if page_engine.dialect.name == "sqlite":
+
+        @event.listens_for(page_engine, "connect")
+        def cap_variables(dbapi_connection, connection_record):
+            # Builds such as Debian's raise the cap.
+            dbapi_connection.setlimit(sqlite3.SQLITE_LIMIT_VARIABLE_NUMBER, 32766)
+
+    try:
+        with page_engine.begin() as conn:
+            conn.execute(insert(m.GalaxySession), [{"update_time": OLD}] * rows)
+        progress = cleanup.run(page_engine, CUTOFF, batch_size=rows, pause=0)
+    finally:
+        page_engine.dispose()
+    assert (progress.batches, progress.deleted) == (1, rows)
 
 
 def test_postgres_transaction_guards(engine, session, make_galaxy_session, cli):
@@ -185,6 +251,13 @@ def test_postgres_transaction_guards(engine, session, make_galaxy_session, cli):
         result = cli("--batch-size", "1", "--lock-timeout", "50", expected_code=1)
     assert (result["status"], result["deleted"], result["after_id"]) == ("failed", "1", str(ids[0]))
     assert set(session.scalars(select(m.GalaxySession.id))) == {ids[1]}
+
+
+@pytest.mark.parametrize("version, hint", [((11, 22), False), ((12, 0), True)])
+def test_materialized_hint_needs_postgresql_12(version, hint):
+    dialect = postgresql.dialect()
+    dialect.server_version_info = version
+    assert ("MATERIALIZED" in cleanup._newest_sessions(dialect)) == hint
 
 
 def test_default_cutoff():

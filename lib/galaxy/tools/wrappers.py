@@ -9,11 +9,15 @@ from collections.abc import (
     KeysView,
     Sequence,
 )
-from functools import total_ordering
+from functools import (
+    cached_property,
+    total_ordering,
+)
 from typing import (
     Any,
     cast,
     Literal,
+    NamedTuple,
     Optional,
     Self,
     TYPE_CHECKING,
@@ -300,6 +304,15 @@ class SelectToolParameterWrapper(ToolParameterValueWrapper):
         return self.value.__iter__()
 
 
+def _job_metadata_path(compute_environment: Optional["ComputeEnvironment"], dataset: DatasetInstance, path: str) -> str:
+    """Where the job finds ``dataset``'s metadata file stored at ``path``."""
+    if compute_environment:
+        rewrite: str | None = compute_environment.input_metadata_rewrite(dataset, path)
+        if rewrite is not None:
+            return rewrite
+    return path
+
+
 class DatasetFilenameWrapper(ToolParameterValueWrapper):
     """
     Wraps a dataset so that __str__ returns the filename, but all other
@@ -332,10 +345,8 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
                 metadata_param = self.metadata.spec[name].param
 
                 rval = metadata_param.to_safe_string(rval)
-                if isinstance(metadata_param, FileParameter) and self.compute_environment:
-                    rewrite = self.compute_environment.input_metadata_rewrite(self.dataset, rval)
-                    if rewrite is not None:
-                        rval = rewrite
+                if isinstance(metadata_param, FileParameter):
+                    rval = _job_metadata_path(self.compute_environment, self.dataset, rval)
 
                 # Store this value, so we don't need to recalculate if needed
                 # again
@@ -475,7 +486,23 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
 
     @property
     def all_metadata_files(self) -> list[tuple[str, str]]:
-        return self.unsanitized.get_metadata_file_paths_and_extensions() if self else []
+        """``(file extension, path)`` of each metadata file.
+
+        For inputs, paths are as ``$input.metadata.<name>`` renders them; outputs keep their Galaxy paths.
+        """
+        return list(self._job_metadata_files)
+
+    @cached_property
+    def _job_metadata_files(self) -> tuple[tuple[str, str], ...]:
+        # Cached, so repeated access neither reloads the metadata files nor repeats their rewrites.
+        if not self:
+            return ()
+        # Only inputs are staged for the job; an output's metadata files don't exist yet.
+        compute_environment = self.compute_environment if self.__io_type == "input" else None
+        return tuple(
+            (file_ext, _job_metadata_path(compute_environment, self.unsanitized, path))
+            for file_ext, path in self.unsanitized.get_metadata_file_paths_and_extensions()
+        )
 
     def serialize(self, invalid_chars: Sequence[str] = ("/",)) -> dict[str, Any]:
         return data_input_to_staging_path_and_source_path(self, invalid_chars=invalid_chars) if self else {}
@@ -666,6 +693,15 @@ class DatasetListWrapper(list[DatasetFilenameWrapper], ToolParameterValueWrapper
 DatasetCollectionElementWrapper: TypeAlias = Union["DatasetCollectionWrapper", DatasetFilenameWrapper]
 
 
+class _DatasetRow(NamedTuple):
+    """A dataset in a collection, nested collections flattened."""
+
+    identifiers: tuple[str, ...]
+    element: DatasetFilenameWrapper
+    path: str
+    """``str(element)``: the path the job sees."""
+
+
 class DatasetCollectionWrapper(ToolParameterValueWrapper, HasDatasets):
     name: str | None
     collection: DatasetCollection
@@ -681,7 +717,6 @@ class DatasetCollectionWrapper(ToolParameterValueWrapper, HasDatasets):
         super().__init__()
         self.job_working_directory = job_working_directory
         self._dataset_elements_cache: dict[str, list[DatasetFilenameWrapper]] = {}
-        self._element_identifiers_extensions_paths_and_metadata_files: list[list[Any]] | None = None
         self.datatypes_registry = datatypes_registry
         kwargs["datatypes_registry"] = datatypes_registry
         self.tool_evaluator = tool_evaluator
@@ -709,6 +744,8 @@ class DatasetCollectionWrapper(ToolParameterValueWrapper, HasDatasets):
         element_instances: dict[str, DatasetCollectionElementWrapper] = {}
 
         element_instance_list: list[DatasetCollectionElementWrapper] = []
+        # Parallel to element_instance_list; element_instances keeps only the last of repeated identifiers.
+        element_identifiers: list[str] = []
         rows: dict[str, SampleSheetRow | None] = {}
         for dataset_collection_element in elements:
             element_object = dataset_collection_element.element_object
@@ -728,10 +765,12 @@ class DatasetCollectionWrapper(ToolParameterValueWrapper, HasDatasets):
 
             element_instances[element_identifier] = element_wrapper
             element_instance_list.append(element_wrapper)
+            element_identifiers.append(element_identifier)
 
         self.__rows = rows
         self.__element_instances = element_instances
         self.__element_instance_list = element_instance_list
+        self.__element_identifiers = element_identifiers
 
     def sample_sheet_row(self, element_identifier: str) -> SampleSheetRow | None:
         return self.__rows[element_identifier]
@@ -774,50 +813,66 @@ class DatasetCollectionWrapper(ToolParameterValueWrapper, HasDatasets):
 
     @property
     def all_paths(self) -> list[str]:
-        return [path for _, _, path, _ in self.element_identifiers_extensions_paths_and_metadata_files]
+        """Each dataset's path as the job sees it, the same as ``#for $e in $collection`` renders ``$e``."""
+        return [row.path for row in self._dataset_rows]
 
     @property
-    def all_metadata_files(self) -> list[list[str]]:
-        return [
-            metadata_files for _, _, _, metadata_files in self.element_identifiers_extensions_paths_and_metadata_files
-        ]
+    def all_metadata_files(self) -> list[list[tuple[str, str]]]:
+        return [row.element.all_metadata_files for row in self._dataset_rows]
 
     @property
     def element_identifiers_extensions_paths_and_metadata_files(
         self,
     ) -> list[list[Any]]:
-        if self._element_identifiers_extensions_paths_and_metadata_files is None:
-            if self.collection:
-                result = self.collection.element_identifiers_extensions_paths_and_metadata_files
-                self._element_identifiers_extensions_paths_and_metadata_files = result
-                return result
+        """Identifiers, extension, path and metadata files of each dataset, nested collections flattened."""
+        return [
+            [row.identifiers, row.element.unsanitized.extension, row.path, row.element.all_metadata_files]
+            for row in self._dataset_rows
+        ]
+
+    @cached_property
+    def _dataset_rows(self) -> tuple[_DatasetRow, ...]:
+        # Elements and their paths are fixed at construction. Cached, so a template indexing these
+        # accessors in a loop doesn't walk the collection and recompute every path each time.
+        if not self.__input_supplied:
+            return ()
+        rows: list[_DatasetRow] = []
+        for identifier, element in zip(self.__element_identifiers, self.__element_instance_list):
+            if isinstance(element, DatasetCollectionWrapper):
+                rows.extend(
+                    _DatasetRow((identifier, *row.identifiers), row.element, row.path) for row in element._dataset_rows
+                )
             else:
-                return []
-        return self._element_identifiers_extensions_paths_and_metadata_files
+                rows.append(_DatasetRow((identifier,), element, str(element)))
+        return tuple(rows)
 
     def get_all_staging_paths(
         self,
         invalid_chars: Sequence[str] = ("/",),
         include_collection_name: bool = False,
     ) -> list[str]:
+        # The collection name is the top-level directory, once, however deeply an element is nested.
+        top_level = (
+            [filesystem_safe_string(self.name, invalid_chars=invalid_chars)]
+            if include_collection_name and self.name
+            else []
+        )
+        # Identifiers are shortened by the name's length even though the name is its own path
+        # segment; kept so existing staging layouts don't change.
+        name_allowance = len(self.name or "") + 1 if include_collection_name else 0
         safe_element_identifiers = []
-        for element_identifiers, extension, *_ in self.element_identifiers_extensions_paths_and_metadata_files:
+        for row in self._dataset_rows:
+            extension = row.element.unsanitized.extension
             datatype = self.datatypes_registry.get_datatype_by_extension(extension)
             if datatype:
                 extension = getattr(datatype, "file_ext_export_alias", extension)
-            current_element_identifiers = []
-            for element_identifier in element_identifiers:
-                max_len = 254 - len(extension)
-                if include_collection_name:
-                    max_len = max_len - (len(self.name or "") + 1)
-                    assert max_len >= 1, "Could not stage element, element identifier is too long"
-                current_element_identifier = filesystem_safe_string(
-                    element_identifier, max_len=max_len, invalid_chars=invalid_chars
-                )
-                if include_collection_name and self.name:
-                    current_element_identifier = f"{filesystem_safe_string(self.name, invalid_chars=invalid_chars)}{os.path.sep}{current_element_identifier}"
-                current_element_identifiers.append(current_element_identifier)
-
+            max_len = 254 - len(extension) - name_allowance
+            if include_collection_name:
+                assert max_len >= 1, "Could not stage element, element identifier is too long"
+            current_element_identifiers = top_level + [
+                filesystem_safe_string(element_identifier, max_len=max_len, invalid_chars=invalid_chars)
+                for element_identifier in row.identifiers
+            ]
             safe_element_identifiers.append(f"{os.path.sep.join(current_element_identifiers)}.{extension}")
         return safe_element_identifiers
 
