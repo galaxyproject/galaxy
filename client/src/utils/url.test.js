@@ -133,4 +133,9 @@ describe("test url utilities", () => {
         );
         expect(extractNameFromUrl("https://example.org/proxy//user:secret@ftp.example.org")).toBe("ftp.example.org");
     });
+
+    test("extractNameFromUrl leaves out the userinfo of a percent-encoded url in the path", () => {
+        expect(extractNameFromUrl("https://example.org/ftp%3A%2F%2Fu%3Asecret%40inner")).toBe("ftp://inner");
+        expect(extractNameFromUrl("https://example.org/a/%2F%2Fu%3Asecret%40inner%2Fb.bed")).toBe("//inner/b.bed");
+    });
 });

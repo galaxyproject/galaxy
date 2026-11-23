@@ -357,6 +357,12 @@ describe("cleanUrlFilename", () => {
             "ftp.example.org",
         );
     });
+
+    test("leaves out the userinfo of a percent-encoded URL in the last segment", () => {
+        expect(cleanUrlFilename("https://example.org/ftp%3A%2F%2Fu%3Asecret%40inner")).toBe("ftp://inner");
+        expect(cleanUrlFilename("https://example.org/%2F%2Fu%3Asecret%40inner")).toBe("//inner");
+        expect(cleanUrlFilename("ftp%3A%2F%2Fu%3Asecret%40inner%2Fa.bed")).toBe("ftp://inner/a.bed");
+    });
 });
 
 describe("createFileUploadItem", () => {
@@ -620,6 +626,15 @@ describe("buildUploadPayload", () => {
         const elements = result.targets[0]!.elements! as { name: string | null; url: string }[];
         expect(elements.map((element) => element.url)).toEqual([url, url]);
         expect(elements.map((element) => element.name)).toEqual(["ftp.example.org", "ftp.example.org"]);
+    });
+
+    test("sends no userinfo of a percent-encoded URL in the path in the name", () => {
+        const url = "https://example.org/ftp%3A%2F%2Fu%3Asecret%40inner";
+
+        const result = buildUploadPayload([createUrlUploadItem(url, "historyId")]);
+        const element = result.targets[0]!.elements![0] as { name: string | null; url: string };
+        expect(element.url).toBe(url);
+        expect(element.name).toBe("ftp://inner");
     });
 
     test("rejects network URL with empty DNS labels", () => {

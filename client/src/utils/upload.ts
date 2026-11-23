@@ -272,9 +272,9 @@ export function cleanUrlFilename(filename: string): string | null {
     if (!defaultName) {
         return null;
     }
-    // Decode URL-encoded characters
+    // Decode URL-encoded characters; a decoded name may be a URL with userinfo of its own
     try {
-        return decodeURIComponent(defaultName);
+        return urlWithoutUserinfo(decodeURIComponent(defaultName));
     } catch {
         // If decoding fails (malformed encoding), return as-is without query params
         return defaultName;

@@ -208,8 +208,8 @@ export function extractNameFromUrl(url: string): string {
         if (segments.length > 0) {
             const lastSegment = segments[segments.length - 1];
             if (lastSegment) {
-                // Decode URI component to handle encoded characters
-                return decodeURIComponent(lastSegment);
+                // Decode URI component to handle encoded characters; it may decode to a URL with userinfo
+                return urlWithoutUserinfo(decodeURIComponent(lastSegment));
             }
         }
     } catch {
