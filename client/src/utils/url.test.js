@@ -74,7 +74,7 @@ describe("test url utilities", () => {
         expect(urlWithoutUserinfo("https://user:secret@example.org/a.bed")).toBe("https://example.org/a.bed");
         expect(urlWithoutUserinfo("https://user:secret@example.org")).toBe("https://example.org");
         expect(urlWithoutUserinfo("ftp://user:p@ss@example.org/a")).toBe("ftp://example.org/a");
-        expect(urlWithoutUserinfo("https://user:se?cret@example.org/a")).toBe("https://[redacted]/a");
+        expect(urlWithoutUserinfo("https://user:se?cret@example.org/a")).toBe("https://redacted.invalid/a");
         expect(urlWithoutUserinfo("https://example.org/a@b")).toBe("https://example.org/a@b");
         expect(urlWithoutUserinfo("not-a-url")).toBe("not-a-url");
     });
@@ -84,10 +84,10 @@ describe("test url utilities", () => {
             "https://example.org/a?next=ftp://ftp.example.org",
         );
         expect(urlWithoutUserinfo("https://example.org/a?next=ftp://user:se?cret@ftp.example.org")).toBe(
-            "https://example.org/a?next=ftp://[redacted]",
+            "https://example.org/a?next=ftp://redacted.invalid",
         );
         expect(urlWithoutUserinfo("https://example.org/a#ftp://user:se#cret@ftp.example.org")).toBe(
-            "https://example.org/a#ftp://[redacted]",
+            "https://example.org/a#ftp://redacted.invalid",
         );
         expect(urlWithoutUserinfo("https://u1:s1@example.org/proxy/ftp://u2:s2@ftp.example.org/b")).toBe(
             "https://example.org/proxy/ftp://ftp.example.org/b",
@@ -156,27 +156,27 @@ describe("test url utilities", () => {
     });
 
     test.each([
-        ["https://u:12?34@example.org", "https://[redacted]"],
-        ["https://u:12#34@example.org", "https://[redacted]"],
-        ["https://u:?34@example.org", "https://[redacted]"],
-        ["https://u:12?34@example.org/a.bed", "https://[redacted]/a.bed"],
-        ["https://to?ken@example.org", "https://[redacted]"],
-        ["https://to#ken@example.org/a.bed", "https://[redacted]/a.bed"],
-        ["https://user.name:12?a=b@example.org", "https://[redacted]"],
-        ["https://alice@corp.org:pa?ss@example.org", "https://[redacted]"],
-        ["https://example.org/a?next=//u:12?34@inner.example.org", "https://example.org/a?next=//[redacted]"],
+        ["https://u:12?34@example.org", "https://redacted.invalid"],
+        ["https://u:12#34@example.org", "https://redacted.invalid"],
+        ["https://u:?34@example.org", "https://redacted.invalid"],
+        ["https://u:12?34@example.org/a.bed", "https://redacted.invalid/a.bed"],
+        ["https://to?ken@example.org", "https://redacted.invalid"],
+        ["https://to#ken@example.org/a.bed", "https://redacted.invalid/a.bed"],
+        ["https://user.name:12?a=b@example.org", "https://redacted.invalid"],
+        ["https://alice@corp.org:pa?ss@example.org", "https://redacted.invalid"],
+        ["https://example.org/a?next=//u:12?34@inner.example.org", "https://example.org/a?next=//redacted.invalid"],
         // The same shape without userinfo is redacted too, as no reading is safe for both.
-        ["https://example.org?email=alice@other.org", "https://[redacted]"],
-        ["https://example.org:?email=alice@other.org", "https://[redacted]"],
-        ["https://example.org#alice@other.org", "https://[redacted]"],
-        ["https://user:secret@example.org?email=alice@other.org", "https://[redacted]"],
+        ["https://example.org?email=alice@other.org", "https://redacted.invalid"],
+        ["https://example.org:?email=alice@other.org", "https://redacted.invalid"],
+        ["https://example.org#alice@other.org", "https://redacted.invalid"],
+        ["https://user:secret@example.org?email=alice@other.org", "https://redacted.invalid"],
     ])("urlWithoutUserinfo redacts the ambiguous authority of %s", (url, expected) => {
         expect(urlWithoutUserinfo(url)).toBe(expected);
     });
 
     test("extractNameFromUrl falls back to a url with its ambiguous authority redacted", () => {
-        expect(extractNameFromUrl("https://u:12?34@example.org")).toBe("https://[redacted]");
-        expect(extractNameFromUrl("https://example.org?email=alice@other.org")).toBe("https://[redacted]");
+        expect(extractNameFromUrl("https://u:12?34@example.org")).toBe("https://redacted.invalid");
+        expect(extractNameFromUrl("https://example.org?email=alice@other.org")).toBe("https://redacted.invalid");
     });
 });
 
@@ -221,11 +221,14 @@ describe("url userinfo removal on random userinfo", () => {
             const user = randomSecret(random);
             const password = randomSecret(random);
             const url = SECRET_URL_FORMS[Math.floor(random() * SECRET_URL_FORMS.length)](user, password);
-            for (const output of [urlWithoutUserinfo(url), extractNameFromUrl(url)]) {
+            const withoutUserinfo = urlWithoutUserinfo(url);
+            for (const output of [withoutUserinfo, extractNameFromUrl(url)]) {
                 for (const secret of [user, password]) {
                     expect(output.includes(secret), `${secret} of ${url} in ${output}`).toBe(false);
                 }
             }
+            // Callers parse the URL without userinfo, e.g. to take a name from its path.
+            expect(() => new URL(withoutUserinfo), `parse ${withoutUserinfo}`).not.toThrow();
         }
     });
 });

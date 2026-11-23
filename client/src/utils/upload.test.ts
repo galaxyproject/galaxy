@@ -371,9 +371,9 @@ describe("cleanUrlFilename", () => {
     });
 
     test("redacts an authority whose userinfo is ambiguous", () => {
-        expect(cleanUrlFilename("https://u:12?34@example.org")).toBe("[redacted]");
-        expect(cleanUrlFilename("https://to#ken@example.org")).toBe("[redacted]");
-        expect(cleanUrlFilename("https://example.org?email=alice@other.org")).toBe("[redacted]");
+        expect(cleanUrlFilename("https://u:12?34@example.org")).toBe("redacted.invalid");
+        expect(cleanUrlFilename("https://to#ken@example.org")).toBe("redacted.invalid");
+        expect(cleanUrlFilename("https://example.org?email=alice@other.org")).toBe("redacted.invalid");
     });
 });
 
@@ -676,7 +676,7 @@ describe("buildUploadPayload", () => {
         const result = buildUploadPayload([createUrlUploadItem(url, "historyId")]);
         const element = result.targets[0]!.elements![0] as { name: string | null; url: string };
         expect(element.url).toBe(url);
-        expect(element.name).toBe("[redacted]");
+        expect(element.name).toBe("redacted.invalid");
     });
 
     test("rejects network URL with empty DNS labels", () => {

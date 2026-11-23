@@ -150,8 +150,9 @@ export function isValidUrl(url: string): boolean {
     return validateUrl(url).isValid;
 }
 
-// Replaces an authority whose userinfo is ambiguous, see userinfoLengthOf().
-export const URL_AUTHORITY_REDACTED = "[redacted]";
+// Replaces an authority whose userinfo is ambiguous, see userinfoLengthOf(). A host that `new URL()` accepts
+// (unlike a bracketed one, read as IPv6) and that never resolves (RFC 6761 .invalid), like the server's.
+export const URL_AUTHORITY_REDACTED = "redacted.invalid";
 
 /**
  * Length of the userinfo of `authority` before its "@" (-1 if none), or null if that userinfo is ambiguous.
@@ -183,7 +184,7 @@ function userinfoLengthOf(authority: string): number | null {
  * urlWithoutUserinfo("https://user:secret@example.org/a.bed") // returns "https://example.org/a.bed"
  * urlWithoutUserinfo("https://example.org/a?next=ftp://user:secret@h") // returns "https://example.org/a?next=ftp://h"
  * urlWithoutUserinfo("https://example.org/a?next=//user:secret@h") // returns "https://example.org/a?next=//h"
- * urlWithoutUserinfo("https://u:12?34@example.org/a.bed") // returns "https://[redacted]/a.bed"
+ * urlWithoutUserinfo("https://u:12?34@example.org/a.bed") // returns "https://redacted.invalid/a.bed"
  * ```
  */
 export function urlWithoutUserinfo(url: string): string {
