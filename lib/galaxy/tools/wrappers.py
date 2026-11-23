@@ -38,6 +38,7 @@ from galaxy.model.metadata import FileParameter
 from galaxy.model.none_like import NoneDataset
 from galaxy.security.object_wrapper import wrap_with_safe_string
 from galaxy.tool_util_models.sample_sheet import SampleSheetRow
+from galaxy.tools.job_parameters import element_identifier_parameter
 from galaxy.tools.parameters.basic import (
     BooleanToolParameter,
     TextToolParameter,
@@ -944,7 +945,7 @@ class ElementIdentifierMapper:
 
     def __init__(self, input_datasets: dict[str, Any] | None = None) -> None:
         if input_datasets is not None:
-            self.identifier_key_dict = {v: f"{k}|__identifier__" for k, v in input_datasets.items()}
+            self.identifier_key_dict = {v: element_identifier_parameter(k) for k, v in input_datasets.items()}
         else:
             self.identifier_key_dict = {}
 
