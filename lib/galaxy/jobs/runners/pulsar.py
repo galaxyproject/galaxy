@@ -72,6 +72,7 @@ from galaxy.tool_util.deps.container_classes import (
     Container,
     requires_dependency_resolution,
 )
+from galaxy.tool_util.parser.interface import RequiredFiles
 from galaxy.tool_util.parser.output_collection_def import FilePatternDatasetCollectionDescription
 from galaxy.tool_util.parser.output_objects import ToolOutput
 from galaxy.tool_util.runtime_environment import RUNTIME_ENVIRONMENT_WARNING_FILE
@@ -572,6 +573,8 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
         if not command_line:
             return
 
+        # Runs a query on each access.
+        remote_command_line = job_wrapper.remote_command_line
         pulsar_version = PulsarJobRunner.pulsar_version(remote_job_config)
         PulsarPlugin.write_version_target(
             _job_metrics_directory(job_wrapper),
@@ -589,9 +592,16 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
                 output_names = compute_environment.output_names()
 
                 client_inputs_list = []
+                deferred_dataset_ids = {
+                    ds.dataset.id
+                    for ds in job_wrapper.job_io.get_input_datasets()
+                    if remote_command_line and ds.state == model.Dataset.states.DEFERRED and ds.dataset
+                }
                 for input_dataset_wrapper in job_wrapper.job_io.get_input_paths(
                     compute_environment.materialized_objects
                 ):
+                    if input_dataset_wrapper.dataset_id in deferred_dataset_ids:
+                        continue
                     # str here to resolve false_path if set on a DatasetPath object.
                     path = str(input_dataset_wrapper)
                     object_store_ref = {
@@ -640,6 +650,12 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
                 log.debug(f"Registering tool_script for Pulsar transfer [{tool_script}]")
                 job_directory_files.append(tool_script)
                 config_files.append(tool_script)
+            assert job_wrapper.tool is not None
+            for name in job_wrapper.tool.job_directory_files:
+                # Registered as config files too, so paths in them are rewritten like in tool_script.sh.
+                job_directory_file = os.path.join(job_wrapper.working_directory, name)
+                job_directory_files.append(job_directory_file)
+                config_files.append(job_directory_file)
             # Following is job destination environment variables
             env = client.env
             # extend it with tool defined environment variables
@@ -651,6 +667,12 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
                     config_files.append(job_directory_path)
             assert job_wrapper.tool is not None
             tool_directory_required_files = job_wrapper.tool.required_files
+            if remote_command_line and tool_directory_required_files is None:
+                # Templates have not been evaluated, so Pulsar cannot discover
+                # which supporting files will be referenced by the command.
+                tool_directory_required_files = RequiredFiles.from_dict(
+                    {"includes": [{"path": "", "path_type": "prefix"}]}
+                )
             client_job_description = ClientJobDescription(
                 command_line=command_line,
                 input_files=input_files,
@@ -713,6 +735,14 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
             if job_wrapper.get_job().resubmission_count:
                 self.__discard_previous_attempt(client, job_wrapper)
             remote_job_config = client.setup(tool.id, tool.version, tool.requires_galaxy_python_environment)
+            # Runs a query on each access.
+            remote_command_line = job_wrapper.remote_command_line
+            if remote_command_line:
+                # Remote evaluation needs structured path mapping: the command and
+                # config files do not exist until after Pulsar has staged the job.
+                client.destination_params["rewrite_parameters"] = True
+                if not PulsarJobRunner.__remote_metadata(client):
+                    raise Exception("Remote tool evaluation with Pulsar requires remote_metadata: true")
             needed_features = self.__needed_features(client)
             PulsarJobRunner.check_job_config(remote_job_config, check_features=needed_features)
             rewrite_parameters = PulsarJobRunner.__rewrite_parameters(client)
@@ -787,6 +817,9 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
                 dependency_resolution=dependency_resolution,
                 pulsar_version=pulsar_version,
             )
+            if remote_command_line:
+                assert compute_environment is not None
+                remote_command_params["version_path"] = compute_environment.version_path()
             rewrite_paths = not PulsarJobRunner.__rewrite_parameters(client)
             if pulsar_version < Version("0.14.999") and rewrite_paths:
                 job_wrapper.disable_commands_in_new_shell()
@@ -1699,6 +1732,7 @@ class PulsarComputeEnvironment(ComputeEnvironment):
         # computations, so precalculate these paths.
         self.path_mapper = PathMapper(pulsar_client, remote_job_config, self.local_path_config.working_directory())
         self._config_directory = remote_job_config["configs_directory"]
+        self._job_directory = remote_job_config["job_directory"]
         self._working_directory = remote_job_config["working_directory"]
         self._sep = remote_job_config["system_properties"]["separator"]
         self._tool_dir = remote_job_config["tools_directory"]
@@ -1748,9 +1782,10 @@ class PulsarComputeEnvironment(ComputeEnvironment):
         remote_extra_files_path_rewrite = dataset_path_to_extra_path(output_path_rewrite)
         return remote_extra_files_path_rewrite
 
-    def input_metadata_rewrite(self, dataset, metadata_val):
+    def input_metadata_rewrite(self, dataset, metadata_name, metadata_file):
         # May technically be incorrect to not pass through local_path_config.input_metadata_rewrite
         # first but that adds untested logic that wouln't ever be used.
+        metadata_val = metadata_file.get_file_name()
         remote_input_path = self.path_mapper.remote_input_path_rewrite(
             metadata_val, client_input_path_type=CLIENT_INPUT_PATH_TYPES.INPUT_METADATA_PATH
         )
@@ -1790,6 +1825,19 @@ class PulsarComputeEnvironment(ComputeEnvironment):
 
     def working_directory(self):
         return self._working_directory
+
+    def remote_evaluation_job_io(self, job_io):
+        io_dict = job_io.to_dict()
+        io_dict["working_directory"] = self._job_directory
+        io_dict["outputs_directory"] = "outputs"
+        io_dict["outputs_to_working_directory"] = False
+        for name in ("tool_directory", "version_path", "home_directory", "tmp_directory", "new_file_path"):
+            io_dict[name] = getattr(self, name)()
+        io_dict["tool_dir"] = self.tool_directory()
+        return io_dict
+
+    def remote_evaluation_unstructured_paths(self):
+        return self.path_rewrites_unstructured
 
     def env_config_directory(self):
         return self.config_directory()
