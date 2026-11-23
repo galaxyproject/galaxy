@@ -667,9 +667,10 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
                     config_files.append(job_directory_path)
             assert job_wrapper.tool is not None
             tool_directory_required_files = job_wrapper.tool.required_files
-            if remote_command_line and tool_directory_required_files is None:
+            if remote_command_line and tool_directory_required_files is None and job_wrapper.tool.tool_dir:
                 # Templates have not been evaluated, so Pulsar cannot discover
                 # which supporting files will be referenced by the command.
+                # Tools without a directory (e.g. user defined tools) have no files to stage.
                 tool_directory_required_files = RequiredFiles.from_dict(
                     {"includes": [{"path": "", "path_type": "prefix"}]}
                 )
