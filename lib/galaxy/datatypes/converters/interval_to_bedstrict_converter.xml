@@ -15,6 +15,10 @@
             <param name="input1" ftype="interval" value="2.interval"/>
             <output name="output1" ftype="bedstrict" value="2_no_strand.bedstrict"/>
         </test>
+        <test>
+            <param name="input1" ftype="bed" value="unstranded.bed12"/>
+            <output name="output1" ftype="bedstrict" value="unstranded.bed12"/>
+        </test>
     </tests>
     <help>
     </help>

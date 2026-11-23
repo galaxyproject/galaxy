@@ -15,6 +15,14 @@
             <param name="input1" ftype="interval" value="2.interval"/>
             <output name="output1" ftype="bed6" value="2_no_strand.bed6"/>
         </test>
+        <test>
+            <param name="input1" ftype="bed" value="unstranded_5col.bed"/>
+            <output name="output1" ftype="bed6" value="unstranded_5col.bed6"/>
+        </test>
+        <test>
+            <param name="input1" ftype="bed" value="unstranded_extra_column.bed"/>
+            <output name="output1" ftype="bed6" value="unstranded_extra_column.bed6"/>
+        </test>
     </tests>
     <help>
     </help>
