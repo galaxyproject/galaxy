@@ -103,6 +103,11 @@ from galaxy.tools.evaluation import (
     ToolEvaluator,
     UserToolEvaluator,
 )
+from galaxy.tools.job_parameters import (
+    DBKEY,
+    ELEMENT_IDENTIFIER_SUFFIX,
+    is_element_identifier_parameter,
+)
 from galaxy.tools.parameters import params_to_json_internal
 from galaxy.util import (
     parse_xml_string,
@@ -1324,9 +1329,9 @@ class MinimalJobWrapper(HasResourceParameters):
             element_identifiers = None
             if tool_evaluator.consumes_identifiers:
                 element_identifiers = {
-                    name.removesuffix("|__identifier__"): json.loads(value)
+                    name.removesuffix(ELEMENT_IDENTIFIER_SUFFIX): json.loads(value)
                     for name, value in param_dump.items()
-                    if name.endswith("|__identifier__")
+                    if is_element_identifier_parameter(name)
                 }
             job_to_copy = self.app.job_search.by_tool_input(
                 job.user,
@@ -2416,7 +2421,7 @@ class MinimalJobWrapper(HasResourceParameters):
         # before persisting them.
         input_params = job.raw_param_dict()
         input_ext = input_params.get("__input_ext")
-        input_dbkey = input_params.get("dbkey")
+        input_dbkey = input_params.get(DBKEY)
         if input_ext is not None:
             input_ext = loads(input_ext)
             input_dbkey = loads(input_dbkey)

@@ -136,6 +136,11 @@ from galaxy.tools.actions.model_operations import ModelOperationToolAction
 from galaxy.tools.evaluation import global_tool_errors
 from galaxy.tools.execution_helpers import ToolExecutionCache
 from galaxy.tools.imp_exp import JobImportHistoryArchiveWrapper
+from galaxy.tools.job_parameters import (
+    DATA_MANAGER_MODE,
+    EXPORT_TO_URI,
+    TEMPLATE_JOB_PARAMETERS,
+)
 from galaxy.tools.parameters import (
     check_param,
     params_from_strings,
@@ -1027,6 +1032,8 @@ class Tool(UsesDictVisibleKeys):
     dict_collection_visible_keys = ["id", "name", "version", "description", "labels"]
     job_search: "JobSearch"
     version: str
+    # Job parameters that are not tool inputs and that the tool's templates read.
+    template_job_parameters: frozenset[str] = TEMPLATE_JOB_PARAMETERS
 
     def __init__(
         self,
@@ -2044,6 +2051,15 @@ class Tool(UsesDictVisibleKeys):
             return collection_def.outputs.get(part, None)
         else:
             return self.outputs.get(name, None)
+
+    @property
+    def keeps_undeclared_job_parameters(self) -> bool:
+        """Pass job parameters that are not tool inputs to the templates.
+
+        Tools that do not check their values (data source tools) take the request
+        parameters as they are sent.
+        """
+        return not self.check_values
 
     @property
     def is_workflow_compatible(self):
@@ -3539,6 +3555,7 @@ class SetMetadataTool(Tool):
 
 class ExportHistoryTool(Tool):
     tool_type = "export_history"
+    template_job_parameters = Tool.template_job_parameters | {EXPORT_TO_URI}
 
 
 class ImportHistoryTool(Tool):
@@ -3601,7 +3618,7 @@ class DataManagerTool(OutputParameterJSONTool):
         assert (
             data_manager is not None
         ), f"Invalid data manager ({data_manager_id}) requested. It may have been removed before the job completed."
-        data_manager_mode = param_dict.get("__data_manager_mode", "populate")
+        data_manager_mode = param_dict.get(DATA_MANAGER_MODE, "populate")
         if data_manager_mode == "populate":
             data_manager.process_result(out_data)
         elif data_manager_mode == "dry_run":

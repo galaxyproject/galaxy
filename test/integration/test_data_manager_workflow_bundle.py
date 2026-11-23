@@ -1,11 +1,14 @@
 """Integration tests for workflow syncing."""
 
+import json
+
 from galaxy_test.base.populators import (
     DatasetPopulator,
     WorkflowPopulator,
 )
 from galaxy_test.base.uses_shed_api import UsesShedApi
 from .test_containerized_jobs import ContainerizedIntegrationTestCase
+from .test_tool_data_delete import DataManagerIntegrationTestCase
 
 
 class TestDataManagerWorkflowInvocation(ContainerizedIntegrationTestCase, UsesShedApi):
@@ -103,3 +106,31 @@ test_data:
                 wait=True,
                 assert_ok=True,
             )
+
+
+class TestDataManagerWorkflowBundleMode(DataManagerIntegrationTestCase):
+    def setUp(self):
+        super().setUp()
+        self.workflow_populator = WorkflowPopulator(self.galaxy_interactor)
+
+    def test_run_data_manager_step_in_bundle_mode(self):
+        original_count = self._testbeta_field_count()
+        with self.dataset_populator.test_history() as history_id:
+            summary = self.workflow_populator.run_workflow(
+                """
+class: GalaxyWorkflow
+steps:
+  data_manager:
+    tool_id: data_manager
+    tool_state:
+      ignored_value: moo
+      __data_manager_mode: bundle
+""",
+                history_id=history_id,
+                wait=True,
+                assert_ok=True,
+            )
+            job = summary.jobs_for_tool("data_manager")[0]
+            job_details = self.dataset_populator.get_job_details(job["id"], full=True).json()
+            assert json.loads(job_details["params"]["__data_manager_mode"]) == "bundle"
+        assert self._testbeta_field_count() == original_count

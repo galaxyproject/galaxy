@@ -32,6 +32,7 @@ from galaxy.tools.imp_exp import (
     JobExportHistoryArchiveWrapper,
     JobImportHistoryArchiveWrapper,
 )
+from galaxy.tools.job_parameters import EXPORT_TO_URI
 from galaxy.util import ready_name_for_url
 
 log = logging.getLogger(__name__)
@@ -220,7 +221,7 @@ class ExportHistoryToolAction(ToolAction):
 
             file_name = os.path.basename(os.path.abspath(file_name))
             sep = "" if directory_uri.endswith("/") else "/"
-            incoming["__EXPORT_TO_URI__"] = f"{directory_uri}{sep}{file_name}"
+            incoming[EXPORT_TO_URI] = f"{directory_uri}{sep}{file_name}"
 
         for name, value in tool.params_to_strings(incoming, trans.app).items():
             job.add_parameter(name, value)
