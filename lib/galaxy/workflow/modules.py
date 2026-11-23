@@ -88,7 +88,9 @@ from galaxy.tools.expressions import (
 )
 from galaxy.tools.parameters import (
     check_param,
+    params_from_strings,
     params_to_incoming,
+    params_to_strings,
     visit_input_values,
 )
 from galaxy.tools.parameters.basic import (
@@ -1949,7 +1951,7 @@ def step_input_form_defaults(
 
     These are defaults on parameters that are not data inputs, are not connected, do not change
     other inputs (as conditional test parameters do) and are not set to a runtime value, and that
-    the parameter can convert. ``value`` is the default converted by the parameter's ``to_python``.
+    the parameter can convert. ``value`` is the default as the saved form state decodes it.
     """
     form_defaults: list[StepInputFormDefault] = []
     if not defaults:
@@ -1965,7 +1967,10 @@ def step_input_form_defaults(
         ):
             return
         try:
-            default = input.to_python(defaults[prefixed_name], app)
+            # Round trip like the tool state, so a text or select default of 7 matches the form's "7".
+            param = {input.name: input}
+            saved = params_to_strings(param, {input.name: defaults[prefixed_name]}, app)
+            default = params_from_strings(param, saved, app)[input.name]
         except Exception:
             return
         form_defaults.append(StepInputFormDefault(prefixed_name, input, parent, default))
@@ -1975,7 +1980,7 @@ def step_input_form_defaults(
 
 
 def same_form_value(form_value: Any, default: Any) -> bool:
-    """Compare a tool form value with a step input default, both converted by the parameter's ``to_python``.
+    """Compare a tool form value with a step input default, both decoded as the saved tool state.
 
     An empty value (``None`` or ``""``) matches the other empty value, as the form may submit either.
     """

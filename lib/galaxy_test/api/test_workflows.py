@@ -1139,6 +1139,23 @@ steps:
 
         assert self._download_workflow(workflow_id)["steps"]["0"]["in"] == {"input": data_default}
 
+    @skip_without_tool("gx_text")
+    def test_update_from_editor_keeps_numeric_text_step_input_default(self):
+        workflow_id = self._upload_yaml_workflow(
+            """
+class: GalaxyWorkflow
+steps:
+  text_step:
+    tool_id: gx_text
+    in:
+      parameter:
+        default: 7
+"""
+        )
+        self._save_from_editor(workflow_id, self._download_workflow(workflow_id, style="editor"))
+
+        assert self._download_workflow(workflow_id)["steps"]["0"].get("in") == {"parameter": {"default": 7}}
+
     @skip_without_tool("gx_int")
     def test_update_from_editor_keeps_connected_step_input_default(self):
         # Format 2 drops a default next to a source, so connect the input in the native format.

@@ -1,11 +1,16 @@
 import pytest
 
+from galaxy.tools.parameters import (
+    params_from_strings,
+    params_to_strings,
+)
 from galaxy.tools.parameters.basic import (
     BooleanToolParameter,
     DataToolParameter,
     FloatToolParameter,
     IntegerToolParameter,
     SelectToolParameter,
+    TextToolParameter,
     ToolParameter,
 )
 from galaxy.tools.parameters.grouping import (
@@ -91,6 +96,27 @@ def test_step_input_form_defaults_selects_defaults_the_form_shows():
     ]
     assert form_defaults[1].param is case_a.inputs["x"]
     assert form_defaults[1].parent is state["cond"]
+
+
+def test_step_input_form_defaults_match_the_saved_form_state():
+    inputs = {
+        "t": _param(TextToolParameter, '<param name="t" type="text" value=""/>'),
+        "s": _param(
+            SelectToolParameter,
+            '<param name="s" type="select"><option value="1">1</option><option value="2">2</option></param>',
+        ),
+    }
+    state = {"t": "", "s": "2"}
+    defaults = {"t": 7, "s": 1}
+    for form_default in step_input_form_defaults(inputs, state, defaults, (), None):
+        form_default.parent[form_default.param.name] = form_default.value
+    saved_state = params_from_strings(inputs, params_to_strings(inputs, state, None), None)
+
+    form_defaults = step_input_form_defaults(inputs, saved_state, defaults, (), None)
+
+    assert [form_default.name for form_default in form_defaults] == ["t", "s"]
+    for form_default in form_defaults:
+        assert same_form_value(form_default.parent[form_default.param.name], form_default.value)
 
 
 @pytest.mark.parametrize(
