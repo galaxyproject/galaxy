@@ -855,6 +855,185 @@ def mask_password_from_url(url):
     return url
 
 
+# A "/" ends every authority and starts every "://", and no known userinfo holds a "/",
+# so each character is visited once.
+_URL_AUTHORITY_END_RE = re.compile(r"[/?#\s]")
+# urlsplit() drops these characters anywhere in a URL, so text may hold a userinfo without them.
+_URLSPLIT_REMOVED_CHARACTERS = str.maketrans("", "", "\t\r\n")
+_USERINFO_TRIE_END = ""
+# Each urlsplit() error of a known URL costs a scan of the text, so past this many no text is returned.
+_MAX_URL_PARSER_ERRORS = 100
+URL_PARSER_ERROR = "Invalid URL (could not be parsed)"
+URL_PARSER_ERRORS_WITHHELD = "Error message withheld because it contained too many URLs that could not be parsed."
+# How strip_url_userinfo() outputs each character of a text: kept, removed, or in a run replaced by URL_PARSER_ERROR.
+_KEEP = 0
+_USERINFO = 1
+_PARSER_ERROR = 2
+_MARK_RUN_RE = re.compile(b"\x00+|\x01+|\x02+")
+
+
+def _known_url_userinfo_span(url: str, start: int = 0) -> tuple[int, int]:
+    """
+    Start of the authority after the first ``://`` from ``start`` of a single ``url`` and the index of the ``@``
+    ending its userinfo (-1 if none).
+    """
+    separator = url.find("://", start)
+    if separator == -1:
+        return -1, -1
+    authority_start = separator + 3
+    # A known URL is a single token, so whitespace, "?" or "#" may belong to its (malformed) userinfo.
+    authority_end = url.find("/", authority_start)
+    if authority_end == -1:
+        authority_end = len(url)
+    return authority_start, url.rfind("@", authority_start, authority_end)
+
+
+def url_without_userinfo(url: str) -> str:
+    """
+    Remove the userinfo (``user:password@``) of a single ``url``, even if it holds unencoded whitespace.
+
+    >>> url_without_userinfo('https://user:sec ret@example.org/a.bed')
+    'https://example.org/a.bed'
+    >>> url_without_userinfo('https://user:secret@example.org')
+    'https://example.org'
+    """
+    authority_start, userinfo_end = _known_url_userinfo_span(url)
+    if userinfo_end == -1:
+        return url
+    return url[:authority_start] + url[userinfo_end + 1 :]
+
+
+def _known_url_userinfos(url: str) -> Iterator[str]:
+    """Userinfo of a single ``url`` and of every URL nested in it, such as in its query."""
+    start = 0
+    while True:
+        authority_start, userinfo_end = _known_url_userinfo_span(url, start)
+        if authority_start == -1:
+            return
+        if userinfo_end != -1:
+            yield url[authority_start:userinfo_end]
+        # Each authority ends at the "/" that starts the next "://", so the spans do not overlap.
+        start = authority_start
+
+
+def _userinfo_trie(urls: Iterable[str]) -> dict[str, Any]:
+    trie: dict[str, Any] = {}
+    for url in urls:
+        for userinfo in _known_url_userinfos(url):
+            for variant in {userinfo, userinfo.translate(_URLSPLIT_REMOVED_CHARACTERS)}:
+                node = trie
+                for char in variant:
+                    node = node.setdefault(char, {})
+                node[_USERINFO_TRIE_END] = {}
+    return trie
+
+
+def _known_userinfo_end(text: str, start: int, trie: dict[str, Any]) -> int:
+    """Index of the ``@`` ending the longest userinfo of ``trie`` at ``start`` of ``text``, or -1."""
+    userinfo_end = -1
+    node = trie
+    for pos in range(start, len(text)):
+        char = text[pos]
+        if char == "@" and _USERINFO_TRIE_END in node:
+            userinfo_end = pos
+        child = node.get(char)
+        if child is None:
+            break
+        node = child
+    return userinfo_end
+
+
+def _mark_url_parser_errors(text: str, urls: Iterable[str], marks: bytearray) -> bool:
+    """
+    Mark each occurrence in ``text`` of a ``urlsplit()`` error of ``urls`` that quotes a userinfo as ``_PARSER_ERROR``.
+
+    Occurrences are found in the original ``text``, overlapping ones included. Returns ``False`` if more than
+    ``_MAX_URL_PARSER_ERRORS`` such errors may be in ``text``, or if the occurrences of one error cover more than
+    twice the length of ``text``.
+    """
+    messages: dict[str, None] = {}
+    for url in urls:
+        for variant in (url, url.strip()):
+            try:
+                urlsplit(variant)
+            except ValueError as e:
+                message = str(e)
+                if not message or len(message) > len(text) or message in messages:
+                    continue
+                try:
+                    urlsplit(url_without_userinfo(variant))
+                except ValueError as stripped_error:
+                    if str(stripped_error) == message:
+                        # The error does not quote the userinfo.
+                        continue
+                messages[message] = None
+                if len(messages) > _MAX_URL_PARSER_ERRORS:
+                    return False
+    for message in messages:
+        length = len(message)
+        marked_length = 0
+        pos = text.find(message)
+        while pos != -1:
+            # Only an error made of repeats of one block overlaps itself this much; bound the rescans it costs.
+            marked_length += length
+            if marked_length > 2 * len(text):
+                return False
+            marks[pos : pos + length] = bytes([_PARSER_ERROR]) * length
+            pos = text.find(message, pos + 1)
+    return True
+
+
+def strip_url_userinfo(text: str, known_urls: Iterable[str] = ()) -> str:
+    """
+    Remove the userinfo (``user:password@``) of every URL in ``text``.
+
+    The userinfo of each URL in ``known_urls``, and of every URL nested in it (e.g. in its query), is removed
+    wherever it follows a ``://``, which also covers userinfo the scan of ``text`` cannot delimit, such as
+    unencoded whitespace, in every form of that URL (e.g. trimmed). Each run of text covered by ``urlsplit()`` errors of known URLs, which quote their netloc
+    without the ``://``, is replaced by ``URL_PARSER_ERROR``, which quotes nothing of the URLs. Both are found
+    in the original ``text``, so neither can hide the other. Returns ``URL_PARSER_ERRORS_WITHHELD`` if too many
+    such errors may be in ``text``.
+
+    >>> strip_url_userinfo('Failed to fetch https://user:secret@example.org/a.bed')
+    'Failed to fetch https://example.org/a.bed'
+    >>> strip_url_userinfo('ftp://user:p@ss@example.org/a.bed')
+    'ftp://example.org/a.bed'
+    >>> strip_url_userinfo('Invalid uri [ftp://user:sec ret@example.org/a]', [' ftp://user:sec ret@example.org/a '])
+    'Invalid uri [ftp://example.org/a]'
+    >>> strip_url_userinfo('Invalid url https://example.org/a?next=ftp://u:sec ret@h/b', ['https://example.org/a?next=ftp://u:sec ret@h/b'])
+    'Invalid url https://example.org/a?next=ftp://h/b'
+    >>> strip_url_userinfo('https://example.org/a.bed')
+    'https://example.org/a.bed'
+    """
+    known_urls = tuple(known_urls)
+    marks = bytearray(len(text))
+    if not _mark_url_parser_errors(text, known_urls, marks):
+        return URL_PARSER_ERRORS_WITHHELD
+    known_userinfo = _userinfo_trie(known_urls)
+    pos = 0
+    while (separator := text.find("://", pos)) != -1:
+        authority_start = separator + 3
+        authority_end_match = _URL_AUTHORITY_END_RE.search(text, authority_start)
+        authority_end = authority_end_match.start() if authority_end_match else len(text)
+        # Up to the last "@", so unencoded "@" in a password is stripped too.
+        userinfo_end = max(
+            text.rfind("@", authority_start, authority_end),
+            _known_userinfo_end(text, authority_start, known_userinfo),
+        )
+        if userinfo_end != -1:
+            # A userinfo is removed even where it holds a parser error.
+            marks[authority_start : userinfo_end + 1] = bytes([_USERINFO]) * (userinfo_end + 1 - authority_start)
+        pos = userinfo_end + 1 if userinfo_end != -1 else authority_start
+    parts = []
+    for run in _MARK_RUN_RE.finditer(marks):
+        mark = marks[run.start()]
+        if mark == _KEEP:
+            parts.append(text[run.start() : run.end()])
+        elif mark == _PARSER_ERROR:
+            parts.append(URL_PARSER_ERROR)
+    return "".join(parts)
+
+
 def ready_name_for_url(raw_name):
     """General method to convert a string (i.e. object name) to a URL-ready
     slug.
