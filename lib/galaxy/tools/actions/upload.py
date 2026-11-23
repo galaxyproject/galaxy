@@ -24,7 +24,10 @@ from galaxy.tools.execute import (
     JobCallbackT,
 )
 from galaxy.tools.execution_helpers import ToolExecutionCache
-from galaxy.util import ExecutionTimer
+from galaxy.util import (
+    ExecutionTimer,
+    name_from_url,
+)
 from galaxy.util.bunch import Bunch
 from . import (
     ToolAction,
@@ -154,7 +157,7 @@ def _precreate_fetched_hdas(trans, history, target, outputs):
             if src == "url":
                 url = item.get("url")
                 if name is None:
-                    name = url.split("/")[-1]
+                    name = name_from_url(url)
             elif src == "path":
                 path = item["path"]
                 if name is None:
