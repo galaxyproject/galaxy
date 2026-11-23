@@ -282,6 +282,60 @@ describe("vGTooltip", () => {
         });
     });
 
+    describe("on an element with its own description", () => {
+        function mountDescribedInput(describedBy: string) {
+            return mount(
+                defineComponent({
+                    directives: { "g-tooltip": vGTooltip },
+                    props: {
+                        title: { type: String, required: true },
+                        describedBy: { type: String, required: true },
+                    },
+                    template: `<input v-g-tooltip="title" :aria-describedby="describedBy" />`,
+                }),
+                { props: { title: "Tooltip text", describedBy }, attachTo: document.body },
+            );
+        }
+
+        test("adds its id to the existing description and removes only that id", async () => {
+            const wrapper = mountDescribedInput("field-help");
+            const describedBy = wrapper.attributes("aria-describedby") ?? "";
+            const tooltipId = describedBy.split(" ")[1];
+
+            expect(tooltipId).toMatch(/^g-tooltip-/);
+            expect(describedBy).toBe(`field-help ${tooltipId}`);
+
+            // An update of the tooltip does not add the id twice
+            await wrapper.setProps({ title: "Changed text" });
+            expect(wrapper.attributes("aria-describedby")).toBe(`field-help ${tooltipId}`);
+
+            // The element's own description can change while the tooltip is mounted
+            await wrapper.setProps({ describedBy: "field-help field-error" });
+            expect(wrapper.attributes("aria-describedby")).toBe(`field-help field-error ${tooltipId}`);
+
+            vGTooltip.unmounted?.(wrapper.element as HTMLElement, bindingForCleanup(), unusedVNode, null);
+            expect(wrapper.attributes("aria-describedby")).toBe("field-help field-error");
+            wrapper.unmount();
+        });
+
+        test("keeps the description of a menu toggle", () => {
+            const host = document.createElement("div");
+            host.setAttribute("title", "More options");
+            const toggle = document.createElement("button");
+            toggle.setAttribute("aria-haspopup", "menu");
+            toggle.setAttribute("aria-describedby", "menu-help");
+            host.appendChild(toggle);
+            document.body.appendChild(host);
+
+            vGTooltip.mounted?.(host, bindingForCleanup(), unusedVNode, null);
+            expect(toggle.getAttribute("aria-describedby")).toMatch(/^menu-help g-tooltip-\d+$/);
+            expect(host.hasAttribute("aria-describedby")).toBe(false);
+
+            vGTooltip.unmounted?.(host, bindingForCleanup(), unusedVNode, null);
+            expect(toggle.getAttribute("aria-describedby")).toBe("menu-help");
+        });
+    });
+
     describe("on a menu button", () => {
         function createMenuTooltipTarget() {
             const host = document.createElement("div");
