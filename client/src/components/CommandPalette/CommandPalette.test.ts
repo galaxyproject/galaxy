@@ -1455,6 +1455,11 @@ describe("CommandPalette", () => {
         expect(useCommandPalette().isPaletteOpen.value).toBe(false);
     });
 
+    it("ignores a keydown without a key, as browser autofill dispatches", () => {
+        // autofilling a login form fires a bare `Event`, not a `KeyboardEvent`
+        expect(() => window.dispatchEvent(new Event("keydown"))).not.toThrow();
+    });
+
     it("ignores plain 'k' without the platform modifier", () => {
         useCommandPalette().closePalette();
 
