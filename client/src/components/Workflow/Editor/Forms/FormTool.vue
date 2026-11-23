@@ -97,7 +97,7 @@ export default {
             toRef(props, "step"),
         );
         const { stepStore } = useWorkflowStores();
-        const uniqueErrorLabel = useUniqueLabelError(stepStore, label);
+        const uniqueErrorLabel = useUniqueLabelError(stepStore, stepId, label);
 
         const { formKey } = storeToRefs(useRefreshFromStore());
         const mainValues = ref(null);
