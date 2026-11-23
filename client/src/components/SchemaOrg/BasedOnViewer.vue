@@ -18,7 +18,7 @@ const identifierLink = computed(() => {
     if (identifier?.startsWith("doi:")) {
         return `https://doi.org/${identifier.slice("doi:".length)}`;
     }
-    return identifier?.includes("://") ? identifier : null;
+    return identifier && /^https?:\/\//i.test(identifier) ? identifier : null;
 });
 </script>
 

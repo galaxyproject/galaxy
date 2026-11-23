@@ -79,4 +79,12 @@ describe("BasedOnViewer", () => {
         expect(links).toContain("https://doi.org/10.5281/zenodo.12192442");
         expect(wrapper.find(".based-on-creators").text()).toContain("Christopher Hakkaart");
     });
+
+    it("shows a non-http identifier as text", () => {
+        const work: BasedOnWork = { class: "SoftwareSourceCode", name: "x", identifier: "javascript://%0aalert(1)" };
+        const wrapper = mount(BasedOnViewer as object, { props: { work }, global: localVue });
+
+        expect(wrapper.findAll("a")).toHaveLength(0);
+        expect(wrapper.find("[itemprop='identifier']").text()).toBe("javascript://%0aalert(1)");
+    });
 });
