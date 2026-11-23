@@ -6,23 +6,20 @@ import type { ErrorType, ValidFilter } from "@/utils/filtering";
 
 import GFormInput from "../BaseComponents/Form/GFormInput.vue";
 
-type FilterType = string | boolean | undefined;
-
 interface Props {
     name: string;
     identifier: any;
     error?: ErrorType;
     filter: ValidFilter<any>;
-    filters: {
-        [k: string]: FilterType;
-    };
+    /** Text values only: `FilterMenu` routes Boolean filters to `FilterMenuBoolean` */
+    filters: Record<string, string | undefined>;
     disabled?: boolean;
 }
 
 const props = defineProps<Props>();
 
 const emit = defineEmits<{
-    (e: "change", name: string, value: FilterType): void;
+    (e: "change", name: string, value: string | undefined): void;
     (e: "on-enter"): void;
     (e: "on-esc"): void;
 }>();
@@ -36,11 +33,6 @@ const localValueGt = ref(valueGt.value);
 const localValueLt = ref(valueLt.value);
 
 const isDateType = computed(() => props.filter.type == Date);
-
-// GFormInput holds text, while the filters dict also types its values as boolean
-function asText(value: FilterType) {
-    return value === undefined ? null : String(value);
-}
 
 function hasError(field: string) {
     if (props.error && props.error.index == field) {
@@ -96,13 +88,12 @@ watch(
             <!---------------------------- GREATER THAN ---------------------------->
             <GFormInput
                 :id="`${props.identifier}-advanced-filter-${localNameGt}`"
+                v-model="localValueGt"
                 v-g-tooltip.focus.v-danger="hasError(localNameGt)"
-                :model-value="asText(localValueGt)"
                 size="small"
                 :state="hasError(localNameGt) ? false : null"
                 :placeholder="localPlaceholder('gt')"
                 :disabled="props.disabled"
-                @update:model-value="localValueGt = $event ?? undefined"
                 @keyup.enter="emit('on-enter')"
                 @keyup.esc="emit('on-esc')" />
 
@@ -114,13 +105,12 @@ watch(
             <!---------------------------- LESSER THAN ---------------------------->
             <GFormInput
                 :id="`${props.identifier}-advanced-filter-${localNameLt}`"
+                v-model="localValueLt"
                 v-g-tooltip.focus.v-danger="hasError(localNameLt)"
-                :model-value="asText(localValueLt)"
                 size="small"
                 :state="hasError(localNameLt) ? false : null"
                 :placeholder="localPlaceholder('lt')"
                 :disabled="props.disabled"
-                @update:model-value="localValueLt = $event ?? undefined"
                 @keyup.enter="emit('on-enter')"
                 @keyup.esc="emit('on-esc')" />
 

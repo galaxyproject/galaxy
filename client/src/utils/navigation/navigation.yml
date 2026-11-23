@@ -112,7 +112,9 @@ preferences:
     current_email: "#user-preferences-current-email"
     get_new_key: '.create-button'
     api_key_input: '[data-test-id="api-key-input"]'
+    api_key_input_of_type: '[data-test-id="api-key-input"][type="${type}"]'
     api_key_copy_button: '[data-description="copy api key"]'
+    api_key_show_hide_button: '[data-description="show or hide api key"]'
     object_store: '#select-preferred-object-store'
     delete_account: '#g-card-delete-account'
     delete_account_input: '#name-input'
@@ -413,6 +415,8 @@ history_panel:
     _: '#current-history-panel'
     search: '#current-history-panel .content-operations-filters [data-description="filter text input"]'
     search_reset: '#current-history-panel .content-operations-filters [data-description="reset query"]'
+    advanced_search_toggle: '#current-history-panel .content-operations-filters [data-description="toggle advanced search"]'
+    advanced_search_input: '#history-items-advanced-filter-${filter}'
     refresh_button: '.history-refresh-button'
     include_deleted_button: '[data-description="include deleted items button"]'
     include_hidden_button: '[data-description="include hidden items button"]'
@@ -990,9 +994,20 @@ window_manager:
     focused_title: '.window-manager-window.focused .window-manager-window-title'
     focus_overlay: '.window-manager-window .iframe-focus-overlay'
 
+credentials:
+  service:
+    selectors:
+      _: '[data-description="credentials service"][data-service-name="${service}"]'
+      toggle: '${_} [data-description="credentials service toggle"]'
+      expanded: '${_} > .g-collapse-shown'
+      create_group: '${_} [data-description="create credentials group"]'
+      group_name_input: '${_} [data-description="credentials group name input"]'
+      group_name_error: '${_} [data-description="credentials group name"] .invalid-feedback'
+
 tool_form:
   selectors:
     tool_version: '[data-description="galaxy tool version"]'
+    credentials_manage: '[data-description="manage tool credentials"]'
     options: '.tool-dropdown'
     execute: 'button#execute'
     parameter_div: 'div.ui-form-element[id="form-element-${parameter}"]'

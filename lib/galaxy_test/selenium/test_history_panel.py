@@ -56,11 +56,7 @@ class TestHistoryPanel(SeleniumTestCase, UsesUploadActivity):
     @selenium_test
     @managed_history
     def test_delete_undelete_and_purge_items(self):
-        history_id = self.current_history_id()
-        for content in ("1\n", "2\n", "3\n", "4\n"):
-            self.dataset_populator.new_dataset(history_id, content=content, wait=True)
-        self.home()
-        self.history_panel_wait_for_hid_ok(4)
+        history_id = self._show_history_of_datasets(4)
 
         self.history_panel_item_delete(1)
         self.history_panel_wait_for_hid_hidden(1)
@@ -123,6 +119,25 @@ class TestHistoryPanel(SeleniumTestCase, UsesUploadActivity):
 
     @selenium_test
     @managed_history
+    def test_advanced_filter_index_range(self):
+        self._show_history_of_datasets(4)
+
+        history_panel = self.components.history_panel
+        history_panel.advanced_search_toggle.wait_for_and_click()
+        history_panel.advanced_search_input(filter="hid_gt").wait_for_and_send_keys("1")
+        lower_than = history_panel.advanced_search_input(filter="hid_lt")
+        lower_than.wait_for_and_send_keys("4")
+        self.screenshot("history_panel_advanced_filter_index_range")
+        lower_than.wait_for_and_send_enter()
+
+        self.history_panel_wait_for_hid_visible(2)
+        self.history_panel_wait_for_hid_visible(3)
+        self.history_panel_wait_for_hid_hidden(1)
+        self.history_panel_wait_for_hid_hidden(4)
+        self.screenshot("history_panel_advanced_filter_index_range_applied")
+
+    @selenium_test
+    @managed_history
     def test_unhide_item_with_include_hidden(self):
         history_id = self.current_history_id()
         self.dataset_populator.new_dataset(history_id, content="1\n", wait=True)
@@ -151,11 +166,7 @@ class TestHistoryPanel(SeleniumTestCase, UsesUploadActivity):
     @selenium_test
     @managed_history
     def test_hide_and_unhide_items(self) -> None:
-        history_id = self.current_history_id()
-        for content in ("1\n", "2\n", "3\n"):
-            self.dataset_populator.new_dataset(history_id, content=content, wait=True)
-        self.home()
-        self.history_panel_wait_for_hid_ok(3)
+        history_id = self._show_history_of_datasets(3)
 
         self.history_panel_wait_for_and_select([1, 2])
         self.history_panel_hide_selected()
@@ -438,6 +449,14 @@ class TestHistoryPanel(SeleniumTestCase, UsesUploadActivity):
     def assert_name_changed(self):
         name = self.history_panel_name()
         assert name == NEW_HISTORY_NAME
+
+    def _show_history_of_datasets(self, count: int) -> str:
+        history_id = self.current_history_id()
+        for index in range(1, count + 1):
+            self.dataset_populator.new_dataset(history_id, content=f"{index}\n", wait=True)
+        self.home()
+        self.history_panel_wait_for_hid_ok(count)
+        return history_id
 
     def _select_two_of_three_datasets(self):
         history_id = self.current_history_id()

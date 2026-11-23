@@ -79,6 +79,7 @@ async function attemptKeyDeletion() {
 
                             <GButton
                                 v-g-tooltip.hover
+                                data-description="show or hide api key"
                                 title="Show/hide key"
                                 size="large"
                                 icon-only

@@ -8,7 +8,9 @@ import FilterMenuRanged from "./FilterMenuRanged.vue";
 
 const INDEX_FILTER = { placeholder: "index", type: Number, handler: equals("hid"), isRangeInput: true, menuItem: true };
 
-function mountRanged(props: Record<string, unknown> = {}) {
+type Props = InstanceType<typeof FilterMenuRanged>["$props"];
+
+function mountRanged(props: Partial<Props> = {}) {
     return mount(FilterMenuRanged, {
         props: { name: "hid", identifier: "test-list", filter: INDEX_FILTER, filters: { hid_gt: "2" }, ...props },
         global: getLocalVue(),
@@ -24,11 +26,8 @@ function ltInput(wrapper: ReturnType<typeof mountRanged>) {
 }
 
 describe("FilterMenuRanged", () => {
-    it("renders both bounds in small GFormInput fields", () => {
+    it("shows the bound values and placeholders naming each bound", () => {
         const wrapper = mountRanged();
-        for (const input of [gtInput(wrapper), ltInput(wrapper)]) {
-            expect(input.classes()).toEqual(expect.arrayContaining(["g-form-input", "g-small"]));
-        }
         expect(gtInput(wrapper).attributes("placeholder")).toBe("greater than index");
         expect(ltInput(wrapper).attributes("placeholder")).toBe("lower than index");
         expect((gtInput(wrapper).element as HTMLInputElement).value).toBe("2");

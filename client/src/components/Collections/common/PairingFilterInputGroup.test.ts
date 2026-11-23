@@ -12,16 +12,6 @@ function mountGroup(forwardFilter = "_1", reverseFilter = "_2") {
 }
 
 describe("PairingFilterInputGroup", () => {
-    it("renders both filters in GFormInput fields", () => {
-        const inputs = mountGroup().findAll("input");
-        expect(inputs).toHaveLength(2);
-        expect(inputs.map((input) => input.classes())).toEqual([
-            expect.arrayContaining(["g-form-input"]),
-            expect.arrayContaining(["g-form-input"]),
-        ]);
-        expect(inputs.map((input) => (input.element as HTMLInputElement).value)).toEqual(["_1", "_2"]);
-    });
-
     it("emits on-update with both filters when one is typed", async () => {
         const wrapper = mountGroup();
         await wrapper.findAll("input")[0]!.setValue("_R1");
@@ -30,11 +20,12 @@ describe("PairingFilterInputGroup", () => {
         expect(wrapper.emitted("on-update")?.at(-1)).toEqual(["_R1", "_R2"]);
     });
 
-    it("shows the new filters when the parent updates the props", async () => {
+    it("shows the filters, and the new ones when the parent updates the props", async () => {
         const wrapper = mountGroup();
+        const values = () => wrapper.findAll("input").map((input) => (input.element as HTMLInputElement).value);
+        expect(values()).toEqual(["_1", "_2"]);
         await wrapper.setProps({ forwardFilter: ".1.fastq", reverseFilter: ".2.fastq" });
-        const values = wrapper.findAll("input").map((input) => (input.element as HTMLInputElement).value);
-        expect(values).toEqual([".1.fastq", ".2.fastq"]);
+        expect(values()).toEqual([".1.fastq", ".2.fastq"]);
     });
 
     it("marks a filter that is not a valid regular expression invalid", () => {

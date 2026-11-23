@@ -290,6 +290,7 @@ watch(
     <div class="p-2">
         <BFormGroup
             :id="`${props.groupData.groupId}-name`"
+            data-description="credentials group name"
             label="Group Name"
             description="Enter a unique name for this group"
             :invalid-feedback="getGroupNameErrorMessage()"
@@ -297,6 +298,7 @@ watch(
             <GFormInput
                 :id="`${props.groupData.groupId}-name-input`"
                 v-model="groupName"
+                data-description="credentials group name input"
                 type="text"
                 :state="getGroupNameState()"
                 placeholder="Enter group name"

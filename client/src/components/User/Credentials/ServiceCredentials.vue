@@ -543,9 +543,14 @@ const groupIndicators = computed(() => (group: ServiceCredentialGroupResponse): 
 </script>
 
 <template>
-    <div>
+    <div data-description="credentials service" :data-service-name="props.serviceDefinition.name">
         <div>
-            <GButton class="service-title w-100" color="blue" outline @click="isExpanded = !isExpanded">
+            <GButton
+                class="service-title w-100"
+                color="blue"
+                outline
+                data-description="credentials service toggle"
+                @click="isExpanded = !isExpanded">
                 <span class="d-flex align-items-center flex-gapx-1">
                     <FontAwesomeIcon v-if="!isExpanded" :icon="faCaretRight" />
                     <FontAwesomeIcon v-else :icon="faCaretRight" rotation="90" />
@@ -592,6 +597,7 @@ const groupIndicators = computed(() => (group: ServiceCredentialGroupResponse): 
                         color="blue"
                         outline
                         title="Create a new group of credentials"
+                        data-description="create credentials group"
                         :disabled="editingGroups && Object.keys(editingGroups).length > 0"
                         @click="createTemporaryGroup">
                         <FontAwesomeIcon :icon="faPlus" />
