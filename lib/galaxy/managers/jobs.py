@@ -119,6 +119,7 @@ from galaxy.util import (
     ExecutionTimer,
     listify,
     string_as_bool_or_none,
+    url_without_userinfo,
 )
 from galaxy.util.search import (
     FilteredTerm,
@@ -2126,6 +2127,14 @@ def summarize_job_parameters(trans: ProvidesUserContext, job: Job) -> dict[str, 
         for parameter in parameters:
             if parameter["text"] == "request_json" and isinstance(parameter.get("value"), str):
                 request = encode_fetch_request_ids(json.loads(parameter["value"]), trans.security.encode_id)
+                # Dataset readers see this copy; the job keeps the full URLs to run and rerun with.
+                request = remap(
+                    request,
+                    visit=lambda path, key, value: (
+                        key,
+                        url_without_userinfo(value) if isinstance(value, str) else value,
+                    ),
+                )
                 parameter["value"] = json.dumps(request)
 
     return {
