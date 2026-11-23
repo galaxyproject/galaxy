@@ -84,8 +84,8 @@ def _open_first_zip_member(filename: str) -> IO[bytes] | None:
     try:
         return next(members)[0]
     except (zipfile.BadZipFile, StopIteration):
-        # is_zipfile only looks for an end-of-central-directory record, which
-        # other files (e.g. a tar containing a zip) can contain too.
+        # The file starts and ends like a zip but has no readable member:
+        # an empty or corrupt archive is read as raw bytes.
         return None
     finally:
         members.close()
@@ -208,7 +208,7 @@ class CompressedFile:
             try:
                 self.archive = getattr(self, method)(file_path, mode)
             except zipfile.BadZipFile:
-                # is_zipfile also matches a tar that merely contains a zip end record.
+                # A file that passes the zip check but cannot be opened as one may still be a tar.
                 if not tarfile.is_tarfile(file_path):
                     raise
                 self.file_type = self.type = "tar"
