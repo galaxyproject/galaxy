@@ -3131,6 +3131,28 @@ should_run:
                 if step["workflow_step_label"] == "identifier_multiple_in_conditional":
                     assert sum(1 for j in step["jobs"] if j["state"] == "skipped") == 1
 
+    @skip_without_tool("template_macro_undeclared_name")
+    def test_run_workflow_step_state_keys_not_tool_inputs(self):
+        with self.dataset_populator.test_history() as history_id:
+            summary = self._run_workflow(
+                """class: GalaxyWorkflow
+steps:
+  macro_tool:
+    tool_id: template_macro_undeclared_name
+    state:
+      declared: declared value
+      undeclared: marker
+      macro_text: marker
+""",
+                history_id=history_id,
+            )
+            output = self.dataset_populator.get_history_dataset_content(history_id)
+            assert output.splitlines() == ["text from the template macro", "declared value"]
+            job = summary.jobs_for_tool("template_macro_undeclared_name")[0]
+            job_details = self.dataset_populator.get_job_details(job["id"], full=True).json()
+            assert "undeclared" not in job_details["params"]
+            assert "macro_text" not in job_details["params"]
+
     def test_run_workflow_invalid_when_expression(self):
         with self.dataset_populator.test_history() as history_id:
             summary = self._run_workflow(

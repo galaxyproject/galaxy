@@ -147,6 +147,11 @@ from galaxy.tools.actions.model_operations import ModelOperationToolAction
 from galaxy.tools.evaluation import global_tool_errors
 from galaxy.tools.execution_helpers import ToolExecutionCache
 from galaxy.tools.imp_exp import JobImportHistoryArchiveWrapper
+from galaxy.tools.job_parameters import (
+    DATA_MANAGER_MODE,
+    EXPORT_TO_URI,
+    TEMPLATE_JOB_PARAMETERS,
+)
 from galaxy.tools.parameters import (
     check_param,
     fill_dynamic_defaults,
@@ -366,8 +371,12 @@ IMPLICITLY_REQUIRED_TOOL_FILES: dict[str, dict] = {
     # minimum example:
     # "foobar": {"required": REQUIRE_FULL_DIRECTORY}
     # if no version is specified, all versions without explicit RequiredFiles will be selected
+    # charts.r sources the module script named by -m from the -w tool directory
+    "charts": {"required": {"includes": [{"path": "*.r", "path_type": "glob"}]}},
     "circos": {"required": REQUIRE_FULL_DIRECTORY},
     "cp_image_math": {"required": {"includes": [{"path": "*.py", "path_type": "glob"}]}},
+    # the script path sits in \'...\' inside a $'...' parallel argument
+    "docking": {"required": {"includes": [{"path": "*.py", "path_type": "glob"}]}},
     "enumerate_charges": {"required": REQUIRE_FULL_DIRECTORY},
     "fasta_compute_length": {"required": REQUIRE_PY_SCRIPTS_AND_UTILS},
     "fasta_concatenate0": {"required": REQUIRE_PY_SCRIPTS_AND_UTILS},
@@ -378,9 +387,13 @@ IMPLICITLY_REQUIRED_TOOL_FILES: dict[str, dict] = {
     "maxquant": {"required": {"includes": [{"path": "*.py", "path_type": "glob"}]}},
     "maxquant_mqpar": {"required": {"includes": [{"path": "*.py", "path_type": "glob"}]}},
     "query_tabular": {"required": {"includes": [{"path": "*.py", "path_type": "glob"}]}},
+    # the script path sits in \"...\" inside an Rscript -e argument
+    "seurat": {"required": {"includes": [{"path": "*.R", "path_type": "glob"}]}},
     "shasta": {"required": {"includes": [{"path": "configs/*", "path_type": "glob"}]}},
     "sqlite_to_tabular": {"required": {"includes": [{"path": "*.py", "path_type": "glob"}]}},
     "sucos_max_score": {"required": {"includes": [{"path": "*.py", "path_type": "glob"}]}},
+    # transformation_wrapper.R sources transformation_script.R from its own directory
+    "Transformation": {"required": {"includes": [{"path": "*.R", "path_type": "glob"}]}},
     "translate_bed": {"required": {"includes": [{"path": "*.py", "path_type": "glob"}]}},
 }
 
@@ -997,6 +1010,8 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
     dict_collection_visible_keys = ["id", "name", "version", "description", "labels"]
     job_search: "JobSearch"
     version: str
+    # Job parameters that are not tool inputs and that the tool's templates read.
+    template_job_parameters: frozenset[str] = TEMPLATE_JOB_PARAMETERS
 
     def __init__(
         self,
@@ -2047,6 +2062,15 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
             return self.outputs.get(name, None)
 
     @property
+    def keeps_undeclared_job_parameters(self) -> bool:
+        """Pass job parameters that are not tool inputs to the templates.
+
+        Tools that do not check their values (data source tools) take the request
+        parameters as they are sent.
+        """
+        return not self.check_values
+
+    @property
     def is_workflow_compatible(self):
         return self._is_workflow_compatible
 
@@ -2409,6 +2433,9 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
                 tag_handler.apply_item_tags(user=trans.user, item=hda, tags_str=",".join(tags), flush=False)
 
             for _, hdca in execution_tracker.output_collections:
+                tag_handler.apply_item_tags(user=trans.user, item=hdca, tags_str=",".join(tags), flush=False)
+
+            for hdca in execution_tracker.implicit_collections.values():
                 tag_handler.apply_item_tags(user=trans.user, item=hdca, tags_str=",".join(tags), flush=False)
             trans.sa_session.commit()
 
@@ -3666,6 +3693,7 @@ class SetMetadataTool(Tool):
 
 class ExportHistoryTool(Tool):
     tool_type = "export_history"
+    template_job_parameters = Tool.template_job_parameters | {EXPORT_TO_URI}
 
 
 class ImportHistoryTool(Tool):
@@ -3728,7 +3756,7 @@ class DataManagerTool(OutputParameterJSONTool):
         assert (
             data_manager is not None
         ), f"Invalid data manager ({data_manager_id}) requested. It may have been removed before the job completed."
-        data_manager_mode = param_dict.get("__data_manager_mode", "populate")
+        data_manager_mode = param_dict.get(DATA_MANAGER_MODE, "populate")
         if data_manager_mode == "populate":
             data_manager.process_result(out_data)
         elif data_manager_mode == "dry_run":
