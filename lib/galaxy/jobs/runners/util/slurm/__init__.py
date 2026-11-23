@@ -86,8 +86,8 @@ def _slurm_job_state_with_sacct(job_id: str, cluster: str | None, execute: Calla
     try:
         stdout = execute(cmd)
     except commands.CommandLineException as e:
-        if e.stderr.strip() == "SLURM accounting storage is disabled":
-            log.warning("SLURM accounting storage is not properly configured, unable to run sacct")
+        if "slurm accounting storage is disabled" in e.stderr.lower():
+            log.warning("Slurm accounting storage is not properly configured, unable to run sacct")
             return None
         raise e
     # First line is for 'job_id'

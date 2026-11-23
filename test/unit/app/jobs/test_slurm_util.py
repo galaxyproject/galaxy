@@ -42,10 +42,9 @@ def test_falls_back_to_sacct_for_old_jobs():
     assert execute.call_args.args[0] == ["sacct", "-n", "-o", "state%-32", "-M", "mycluster", "-j", "7"]
 
 
-def test_not_found_when_accounting_is_disabled():
-    execute = _execute_returning(
-        _command_error(INVALID_JOB_ID), _command_error("SLURM accounting storage is disabled\n")
-    )
+@pytest.mark.parametrize("stderr", ["SLURM accounting storage is disabled\n", "Slurm accounting storage is disabled\n"])
+def test_not_found_when_accounting_is_disabled(stderr):
+    execute = _execute_returning(_command_error(INVALID_JOB_ID), _command_error(stderr))
     assert slurm_job_state("7", execute=execute) == NOT_FOUND
 
 
