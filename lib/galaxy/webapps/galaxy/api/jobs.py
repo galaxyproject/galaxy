@@ -5,10 +5,7 @@ API operations on a jobs.
 """
 
 import logging
-from datetime import (
-    date,
-    datetime,
-)
+from datetime import date
 from typing import (
     Annotated,
     Any,
@@ -29,6 +26,7 @@ from galaxy.managers.context import (
     ProvidesUserContext,
 )
 from galaxy.managers.jobs import (
+    encode_job_params,
     JobManager,
     summarize_destination_params,
     summarize_job_metrics,
@@ -291,8 +289,8 @@ class FastAPIJobs:
         view: JobIndexViewEnum = ViewQueryParam,
         tool_ids: list[str] | None = Depends(query_parameter_as_list(ToolIdQueryParam)),
         tool_ids_like: list[str] | None = Depends(query_parameter_as_list(ToolIdLikeQueryParam)),
-        date_range_min: datetime | date | None = DateRangeMinQueryParam,
-        date_range_max: datetime | date | None = DateRangeMaxQueryParam,
+        date_range_min: OffsetNaiveDatetime | date | None = DateRangeMinQueryParam,
+        date_range_max: OffsetNaiveDatetime | date | None = DateRangeMaxQueryParam,
         history_id: DecodedDatabaseIdField | None = HistoryIdQueryParam,
         workflow_id: DecodedDatabaseIdField | None = WorkflowIdQueryParam,
         invocation_id: DecodedDatabaseIdField | None = InvocationIdQueryParam,
@@ -600,7 +598,10 @@ class FastAPIJobs:
             )
             if job:
                 jobs.append(job)
-        return [EncodedJobDetails(**single_job.to_dict("element")) for single_job in jobs]
+        return [
+            EncodedJobDetails(**encode_job_params(trans.security, single_job, single_job.to_dict("element")))
+            for single_job in jobs
+        ]
 
     @router.get(
         "/api/jobs/{job_id}",

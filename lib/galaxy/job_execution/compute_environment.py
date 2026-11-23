@@ -51,7 +51,7 @@ class ComputeEnvironment(metaclass=ABCMeta):
         """Output extra files path rewrite for specified dataset."""
 
     @abstractmethod
-    def input_metadata_rewrite(self, dataset, metadata_name: str, metadata_file: MetadataFile):
+    def input_metadata_rewrite(self, dataset, metadata_name: str, metadata_file: MetadataFile) -> str | None:
         """Path rewrite for the input dataset's metadata file of this name."""
 
     @abstractmethod
@@ -164,7 +164,7 @@ class SharedComputeEnvironment(SimpleComputeEnvironment, ComputeEnvironment):
         output_path_rewrite = self.output_path_rewrite(dataset)
         return dataset_path_to_extra_path(output_path_rewrite)
 
-    def input_metadata_rewrite(self, dataset, metadata_name: str, metadata_file: MetadataFile):
+    def input_metadata_rewrite(self, dataset, metadata_name: str, metadata_file: MetadataFile) -> str | None:
         return None
 
     def unstructured_path_rewrite(self, path):
@@ -232,7 +232,7 @@ class RemoteComputeEnvironment(SharedComputeEnvironment):
             return super().input_extra_files_rewrite(dataset)
         return path
 
-    def input_metadata_rewrite(self, dataset, metadata_name: str, metadata_file: MetadataFile):
+    def input_metadata_rewrite(self, dataset, metadata_name: str, metadata_file: MetadataFile) -> str | None:
         return self.paths["metadata_files"].get(metadata_file_key(dataset, metadata_name))
 
     def unstructured_path_rewrite(self, path):

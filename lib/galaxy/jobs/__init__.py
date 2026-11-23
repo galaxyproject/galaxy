@@ -6,6 +6,7 @@ import abc
 import copy
 import datetime
 import errno
+import functools
 import json
 import logging
 import os
@@ -1173,6 +1174,13 @@ class MinimalJobWrapper(HasResourceParameters):
                 uris.update(dataset.dataset.source_uris)
         return uris
 
+    def _check_can_add_to_library_folders(self, job: model.Job, import_model_store: store.ModelImportStore) -> None:
+        # The import adds datasets to existing library folders by id, check the job's user may add to them.
+        work_request = WorkRequestContext(self.app, user=job.user, galaxy_session=job.galaxy_session)
+        for library_attrs in import_model_store.library_properties():
+            if library_attrs["model_class"] == "LibraryFolder" and library_attrs.get("id"):
+                self.app.library_folder_manager.get_for_adding(work_request, library_attrs["id"])
+
     @property
     def job_io(self) -> JobIO:
         if self._job_io is None:
@@ -2112,7 +2120,6 @@ class MinimalJobWrapper(HasResourceParameters):
         user = job.user
         object_store_id = self.get_destination_configuration("object_store_id", None)
         split_object_stores: Callable[[str], ObjectStorePopulator] | None = None
-        object_store_id_overrides: dict[str, str | None] | None = None
 
         if object_store_id is None:
             object_store_id = job.preferred_object_store_id
@@ -2142,11 +2149,6 @@ class MinimalJobWrapper(HasResourceParameters):
                     output_names = [
                         o for o in output_names if invocation_object_stores.is_output_name_an_effective_output(o)
                     ]
-
-                # we resolve the precreated datasets here with object store populators
-                # but for dynamically created datasets after the job we need to record
-                # the outputs and set them accordingly
-                object_store_id_overrides = dict.fromkeys(output_names, preferred_outputs_object_store_id)
 
                 def split_object_stores(output_name: str):  # noqa: F811 https://github.com/PyCQA/pyflakes/issues/783
                     if "|__part__|" in output_name:
@@ -2190,7 +2192,8 @@ class MinimalJobWrapper(HasResourceParameters):
                 dataset_object_store_populator = split_object_stores(dataset_assoc.name)
                 dataset_object_store_populator.set_object_store_id(dataset, require_shareable=require_shareable)
             job.object_store_id = object_store_populator.object_store_id
-            job.object_store_id_overrides = object_store_id_overrides
+            # Datasets discovered after the job go to the store the precreated outputs settled on.
+            job.object_store_id_overrides = dict.fromkeys(output_names, outputs_object_store_populator.object_store_id)
             self._setup_working_directory(job=job)
 
     def _set_unknown_output_extensions_to_data(self, job: Job) -> None:
@@ -2430,8 +2433,22 @@ class MinimalJobWrapper(HasResourceParameters):
 
         job_context = ExpressionContext(dict(stdout=tool_stdout, stderr=tool_stderr))
         if extended_metadata:
+            # Commit the tool's streams and messages first, so that a refused or failed import can roll back
+            # everything it imported.
+            self.sa_session.commit()
             try:
-                import_options = store.ImportOptions(allow_dataset_object_edit=True, allow_edit=True)
+                # The job writes this model store, so it may only edit the job's own outputs. User-defined tools
+                # can't link their outputs to server files or move them to another object store either.
+                user_defined_tool = bool(job.dynamic_tool and job.dynamic_tool.tool_format == "GalaxyUserTool")
+                import_options = store.ImportOptions(
+                    allow_dataset_object_edit=True,
+                    allow_edit=True,
+                    editable_objects=store.EditableObjects(
+                        job,
+                        allow_dataset_file_edit=not user_defined_tool,
+                        can_add_to_library_folder=functools.partial(self._can_add_to_library_folder, job),
+                    ),
+                )
                 import_model_store = store.get_import_model_store_for_directory(
                     os.path.join(self.working_directory, "metadata", "outputs_populated"),
                     app=self.app,
@@ -2441,6 +2458,7 @@ class MinimalJobWrapper(HasResourceParameters):
                     # The imported outputs are committed together with the final job state below.
                     commit=False,
                 )
+                self._check_can_add_to_library_folders(job, import_model_store)
                 object_import_tracker = import_model_store.perform_import(history=job.history, job=job)
                 # Datasets discovered by the job are created by the import, without permissions.
                 # Precreated outputs (hdas_by_id) got their permissions when the job was created.
@@ -2462,10 +2480,12 @@ class MinimalJobWrapper(HasResourceParameters):
                 if object_import_tracker.job_states_by_id.get(job.id) == job.states.ERROR:
                     final_job_state = job.states.ERROR
             except store.FileTracebackException as e:
+                self.sa_session.rollback()
                 job.traceback = e.traceback
                 log.exception(f"Problem generating command line for Job {job.id}.\n{job.traceback}")
                 return fail(str(e), exception=e)
             except Exception as e:
+                self.sa_session.rollback()
                 log.exception(f"problem importing job outputs. stdout [{job.stdout}] stderr [{job.stderr}]")
                 return fail(str(e), exception=e)
         else:
@@ -2711,6 +2731,11 @@ class MinimalJobWrapper(HasResourceParameters):
             # Metadata set for legacy galaxy.json datasets writes its temp files here.
             metadata_tmp_files_dir=job_metadata_directory(self.working_directory),
         )
+
+    def _can_add_to_library_folder(self, job: model.Job, folder_id: int) -> bool:
+        folder = self.sa_session.get(model.LibraryFolder, folder_id)
+        trans = WorkRequestContext(self.app, user=job.user, galaxy_session=job.galaxy_session)
+        return folder is not None and self.app.library_folder_manager.can_add_item(trans, folder)
 
     def check_tool_output(self, tool_stdout, tool_stderr, tool_exit_code, job, job_stdout=None, job_stderr=None):
         state, tool_stdout, tool_stderr, job_messages = check_output(

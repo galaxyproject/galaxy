@@ -191,6 +191,7 @@ from galaxy.objectstore.templates import (
     ObjectStoreTemplate,
     template_to_configuration as object_store_template_to_configuration,
 )
+from galaxy.schema.fetch_data import encode_fetch_request_ids
 from galaxy.schema.invocation import InvocationCancellationUserRequest
 from galaxy.schema.schema import (
     InvocationsStateCounts,
@@ -2539,6 +2540,12 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
             return (k, obj)
 
         params_objects = remap(params_objects, remap_objects)
+        if self.tool_id == "__DATA_FETCH__" and isinstance(params_objects.get("request_json"), str):
+            request = encode_fetch_request_ids(
+                json.loads(params_objects["request_json"]),
+                lambda obj_id: serialization_options.get_identifier_for_id(id_encoder, obj_id),
+            )
+            params_objects["request_json"] = json.dumps(request)
 
         params_dict = {}
         for name, value in params_objects.items():
@@ -6058,6 +6065,15 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
             if isinstance(self.metadata.spec[meta_type].param, galaxy.model.metadata.FileParameter):
                 meta_types.append(meta_type)
         return meta_types
+
+    def get_metadata_files_and_extensions(self) -> list[tuple[str, str, "MetadataFile"]]:
+        """``(file extension, metadata name, metadata file)`` of each metadata file that is set."""
+        metadata = self.metadata
+        metadata_files = []
+        for metadata_name in self.metadata_file_types:
+            if metadata_file := metadata[metadata_name]:
+                metadata_files.append((metadata.spec[metadata_name].file_ext, metadata_name, metadata_file))
+        return metadata_files
 
     # This provide backwards compatibility with using the old dbkey
     # field in the database.  That field now maps to "old_dbkey" (see mapping.py).

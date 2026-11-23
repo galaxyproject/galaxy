@@ -353,6 +353,30 @@ class TestRemoteFilesIntegration(ConfiguresRemoteFilesIntegrationTestCase):
             subdir_content = os.listdir(os.path.join(ftp_dir, "test0"))
             assert sorted(subdir_content) == ["data0.txt", "data1.txt", "data2.txt"]
 
+    def test_export_remote_tool_nested_collection_with_collection_name(self):
+        ftp_dir = self.user_ftp_dir
+        with self.dataset_populator.test_history() as history_id:
+            hdca = self.dataset_collection_populator.create_list_of_list_in_history(history_id, wait=True).json()
+            inputs = {
+                "d_uri": "gxftp://",
+                "export_type|export_type_selector": "collection_auto",
+                "export_type|incollection": {"src": "hdca", "id": hdca["id"]},
+                "export_type|include_collection_name": True,
+            }
+            (
+                self.dataset_populator.describe_tool_execution("export_remote")
+                .in_history(history_id)
+                .with_inputs(inputs)
+                .assert_has_single_job.with_final_state("ok")
+            )
+        exported = sorted(
+            os.path.relpath(os.path.join(directory, name), ftp_dir)
+            for directory, _, names in os.walk(ftp_dir)
+            for name in names
+        )
+        # The collection name is the top-level directory only, not repeated at each nesting level.
+        assert exported == [f"{hdca['name']}/test0/data{i}.txt" for i in range(3)]
+
     def _assert_index_empty(self, index):
         assert len(index) == 0
 
