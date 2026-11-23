@@ -1,7 +1,10 @@
 import hashlib
 import json
 import logging
-from collections.abc import Iterable
+from collections.abc import (
+    Callable,
+    Iterable,
+)
 from dataclasses import dataclass
 from datetime import (
     date,
@@ -1538,13 +1541,22 @@ class JobSearch:
             return stmt
 
 
+def _displayed_fetch_request(request: Any, encode_id: Callable[[int], Any]) -> Any:
+    """Copy of a stored fetch request to show: database ids encoded, URL userinfo removed from every string."""
+    # The job keeps the stored request with its full URLs to run and rerun with.
+    return remap(
+        encode_fetch_request_ids(request, encode_id),
+        visit=lambda path, key, value: (key, url_without_userinfo(value) if isinstance(value, str) else value),
+    )
+
+
 def encode_job_params(security: IdEncodingHelper, job: Job, job_dict: dict) -> dict:
-    """Encode the database ids the parameters of a job's element view hold decoded."""
+    """Encode the database ids the parameters of a job's element view hold decoded, and remove URL userinfo."""
     params = job_dict.get("params", {})
     if job.tool_id == "__DATA_FETCH__" and "request_json" in params:
         # Parameter values are stored as JSON, and the request is itself a JSON string.
         request = json.loads(json.loads(params["request_json"]))
-        params["request_json"] = json.dumps(json.dumps(encode_fetch_request_ids(request, security.encode_id)))
+        params["request_json"] = json.dumps(json.dumps(_displayed_fetch_request(request, security.encode_id)))
     return job_dict
 
 
@@ -2126,15 +2138,7 @@ def summarize_job_parameters(trans: ProvidesUserContext, job: Job) -> dict[str, 
     if job.tool_id == "__DATA_FETCH__":
         for parameter in parameters:
             if parameter["text"] == "request_json" and isinstance(parameter.get("value"), str):
-                request = encode_fetch_request_ids(json.loads(parameter["value"]), trans.security.encode_id)
-                # Dataset readers see this copy; the job keeps the full URLs to run and rerun with.
-                request = remap(
-                    request,
-                    visit=lambda path, key, value: (
-                        key,
-                        url_without_userinfo(value) if isinstance(value, str) else value,
-                    ),
-                )
+                request = _displayed_fetch_request(json.loads(parameter["value"]), trans.security.encode_id)
                 parameter["value"] = json.dumps(request)
 
     return {
