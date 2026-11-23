@@ -622,8 +622,10 @@ def set_metadata_portable(
         except Exception:
             with open(filename_results_code, "w+") as tf:
                 json.dump((False, traceback.format_exc()), tf)  # setting metadata has failed somehow
-            if export_store and not object_store_update_actions:
+            if export_store and not object_store_update_actions and not output_collection_security_error:
                 # The output was not collected, export it in error state so it isn't left queued.
+                # A rejected output is not exported: the job is exported in error state with the
+                # security message, and Galaxy fails the job's outputs.
                 dataset.state = dataset.dataset.state = dataset.states.ERROR
                 if not metadata_params.get("link_data_only"):
                     object_store_update_actions.append(partial(reset_external_filename, dataset))
