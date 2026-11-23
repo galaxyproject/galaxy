@@ -81,6 +81,27 @@ def test_delimited_dataprovider_parses_quoted_values(tmp_path, datatype, content
     assert rows[1:] == [[value, 1, 1.5], ['say "hi"', 2, 2.5], ["beta", None, 3.5]]
 
 
+@pytest.mark.parametrize(
+    "datatype, content",
+    [
+        (CSV(), 'name,count\n"first\nnext",1\n\nsecond,2\n'),
+        (TSV(), 'name\tcount\n"first\nnext"\t1\n\nsecond\t2\n'),
+    ],
+    ids=["csv", "tsv"],
+)
+def test_delimited_dataprovider_keeps_quoted_newlines_in_their_record(tmp_path, datatype, content):
+    source = tmp_path / f"input.{datatype.file_ext}"
+    source.write_text(content)
+    dataset = MockDataset(id=1)
+    dataset.set_file_name(str(source))
+    cast(Any, dataset).datatype = datatype
+    datatype.set_meta(dataset)
+    rows = list(datatype.dataset_column_dataprovider(dataset, indeces=[0, 1]))
+    assert rows == [["name", None], ["first\nnext", 1], ["second", 2]]
+    rows = list(datatype.dataset_column_dataprovider(dataset, indeces=[0, 1], offset=1, limit=1))
+    assert rows == [["first\nnext", 1]]
+
+
 def test_tabular_dataprovider_ignores_quotes(tmp_path):
     source = tmp_path / "input.tabular"
     source.write_text('"alpha\tone"\t1\n')

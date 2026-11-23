@@ -8,7 +8,10 @@ import logging
 import re
 from urllib.parse import unquote_plus
 
-from . import line
+from . import (
+    base,
+    line,
+)
 
 _TODO = """
 move ColumnarDataProvider parsers to more sensible location
@@ -21,6 +24,32 @@ log = logging.getLogger(__name__)
 
 
 # ----------------------------------------------------------------------------- base classes
+class CSVRecordDataProvider(base.DataProvider):
+    """
+    Data provider that joins the lines of its source into the records of a
+    `csv` dialect, so newlines inside quoted values stay in their record.
+    """
+
+    def __init__(self, source, dialect, **kwargs):
+        """
+        :param dialect: `csv` dialect used to find where each record ends.
+        :type dialect: csv.Dialect
+        """
+        super().__init__(source, **kwargs)
+        self.dialect = dialect
+
+    def __iter__(self):
+        record: list[str] = []
+        for _ in csv.reader(self.collect_lines(super().__iter__(), record), self.dialect):
+            yield "".join(record)
+            record.clear()
+
+    def collect_lines(self, lines, record):
+        for source_line in lines:
+            record.append(source_line)
+            yield source_line
+
+
 class ColumnarDataProvider(line.RegexLineDataProvider):
     """
     Data provider that provide a list of columns from the lines of its source.
@@ -89,13 +118,15 @@ class ColumnarDataProvider(line.RegexLineDataProvider):
         :param deliminator: character(s) used to split each row/line of the source. Optional: defaults to the tab character.
         :type deliminator: str
 
-        :param dialect: `csv` dialect for parsing lines. Optional: defaults to splitting at `deliminator`.
+        :param dialect: `csv` dialect for reading records, which may span lines. Optional: defaults to splitting lines at `deliminator`.
         :type dialect: csv.Dialect or None
 
         .. note:: that the subclass constructors are passed kwargs - so they're
                   params (limit, offset, etc.) are also applicable here.
         """
         # TODO: other columnar formats: csv, etc.
+        if dialect:
+            source = CSVRecordDataProvider(source, dialect)
         super().__init__(source, **kwargs)
 
         # IMPLICIT: if no indeces, column_count, or column_types passed: return all columns
