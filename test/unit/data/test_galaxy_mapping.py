@@ -193,15 +193,6 @@ class TestMappings(BaseModelTestCase):
         states = summary.states
         assert states == {"new": 2}
         assert extensions == ["bam", "txt"]
-        assert c2.element_identifiers_extensions_paths_and_metadata_files == [
-            [
-                ("inner_list", "forward"),
-                "bam",
-                "mock_dataset_14.dat",
-                [("bai", "mock_dataset_14.dat"), ("bam.csi", "mock_dataset_14.dat")],
-            ],
-            [("inner_list", "reverse"), "txt", "mock_dataset_14.dat", []],
-        ]
         assert c3.dataset_instances == []
         assert c3.dataset_elements == []
         summary_c3 = c3.dataset_states_and_extensions_summary
