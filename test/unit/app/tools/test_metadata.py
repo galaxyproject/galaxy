@@ -680,6 +680,27 @@ class TestMetadata(TestCase, tools_support.UsesTools):
         with open(output_dataset.dataset.get_file_name()) as f:
             assert f.read() == "in job directory\n"
 
+    @pytest.mark.parametrize("stray_files", [0, 2])
+    def test_extended_metadata_from_work_dir_keeps_written_output(self, stray_files):
+        output_dataset = self._run_from_work_dir_output(stray_files)
+
+        assert self._exported_dataset_state(output_dataset) == model.Dataset.states.OK
+        with open(output_dataset.dataset.get_file_name()) as f:
+            assert f.read() == "written to output\n"
+
+    def test_extended_metadata_from_work_dir_single_match(self):
+        output_dataset = self._run_from_work_dir_output(1)
+
+        assert self._exported_dataset_state(output_dataset) == model.Dataset.states.OK
+        with open(output_dataset.dataset.get_file_name()) as f:
+            assert f.read() == "stray 0\n"
+
+    @pytest.mark.parametrize("stray_files", [0, 2])
+    def test_extended_metadata_from_work_dir_output_missing(self, stray_files):
+        output_dataset = self._run_from_work_dir_output(stray_files, write_output=False)
+
+        assert self._exported_dataset_state(output_dataset) == model.Dataset.states.ERROR
+
     def _setup_output_in_working_directory(self):
         source_file_name = os.path.join(galaxy_directory(), "test/functional/tools/for_workflows/cat.xml")
         self._init_tool_for_path(source_file_name)
@@ -699,6 +720,42 @@ class TestMetadata(TestCase, tools_support.UsesTools):
         with open(outside_path, "w") as outside_file:
             outside_file.write("outside job directory\n")
         return outside_path
+
+    def _run_from_work_dir_output(self, stray_files, write_output=True):
+        self.app.config.metadata_strategy = "extended"
+        source_file_name = os.path.join(galaxy_directory(), "test/functional/tools/for_workflows/cat.xml")
+        self._init_tool_for_path(source_file_name)
+        output_dataset = self._create_output_dataset(extension="txt")
+        self.app.model.session.commit()
+        outputs_directory = os.path.join(self.job_working_directory, "outputs")
+        output_path = os.path.join(outputs_directory, f"dataset_{output_dataset.dataset.uuid}.dat")
+        output_fnames = [
+            DatasetPath(
+                output_dataset.dataset.id,
+                output_dataset.dataset.get_file_name(sync_cache=False),
+                false_path=os.path.join(self.tool_working_directory, "stray.*.txt"),
+                fallback_path=output_path,
+            )
+        ]
+        command = self.metadata_command({"out_file1": output_dataset}, output_fnames=output_fnames)
+        for i in range(stray_files):
+            self._write_work_dir_file(f"stray.{i}.txt", f"stray {i}\n")
+        if write_output:
+            self._write_file(output_path, "written to output\n")
+        self._write_file(os.path.join(outputs_directory, "tool_stdout"), "")
+        self._write_file(os.path.join(outputs_directory, "tool_stderr"), "")
+        self._write_job_files()
+        self.exec_metadata_command(command)
+        return output_dataset
+
+    def _exported_dataset_state(self, output_dataset):
+        datasets_attrs_path = os.path.join(
+            self.job_working_directory, "metadata", "outputs_populated", "datasets_attrs.txt"
+        )
+        with open(datasets_attrs_path) as f:
+            datasets_attrs = json.load(f)
+        (dataset_attrs,) = (attrs for attrs in datasets_attrs if attrs["id"] == output_dataset.id)
+        return dataset_attrs["dataset"]["state"]
 
     def _assert_extended_metadata_security_failure(
         self, output_dataset, expected_message, metadata_set_successfully=False
@@ -784,7 +841,7 @@ class TestMetadata(TestCase, tools_support.UsesTools):
         with open(os.path.join(self.job_working_directory, "tool_stderr"), "w") as f:
             f.write(stderr)
 
-    def metadata_command(self, output_datasets, output_collections=None, false_paths=None):
+    def metadata_command(self, output_datasets, output_collections=None, false_paths=None, output_fnames=None):
         output_collections = output_collections or {}
         false_paths = false_paths or {}
         metadata_compute_strategy = get_metadata_compute_strategy(self.app.config, self.job.id)
@@ -798,7 +855,7 @@ class TestMetadata(TestCase, tools_support.UsesTools):
         safe_makedirs(os.path.join(self.job_working_directory, "metadata"))
         self.app.datatypes_registry.to_xml_file(path=datatypes_config)
         job_metadata = os.path.join(self.tool_working_directory, self.tool.provided_metadata_file)
-        output_fnames = [
+        output_fnames = output_fnames or [
             DatasetPath(o.dataset.id, o.dataset.get_file_name(sync_cache=False), false_paths.get(name))
             for name, o in output_datasets.items()
         ]
