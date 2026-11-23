@@ -1143,11 +1143,12 @@ def strip_url_userinfo(text: str, known_urls: Iterable[str] = ()) -> str:
     The userinfo of each URL in ``known_urls``, and of every URL nested in it (e.g. in its query), is removed
     wherever it follows a ``//``, which also covers userinfo the scan of ``text`` cannot delimit, such as
     unencoded whitespace, in every form of that URL (e.g. trimmed); a known authority whose userinfo is ambiguous
-    (see ``_authority_userinfo_end()``) is replaced by ``URL_AUTHORITY_REDACTED`` there. Each run of text covered by ``urlsplit()`` errors of known URLs, which quote their netloc
-    without the ``://``, is replaced by ``URL_PARSER_ERROR``, which quotes nothing of the URLs. Both are found
-    in the original ``text``, so neither can hide the other. The ``password@`` part of each known URL's
-    ``password@host`` sequence is removed wherever it is, as urllib quotes it without the ``://`` in invalid port
-    errors. Returns ``URL_PARSER_ERRORS_WITHHELD`` if too many such errors may be in ``text``.
+    (see ``_authority_userinfo_end()``) is replaced by ``URL_AUTHORITY_REDACTED`` there. Each run of text covered
+    by ``urlsplit()`` errors of known URLs, which quote their netloc without the ``://``, is replaced by
+    ``URL_PARSER_ERROR``, which quotes nothing of the URLs. Both are found in the original ``text``, so neither can
+    hide the other. The ``password@`` part of each known URL's ``password@host`` sequence is removed wherever it
+    is, as urllib quotes it without the ``://`` in invalid port errors. Returns ``URL_PARSER_ERRORS_WITHHELD`` if
+    too many such errors may be in ``text``.
 
     >>> strip_url_userinfo('Failed to fetch https://user:secret@example.org/a.bed')
     'Failed to fetch https://example.org/a.bed'
