@@ -37,9 +37,7 @@ describe("InteractiveToolsPanel component", () => {
         );
     });
 
-    // The panel body is a slot of ActivityPanel, which the plain stub does not
-    // render. Tests that look at the tool list ask for a stub that does.
-    const mountComponent = async (toolsList: Partial<Tool>[] = mockTools, renderPanelBody = false) => {
+    const mountComponent = async (toolsList: Partial<Tool>[] = mockTools) => {
         const pinia = createTestingPinia({
             createSpy: () => jest.fn(),
             stubActions: false,
@@ -61,7 +59,7 @@ describe("InteractiveToolsPanel component", () => {
             localVue,
             pinia,
             stubs: {
-                ActivityPanel: renderPanelBody ? { template: '<div><slot name="header" /><slot /></div>' } : true,
+                ActivityPanel: true,
                 DelayedInput: true,
                 FontAwesomeIcon: true,
                 UtcDate: true,
@@ -142,7 +140,7 @@ describe("InteractiveToolsPanel component", () => {
             icon: "example.png",
         };
 
-        const wrapper = await mountComponent([shedTool], true);
+        const wrapper = await mountComponent([shedTool]);
 
         expect(wrapper.find(".tool-icon img").attributes("src")).toBe(
             "/api/tools/toolshed.example.org/repos/an%20owner/a_repo/interactive_tool_example/1.0/icon",
