@@ -197,8 +197,6 @@ class ChangeEventPublisher:
 
 
 def _record_job(session: Session, job: Job) -> None:
-    if job.state is None:
-        return
     user_id = job.user_id
     if user_id is None and job.history is not None:
         # An anonymous history passes to the user who logs in; route like history_update does.

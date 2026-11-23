@@ -108,7 +108,6 @@ from sqlalchemy import (
     type_coerce,
     Unicode,
     UniqueConstraint,
-    Update,
     update,
     VARCHAR,
 )
@@ -10610,7 +10609,7 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
             .filter(~Job.state.in_(Job.finished_states))
             .with_for_update()
         )
-        self._delete_jobs(sa_session, update(Job).where(Job.id.in_(job_subq)))
+        self._delete_jobs(sa_session, Job.id.in_(job_subq))
 
         job_collection_subq = (
             select(Job.id)
@@ -10625,7 +10624,7 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
             .subquery()
         )
 
-        self._delete_jobs(sa_session, update(Job).where(Job.id.in_(job_collection_subq.element)))
+        self._delete_jobs(sa_session, Job.id.in_(job_collection_subq.element))
 
         for invocation in self.subworkflow_invocations:
             subworkflow_invocation = invocation.subworkflow_invocation
@@ -10636,8 +10635,8 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
         sa_session.commit()
 
     @staticmethod
-    def _delete_jobs(sa_session: Session, statement: Update) -> None:
-        statement = statement.values({"state": Job.states.DELETING})
+    def _delete_jobs(sa_session: Session, condition: ColumnElement[bool]) -> None:
+        statement = update(Job).where(condition).values({"state": Job.states.DELETING})
         if pending_changes(sa_session) is None:
             sa_session.execute(statement)
             return
@@ -10647,7 +10646,7 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
             rows = sa_session.execute(statement.returning(*columns)).all()
         else:
             # SQLite before 3.35 has no RETURNING.
-            rows = sa_session.execute(select(*columns).where(statement.whereclause)).all()
+            rows = sa_session.execute(select(*columns).where(condition)).all()
             sa_session.execute(statement)
         for job_id, user_id, galaxy_session_id, history_id in rows:
             record_job_change(

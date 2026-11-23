@@ -1,5 +1,6 @@
 import asyncio
 import json
+from typing import cast
 
 from galaxy.managers.sse import SSEConnectionManager
 from galaxy.queue_worker import (
@@ -8,6 +9,7 @@ from galaxy.queue_worker import (
     job_update,
 )
 from galaxy.security.idencoding import IdEncodingHelper
+from galaxy.structured_app import MinimalManagerApp
 
 
 class App:
@@ -47,7 +49,9 @@ async def test_owner_subscribed_to_own_history_gets_one_event_and_viewers_get_it
     app.sse_manager.subscribe_user_viewer(1, encode(10))
     app.sse_manager.subscribe_user_viewer(2, encode(10))
 
-    job_update(app, updates=[_job(5, user_id=1, history_id=10), _job(6, user_id=1, history_id=11)])
+    job_update(
+        cast(MinimalManagerApp, app), updates=[_job(5, user_id=1, history_id=10), _job(6, user_id=1, history_id=11)]
+    )
 
     assert await _received(owner) == [
         {"event": "job_update", "jobs": [{"id": encode(5), "state": "ok"}, {"id": encode(6), "state": "ok"}]}
@@ -60,7 +64,7 @@ async def test_anonymous_job_is_pushed_to_its_session():
     anonymous = _connect(app, session_id=7)
     other = _connect(app, session_id=8)
 
-    job_update(app, updates=[_job(5, state="running", session_id=7)])
+    job_update(cast(MinimalManagerApp, app), updates=[_job(5, state="running", session_id=7)])
 
     assert await _received(anonymous) == [
         {"event": "job_update", "jobs": [{"id": app.security.encode_id(5), "state": "running"}]}
@@ -75,7 +79,9 @@ async def test_resync_reaches_users_sessions_and_history_viewers():
     viewer = _connect(app, user_id=2)
     app.sse_manager.subscribe_user_viewer(2, app.security.encode_id(10))
 
-    job_update(app, updates=[], resync_user_ids=[1], resync_session_ids=[7], resync_history_ids=[10])
+    job_update(
+        cast(MinimalManagerApp, app), updates=[], resync_user_ids=[1], resync_session_ids=[7], resync_history_ids=[10]
+    )
 
     for queue in (user, anonymous, viewer):
         assert await _received(queue) == [{"event": "job_update", "resync": True}]
@@ -88,7 +94,9 @@ async def test_invocation_update_reaches_owner_and_viewers():
     viewer = _connect(app, user_id=2)
     app.sse_manager.subscribe_user_viewer(2, encode(10))
 
-    invocation_update(app, updates=[{"user_id": 1, "history_id": 10, "invocation_id": 3, "state": "ready"}])
+    invocation_update(
+        cast(MinimalManagerApp, app), updates=[{"user_id": 1, "history_id": 10, "invocation_id": 3, "state": "ready"}]
+    )
 
     expected = [{"event": "invocation_update", "invocations": [{"id": encode(3), "state": "ready"}]}]
     assert await _received(owner) == expected
@@ -103,7 +111,7 @@ async def test_history_update_skips_owner_subscribed_as_viewer():
     app.sse_manager.subscribe_user_viewer(1, encode(10))
     app.sse_manager.subscribe_user_viewer(2, encode(10))
 
-    history_update(app, user_updates={"1": [10]})
+    history_update(cast(MinimalManagerApp, app), user_updates={"1": [10]})
 
     expected = [{"event": "history_update", "history_ids": [encode(10)]}]
     assert await _received(owner) == expected
