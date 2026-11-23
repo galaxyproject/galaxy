@@ -47,7 +47,7 @@ jobs:
         # Release branches get no nightly run, so they keep the oldest and newest.
         python-version: >-
           ${{ fromJSON(
-          (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && '["3.11", "3.11", "3.12", "3.13", "3.14"]'
+          (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && '["3.11", "3.12", "3.13", "3.14"]'
           || startsWith(github.base_ref || github.ref_name, 'release_') && '["3.11", "3.14"]'
           || '["3.14"]'
           ) }}
