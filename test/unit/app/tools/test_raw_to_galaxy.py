@@ -21,7 +21,7 @@ class TestRawToGalaxy(TestCase, UsesApp):
     def test_file_default_name_leaves_out_userinfo(self):
         for location, name in [
             ("https://proxy.example.org/fetch/https://user:secret@inner.example.org", "inner.example.org"),
-            ("https://proxy.example.org/fetch/https://user:12?34@inner.example.org", "[redacted]"),
+            ("https://proxy.example.org/fetch/https://user:12?34@inner.example.org", "redacted.invalid"),
             ("https://user:12?34@example.org/1.bed", "1.bed"),
         ]:
             hda = raw_to_galaxy(self.app, self.history, {"class": "File", "location": location})

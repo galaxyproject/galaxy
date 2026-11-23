@@ -282,8 +282,8 @@ def test_strip_url_userinfo(text, expected):
     [
         ("https://user:sec ret@example.org/a.bed", "https://example.org/a.bed"),
         ("https://user:se[cret@example.org/a.bed", "https://example.org/a.bed"),
-        ("https://user:se?cret@example.org/a.bed", "https://[redacted]/a.bed"),
-        ("https://user:se#cret@example.org", "https://[redacted]"),
+        ("https://user:se?cret@example.org/a.bed", "https://redacted.invalid/a.bed"),
+        ("https://user:se#cret@example.org", "https://redacted.invalid"),
         ("https://user:p@ss word@example.org", "https://example.org"),
         ("https://user:secret@[::1]:8080/a.bed", "https://[::1]:8080/a.bed"),
         ("https://example.org/a@b.bed?mail=me@example.org", "https://example.org/a@b.bed?mail=me@example.org"),
@@ -322,9 +322,12 @@ def test_url_helpers_keep_url_without_userinfo(url):
 @pytest.mark.parametrize(
     "text,expected",
     [
-        ("Failed to fetch https://u:12?34@example.org/a.bed", "Failed to fetch https://[redacted]/a.bed"),
-        ("Failed to fetch https://to#ken@example.org (404)", "Failed to fetch https://[redacted] (404)"),
-        ("Failed: https://example.org/a?next=//u:12?34@inner b", "Failed: https://example.org/a?next=//[redacted] b"),
+        ("Failed to fetch https://u:12?34@example.org/a.bed", "Failed to fetch https://redacted.invalid/a.bed"),
+        ("Failed to fetch https://to#ken@example.org (404)", "Failed to fetch https://redacted.invalid (404)"),
+        (
+            "Failed: https://example.org/a?next=//u:12?34@inner b",
+            "Failed: https://example.org/a?next=//redacted.invalid b",
+        ),
         ("Failed to fetch https://example.org?x=1 (404)", "Failed to fetch https://example.org?x=1 (404)"),
         ("Failed to fetch https://user:secret@example.org?x=1", "Failed to fetch https://example.org?x=1"),
     ],
@@ -342,20 +345,20 @@ def test_url_helpers_remove_userinfo_before_query():
 @pytest.mark.parametrize(
     "url,expected",
     [
-        ("https://u:12?34@example.org", "https://[redacted]"),
-        ("https://u:12#34@example.org", "https://[redacted]"),
-        ("https://u:?34@example.org", "https://[redacted]"),
-        ("https://u:12?34@example.org/a.bed", "https://[redacted]/a.bed"),
-        ("https://to?ken@example.org", "https://[redacted]"),
-        ("https://to#ken@example.org/a.bed", "https://[redacted]/a.bed"),
-        ("https://user.name:12?a=b@example.org", "https://[redacted]"),
-        ("https://alice@corp.org:pa?ss@example.org", "https://[redacted]"),
-        ("https://example.org/a?next=//u:12?34@inner.example.org", "https://example.org/a?next=//[redacted]"),
+        ("https://u:12?34@example.org", "https://redacted.invalid"),
+        ("https://u:12#34@example.org", "https://redacted.invalid"),
+        ("https://u:?34@example.org", "https://redacted.invalid"),
+        ("https://u:12?34@example.org/a.bed", "https://redacted.invalid/a.bed"),
+        ("https://to?ken@example.org", "https://redacted.invalid"),
+        ("https://to#ken@example.org/a.bed", "https://redacted.invalid/a.bed"),
+        ("https://user.name:12?a=b@example.org", "https://redacted.invalid"),
+        ("https://alice@corp.org:pa?ss@example.org", "https://redacted.invalid"),
+        ("https://example.org/a?next=//u:12?34@inner.example.org", "https://example.org/a?next=//redacted.invalid"),
         # The same shape without userinfo is redacted too, as no reading is safe for both.
-        ("https://example.org?email=alice@other.org", "https://[redacted]"),
-        ("https://example.org:?email=alice@other.org", "https://[redacted]"),
-        ("https://example.org#alice@other.org", "https://[redacted]"),
-        ("https://user:secret@example.org?email=alice@other.org", "https://[redacted]"),
+        ("https://example.org?email=alice@other.org", "https://redacted.invalid"),
+        ("https://example.org:?email=alice@other.org", "https://redacted.invalid"),
+        ("https://example.org#alice@other.org", "https://redacted.invalid"),
+        ("https://user:secret@example.org?email=alice@other.org", "https://redacted.invalid"),
     ],
 )
 def test_url_helpers_redact_authority_with_ambiguous_userinfo(url, expected):
@@ -396,7 +399,7 @@ def test_strip_url_userinfo_known_url_without_urlsplit_removed_characters():
 @pytest.mark.parametrize("url", ["https://user:se?cret@example.org/a.bed", "https://user:se#cret@example.org/a.bed"])
 def test_strip_url_userinfo_known_url_with_query_or_fragment_character(url):
     stripped = util.strip_url_userinfo(f"Invalid URL '{url}': No host supplied", [url])
-    assert stripped == "Invalid URL 'https://[redacted]/a.bed': No host supplied"
+    assert stripped == "Invalid URL 'https://redacted.invalid/a.bed': No host supplied"
 
 
 def test_strip_url_userinfo_known_userinfo_without_scheme():
@@ -648,8 +651,8 @@ def test_strip_url_userinfo_urls_nested_in_known_url(placements, spaced, form):
         ("https://example.org/a?next=ftp://u:sec ret@h/b", "https://example.org/a?next=ftp://h/b"),
         ("https://example.org/a#ftp://u:sec ret@h", "https://example.org/a#ftp://h"),
         ("https://example.org/ftp://u:sec ret@h/b", "https://example.org/ftp://h/b"),
-        ("https://example.org/a?next=ftp://u:se?c ret@h/b", "https://example.org/a?next=ftp://[redacted]/b"),
-        ("https://example.org/a?next=ftp://u:se#c ret@h/b", "https://example.org/a?next=ftp://[redacted]/b"),
+        ("https://example.org/a?next=ftp://u:se?c ret@h/b", "https://example.org/a?next=ftp://redacted.invalid/b"),
+        ("https://example.org/a?next=ftp://u:se#c ret@h/b", "https://example.org/a?next=ftp://redacted.invalid/b"),
         ("https://o:outer pw@example.org/a?next=ftp://u:sec ret@h/b", "https://example.org/a?next=ftp://h/b"),
         ("https://example.org?next=ftp://u:sec ret@h/b", "https://example.org?next=ftp://h/b"),
         (
@@ -803,8 +806,8 @@ def test_strip_url_userinfo_scales_linearly_with_colons_in_known_userinfo():
         ("https://user:sec ret@example.org:8080", "example.org:8080"),
         ("ftp://user:secret@ftp.example.org/pub/a.bed", "a.bed"),
         ("https://example.org/a?next=ftp://user:secret@ftp.example.org", "ftp.example.org"),
-        ("https://example.org/a?next=ftp://user:se?cret@ftp.example.org", "[redacted]"),
-        ("https://example.org/a#ftp://user:se#cret@ftp.example.org", "[redacted]"),
+        ("https://example.org/a?next=ftp://user:se?cret@ftp.example.org", "redacted.invalid"),
+        ("https://example.org/a#ftp://user:se#cret@ftp.example.org", "redacted.invalid"),
         ("https://example.org/a?next=ftp://user:sec ret@ftp.example.org", "ftp.example.org"),
         ("https://example.org/dir/user@file.txt", "user@file.txt"),
         ("https://example.org/a?next=//user:secret@ftp.example.org", "ftp.example.org"),
@@ -854,3 +857,5 @@ def test_url_helpers_never_echo_random_userinfo():
         for helper, output in outputs.items():
             for secret in (user, password):
                 assert secret not in output, f"{helper} echoes {secret!r} of {url!r}: {output!r}"
+        # Callers parse the URL without userinfo, e.g. to take a name from its path.
+        assert urlsplit(outputs["url_without_userinfo"]).hostname is not None

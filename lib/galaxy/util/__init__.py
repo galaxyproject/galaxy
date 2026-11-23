@@ -870,8 +870,9 @@ _REDACTED_TRIE_END = "redacted"
 _MAX_URL_PARSER_ERRORS = 100
 URL_PARSER_ERROR = "Invalid URL (could not be parsed)"
 URL_PARSER_ERRORS_WITHHELD = "Error message withheld because it contained too many URLs that could not be parsed."
-# Replaces an authority whose userinfo is ambiguous, see _authority_userinfo_end().
-URL_AUTHORITY_REDACTED = "[redacted]"
+# Replaces an authority whose userinfo is ambiguous, see _authority_userinfo_end(). A host that parses
+# (unlike a bracketed one, read as IPv6) and never resolves (RFC 6761 .invalid), like the client's.
+URL_AUTHORITY_REDACTED = "redacted.invalid"
 # How strip_url_userinfo() outputs each character of a text: kept, removed, or in a run replaced by
 # URL_PARSER_ERROR or URL_AUTHORITY_REDACTED.
 _KEEP = 0
@@ -934,7 +935,7 @@ def url_without_userinfo(url: str) -> str:
     >>> url_without_userinfo('https://example.org/a?next=ftp://user:secret@inner/b')
     'https://example.org/a?next=ftp://inner/b'
     >>> url_without_userinfo('https://u:12?34@example.org/a.bed')
-    'https://[redacted]/a.bed'
+    'https://redacted.invalid/a.bed'
     """
     parts = []
     pos = 0
@@ -1208,7 +1209,7 @@ def name_from_url(url: str) -> str:
     >>> name_from_url('https://example.org/a?next=ftp://user:secret@ftp.example.org')
     'ftp.example.org'
     >>> name_from_url('https://u:12?34@example.org')
-    '[redacted]'
+    'redacted.invalid'
     """
     return url_without_userinfo(url).split("/")[-1]
 

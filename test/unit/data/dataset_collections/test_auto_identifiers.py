@@ -52,7 +52,12 @@ def test_guess_filename_from_url_leaves_out_nested_userinfo():
 
 def test_guess_filename_from_url_leaves_out_userinfo_of_nested_pathless_url():
     assert guess_filename_from_url("https://example.org/ftp://user:secret@inner?x=1") == "inner"
-    assert guess_filename_from_url("https://example.org/ftp://user:12?34@inner") == "[redacted]"
+    assert guess_filename_from_url("https://example.org/ftp://user:12?34@inner") == "redacted.invalid"
+
+
+def test_guess_filename_from_url_with_ambiguous_userinfo():
+    assert guess_filename_from_url("https://u:12?34@example.org/a.bed") == "a.bed"
+    assert guess_filename_from_url("https://u:12?34@example.org") == ""
 
 
 def test_fill_in_identifiers_leaves_out_nested_userinfo():
