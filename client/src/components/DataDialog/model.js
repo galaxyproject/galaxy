@@ -22,6 +22,11 @@ export class Model {
         }
     }
 
+    /** Drops all added records **/
+    clear() {
+        this.values = {};
+    }
+
     /** Returns the number of added records **/
     count() {
         return Object.keys(this.values).length;

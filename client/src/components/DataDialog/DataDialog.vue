@@ -162,6 +162,10 @@ function load(url?: string) {
     services
         .get(currentUrl)
         .then((incoming) => {
+            // A newer request (history switch or folder click) owns the listing now
+            if (currentUrl !== urlTracker.current.value) {
+                return;
+            }
             if (props.library && urlTracker.isAtRoot.value) {
                 incoming.unshift({
                     label: "Data Libraries",
@@ -173,6 +177,9 @@ function load(url?: string) {
             optionsShow.value = true;
         })
         .catch((error) => {
+            if (currentUrl !== urlTracker.current.value) {
+                return;
+            }
             errorMessage.value = errorMessageAsString(error);
         });
 }
@@ -184,9 +191,11 @@ onMounted(() => {
 });
 
 watch(
-    () => history,
+    () => props.history,
     () => {
         urlTracker.reset(getHistoryUrl());
+        model.clear();
+        hasValue.value = false;
         load();
     },
 );

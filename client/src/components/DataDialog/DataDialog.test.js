@@ -1,5 +1,6 @@
 import { shallowMount } from "@vue/test-utils";
-import { describe, expect, it, vi } from "vitest";
+import flushPromises from "flush-promises";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { Model } from "./model";
 import { Services } from "./services";
@@ -54,6 +55,18 @@ describe("model.js", () => {
     });
 });
 
+describe("model.js clear", () => {
+    it("drops every selected record", () => {
+        const model = new Model({ multiple: true });
+        model.add({ id: 1 });
+        model.add({ id: 2 });
+        model.clear();
+        expect(model.count()).toBe(0);
+        expect(model.exists(1)).toBe(false);
+        expect(model.finalize()).toEqual([]);
+    });
+});
+
 describe("services/Services:isDataset", () => {
     it("Test dataset identifier", () => {
         const services = new Services(mockOptions);
@@ -86,6 +99,10 @@ describe("services.js/Services", () => {
 
 describe("DataDialog.vue", () => {
     let wrapper;
+
+    afterEach(() => {
+        vi.restoreAllMocks();
+    });
     /*
     const rawData = [
         {
@@ -130,5 +147,99 @@ describe("DataDialog.vue", () => {
         // expect(wrapper.findAll(".fa-file-o").length).to.equals(2);
 
         // SelectionDialog DOM properties are tested now in SelectionDialog.test.js however.
+    });
+
+    it("reloads the listing from the new history when the history prop changes", async () => {
+        const get = vi.spyOn(Services.prototype, "get").mockResolvedValue([]);
+        const requestedUrls = () => get.mock.calls.map(([url]) => url);
+        wrapper = shallowMount(DataDialog, {
+            propsData: { ...mockOptions, history: "first" },
+            stubs: { Icon: true },
+        });
+        await flushPromises();
+        expect(requestedUrls()).toHaveLength(1);
+        expect(requestedUrls()[0]).toContain("api/histories/first/contents");
+
+        await wrapper.setProps({ history: "second" });
+        await flushPromises();
+        expect(requestedUrls()).toHaveLength(2);
+        expect(requestedUrls()[1]).toContain("api/histories/second/contents");
+        get.mockRestore();
+    });
+
+    it("clears the selection when the history prop changes", async () => {
+        const leaf = { id: "dataset_1", label: "1: dataset", isLeaf: true };
+        vi.spyOn(Services.prototype, "get").mockResolvedValue([leaf]);
+        wrapper = shallowMount(DataDialog, {
+            propsData: { ...mockOptions, history: "first", library: false, multiple: true },
+            stubs: { Icon: true },
+        });
+        await flushPromises();
+        const dialog = () => wrapper.findComponent(SelectionDialog);
+        const rowVariant = () => dialog().props("items")[0]._rowVariant;
+        expect(dialog().props("disableOk")).toBe(true);
+
+        dialog().vm.$emit("onClick", leaf);
+        await flushPromises();
+        expect(dialog().props("disableOk")).toBe(false);
+        expect(rowVariant()).toBe("success");
+
+        await wrapper.setProps({ history: "second" });
+        await flushPromises();
+        expect(dialog().props("disableOk")).toBe(true);
+        // The model, not just hasValue, must be empty: formatRows reads it for the reloaded rows
+        expect(rowVariant()).toBe("default");
+    });
+
+    it("ignores a slow response for the previous history", async () => {
+        const deferred = () => {
+            const handlers = {};
+            const promise = new Promise((resolve, reject) => Object.assign(handlers, { resolve, reject }));
+            return { promise, ...handlers };
+        };
+        const pending = [deferred(), deferred()];
+        let call = 0;
+        const get = vi.spyOn(Services.prototype, "get").mockImplementation(() => pending[call++].promise);
+        wrapper = shallowMount(DataDialog, {
+            propsData: { ...mockOptions, history: "first", library: false },
+            stubs: { Icon: true },
+        });
+        await wrapper.setProps({ history: "second" });
+        expect(get).toHaveBeenCalledTimes(2);
+
+        pending[1].resolve([{ id: "second_1", label: "second dataset", isLeaf: true }]);
+        await flushPromises();
+        pending[0].resolve([{ id: "first_1", label: "first dataset", isLeaf: true }]);
+        await flushPromises();
+
+        const labels = wrapper
+            .findComponent(SelectionDialog)
+            .props("items")
+            .map((item) => item.label);
+        expect(labels).toEqual(["second dataset"]);
+    });
+
+    it("ignores a failed response for the previous history", async () => {
+        const leaf = { id: "second_1", label: "second dataset", isLeaf: true };
+        let rejectFirst;
+        let call = 0;
+        vi.spyOn(Services.prototype, "get").mockImplementation(() => {
+            if (call++ === 0) {
+                return new Promise((_, reject) => {
+                    rejectFirst = reject;
+                });
+            }
+            return Promise.resolve([leaf]);
+        });
+        wrapper = shallowMount(DataDialog, {
+            propsData: { ...mockOptions, history: "first", library: false },
+            stubs: { Icon: true },
+        });
+        await wrapper.setProps({ history: "second" });
+        await flushPromises();
+        rejectFirst(new Error("stale failure"));
+        await flushPromises();
+
+        expect(wrapper.findComponent(SelectionDialog).props("errorMessage")).toBe("");
     });
 });
