@@ -1768,6 +1768,13 @@ class TestToolsApi(ApiTestCase, TestsTools):
         content = self.dataset_populator.get_history_dataset_content(history_id, dataset=response["outputs"][0])
         assert content.strip() == "None"
 
+    @skip_without_tool("gx_color")
+    def test_color_param_required_accepts_empty(self, history_id):
+        response = self._run("gx_color", history_id, {"parameter": ""}, assert_ok=True)
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        content = self.dataset_populator.get_history_dataset_content(history_id, dataset=response["outputs"][0])
+        assert content.strip() == ""
+
     @skip_without_tool("column_param")
     def test_column_legal_values(self, history_id):
         new_dataset1 = self.dataset_populator.new_dataset(history_id, content="#col1\tcol2")

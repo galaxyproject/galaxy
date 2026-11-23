@@ -2931,17 +2931,24 @@ test_data:
 
     @skip_without_tool("color_param")
     def test_run_workflow_non_color_connected_to_color_param(self):
+        self._assert_non_color_connection_fails_job("color_param", "color_default")
+
+    @skip_without_tool("color_param_string_method")
+    def test_run_workflow_non_color_connected_to_color_param_string_method(self):
+        self._assert_non_color_connection_fails_job("color_param_string_method", "color")
+
+    def _assert_non_color_connection_fails_job(self, tool_id: str, param_name: str):
         with self.dataset_populator.test_history() as history_id:
             summary = self._run_workflow(
-                """class: GalaxyWorkflow
+                f"""class: GalaxyWorkflow
 inputs:
   color:
     type: text
 steps:
   color_param:
-    tool_id: color_param
+    tool_id: {tool_id}
     in:
-      color_default: color
+      {param_name}: color
 """,
                 test_data="""
 color:

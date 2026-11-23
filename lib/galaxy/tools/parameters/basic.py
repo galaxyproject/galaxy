@@ -878,6 +878,8 @@ class ColorToolParameter(ToolParameter):
     ...      p.to_param_dict_string("#fff'; id; '")
     >>> p = ColorToolParameter(None, XML('<param name="_name" type="color" value="#ffffff" optional="true"/>'))
     >>> assert p.from_json(None, trans) is None
+    >>> p = ColorToolParameter(None, XML('<param name="_name" type="color" value=""/>'))
+    >>> assert p.from_json(p.get_initial_value(trans, {}), trans) == ""
     """
 
     def __init__(self, tool: Optional["Tool"], input_source):
@@ -891,6 +893,8 @@ class ColorToolParameter(ToolParameter):
             return self.value.lower()
 
     def _ensure_color(self, value):
+        if value in ("", None):
+            return
         # Tools declare color names ("grey") and bare hex ("ff0000") as defaults.
         if isinstance(value, str) and value.isascii() and value.isalnum():
             return
@@ -902,17 +906,13 @@ class ColorToolParameter(ToolParameter):
             ) from None
 
     def from_json(self, value, trans, other_values=None):
-        if value in ("", None) and self.optional:
-            return value
         if contains_workflow_parameter(value) and trans.workflow_building_mode is workflow_building_modes.ENABLED:
             return value
         self._ensure_color(value)
         return value
 
     def to_param_dict_string(self, value, other_values=None):
-        # Values connected in a workflow reach the job without passing through from_json.
-        if value not in ("", None):
-            self._ensure_color(value)
+        self._ensure_color(value)
         if self.rgb:
             try:
                 return str(tuple(int(value.lstrip("#")[i : i + 2], 16) for i in (0, 2, 4)))
