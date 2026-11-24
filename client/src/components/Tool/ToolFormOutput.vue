@@ -50,7 +50,7 @@ const details = computed(() => {
     return parts.join(" · ");
 });
 
-const renameLabel = computed(() => localize(`New name for ${props.output.name}`));
+const renameLabel = computed(() => `${localize("New name for")} ${props.output.name}`);
 
 const rename = computed({
     get: () => props.actions?.rename ?? "",
