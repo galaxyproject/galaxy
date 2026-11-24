@@ -557,8 +557,14 @@ class ExecutionTracker:
             return
         collection_info = self.collection_info
         assert collection_info
-        # Inputs by name for #{input} in new names, with mapped-over inputs as their collections.
-        step_inputs = dict(self.example_params)
+        # Inputs by prefixed name (``cond|input2``) for #{input} in new names, with mapped-over inputs as
+        # their collections.
+        step_inputs: dict[str, Any] = {}
+
+        def add_input(prefixed_name: str, value: Any, **kwargs: Any) -> None:
+            step_inputs[prefixed_name] = value
+
+        visit_input_values(self.tool.inputs, self.example_params, add_input)
         step_inputs.update(collection_info.collections)
         ActionBox.apply_to_mapped_over(
             self.trans, self.trans.sa_session, post_job_actions, step_inputs, self.implicit_collections

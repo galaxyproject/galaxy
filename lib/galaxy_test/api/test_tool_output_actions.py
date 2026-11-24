@@ -72,6 +72,24 @@ class TestToolOutputActionsApi(ApiTestCase):
         output_names = [element["object"]["name"] for element in self._collection(implicit["id"])["elements"]]
         assert output_names == [f"Concatenate datasets (with sleep) on dataset {hid}" for hid in input_hids]
 
+    @skip_without_tool("cat_data_and_sleep")
+    def test_map_over_renames_with_an_input_in_a_repeat(self):
+        hdca = self.history.with_list([("a", "1\t2\n"), ("b", "3\t4\n")])
+        header = self.dataset_populator.new_dataset(self.history.id, content="h\n", name="header.txt", wait=True)
+        inputs = {
+            "input1": {"__class__": "Batch", "values": [hdca.src_dict]},
+            "queries": [{"input2": {"src": "hda", "id": header["id"]}}],
+        }
+
+        self.dataset_populator.wait_on_tool_request(
+            self._tool_request_raw("cat_data_and_sleep", inputs, {"out_file1": {"rename": "#{input2} merged"}}).json()[
+                "tool_request_id"
+            ]
+        )
+        self.dataset_populator.wait_for_history(self.history.id, assert_ok=True)
+
+        assert self._only_implicit_collection()["name"] == "header.txt merged"
+
     @skip_without_tool("output_format")
     def test_cached_job_without_changes_keeps_the_defaults(self):
         inputs = self._output_format_inputs()
