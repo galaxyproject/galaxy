@@ -2489,14 +2489,13 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
             post_job_actions = [pja for pja in post_job_actions if pja.action_type != "RenameDatasetAction"]
         if not post_job_actions:
             return None
-        job_post_job_actions = post_job_actions
 
         def apply_output_actions(job: Job) -> None:
             # Attached to every job, also for the actions run now, so the job records what was asked.
             ActionBox.apply_to_job(
                 trans.app,
                 trans.sa_session,
-                job_post_job_actions,
+                post_job_actions,
                 job,
                 execute_all_now=isinstance(self, DatabaseOperationTool),
                 record_executed=True,
@@ -2604,7 +2603,7 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
                 trans, post_job_actions, mapping_over=collection_info is not None
             ),
         )
-        if post_job_actions:
+        if post_job_actions and execution_tracker.implicit_collections:
             execution_tracker.apply_mapped_over_post_job_actions(post_job_actions)
             trans.sa_session.commit()
 
