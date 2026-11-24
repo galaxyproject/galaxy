@@ -266,12 +266,10 @@ def test_redirect_mode_streams_when_the_store_cannot_presign(app, manager):
     chunks = iter([CONTENT])
     with (
         mock.patch.object(app.object_store, "get_direct_download_url", return_value=None),
-        mock.patch.object(app.object_store, "get_data_stream", return_value=chunks) as stream,
+        mock.patch.object(app.object_store, "get_data_stream", return_value=chunks),
     ):
         staged = manager.staged_input(**_signed(app, job, "dataset", _dataset(hda).id, redirect=True))
     assert staged.stream is chunks
-    # A one-off staging read must not fill the web worker's cache.
-    assert stream.call_args.kwargs["write_cache"] is False
 
 
 def test_url_without_redirect_never_redirects(app, manager):

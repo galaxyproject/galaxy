@@ -131,7 +131,7 @@ class JobObjectStagingManager:
             )
         ):
             return StagedInput(size=size, redirect_url=redirect_url)
-        if (stream := self._object_store.get_data_stream(obj, write_cache=False, **path_kwargs)) is not None:
+        if (stream := self._object_store.get_data_stream(obj, **path_kwargs)) is not None:
             return StagedInput(size=size, stream=stream)
         return StagedInput(size=size, path=self._object_store.get_filename(obj, **path_kwargs))
 

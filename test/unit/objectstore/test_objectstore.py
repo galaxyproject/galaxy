@@ -1127,24 +1127,6 @@ def test_get_data_stream_bypasses_cache_when_object_is_bigger_than_cache():
         assert _leftover_temp_files(cache_path) == []
 
 
-@patch_object_stores_to_skip_initialize
-def test_get_data_stream_can_leave_the_cache_untouched():
-    # A one-off read, e.g. staging a job input to a remote runner, should not fill the cache.
-    with TestConfig(BOTO3_TEE_STREAMING_TEST_CONFIG_YAML) as (directory, object_store):
-        dataset = MockDataset(1)
-        with (
-            patch.object(object_store, "_stream_remote", return_value=_remote_stream([b"chunk1", b"chunk2"])),
-            patch.object(object_store, "_get_remote_size", return_value=12),
-        ):
-            stream = object_store.get_data_stream(dataset, write_cache=False)
-            assert stream is not None
-            assert b"".join(stream) == b"chunk1chunk2"
-
-        cache_path = _cache_path_for(object_store, dataset)
-        assert not os.path.exists(cache_path)
-        assert _leftover_temp_files(cache_path) == []
-
-
 METADATA_FILE_PATH = dict(extra_dir="_metadata_files", extra_dir_at_root=True, alt_name="metadata_5.dat")
 
 
@@ -1156,7 +1138,7 @@ def test_get_data_stream_reads_an_object_at_a_path_within_the_object():
             patch.object(object_store, "_stream_remote", return_value=_remote_stream([b"meta"])) as stream_remote,
             patch.object(object_store, "_get_remote_size", return_value=4),
         ):
-            stream = object_store.get_data_stream(dataset, write_cache=False, **METADATA_FILE_PATH)
+            stream = object_store.get_data_stream(dataset, **METADATA_FILE_PATH)
             assert stream is not None
             assert b"".join(stream) == b"meta"
         stream_remote.assert_called_once_with(object_store._construct_path(dataset, **METADATA_FILE_PATH))

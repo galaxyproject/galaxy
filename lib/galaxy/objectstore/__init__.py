@@ -434,9 +434,7 @@ class ObjectStore(metaclass=abc.ABCMeta):
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def get_data_stream(
-        self, obj, write_cache: bool = True, extra_dir=None, extra_dir_at_root=False, alt_name=None
-    ) -> DataStream | None:
+    def get_data_stream(self, obj, extra_dir=None, extra_dir_at_root=False, alt_name=None) -> DataStream | None:
         """Return an iterator over the bytes of `obj` read straight from the backing store.
 
         Lets a caller start sending bytes to a client without first pulling the whole object into the
@@ -445,9 +443,8 @@ class ObjectStore(metaclass=abc.ABCMeta):
         is local, already cached, or the backend has no streaming read), in which case the caller
         falls back to pulling the object into the cache and serving it from there.
 
-        The bytes are also written into the cache unless ``write_cache`` is False, for one-off reads
-        that should not displace cached objects. ``extra_dir``, ``extra_dir_at_root`` and ``alt_name``
-        address a file stored with `obj` as in ``get_filename``.
+        ``extra_dir``, ``extra_dir_at_root`` and ``alt_name`` address a file stored with `obj` as in
+        ``get_filename``.
         """
         raise NotImplementedError()
 
@@ -870,13 +867,10 @@ class BaseObjectStore(ObjectStore):
         # Stores that don't support direct download (or haven't opted in) get this no-op default.
         return None
 
-    def get_data_stream(
-        self, obj, write_cache: bool = True, extra_dir=None, extra_dir_at_root=False, alt_name=None
-    ) -> DataStream | None:
+    def get_data_stream(self, obj, extra_dir=None, extra_dir_at_root=False, alt_name=None) -> DataStream | None:
         return self._invoke(
             "get_data_stream",
             obj,
-            write_cache=write_cache,
             extra_dir=extra_dir,
             extra_dir_at_root=extra_dir_at_root,
             alt_name=alt_name,

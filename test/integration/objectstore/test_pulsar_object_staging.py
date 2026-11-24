@@ -2,8 +2,8 @@
 
 A job runs through embedded Pulsar with ``remote_transfer`` staging against a
 boto3 object store backed by a disposable SeaweedFS container. The object store
-cache is emptied after upload: if job preparation pulled the input back, or
-staging read it from a path on Galaxy's disk, the checks below would fail.
+cache is emptied after upload, so an input Galaxy streams, rather than serves
+from its cache, shows that job preparation did not pull it back first.
 """
 
 import base64
@@ -92,6 +92,8 @@ def zarr_store_url(tmp_path: Path) -> Iterator[str]:
 class TestPulsarObjectStagingStream(BaseObjectStoreIntegrationTestCase):
     object_store_config = BOTO3_DIRECT_DOWNLOAD_CONFIG
     staging_mode = "stream"
+    # Inputs streamed through Galaxy are cached on the way, as downloads are; redirected ones never pass through.
+    caches_staged_inputs = True
     container_name: str
     object_store_cache_path: str
     dataset_populator: DatasetPopulator
@@ -159,9 +161,8 @@ class TestPulsarObjectStagingStream(BaseObjectStoreIntegrationTestCase):
 
         output = self.dataset_populator.get_history_dataset_content(history_id, dataset=run["outputs"][0])
         assert output == INPUT_CONTENT
-        # Staged by identity: the handler never pulled the input back into its cache.
-        assert not os.path.exists(self._cache_path(hda))
         self._assert_transferred_as_the_mode_says()
+        assert os.path.exists(self._cache_path(hda)) is self.caches_staged_inputs
 
     def test_bam_input_and_its_index_are_staged(self):
         # metadata_bam touches $input_bam.metadata.bam_index, so the index is staged as a metadata file.
@@ -176,10 +177,12 @@ class TestPulsarObjectStagingStream(BaseObjectStoreIntegrationTestCase):
 
         output = self.dataset_populator.get_history_dataset_content(history_id, dataset=run["outputs"][0])
         assert output.strip() == "chrM"
-        assert not os.path.exists(self._cache_path(hda))
-        # The index is stored under its own uuid.
-        assert not os.path.exists(self._hda(hda).metadata.bam_index.get_file_name(sync_cache=False))
         self._assert_transferred_as_the_mode_says()
+        assert os.path.exists(self._cache_path(hda)) is self.caches_staged_inputs
+        # The index is stored under its own uuid. Metadata holds its dataset only weakly, so keep a reference.
+        input_bam = self._hda(hda)
+        index_path = input_bam.metadata.bam_index.get_file_name(sync_cache=False)
+        assert os.path.exists(index_path) is self.caches_staged_inputs
 
     def test_deferred_input_is_materialized_for_the_job_and_staged(self):
         # The deferred dataset has no bytes in the object store; Galaxy materializes it into the
@@ -218,17 +221,18 @@ class TestPulsarObjectStagingStream(BaseObjectStoreIntegrationTestCase):
 
         output = self.dataset_populator.get_history_dataset_content(history_id, dataset=run["outputs"][0])
         assert output == SEQUENCES_CONTENT
-        assert self._cached_files_of(hda) == []
         self._assert_transferred_as_the_mode_says()
+        assert bool(self._cached_files_of(hda)) is self.caches_staged_inputs
 
     def _assert_transferred_as_the_mode_says(self):
-        """Inputs were transferred: by redirect in redirect mode, by Galaxy in stream mode."""
+        """Inputs were transferred by redirect in redirect mode, and streamed from the store in stream mode."""
         transfers = [staged for staged in self.staged_inputs if staged.redirect_url or staged.stream or staged.path]
         assert transfers
         if self.staging_mode == "redirect":
             assert all(staged.redirect_url for staged in transfers)
         else:
-            assert not any(staged.redirect_url for staged in transfers)
+            # Not served from the cache: job preparation left the inputs in the store.
+            assert all(staged.stream for staged in transfers)
 
     def _hda(self, hda_dict) -> model.HistoryDatasetAssociation:
         hda = self._app.model.session.get(model.HistoryDatasetAssociation, self._app.security.decode_id(hda_dict["id"]))
@@ -254,6 +258,7 @@ class TestPulsarObjectStagingStream(BaseObjectStoreIntegrationTestCase):
 @integration_util.skip_unless_docker()
 class TestPulsarObjectStagingRedirect(TestPulsarObjectStagingStream):
     staging_mode = "redirect"
+    caches_staged_inputs = False
 
     def test_staging_url_redirects_to_the_object_store(self):
         history_id = self.dataset_populator.new_history()

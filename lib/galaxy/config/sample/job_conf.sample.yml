@@ -945,7 +945,8 @@ execution:
        # Serve Pulsar's inputs straight from the object store, so Pulsar needs
        # no object store credentials. Requires rewrite_parameters and a
        # default_file_action of remote_transfer or remote_transfer_tus.
-       #   stream:   Galaxy streams each input from the store.
+       #   stream:   Galaxy streams each input from the store, with
+       #             passthrough caching.
        #   redirect: Galaxy redirects Pulsar (0.15.16 or later) to a presigned
        #             URL if the store has enable_direct_download set, and
        #             streams otherwise. Pulsar must be able to reach the store.
