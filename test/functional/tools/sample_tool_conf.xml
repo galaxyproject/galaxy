@@ -30,6 +30,7 @@
   <tool file="bibtex.xml" />
   <tool file="help_features_rst.xml" />
   <tool file="help_features_markdown.xml" />
+  <tool file="help_images/help_images_markdown.xml" />
   <tool file="help_images/help_images_rst.xml" />
   <tool file="select_from_url.xml" />
   <tool file="multi_select.xml" />

@@ -1,0 +1,25 @@
+<tool id="help_images_markdown" name="help_images_markdown" version="1.0.0">
+    <icon src="beside_tool.png" />
+    <command>
+        cp '$input' '$output'
+    </command>
+    <inputs>
+        <param name="input" type="data" format="txt" />
+    </inputs>
+    <outputs>
+        <data name="output" format="txt" />
+    </outputs>
+    <help format="markdown"><![CDATA[
+Image relative to the tool:
+
+![relative image](static/images/help_image.png)
+
+Bare name found in static/images, as in Tool Shed help:
+
+![bare image](help_image.png)
+
+Image beside the tool:
+
+![beside image](beside_tool.png)
+]]></help>
+</tool>
