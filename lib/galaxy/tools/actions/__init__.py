@@ -812,9 +812,6 @@ class DefaultToolAction(ToolAction):
         if completed_job:
             # The outputs are the cached job's datasets, possibly another user's from a published history
             history.charge_added_datasets(job.output_hdas())
-        # execute immediate post job actions and associate post job actions that are to be executed after the job is complete
-        if job_callback:
-            job_callback(job)
         if completed_job:
             job.set_copied_from_job_id(completed_job.id)
         trans.sa_session.add(job)
@@ -828,6 +825,10 @@ class DefaultToolAction(ToolAction):
                 current_job=job,
                 out_data=out_data,
             )
+        # execute immediate post job actions and associate post job actions that are to be executed after the job is complete;
+        # after the remap, so the changes asked for this run win over the inherited ones of a workflow step
+        if job_callback:
+            job_callback(job)
         log.info(f"Setup for job {job.log_str()} complete, ready to be enqueued {job_setup_timer}")
 
         # Some tools are not really executable, but jobs are still created for them ( for record keeping ).
@@ -911,7 +912,6 @@ class DefaultToolAction(ToolAction):
             # Duplicate the PJAs of the old job before remap. The output changes asked for a tool
             # run come with the rerun request; other actions, e.g. of a remapped workflow job, stay.
             from_workflow = job_belongs_to_workflow(old_job)
-            requested_pjas = [pjaa.post_job_action for pjaa in current_job.post_job_actions]
             for pjaa in old_job.post_job_actions:
                 if from_workflow or not is_requested_output_change(pjaa.post_job_action):
                     current_job.add_post_job_action(pjaa.post_job_action)
@@ -924,10 +924,6 @@ class DefaultToolAction(ToolAction):
                     # execute immediate actions here, with workflow context.
                     if pja.action_type in ActionBox.immediate_actions:
                         ActionBox.execute(trans.app, trans.sa_session, pja, current_job, replacement_dict)
-                # The output changes asked for the rerun win over the workflow step's.
-                for pja in requested_pjas:
-                    if pja.action_type in ActionBox.immediate_actions:
-                        ActionBox.execute(trans.app, trans.sa_session, pja, current_job)
             for p in old_job.parameters:
                 if is_element_identifier_parameter(p.name):
                     current_job.parameters.append(p.copy())

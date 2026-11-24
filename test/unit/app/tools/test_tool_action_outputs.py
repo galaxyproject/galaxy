@@ -59,13 +59,14 @@ class ToolOutputsTestCase(TestCase, tools_support.UsesTools):
         self.app.model.context.add(self.history)
         self.app.model.context.commit()
 
-    def _execute(self, tool_file: str, incoming: dict[str, Any]):
+    def _execute(self, tool_file: str, incoming: dict[str, Any], **kwds: Any):
         tool = self._init_tool_for_path(functional_test_tool_path(tool_file))
         job, out_data, *_ = DefaultToolAction().execute(
             tool=tool,
             trans=cast(ProvidesHistoryContext, self.trans),
             history=self.history,
             incoming=incoming,
+            **kwds,
         )
         return job, out_data
 
@@ -309,6 +310,8 @@ class TestRerunRemap(ToolOutputsTestCase):
         # The remap only asks the toolbox whether old and new job ran the same tool.
         tool = self._init_tool_for_path(functional_test_tool_path("environment_variables.xml"))
         self.app._toolbox = cast(Any, _SingleToolToolbox(tool))
+        # execute only remaps a rerun's dependent jobs when jobs are tracked in the database
+        self.app.config.track_jobs_in_database = True
 
     @pytest.mark.parametrize(
         "of_workflow, expected_actions",
@@ -355,14 +358,20 @@ class TestRerunRemap(ToolOutputsTestCase):
             "RenameDatasetAction", workflow_step, output_name="out_file1", action_arguments={"newname": "step name"}
         )
         self.app.model.context.commit()
-        new_job, out_data = self._execute("environment_variables.xml", {"inttest": "2"})
-        # As the job callback of a tool run attaches the rename asked for in the tool form
         requested = model.PostJobAction(
             "RenameDatasetAction", output_name="out_file1", action_arguments={"newname": "my name"}
         )
-        ActionBox.apply_to_job(self.app, self.app.model.context, [requested], new_job, record_executed=True)
 
-        self._remap(old_job, new_job, out_data)
+        def apply_requested(job: model.Job) -> None:
+            # As the job callback of a tool run attaches the rename asked for in the tool form
+            ActionBox.apply_to_job(self.app, self.app.model.context, [requested], job, record_executed=True)
+
+        _, out_data = self._execute(
+            "environment_variables.xml",
+            {"inttest": "2"},
+            rerun_remap_job_id=old_job.id,
+            job_callback=apply_requested,
+        )
 
         assert out_data["out_file1"].name == "my name"
 
