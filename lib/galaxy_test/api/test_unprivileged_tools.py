@@ -638,9 +638,7 @@ class TestUnprivilegedToolsApi(ApiTestCase, TestsTools):
         ):
             dataset = self.dataset_populator.new_dataset(history_id=history_id, content="abc", wait=True)
             inputs = {"input": {"src": "hda", "id": dataset["id"]}}
-            toolbox_run = self._run(
-                "help_features_markdown", history_id=history_id, inputs=inputs, assert_ok=True, wait_for_job=True
-            )
+            self._run("help_features_markdown", history_id=history_id, inputs=inputs, assert_ok=True, wait_for_job=True)
             user_tool = self.dataset_populator.create_unprivileged_tool(
                 UserToolSource(
                     **{
@@ -652,7 +650,7 @@ class TestUnprivilegedToolsApi(ApiTestCase, TestsTools):
                 )
             )
             first_job_id = self._tool_request_job_id(history_id, user_tool["uuid"], inputs)
-            assert self._copied_from_job_id(first_job_id) != toolbox_run["jobs"][0]["id"]
+            assert self._copied_from_job_id(first_job_id) is None
             first_job = self.dataset_populator.get_job_details(first_job_id, full=True).json()
             output = self.dataset_populator.get_history_dataset_content(
                 history_id, dataset_id=first_job["outputs"]["output"]["id"]
