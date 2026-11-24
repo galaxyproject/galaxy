@@ -2365,8 +2365,9 @@ class JobSubmitter:
     def queue_jobs(self, tool: Tool, request: QueueJobs) -> None:
         tool_request: ToolRequest = self._tool_request(request.tool_request_id)
         sa_session = self.app.model.context
-        if request.dynamic_tool_id:
-            tool.dynamic_tool = sa_session.get(DynamicTool, request.dynamic_tool_id)
+        # The tool comes from a cache keyed on its source, which revisions can share, so always overwrite both.
+        tool.dynamic_tool = sa_session.get(DynamicTool, request.dynamic_tool_id) if request.dynamic_tool_id else None
+        tool.dynamic_tool_id = request.dynamic_tool_id
         try:
             request_context = self._context(tool_request, request)
             target_history = request_context.history
