@@ -31,36 +31,48 @@ def post_job_actions_for_outputs(tool: "Tool", output_actions: Mapping[str, Tool
     if unknown := sorted(set(output_actions) - set(tool.outputs)):
         raise RequestParameterInvalidException(f"Tool '{tool.id}' has no output named {', '.join(unknown)}.")
     for actions in output_actions.values():
-        # Tag actions keep their tags as one comma separated string.
         if with_comma := [tag for tag in [*actions.add_tags, *actions.remove_tags] if "," in tag]:
             raise RequestParameterInvalidException(f"Tags can't contain a comma: {', '.join(with_comma)}.")
     post_job_actions = []
     for output_name, actions in output_actions.items():
-        if actions.rename:
-            post_job_actions.append(_action("RenameDatasetAction", output_name, {"newname": actions.rename}))
-        if actions.add_tags:
-            post_job_actions.append(_action("TagDatasetAction", output_name, {"tags": ",".join(actions.add_tags)}))
-        if actions.remove_tags:
-            post_job_actions.append(
-                _action("RemoveTagDatasetAction", output_name, {"tags": ",".join(actions.remove_tags)})
-            )
-        if actions.hide:
-            post_job_actions.append(_action("HideDatasetAction", output_name, {}))
+        for field, action_type in ACTION_TYPE_BY_FIELD.items():
+            if value := getattr(actions, field):
+                post_job_actions.append(
+                    PostJobAction(action_type, output_name=output_name, action_arguments=_arguments(field, value))
+                )
     return post_job_actions
 
 
-OUTPUT_ACTION_TYPES = frozenset(
-    ["RenameDatasetAction", "TagDatasetAction", "RemoveTagDatasetAction", "HideDatasetAction"]
-)
+# The field of ToolOutputActions each post job action type stands for
+ACTION_TYPE_BY_FIELD = {
+    "rename": "RenameDatasetAction",
+    "add_tags": "TagDatasetAction",
+    "remove_tags": "RemoveTagDatasetAction",
+    "hide": "HideDatasetAction",
+}
+FIELD_BY_ACTION_TYPE = {action_type: field for field, action_type in ACTION_TYPE_BY_FIELD.items()}
 
 
-def _action(action_type: str, output_name: str, action_arguments: dict[str, str]) -> PostJobAction:
-    return PostJobAction(action_type, output_name=output_name, action_arguments=action_arguments)
+def _arguments(field: str, value: Any) -> dict[str, str]:
+    if field == "rename":
+        return {"newname": value}
+    if field == "hide":
+        return {}
+    # Tag actions keep their tags as one comma separated string.
+    return {"tags": ",".join(value)}
+
+
+def _value(field: str, arguments: dict[str, Any]) -> Any:
+    if field == "rename":
+        return arguments.get("newname")
+    if field == "hide":
+        return True
+    return _split_tags(arguments.get("tags", ""))
 
 
 def is_requested_output_change(pja: PostJobAction) -> bool:
     """Whether ``pja`` is a rename, tag or hide asked for a tool run, not one copied from a workflow step."""
-    return pja.action_type in OUTPUT_ACTION_TYPES and pja.workflow_step is None
+    return pja.action_type in FIELD_BY_ACTION_TYPE and pja.workflow_step is None
 
 
 def job_belongs_to_workflow(job: Job) -> bool:
@@ -84,15 +96,8 @@ def output_actions_of_job(job: Job) -> dict[str, ToolOutputActions]:
         pja = pjaa.post_job_action
         if not pja.output_name or not is_requested_output_change(pja):
             continue
-        arguments = pja.action_arguments or {}
-        if pja.action_type == "RenameDatasetAction":
-            fields[pja.output_name]["rename"] = arguments.get("newname")
-        elif pja.action_type == "TagDatasetAction":
-            fields[pja.output_name]["add_tags"] = _split_tags(arguments.get("tags", ""))
-        elif pja.action_type == "RemoveTagDatasetAction":
-            fields[pja.output_name]["remove_tags"] = _split_tags(arguments.get("tags", ""))
-        elif pja.action_type == "HideDatasetAction":
-            fields[pja.output_name]["hide"] = True
+        field = FIELD_BY_ACTION_TYPE[pja.action_type]
+        fields[pja.output_name][field] = _value(field, pja.action_arguments or {})
     return {output_name: ToolOutputActions(**output_fields) for output_name, output_fields in fields.items()}
 
 
