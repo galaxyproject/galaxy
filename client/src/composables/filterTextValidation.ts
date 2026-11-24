@@ -16,12 +16,9 @@ export function useFilterTextValidation<T>(
     const rawFilters = computed<Record<string, T>>(() =>
         Object.fromEntries(toValue(filterClass)?.getFiltersForText(filterText.value, true, false) || []),
     );
-    const validFilters = computed(
-        () => toValue(filterClass)?.getValidFilters(rawFilters.value, true).validFilters ?? {},
-    );
-    const invalidFilters = computed(
-        () => toValue(filterClass)?.getValidFilters(rawFilters.value, true).invalidFilters ?? {},
-    );
+    const checkedFilters = computed(() => toValue(filterClass)?.getValidFilters(rawFilters.value, true));
+    const validFilters = computed(() => checkedFilters.value?.validFilters ?? {});
+    const invalidFilters = computed(() => checkedFilters.value?.invalidFilters ?? {});
     const isSurroundedByQuotes = computed(() => /^["'].*["']$/.test(filterText.value));
     const hasInvalidFilters = computed(
         () => !isSurroundedByQuotes.value && Object.keys(invalidFilters.value).length > 0,
