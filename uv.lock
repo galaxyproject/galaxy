@@ -2745,7 +2745,7 @@ requires-dist = [
     { name = "paramiko", specifier = "!=2.9.0,!=2.9.1" },
     { name = "pebble", specifier = "!=5.2.1,!=5.2.2" },
     { name = "pkce", marker = "extra == 'test'" },
-    { name = "pulsar-galaxy-lib", specifier = ">=0.16.0" },
+    { name = "pulsar-galaxy-lib", specifier = ">=0.16.3" },
     { name = "pydantic", specifier = ">=2.7.4" },
     { name = "pydantic-ai", specifier = ">=1.99.0" },
     { name = "pyjwt" },
@@ -4093,7 +4093,7 @@ requires-dist = [
     { name = "pillow" },
     { name = "pkg-resources-backport" },
     { name = "psutil" },
-    { name = "pulsar-galaxy-lib", specifier = ">=0.16.0" },
+    { name = "pulsar-galaxy-lib", specifier = ">=0.16.3" },
     { name = "pycryptodome" },
     { name = "pydantic", extras = ["email"], specifier = ">=2.7.4" },
     { name = "pydantic-ai", specifier = ">=1.56.0" },
@@ -7893,7 +7893,7 @@ wheels = [
 
 [[package]]
 name = "pulsar-galaxy-lib"
-version = "0.16.2"
+version = "0.16.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "google-cloud-batch" },
@@ -7907,9 +7907,9 @@ dependencies = [
     { name = "typing-extensions" },
     { name = "webob" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/2e/18/979b276c72cc476c1cf925ae3410ffad640e02c75b55a084611c70b5d3b8/pulsar_galaxy_lib-0.16.2.tar.gz", hash = "sha256:3944a80ce6d573cbaf47d81040e6d44e276de37f10de3c0d58d4a1964783d5bb", size = 269566, upload-time = "2026-11-20T17:08:05.851Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/a6/9d/4ed7f58535babee7fff1eda440ba3179c003d52912b0978d47306eb7c2e2/pulsar_galaxy_lib-0.16.3.tar.gz", hash = "sha256:cd7b5468f67086f943e394a47831a23096d32ad513ab1462ea70a50bc0095aaf", size = 272781, upload-time = "2026-11-22T18:35:05.948Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/56/9c/ab9ec95d14acf8f515d397a49f6d5376476b08217cd3cd4f2d16472a553d/pulsar_galaxy_lib-0.16.2-py3-none-any.whl", hash = "sha256:4a75cc0310c728552e56c33aee4dc16d019cf7784c66a3736550897288023fdd", size = 281793, upload-time = "2026-11-20T17:08:03.238Z" },
+    { url = "https://files.pythonhosted.org/packages/bd/05/6cca576a9b21add020c2c20d19b2fe42193790c4a21c1fb9c95fd2fe00db/pulsar_galaxy_lib-0.16.3-py3-none-any.whl", hash = "sha256:33ec046044cd0d6526e8e718ab5fc5b5ac873ab42c95834509564bb40e3bc33f", size = 284193, upload-time = "2026-11-22T18:35:02.383Z" },
 ]
 
 [[package]]
