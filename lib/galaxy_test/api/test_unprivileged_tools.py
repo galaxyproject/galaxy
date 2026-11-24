@@ -599,3 +599,50 @@ class TestUnprivilegedToolsApi(ApiTestCase, TestsTools):
             )
             user_tool_job = self.dataset_populator.get_job_details(user_tool_again["jobs"][0]["id"], full=True).json()
             assert user_tool_job["copied_from_job_id"] != toolbox_job["id"], user_tool_job
+
+    @skip_without_tool("help_features_markdown")
+    def test_tool_request_use_cached_job_does_not_reuse_toolbox_jobs(self):
+        # POST /api/jobs rebuilds the tool from its source in a task, so the revision has to survive that trip.
+        with (
+            self.dataset_populator.test_history() as history_id,
+            self.dataset_populator.user_tool_execute_permissions(),
+        ):
+            dataset = self.dataset_populator.new_dataset(history_id=history_id, content="abc", wait=True)
+            inputs = {"input": {"src": "hda", "id": dataset["id"]}}
+            toolbox_run = self._run(
+                "help_features_markdown", history_id=history_id, inputs=inputs, assert_ok=True, wait_for_job=True
+            )
+            user_tool = self.dataset_populator.create_unprivileged_tool(
+                UserToolSource(
+                    **{
+                        **TOOL_WITH_SHELL_COMMAND,
+                        "id": "help_features_markdown",
+                        "version": "1.0.0",
+                        "shell_command": "echo 'from the user tool' > output.fastq",
+                    }
+                )
+            )
+            first_job_id = self._tool_request_job_id(history_id, user_tool["uuid"], inputs)
+            assert self._copied_from_job_id(first_job_id) != toolbox_run["jobs"][0]["id"]
+            first_job = self.dataset_populator.get_job_details(first_job_id, full=True).json()
+            output = self.dataset_populator.get_history_dataset_content(
+                history_id, dataset_id=first_job["outputs"]["output"]["id"]
+            )
+            assert output == "from the user tool\n"
+            second_job_id = self._tool_request_job_id(history_id, user_tool["uuid"], inputs)
+            assert self._copied_from_job_id(second_job_id) == first_job_id
+
+    def _tool_request_job_id(self, history_id: str, tool_uuid: str, inputs: dict[str, Any]) -> str:
+        response = self.dataset_populator.tool_request_raw(
+            tool_id=None, inputs=inputs, history_id=history_id, tool_uuid=tool_uuid, use_cached_jobs=True
+        )
+        self._assert_status_code_is(response, 200)
+        tool_request_id = response.json()["tool_request_id"]
+        assert self.dataset_populator.wait_on_tool_request(tool_request_id)
+        jobs = self.dataset_populator.get_tool_request(tool_request_id)["jobs"]
+        assert len(jobs) == 1, jobs
+        self.dataset_populator.wait_for_job(jobs[0]["id"], assert_ok=True)
+        return jobs[0]["id"]
+
+    def _copied_from_job_id(self, job_id: str) -> str | None:
+        return self.dataset_populator.get_job_details(job_id, full=True).json()["copied_from_job_id"]
