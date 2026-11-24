@@ -117,6 +117,12 @@ class TestToolOutputsPreviewApi(ApiTestCase):
             )
         ]
 
+    @skip_without_tool("cat_data_and_sleep")
+    def test_batch_without_values_creates_nothing(self):
+        preview = self._preview("cat_data_and_sleep", {"input1": {"__class__": "Batch", "values": []}})
+
+        assert (preview["job_count"], preview["outputs"]) == (0, [])
+
     @skip_without_tool("implicit_conversion_format_input")
     def test_format_following_input_that_needs_conversion_is_left_to_the_job(self):
         # A run converts fasta.gz to fasta first and its output is fasta.

@@ -2550,9 +2550,11 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
             )
         if implicit_plans is not None:
             outputs = planned_implicit_outputs(implicit_plans, job_planner)
-        else:
-            assert job_planner
+        elif job_planner is not None:
             outputs = job_planner.planned_outputs()
+        else:
+            # A request that expands to no jobs creates nothing.
+            outputs = []
         return PlannedRun(job_count=len(all_params), outputs=outputs)
 
     def handle_input(
