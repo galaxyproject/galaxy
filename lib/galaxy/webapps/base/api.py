@@ -2,6 +2,7 @@ import os
 import stat
 import uuid
 from collections.abc import Mapping
+from email.utils import formatdate
 from logging import getLogger
 from typing import (
     Any,
@@ -34,6 +35,10 @@ from galaxy.exceptions import MessageException
 from galaxy.exceptions.utils import (
     api_error_to_dict,
     validation_error_to_message_exception,
+)
+from galaxy.util.hash_util import (
+    HashFunctionNameEnum,
+    memory_bound_hexdigest,
 )
 from galaxy.util.path import StrPath
 from galaxy.web.framework.base import (
@@ -231,6 +236,24 @@ class GalaxyFileResponse(FileResponse):
                     )
         if self.background is not None:
             await self.background()
+
+
+def cached_file_response(request: Request, path: str, media_type: str, cache_control: str) -> Response:
+    """Serve a small static file with a content ETag, or a 304 if the client's copy is current."""
+    last_modified = formatdate(os.stat(path).st_mtime, usegmt=True)
+    file_hash = memory_bound_hexdigest(hash_func_name=HashFunctionNameEnum.md5, path=path)
+    headers = {"Cache-Control": cache_control, "ETag": f'"{file_hash}"', "Last-Modified": last_modified}
+
+    # If-Modified-Since is ignored when If-None-Match is sent (RFC 9110 13.1.3).
+    if_none_match = request.headers.get("If-None-Match")
+    if if_none_match is not None:
+        etags = [e.strip().removeprefix("W/").strip('"') for e in if_none_match.split(",")]
+        if "*" in etags or file_hash in etags:
+            return Response(status_code=304, headers=headers)
+    elif request.headers.get("If-Modified-Since") == last_modified:
+        return Response(status_code=304, headers=headers)
+
+    return FileResponse(path, media_type=media_type, headers=headers)
 
 
 class GalaxyStreamingResponse(StreamingResponse):
