@@ -1868,19 +1868,26 @@ class PulsarComputeEnvironment(ComputeEnvironment):
         return remote_extra_files_path_rewrite
 
     def input_metadata_rewrite(self, dataset, metadata_name, metadata_file):
+        # A metadata file regenerated for a materialized deferred input has no object store identity.
+        staged_by_identity = (
+            self.object_store_staging in OBJECT_STORE_STAGING_MODES
+            and isinstance(metadata_file, model.MetadataFile)
+            and metadata_file.id is not None
+        )
         # May technically be incorrect to not pass through local_path_config.input_metadata_rewrite
         # first but that adds untested logic that wouln't ever be used.
-        metadata_val = metadata_file.get_file_name()
+        if staged_by_identity:
+            # Only the file's path is needed here, not its bytes.
+            metadata_val = metadata_file.get_file_name(sync_cache=False)
+        else:
+            metadata_val = metadata_file.get_file_name()
         remote_input_path = self.path_mapper.remote_input_path_rewrite(
             metadata_val, client_input_path_type=CLIENT_INPUT_PATH_TYPES.INPUT_METADATA_PATH
         )
         if remote_input_path:
             log.info(f"input_metadata_rewrite is {remote_input_path} from {metadata_val}")
             self.path_rewrites_input_metadata[metadata_val] = remote_input_path
-            # A metadata file regenerated for a materialized deferred input has no object store identity.
-            if self.object_store_staging in OBJECT_STORE_STAGING_MODES and isinstance(
-                metadata_file, model.MetadataFile
-            ):
+            if staged_by_identity:
                 self.input_metadata_file_ids[metadata_val] = metadata_file.id
             return remote_input_path
 
