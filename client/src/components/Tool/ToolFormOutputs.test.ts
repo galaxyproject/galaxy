@@ -138,6 +138,23 @@ describe("ToolFormOutputs", () => {
         expect(lastEmitted(wrapper)).toEqual({ out_file1: actions({ hide: true }) });
     });
 
+    it("drops the changes of outputs a changed form no longer creates while the section is closed", async () => {
+        usePreviewResponse([previewOutput("out_file1")]);
+        const wrapper = mountOutputs({ out_file1: actions({ hide: true }), out_file2: actions({ hide: true }) });
+        await flushPromises();
+        await openSection(wrapper);
+        await wrapper.setProps({ modelValue: { out_file2: actions({ hide: true }) } });
+        vi.useFakeTimers();
+        const changed = { ...REQUEST, tool_version: "2.0" };
+
+        await wrapper.setProps({ request: changed });
+        await vi.advanceTimersByTimeAsync(300);
+        await flushPromises();
+
+        expect(previewRequests).toEqual([REQUEST, changed]);
+        expect(lastEmitted(wrapper)).toEqual({});
+    });
+
     it("asks again after the form changes, once it settles", async () => {
         usePreviewResponse([previewOutput("out_file1")]);
         const wrapper = mountOutputs();

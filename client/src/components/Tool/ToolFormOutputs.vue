@@ -54,7 +54,8 @@ let fetchedKey: string | null = null;
 let controller: AbortController | null = null;
 
 async function fetchPreview() {
-    if (!expanded.value || requestKey.value === fetchedKey) {
+    // Also while closed when there are changes, so changes of outputs the run no longer creates are dropped.
+    if ((!expanded.value && changedCount.value === 0) || requestKey.value === fetchedKey) {
         return;
     }
     fetchedKey = requestKey.value;
