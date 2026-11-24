@@ -291,10 +291,6 @@ class ProtectedInputsComputeEnvironment(ComputeEnvironment):
         self.base = base
         self.plan = plan
 
-    def __getattr__(self, name: str) -> Any:
-        # Runner specific attributes, e.g. Pulsar's path mapper.
-        return getattr(self.base, name)
-
     @property
     def materialized_objects(self) -> dict[str, DeferrableObjectsT]:
         return self.base.materialized_objects
