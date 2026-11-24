@@ -63,6 +63,11 @@ if TYPE_CHECKING:
     from galaxy.tools.parameters.wrapped import LegacyUnprefixedDict
 
 
+# Formats a run replaces once the job has produced the dataset; "input" is what format="input"
+# gives on tools with profile 16.04 or later.
+RUNTIME_FORMATS = {"auto", "_sniff_", "input"}
+
+
 def input_ext_for(tool: "Tool", input_datasets: "LegacyUnprefixedDict") -> str:
     """Return the format that ``format="input"`` outputs get.
 
@@ -283,6 +288,7 @@ class OutputPlanner:
                 self.trans, output, self.input_collections, self.input_collection_parameters
             )
         except Exception:
+            # type_source can name a collection input the form hasn't filled.
             collection_type = None
         element_count = None
         part_formats: set[str | None] = set()
@@ -294,7 +300,7 @@ class OutputPlanner:
                 )
             except (AttributeError, KeyError):
                 # structured_like can name an optional collection input the form hasn't filled.
-                parts = None
+                pass
         if parts is not None:
             element_count = len({(part.parent_ids or [part.element_identifier])[0] for part in parts})
             part_formats = {self.known_format(part.output_def) for part in parts}
@@ -315,11 +321,6 @@ class OutputPlanner:
         except Exception:
             # A label template can read inputs a partly filled form does not have yet.
             return None
-
-
-# Formats a run replaces once the job has produced the dataset; "input" is what format="input"
-# gives on tools with profile 16.04 or later.
-RUNTIME_FORMATS = {"auto", "_sniff_", "input"}
 
 
 def _discovers_datasets(output: "ToolOutput") -> bool:
