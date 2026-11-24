@@ -5,6 +5,7 @@ import { computed } from "vue";
 
 import type { ToolOutputActions, ToolOutputPreview } from "@/api/tools";
 import localize from "@/utils/localization";
+import { pluralize } from "@/utils/strings";
 
 import StatelessTags from "../TagsMultiselect/StatelessTags.vue";
 import GFormInput from "@/components/BaseComponents/Form/GFormInput.vue";
@@ -33,7 +34,7 @@ const details = computed(() => {
     if (output.collection_type) {
         parts.push(output.collection_type);
         if (output.element_count !== null && output.element_count !== undefined) {
-            parts.push(`${output.element_count} ${output.element_count === 1 ? "element" : "elements"}`);
+            parts.push(`${output.element_count} ${pluralize(output.element_count, "element")}`);
         }
     }
     if (output.format) {
