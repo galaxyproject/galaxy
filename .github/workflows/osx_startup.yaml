@@ -62,3 +62,4 @@ jobs:
         working-directory: 'galaxy root'
         env:
           GALAXY_CONDA_PYTHON_VERSION: "${{ matrix.python-version }}"
+          NODE_OPTIONS: --max-old-space-size=4096
