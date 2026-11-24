@@ -1,7 +1,14 @@
 """Turn the output changes requested for a tool run into post job actions."""
 
-from collections.abc import Mapping
-from typing import TYPE_CHECKING
+from collections import defaultdict
+from collections.abc import (
+    Iterable,
+    Mapping,
+)
+from typing import (
+    Any,
+    TYPE_CHECKING,
+)
 
 from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.model import PostJobAction
@@ -40,3 +47,29 @@ def post_job_actions_for_outputs(tool: "Tool", output_actions: Mapping[str, Tool
 
 def _action(action_type: str, output_name: str, action_arguments: dict[str, str]) -> PostJobAction:
     return PostJobAction(action_type, output_name=output_name, action_arguments=action_arguments)
+
+
+def output_actions_from_post_job_actions(post_job_actions: Iterable[PostJobAction]) -> dict[str, ToolOutputActions]:
+    """Return the output changes a tool run asked for, from the post job actions of one of its jobs.
+
+    Actions of workflow steps are left out; they belong to the workflow, not to the run.
+    """
+    fields: dict[str, dict[str, Any]] = defaultdict(dict)
+    for pja in post_job_actions:
+        if pja.workflow_step_id is not None or not pja.output_name:
+            continue
+        arguments = pja.action_arguments or {}
+        output_fields = fields[pja.output_name]
+        if pja.action_type == "RenameDatasetAction":
+            output_fields["rename"] = arguments.get("newname")
+        elif pja.action_type == "TagDatasetAction":
+            output_fields["add_tags"] = _split_tags(arguments.get("tags", ""))
+        elif pja.action_type == "RemoveTagDatasetAction":
+            output_fields["remove_tags"] = _split_tags(arguments.get("tags", ""))
+        elif pja.action_type == "HideDatasetAction":
+            output_fields["hide"] = True
+    return {output_name: ToolOutputActions(**output_fields) for output_name, output_fields in fields.items()}
+
+
+def _split_tags(tags: str) -> list[str]:
+    return [tag.strip() for tag in tags.split(",") if tag.strip()]

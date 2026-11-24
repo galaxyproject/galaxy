@@ -32,6 +32,9 @@ function toLegacyPayload(jobDef, formData) {
     if (jobDef.tags?.length) {
         payload.__tags = jobDef.tags;
     }
+    if (jobDef.output_actions && Object.keys(jobDef.output_actions).length) {
+        payload.output_actions = jobDef.output_actions;
+    }
     if (jobDef.preferred_object_store_id) {
         payload.preferred_object_store_id = jobDef.preferred_object_store_id;
     }

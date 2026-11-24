@@ -20,6 +20,10 @@ export type FetchTargets = FetchDataPayload["targets"];
 export type AnyFetchTarget = FetchTargets[number];
 export type ToolRequestDetailedModel = components["schemas"]["ToolRequestDetailedModel"];
 export type ToolDataInput = components["schemas"]["ToolDataInput"];
+export type ToolOutputsPreviewRequest = components["schemas"]["ToolOutputsPreviewRequest"];
+export type ToolOutputsPreview = components["schemas"]["ToolOutputsPreview"];
+export type ToolOutputPreview = components["schemas"]["ToolOutputPreview"];
+export type ToolOutputActions = components["schemas"]["ToolOutputActions"];
 
 export type ApiDataElement = FileDataElement | PastedDataElement | UrlDataElement;
 
@@ -57,6 +61,8 @@ export interface ToolFormConfig extends Tool {
     job_remap: boolean | "job_produced_collection_elements" | null;
     /** Credentials context captured at the time the source job was created. */
     job_credentials_context: Record<string, unknown> | null;
+    /** Output changes asked for the source job, by output name, when built for rerun. */
+    job_output_actions?: Record<string, ToolOutputActions> | null;
     /** Encoded id of the history the form is bound to, else null. */
     history_id: string | null;
     /** Submission target URL. */
@@ -111,6 +117,18 @@ export async function fetchToolDataInputs(toolType?: string): Promise<Record<str
     const { data, error } = await GalaxyApi().GET("/api/tools/data_inputs", {
         params: { query: { tool_type: toolType } },
     });
+    if (error) {
+        rethrowSimple(error);
+    }
+    return data;
+}
+
+/** Describe the outputs a tool request would create, without running the tool. */
+export async function previewToolOutputs(
+    request: ToolOutputsPreviewRequest,
+    signal?: AbortSignal,
+): Promise<ToolOutputsPreview> {
+    const { data, error } = await GalaxyApi().POST("/api/tools/outputs_preview", { body: request, signal });
     if (error) {
         rethrowSimple(error);
     }

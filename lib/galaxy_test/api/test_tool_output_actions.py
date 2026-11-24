@@ -149,6 +149,44 @@ class TestToolOutputActionsApi(ApiTestCase):
         assert self._summary(outputs["direct_output"]) == ("reads.fa trimmed", ["group:run1"], False)
 
     @skip_without_tool("output_format")
+    def test_rerun_form_restores_the_changes(self):
+        job = self._run_tool_request("output_format", self._output_format_inputs(), TRIM_DIRECT_OUTPUT)
+
+        rerun_form = self.dataset_populator.build_for_rerun(job["id"])
+
+        assert rerun_form["job_output_actions"] == {
+            "direct_output": {
+                "rename": "#{input_data_1} trimmed",
+                "add_tags": ["group:run1"],
+                "remove_tags": ["name:sample1"],
+                "hide": True,
+            }
+        }
+
+    @skip_without_tool("detect_errors_aggressive")
+    def test_rerun_with_remap_records_only_the_new_changes(self):
+        failed = self.dataset_populator.run_tool_raw(
+            "detect_errors_aggressive",
+            {"error_bool": "true"},
+            self.history.id,
+            output_actions=json.dumps({"out_file1": {"hide": True}}),
+        ).json()
+        failed_job_id = failed["jobs"][0]["id"]
+        self.dataset_populator.wait_for_job(failed_job_id)
+
+        rerun = self.dataset_populator.run_tool_raw(
+            "detect_errors_aggressive",
+            {"error_bool": "false", "rerun_remap_job_id": failed_job_id},
+            self.history.id,
+            output_actions=json.dumps({"out_file1": {"rename": "fixed"}}),
+        ).json()
+
+        rerun_form = self.dataset_populator.build_for_rerun(rerun["jobs"][0]["id"])
+        assert rerun_form["job_output_actions"] == {
+            "out_file1": {"rename": "fixed", "add_tags": [], "remove_tags": [], "hide": False}
+        }
+
+    @skip_without_tool("output_format")
     def test_legacy_tool_api_rejects_unknown_output_name(self):
         response = self.dataset_populator.run_tool_raw(
             "output_format",

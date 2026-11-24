@@ -193,7 +193,10 @@ from galaxy.tools.job_parameters import (
     EXPORT_TO_URI,
     TEMPLATE_JOB_PARAMETERS,
 )
-from galaxy.tools.output_actions import post_job_actions_for_outputs
+from galaxy.tools.output_actions import (
+    output_actions_from_post_job_actions,
+    post_job_actions_for_outputs,
+)
 from galaxy.tools.output_planning import (
     planned_implicit_outputs,
     PlannedRun,
@@ -3348,6 +3351,16 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
                 "job_id": trans.security.encode_id(job.id) if job else None,
                 "job_remap": job.remappable() if job else None,
                 "job_credentials_context": job_credentials_context.model_dump() if job_credentials_context else None,
+                "job_output_actions": (
+                    {
+                        output_name: actions.model_dump()
+                        for output_name, actions in output_actions_from_post_job_actions(
+                            pjaa.post_job_action for pjaa in job.post_job_actions
+                        ).items()
+                    }
+                    if job
+                    else None
+                ),
                 "history_id": trans.security.encode_id(history.id) if history else None,
                 "display": self.display_interface,
                 "action": action,

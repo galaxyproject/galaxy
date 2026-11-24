@@ -5,10 +5,10 @@ import { useRoute, useRouter } from "vue-router";
 
 import { canMutateHistory as canMutateHistoryMethod } from "@/api";
 import type { JobRequest, JobResponse } from "@/api/jobs";
-import type { ToolFormConfig } from "@/api/tools";
+import type { ToolFormConfig, ToolOutputActions, ToolOutputsPreviewRequest } from "@/api/tools";
 import type { FormData, FormInputNode } from "@/components/Form/composables/useFormState";
 import type { DataOption } from "@/components/Form/Elements/FormData/types";
-import { findInputByDottedName } from "@/components/Form/utilities";
+import { buildNestedState, findInputByDottedName } from "@/components/Form/utilities";
 import { useToast } from "@/composables/toast";
 import { useUserToolCredentials } from "@/composables/userToolCredentials";
 import { useConfigStore } from "@/stores/configurationStore";
@@ -33,6 +33,7 @@ import { submitToolJob } from "./submit";
 import GModal from "../BaseComponents/GModal.vue";
 import ToolRecommendation from "../ToolRecommendation.vue";
 import ToolCard from "./ToolCard.vue";
+import ToolFormOutputs from "./ToolFormOutputs.vue";
 import ToolFormTags from "./ToolFormTags.vue";
 import GAlert from "@/components/BaseComponents/GAlert.vue";
 import ButtonSpinner from "@/components/Common/ButtonSpinner.vue";
@@ -97,6 +98,7 @@ const bundleOptions = ref([
     { label: "bundle", value: "bundle" },
 ]);
 const tags = ref<string[]>([]);
+const outputActions = ref<Record<string, ToolOutputActions>>({});
 const formConfigInitialized = ref(false);
 
 const tourStore = useTourStore();
@@ -164,6 +166,21 @@ const remapHelp = computed(() => {
 });
 
 const initialized = computed(() => formData.value !== undefined);
+
+/** The run as the outputs preview describes it; only tools with typed parameters can be described. */
+const outputsPreviewRequest = computed<ToolOutputsPreviewRequest | null>(() => {
+    if (!formConfig.value.has_parameters || formData.value === undefined) {
+        return null;
+    }
+    return {
+        tool_id: formConfig.value.id,
+        tool_uuid: toolUuid.value,
+        tool_version: formConfig.value.version,
+        history_id: currentHistoryId.value,
+        inputs: buildNestedState(formConfig.value.inputs, formData.value) as Record<string, unknown>,
+        strict: true,
+    };
+});
 
 const showNoToolParametersAlert = computed(() => !loading.value && formConfig.value?.inputs?.length === 0);
 
@@ -371,6 +388,9 @@ async function requestTool(newVersion?: string) {
         });
         currentVersion.value = data.version;
         formConfig.value = data;
+        if (data.job_output_actions) {
+            outputActions.value = data.job_output_actions;
+        }
         remapAllowed.value = (props.jobId && data.job_remap) || false;
         showForm.value = true;
         messageShow.value = false;
@@ -425,6 +445,7 @@ async function onExecute() {
         rerun_remap_job_id: useJobRemapping.value ? props.jobId : undefined,
         preferred_object_store_id: preferredObjectStoreId.value || undefined,
         tags: tags.value?.length ? tags.value : undefined,
+        output_actions: Object.keys(outputActions.value).length ? outputActions.value : undefined,
         data_manager_mode: dataManagerMode.value === "bundle" ? dataManagerMode.value : undefined,
         credentials_context: formConfig.value.credentials?.length
             ? (getCredentialsExecutionContextForTool(formConfig.value.id, formConfig.value.version) as unknown as {
@@ -609,6 +630,10 @@ requestTool();
                     :options="bundleOptions"
                     :title="localize('Create dataset bundle instead of adding data table to loc file ?')"></FormSelect>
                 <ToolFormTags v-model:tags="tags" />
+                <ToolFormOutputs
+                    v-if="outputsPreviewRequest"
+                    v-model="outputActions"
+                    :request="outputsPreviewRequest" />
             </div>
             <template v-slot:header-buttons>
                 <CompletionNotification

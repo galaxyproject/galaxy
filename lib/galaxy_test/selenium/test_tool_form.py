@@ -94,6 +94,27 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions, UsesUploadActivi
         self.assert_item_peek_includes(1, "dd a")
         self.assert_item_peek_includes(1, "dd_recurse aa,aba,abb,ba,bba,bbb")
 
+    @selenium_test
+    def test_rename_and_tag_output(self):
+        self.home()
+        self.tool_open("environment_variables")
+        self.tool_set_value("inttest", "42")
+        tool_form = self.components.tool_form
+        tool_form.outputs_heading.wait_for_and_click()
+        tool_form.output_row(output="out_file1").wait_for_visible()
+
+        tool_form.output_rename(output="out_file1").wait_for_and_send_keys("renamed output")
+        self.tags_add_from_button(
+            tool_form.output_add_tags_button(output="out_file1"),
+            tool_form.output_add_tags_input(output="out_file1"),
+            ["group:e2e"],
+        )
+        self.tool_form_execute()
+
+        self.history_panel_wait_for_hid_ok(1)
+        hda = self.latest_history_item()
+        assert (hda["name"], hda["tags"]) == ("renamed output", ["group:e2e"])
+
     def _open_drilldown_test_tool(self):
         self.home()
         self.tool_open("drill_down")

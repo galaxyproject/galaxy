@@ -5,7 +5,10 @@ from typing import (
     Literal,
 )
 
-from pydantic import Field
+from pydantic import (
+    Field,
+    field_validator,
+)
 
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import (
@@ -83,6 +86,11 @@ class ToolOutputActions(Model):
         description="Hide the output once the job has finished; the collection of a mapped-over run is hidden "
         "right away.",
     )
+
+    @field_validator("rename")
+    @classmethod
+    def _blank_rename_keeps_the_name(cls, rename: str | None) -> str | None:
+        return (rename or "").strip() or None
 
 
 ToolOutputActionsByName = dict[str, ToolOutputActions]

@@ -1056,6 +1056,11 @@ tool_form:
     drilldown_option: '.drilldown-option'
     drilldown_expand: '.fa-caret-down'
     tool_version_button: ".tool-versions"
+    outputs_heading: '[data-description="tool form outputs"] h3'
+    output_row: '.tool-form-output[data-output-name="${output}"]'
+    output_rename: 'input#tool-form-output-${output}-rename'
+    output_add_tags_button: '#tool-form-output-${output}-add-tags .stateless-tags .toggle-button'
+    output_add_tags_input: '#tool-form-output-${output}-add-tags .stateless-tags .headless-multiselect input'
 
   labels:
     generate_tour: 'Generate Tour'
