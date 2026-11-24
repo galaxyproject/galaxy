@@ -1,0 +1,775 @@
+import base64
+import hashlib
+import json
+import os
+import struct
+import uuid
+from datetime import (
+    datetime,
+    timedelta,
+    timezone,
+    UTC,
+)
+from typing import cast
+from unittest import mock
+
+import pytest
+from pydantic import ValidationError
+from sqlalchemy.exc import IntegrityError
+
+from galaxy.config import GalaxyAppConfiguration
+from galaxy.datatypes.binary import Bam
+from galaxy.datatypes.crypt4gh import (
+    build_crypt4gh_datatype,
+    Crypt4GH,
+    metadata_file_names,
+)
+from galaxy.datatypes.data import Data
+from galaxy.exceptions import RequestParameterInvalidException
+from galaxy.job_execution.compute_environment import ComputeEnvironment
+from galaxy.job_execution.protection.outputs import SIDECAR_FILE
+from galaxy.job_execution.protection.stage import CLEANUP_FAILURE_FILE
+from galaxy.managers.dataset_protection import (
+    _can_decrypt_inputs,
+    _extra_files_expire,
+    DatasetProtectionManager,
+    JOB_TTL_MARGIN,
+    KEY_SERVICE_EXPIRY_MARGIN,
+    validate_crypt4gh_grant,
+)
+from galaxy.model import (
+    DatasetInstance,
+    DatasetProtectionGrant,
+    User,
+)
+from galaxy.schema.dataset_protection import Crypt4GHGrantPayload
+from galaxy.tool_util_models.tool_source import (
+    FileSourceConfigFile,
+    FileSourceConfigFileContent,
+)
+from galaxy.tools import Tool
+from galaxy.util.bunch import Bunch
+
+
+def _header(*packets: bytes) -> bytes:
+    header = struct.pack("<8sII", b"crypt4gh", 1, len(packets))
+    for packet in packets:
+        header += struct.pack("<I", len(packet) + 4) + packet
+    return header
+
+
+# Of a server without a walltime limit.
+JOB_MARGIN = KEY_SERVICE_EXPIRY_MARGIN + JOB_TTL_MARGIN
+
+
+def _payload(**overrides) -> Crypt4GHGrantPayload:
+    values = {
+        "scheme": "crypt4gh",
+        "crypt4gh_compute_header": base64.b64encode(_header(b"compute packet")).decode(),
+        "crypt4gh_compute_keypair_id": "cnk:0123456789abcdef",
+        "crypt4gh_compute_keypair_expiration_date": datetime.now(UTC) + timedelta(days=6),
+    }
+    values.update(overrides)
+    return Crypt4GHGrantPayload(**values)
+
+
+def test_valid_grant_is_stored_as_naive_utc():
+    expiration = datetime.now(timezone(timedelta(hours=2))) + timedelta(days=6)
+    record = validate_crypt4gh_grant(_payload(crypt4gh_compute_keypair_expiration_date=expiration), JOB_MARGIN)
+    assert record.key_ref == "cnk:0123456789abcdef"
+    assert record.expires_at.tzinfo is None
+    assert record.expires_at == expiration.astimezone(UTC).replace(tzinfo=None)
+    assert record.grant_data.compute_header
+    assert base64.b64decode(record.grant_data.compute_header) == _header(b"compute packet")
+
+
+@pytest.mark.parametrize(
+    "overrides",
+    [
+        {"crypt4gh_compute_header": "not base64!"},
+        {"crypt4gh_compute_header": base64.b64encode(b"not a header").decode()},
+        {"crypt4gh_compute_header": base64.b64encode(_header(b"packet") + b"trailing body").decode()},
+        {"crypt4gh_compute_keypair_expiration_date": datetime.now(UTC) - timedelta(minutes=1)},
+        {"crypt4gh_compute_keypair_expiration_date": datetime.now(UTC) + timedelta(hours=20)},
+        {"crypt4gh_compute_keypair_expiration_date": datetime.now(UTC) + timedelta(days=60)},
+    ],
+)
+def test_invalid_grants_are_rejected(overrides):
+    with pytest.raises(RequestParameterInvalidException):
+        validate_crypt4gh_grant(_payload(**overrides), JOB_MARGIN)
+
+
+def test_keypairs_expiring_before_a_job_could_finish_are_rejected():
+    # Accepted by the key service for another day, but not until a job hitting a 48h walltime ends.
+    payload = _payload(crypt4gh_compute_keypair_expiration_date=datetime.now(UTC) + timedelta(hours=60))
+    with pytest.raises(RequestParameterInvalidException, match="expires before a job using it could finish"):
+        validate_crypt4gh_grant(payload, _manager(walltime=timedelta(hours=48)).job_margin)
+
+
+def test_expiration_dates_without_timezone_are_rejected():
+    with pytest.raises(ValidationError):
+        _payload(crypt4gh_compute_keypair_expiration_date=datetime.now() + timedelta(days=6))
+
+
+class _FakeObjectStore:
+    """Stores the data of each dataset in the file at its path."""
+
+    def get_data_head(self, dataset, size):
+        with open(dataset.path, "rb") as f:
+            return f.read(size)
+
+
+class _FakeDataset:
+    def __init__(self, path, size=1):
+        self.uuid = uuid.uuid4()
+        self.id = 1
+        self.path = path
+        self.purged = False
+        self.state = "ok"
+        self.file_size = size
+        self.extra_files_path = f"{path}_files"
+        self.object_store = _FakeObjectStore()
+
+    def get_file_name(self, sync_cache=True):
+        return self.path
+
+    def extra_files_path_exists(self):
+        return os.path.isdir(self.extra_files_path)
+
+    def full_delete(self):
+        self.purged = True
+
+
+class _FakeOutput:
+    def __init__(self, path, extension="fastqsanger.c4gh", header=None):
+        self.id = 1
+        self.name = "output"
+        self.extension = extension
+        self.dataset = _FakeDataset(path)
+        self.datatype: Data = Crypt4GH()
+        self.metadata = Bunch(crypt4gh_header=base64.b64encode(header).decode() if header else None)
+        self.state = "ok"
+        self.purged = False
+        self.deleted = False
+
+    @property
+    def metadata_file_types(self):
+        return metadata_file_names(self.datatype)
+
+
+def _manager(walltime=None):
+    manager = DatasetProtectionManager(
+        cast(GalaxyAppConfiguration, Bunch(crypt4gh_enabled=True)), mock.MagicMock(), walltime
+    )
+    manager.get_grant = mock.MagicMock(return_value=None)  # type: ignore[method-assign]
+    return manager
+
+
+def _job(*outputs):
+    return Bunch(
+        id=5,
+        user=Bunch(id=1),
+        output_datasets=[Bunch(dataset=output) for output in outputs],
+        output_library_datasets=[],
+        output_dataset_collection_instances=[],
+        output_dataset_collections=[],
+    )
+
+
+def _write_sidecar(job_directory, datasets, errors=(), expiration=None):
+    path = os.path.join(job_directory, SIDECAR_FILE)
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    expiration = expiration or (datetime.now(UTC) + timedelta(days=5)).isoformat()
+    with open(path, "w") as f:
+        json.dump({"key_ref": "cnk:1", "key_expiration": expiration, "datasets": datasets, "errors": list(errors)}, f)
+
+
+def _protected_output(tmp_path, name="out.dat"):
+    header = _header(b"sealed to the user")
+    path = tmp_path / name
+    path.write_bytes(header + b"encrypted body")
+    output = _FakeOutput(str(path), header=header)
+    record = {
+        "outcome": "protected",
+        "ext": output.extension,
+        "header_sha256": hashlib.sha256(header).hexdigest(),
+        "compute_header": "compute",
+        "extra_files": {},
+    }
+    return output, record
+
+
+class _FakeMetadataFile:
+    def __init__(self, path):
+        self.path = path
+
+    def get_file_name(self):
+        return self.path
+
+    def purge(self):
+        os.remove(self.path)
+
+
+def _with_bam_index(tmp_path, output, record, index_content):
+    """Make ``output`` an encrypted BAM with an index holding ``index_content``, return the index path."""
+    index = tmp_path / "metadata_1.dat"
+    index.write_bytes(index_content)
+    output.extension = record["ext"] = "bam.c4gh"
+    output.datatype = build_crypt4gh_datatype(Bam())
+    output.metadata.bam_index = _FakeMetadataFile(str(index))
+    return index
+
+
+def test_finish_job_records_grants_for_protected_outputs(tmp_path):
+    output, record = _protected_output(tmp_path)
+    _write_sidecar(str(tmp_path), {str(output.dataset.uuid): record})
+    manager = _manager()
+    with mock.patch("galaxy.managers.dataset_protection.DatasetProtectionGrant", Bunch):
+        assert manager.finish_job(_job(output), str(tmp_path)) is None
+    grant = manager.sa_session.add.call_args.args[0]
+    assert grant.dataset is output.dataset
+    assert grant.grant_data == {"compute_header": "compute", "extra_files": {}}
+    assert grant.source == "job:5"
+    assert not output.dataset.purged
+
+
+def test_finish_job_reads_utc_expiration_dates(tmp_path):
+    output, record = _protected_output(tmp_path)
+    # Written by the key service, datetime.fromisoformat() refuses the 'Z' suffix before Python 3.11.
+    _write_sidecar(str(tmp_path), {str(output.dataset.uuid): record}, expiration="2099-10-14T12:00:00Z")
+    manager = _manager()
+    with mock.patch("galaxy.managers.dataset_protection.DatasetProtectionGrant", Bunch):
+        assert manager.finish_job(_job(output), str(tmp_path)) is None
+    assert manager.sa_session.add.call_args.args[0].expires_at == datetime(2099, 10, 14, 12)
+
+
+def test_finish_job_fails_on_expiration_dates_without_timezone(tmp_path):
+    output, record = _protected_output(tmp_path)
+    _write_sidecar(str(tmp_path), {str(output.dataset.uuid): record}, expiration="2099-10-14T12:00:00")
+    manager = _manager()
+    error = manager.finish_job(_job(output), str(tmp_path))
+    assert error and "expiration date" in error
+    manager.sa_session.add.assert_not_called()
+
+
+def test_finish_job_fails_without_expiration_date(tmp_path):
+    output, record = _protected_output(tmp_path)
+    _write_sidecar(str(tmp_path), {str(output.dataset.uuid): record})
+    sidecar_path = os.path.join(str(tmp_path), SIDECAR_FILE)
+    with open(sidecar_path) as f:
+        sidecar = json.load(f)
+    sidecar["key_expiration"] = None
+    with open(sidecar_path, "w") as f:
+        json.dump(sidecar, f)
+    manager = _manager()
+    error = manager.finish_job(_job(output), str(tmp_path))
+    assert error and "can be decrypted in further jobs" in error
+    manager.sa_session.add.assert_not_called()
+
+
+@pytest.mark.parametrize("expiration", [True, False])
+def test_finish_job_records_no_grants_for_outputs_encrypted_by_the_tool(tmp_path, expiration):
+    output, record = _protected_output(tmp_path)
+    record["compute_header"] = None
+    _write_sidecar(str(tmp_path), {str(output.dataset.uuid): record})
+    if not expiration:
+        # They need no grant, so no expiration either.
+        sidecar_path = os.path.join(str(tmp_path), SIDECAR_FILE)
+        with open(sidecar_path) as f:
+            sidecar = json.load(f)
+        sidecar["key_expiration"] = None
+        with open(sidecar_path, "w") as f:
+            json.dump(sidecar, f)
+    manager = _manager()
+    assert manager.finish_job(_job(output), str(tmp_path)) is None
+    manager.sa_session.add.assert_not_called()
+    assert not output.dataset.purged
+
+
+def test_finish_job_without_sidecar_purges_outputs(tmp_path):
+    output, _ = _protected_output(tmp_path)
+    error = _manager().finish_job(_job(output), str(tmp_path))
+    assert error and "could not be verified" in error
+    assert output.dataset.purged
+
+
+def test_finish_job_with_invalid_sidecar_purges_outputs(tmp_path):
+    output, record = _protected_output(tmp_path)
+    del record["header_sha256"]
+    _write_sidecar(str(tmp_path), {str(output.dataset.uuid): record})
+    error = _manager().finish_job(_job(output), str(tmp_path))
+    assert error and "could not be verified" in error
+    assert output.dataset.purged
+
+
+def test_finish_job_purges_outputs_missing_from_sidecar(tmp_path):
+    protected, record = _protected_output(tmp_path)
+    bypassed, _ = _protected_output(tmp_path, "bypassed.dat")
+    _write_sidecar(str(tmp_path), {str(protected.dataset.uuid): record})
+    error = _manager().finish_job(_job(protected, bypassed), str(tmp_path))
+    assert error
+    assert bypassed.dataset.purged
+    assert not protected.dataset.purged
+
+
+def test_finish_job_detects_plaintext_behind_a_record(tmp_path):
+    output, record = _protected_output(tmp_path)
+    # The file stored for the output is not the one that was protected.
+    (tmp_path / "out.dat").write_bytes(b"@read1\nACGT\n")
+    _write_sidecar(str(tmp_path), {str(output.dataset.uuid): record})
+    assert _manager().finish_job(_job(output), str(tmp_path))
+    assert output.dataset.purged
+
+
+def test_finish_job_checks_the_stored_data_rather_than_a_stale_cached_copy(tmp_path):
+    output, record = _protected_output(tmp_path)
+    # Written to a cloud object store from the Pulsar host: Galaxy's cached copy is still the empty
+    # file created with the output.
+    stale_cached_copy = tmp_path / "cached.dat"
+    stale_cached_copy.write_bytes(b"")
+    output.dataset.get_file_name = lambda sync_cache=True: str(stale_cached_copy)
+    _write_sidecar(str(tmp_path), {str(output.dataset.uuid): record})
+    with mock.patch("galaxy.managers.dataset_protection.DatasetProtectionGrant", Bunch):
+        assert _manager().finish_job(_job(output), str(tmp_path)) is None
+    assert not output.dataset.purged
+
+
+def test_finish_job_fails_when_the_stored_data_is_missing(tmp_path):
+    output, record = _protected_output(tmp_path)
+    os.remove(output.dataset.path)
+    _write_sidecar(str(tmp_path), {str(output.dataset.uuid): record})
+    assert _manager().finish_job(_job(output), str(tmp_path))
+    assert output.dataset.purged
+
+
+def test_finish_job_accepts_protected_extra_files(tmp_path):
+    output, record = _protected_output(tmp_path)
+    extra_file = tmp_path / "out.dat_files" / "sub" / "part.txt"
+    extra_file.parent.mkdir(parents=True)
+    extra_file.write_bytes(_header(b"sealed") + b"encrypted part")
+    record["extra_files"] = {os.path.join("sub", "part.txt"): "compute"}
+    _write_sidecar(str(tmp_path), {str(output.dataset.uuid): record})
+    with mock.patch("galaxy.managers.dataset_protection.DatasetProtectionGrant", Bunch):
+        assert _manager().finish_job(_job(output), str(tmp_path)) is None
+
+
+def test_grants_record_extra_files_copying_encrypted_inputs(tmp_path):
+    output, record = _protected_output(tmp_path)
+    extra_files = tmp_path / "out.dat_files"
+    extra_files.mkdir()
+    for name in ("part.txt", "copy.txt"):
+        (extra_files / name).write_bytes(_header(b"sealed") + b"encrypted part")
+    record["extra_files"] = {"part.txt": "compute", "copy.txt": None}
+    _write_sidecar(str(tmp_path), {str(output.dataset.uuid): record})
+    manager = _manager()
+    with mock.patch("galaxy.managers.dataset_protection.DatasetProtectionGrant", Bunch):
+        assert manager.finish_job(_job(output), str(tmp_path)) is None
+    grant = manager.sa_session.add.call_args.args[0]
+    assert grant.grant_data["extra_files"] == {"part.txt": "compute"}
+    assert grant.grant_data["copied_extra_files"] == ["copy.txt"]
+
+    # Authorizing the dataset again can't make them decryptable.
+    stored = DatasetProtectionGrant(
+        key_ref=grant.key_ref,
+        expires_at=datetime.now(UTC).replace(tzinfo=None) + timedelta(days=3),
+        grant_data=grant.grant_data,
+    )
+    manager.get_grant = mock.MagicMock(return_value=stored)
+    manager.register_user_grant(cast(User, Bunch(id=1)), cast(DatasetInstance, output), _payload())
+    assert stored.grant_data["copied_extra_files"] == ["copy.txt"]
+
+
+def test_grants_keep_extra_files_of_outputs_copying_an_encrypted_input(tmp_path):
+    output, record = _protected_output(tmp_path)
+    # The primary file copies an encrypted input, the extra file was encrypted by the job.
+    record["compute_header"] = None
+    extra_files = tmp_path / "out.dat_files"
+    extra_files.mkdir()
+    (extra_files / "index.txt").write_bytes(_header(b"sealed") + b"encrypted part")
+    record["extra_files"] = {"index.txt": "compute"}
+    _write_sidecar(str(tmp_path), {str(output.dataset.uuid): record})
+    manager = _manager()
+    with mock.patch("galaxy.managers.dataset_protection.DatasetProtectionGrant", Bunch):
+        assert manager.finish_job(_job(output), str(tmp_path)) is None
+    grant = manager.sa_session.add.call_args.args[0]
+    assert "compute_header" not in grant.grant_data
+    assert grant.grant_data["extra_files"] == {"index.txt": "compute"}
+    job_key = {"key_ref": grant.key_ref, "expires_at": grant.expires_at.isoformat()}
+    assert grant.grant_data["extra_files_key"] == job_key
+
+    # The user still has to authorize the primary file.
+    stored = DatasetProtectionGrant(key_ref=grant.key_ref, expires_at=grant.expires_at, grant_data=grant.grant_data)
+    manager.get_grant = mock.MagicMock(return_value=stored)
+    user = cast(User, Bunch(id=1))
+    assert manager.get_usable_grant(user, cast(DatasetInstance, output)) is None
+    manager.register_user_grant(user, cast(DatasetInstance, output), _payload())
+    assert manager.get_usable_grant(user, cast(DatasetInstance, output)) is stored
+    assert stored.grant_data["extra_files"] == {"index.txt": "compute"}
+    assert stored.grant_data["extra_files_key"] == job_key
+
+
+def test_grants_flag_copied_extra_files_of_outputs_copying_an_encrypted_input(tmp_path):
+    output, record = _protected_output(tmp_path)
+    record["compute_header"] = None
+    extra_files = tmp_path / "out.dat_files"
+    extra_files.mkdir()
+    (extra_files / "copy.txt").write_bytes(_header(b"sealed") + b"encrypted part")
+    record["extra_files"] = {"copy.txt": None}
+    _write_sidecar(str(tmp_path), {str(output.dataset.uuid): record})
+    manager = _manager()
+    with mock.patch("galaxy.managers.dataset_protection.DatasetProtectionGrant", Bunch):
+        assert manager.finish_job(_job(output), str(tmp_path)) is None
+    grant = manager.sa_session.add.call_args.args[0]
+    assert grant.grant_data == {"extra_files": {}, "copied_extra_files": ["copy.txt"]}
+
+
+def test_finish_job_grants_the_metadata_files_of_protected_outputs(tmp_path):
+    output, record = _protected_output(tmp_path)
+    _with_bam_index(tmp_path, output, record, _header(b"sealed") + b"encrypted index")
+    record["metadata_files"] = {"bam_index": "index compute header"}
+    _write_sidecar(str(tmp_path), {str(output.dataset.uuid): record})
+    manager = _manager()
+    with mock.patch("galaxy.managers.dataset_protection.DatasetProtectionGrant", Bunch):
+        assert manager.finish_job(_job(output), str(tmp_path)) is None
+    grant = manager.sa_session.add.call_args.args[0]
+    assert grant.grant_data == {
+        "compute_header": "compute",
+        "extra_files": {},
+        "metadata_files": {"bam_index": "index compute header"},
+    }
+
+
+@pytest.mark.parametrize(
+    "index_content,recorded_metadata_files",
+    [
+        (b"BAI\x01 plaintext index", {"bam_index": "index compute header"}),
+        (_header(b"sealed") + b"encrypted index", {}),
+    ],
+    ids=["plaintext", "not_protected_by_the_job"],
+)
+def test_finish_job_detects_unprotected_metadata_files(tmp_path, index_content, recorded_metadata_files):
+    output, record = _protected_output(tmp_path)
+    index = _with_bam_index(tmp_path, output, record, index_content)
+    record["metadata_files"] = recorded_metadata_files
+    _write_sidecar(str(tmp_path), {str(output.dataset.uuid): record})
+    assert _manager().finish_job(_job(output), str(tmp_path))
+    assert output.dataset.purged
+    assert not index.exists()
+
+
+@pytest.mark.parametrize("recorded", [True, False])
+def test_finish_job_detects_plaintext_extra_files(tmp_path, recorded):
+    output, record = _protected_output(tmp_path)
+    (tmp_path / "out.dat_files").mkdir()
+    (tmp_path / "out.dat_files" / "part.txt").write_bytes(b"plaintext part")
+    if recorded:
+        record["extra_files"] = {"part.txt": "compute"}
+    _write_sidecar(str(tmp_path), {str(output.dataset.uuid): record})
+    assert _manager().finish_job(_job(output), str(tmp_path))
+    assert output.dataset.purged
+
+
+def test_finish_job_detects_unprotected_datatype(tmp_path):
+    output, record = _protected_output(tmp_path)
+    output.extension = "fastqsanger"
+    _write_sidecar(str(tmp_path), {str(output.dataset.uuid): record})
+    assert _manager().finish_job(_job(output), str(tmp_path))
+    assert output.dataset.purged
+
+
+def test_finish_job_accepts_outputs_without_content(tmp_path):
+    output = _FakeOutput(str(tmp_path / "missing.dat"))
+    output.dataset.purged = True
+    _write_sidecar(str(tmp_path), {str(output.dataset.uuid): {"outcome": "purged"}})
+    manager = _manager()
+    purged_outputs = manager.purged_outputs(_job(output))
+    assert manager.finish_job(_job(output), str(tmp_path), purged_outputs) is None
+
+
+def test_finish_job_fails_on_outputs_reported_purged_that_galaxy_didnt_purge(tmp_path):
+    # E.g. the destination looked for the output in the wrong place: the job would end ok without it.
+    output = _FakeOutput(str(tmp_path / "missing.dat"))
+    manager = _manager()
+    purged_outputs = manager.purged_outputs(_job(output))
+    # Purged by the import of the compute host's report.
+    output.dataset.purged = True
+    _write_sidecar(str(tmp_path), {str(output.dataset.uuid): {"outcome": "purged"}})
+
+    error = manager.finish_job(_job(output), str(tmp_path), purged_outputs)
+
+    assert error == "Output(s) 'output' were not found after the job ran."
+
+
+def test_finish_job_fails_on_cleanup_failure_without_purging(tmp_path):
+    output, record = _protected_output(tmp_path)
+    _write_sidecar(str(tmp_path), {str(output.dataset.uuid): record})
+    cleanup_failure = tmp_path / CLEANUP_FAILURE_FILE
+    cleanup_failure.write_text("Could not remove the decrypted data of this job: boom")
+    error = _manager().finish_job(_job(output), str(tmp_path))
+    assert error and "boom" in error
+    assert not output.dataset.purged
+
+
+def test_renewing_a_grant_keeps_extra_files_and_metadata_files_of_job_outputs(tmp_path):
+    manager = _manager()
+    job_expiration = datetime.now(UTC).replace(tzinfo=None) + timedelta(days=3)
+    grant = DatasetProtectionGrant(
+        key_ref="cnk:job",
+        expires_at=job_expiration,
+        grant_data={
+            "compute_header": "job header",
+            "extra_files": {"part.txt": "extra header"},
+            "metadata_files": {"bam_index": "index header"},
+        },
+    )
+    manager.get_grant = mock.MagicMock(return_value=grant)
+    output = _FakeOutput(str(tmp_path / "output.dat"))
+
+    manager.register_user_grant(cast(User, Bunch(id=1)), cast(DatasetInstance, output), _payload())
+
+    assert grant.key_ref == "cnk:0123456789abcdef"
+    assert grant.grant_data["extra_files"] == {"part.txt": "extra header"}
+    assert grant.grant_data["metadata_files"] == {"bam_index": "index header"}
+    # Extra files and metadata files stay encrypted to the job's compute keypair, the user only authorized the primary file again.
+    assert grant.grant_data["extra_files_key"] == {"key_ref": "cnk:job", "expires_at": job_expiration.isoformat()}
+    assert not _extra_files_expire(grant, timedelta(days=1))
+    assert _extra_files_expire(grant, timedelta(days=4))
+
+
+def test_concurrent_authorizations_replace_the_grant(tmp_path):
+    manager = _manager()
+    stored = DatasetProtectionGrant(key_ref="cnk:other-tab", expires_at=datetime(2099, 1, 1), grant_data={})
+    # The other request stored its grant between our lookup and our commit.
+    manager.get_grant = mock.MagicMock(side_effect=[None, stored, stored])
+    manager.sa_session.commit.side_effect = [IntegrityError("INSERT", {}, Exception("unique")), None]
+    output = _FakeOutput(str(tmp_path / "output.dat"))
+
+    with mock.patch(
+        "galaxy.managers.dataset_protection.DatasetProtectionGrant", lambda **kwargs: Bunch(grant_data=None, **kwargs)
+    ):
+        manager.register_user_grant(cast(User, Bunch(id=1)), cast(DatasetInstance, output), _payload())
+
+    manager.sa_session.rollback.assert_called_once()
+    assert stored.key_ref == "cnk:0123456789abcdef"
+
+
+def test_failed_job_keeps_outputs_shown_to_be_encrypted(tmp_path):
+    output, record = _protected_output(tmp_path)
+    _write_sidecar(str(tmp_path), {str(output.dataset.uuid): record})
+    _manager().fail_job(_job(output), str(tmp_path))
+    assert not output.dataset.purged
+
+
+def test_failed_job_removes_plaintext_outputs_but_keeps_them_in_history(tmp_path):
+    output, record = _protected_output(tmp_path)
+    (tmp_path / "out.dat").write_bytes(b"@read1\nACGT\n")
+    _write_sidecar(str(tmp_path), {str(output.dataset.uuid): record})
+    _manager().fail_job(_job(output), str(tmp_path))
+    assert output.dataset.purged
+    assert not output.deleted
+
+
+def test_failed_job_removes_the_metadata_files_of_outputs_not_shown_to_be_encrypted(tmp_path):
+    output, record = _protected_output(tmp_path)
+    index = _with_bam_index(tmp_path, output, record, b"BAI\x01 plaintext index")
+    _write_sidecar(str(tmp_path), {str(output.dataset.uuid): record})
+    _manager().fail_job(_job(output), str(tmp_path))
+    assert output.dataset.purged
+    assert not index.exists()
+
+
+def test_failed_job_without_sidecar_removes_outputs(tmp_path):
+    output, _ = _protected_output(tmp_path)
+    _manager().fail_job(_job(output), str(tmp_path))
+    assert output.dataset.purged
+
+
+def test_failed_job_reports_protection_errors(tmp_path):
+    output, _ = _protected_output(tmp_path)
+    _write_sidecar(str(tmp_path), {}, errors=["Tools writing unnamed outputs can't be used with encrypted datasets."])
+    error = _manager().fail_job(_job(output), str(tmp_path))
+    assert error == "Tools writing unnamed outputs can't be used with encrypted datasets."
+    assert output.dataset.purged
+
+
+def test_jobs_with_protected_inputs_are_detected(tmp_path):
+    protected, _ = _protected_output(tmp_path)
+    plain = _FakeOutput(str(tmp_path / "plain.dat"))
+    plain.datatype = Data()
+    manager = _manager()
+    input_datasets = [Bunch(dataset=plain), Bunch(dataset=None)]
+    assert not manager.has_protected_inputs(Bunch(input_datasets=input_datasets, input_library_datasets=[]))
+    job = Bunch(input_datasets=input_datasets, input_library_datasets=[Bunch(dataset=protected)])
+    assert manager.has_protected_inputs(job)
+
+
+def test_only_tools_keeping_decrypted_data_in_galaxy_decrypt_inputs():
+    file_sources = FileSourceConfigFile(name="file_sources", content=FileSourceConfigFileContent())
+    assert _can_decrypt_inputs(cast(Tool, Bunch(tool_type="default", config_files=[])))
+    assert not _can_decrypt_inputs(cast(Tool, Bunch(tool_type="interactive", config_files=[])))
+    assert not _can_decrypt_inputs(cast(Tool, Bunch(tool_type="default", config_files=[file_sources])))
+
+
+def _grant_on(dataset, user_id, **grant_data):
+    grant = Bunch(user_id=user_id, scheme="crypt4gh", dataset=dataset, grant_data={"compute_header": "h", **grant_data})
+    dataset.protection_grants.append(grant)
+    return grant
+
+
+@pytest.mark.parametrize(
+    "creator_extra_files,own_extra_files,refused",
+    [
+        ({"index.html": "h"}, {}, True),
+        ({"index.html": "h"}, {"index.html": "h"}, False),
+        ({}, {}, False),
+    ],
+)
+def test_jobs_refuse_extra_files_protected_for_another_user(tmp_path, creator_extra_files, own_extra_files, refused):
+    # Users sharing a keypair can authorize each other's outputs, but only the primary file.
+    output, _ = _protected_output(tmp_path)
+    output.dataset.protection_grants = []
+    _grant_on(output.dataset, 1, extra_files=creator_extra_files)
+    own_grant = _grant_on(output.dataset, 2, extra_files=own_extra_files)
+    manager = _manager()
+    manager.inputs_needing_decryption = mock.MagicMock(return_value=[output])
+    manager.get_usable_grant = mock.MagicMock(return_value=own_grant)
+    tool = cast(Tool, Bunch(tool_type="default", config_files=[]))
+
+    if refused:
+        with pytest.raises(RequestParameterInvalidException, match="encrypted by a job of another user"):
+            manager.check_job_inputs(cast(User, Bunch(id=2)), tool, {})
+    else:
+        manager.check_job_inputs(cast(User, Bunch(id=2)), tool, {})
+
+
+def test_jobs_refuse_extra_files_whose_authorization_expires(tmp_path):
+    output, _ = _protected_output(tmp_path)
+    output.dataset.protection_grants = []
+    expires_at = (datetime.now(UTC) + timedelta(hours=12)).replace(tzinfo=None)
+    grant = _grant_on(
+        output.dataset,
+        2,
+        extra_files={"index.html": "h"},
+        extra_files_key={"key_ref": "cnk:job", "expires_at": expires_at.isoformat()},
+    )
+    manager = _manager()
+    manager.inputs_needing_decryption = mock.MagicMock(return_value=[output])
+    manager.get_usable_grant = mock.MagicMock(return_value=grant)
+    tool = cast(Tool, Bunch(tool_type="default", config_files=[]))
+
+    with pytest.raises(RequestParameterInvalidException, match="can't be decrypted anymore"):
+        manager.check_job_inputs(cast(User, Bunch(id=2)), tool, {})
+
+
+@pytest.mark.parametrize(
+    "index_key_expires_in,decrypted,created",
+    [(timedelta(days=3), ["bam_index"], []), (timedelta(hours=12), [], ["bam_index", "bam_csi_index"])],
+    ids=["usable_index", "index_key_expiring"],
+)
+def test_jobs_create_the_metadata_files_they_cant_decrypt(tmp_path, index_key_expires_in, decrypted, created):
+    output, record = _protected_output(tmp_path)
+    _with_bam_index(tmp_path, output, record, b"encrypted index")
+    # Renewed by the user, the index keeps the compute keypair of the job that created it.
+    grant = DatasetProtectionGrant(
+        key_ref="cnk:user",
+        expires_at=(datetime.now(UTC) + timedelta(days=6)).replace(tzinfo=None),
+        grant_data={
+            "compute_header": "h",
+            "metadata_files": {"bam_index": "index header"},
+            "extra_files_key": {
+                "key_ref": "cnk:job",
+                "expires_at": (datetime.now(UTC) + index_key_expires_in).replace(tzinfo=None).isoformat(),
+            },
+        },
+    )
+    compute_environment = Bunch(input_metadata_rewrite=lambda dataset, metadata_name, metadata_file: None)
+
+    to_decrypt, to_create = _manager()._staged_metadata_files(
+        cast(DatasetInstance, output), grant, cast(ComputeEnvironment, compute_environment), str(tmp_path / "staged")
+    )
+
+    assert list(to_decrypt) == decrypted
+    assert list(to_create) == created
+
+
+def test_many_errors_are_summarized(tmp_path):
+    output, _ = _protected_output(tmp_path)
+    _write_sidecar(str(tmp_path), {}, errors=[f"Output '{i}' could not be protected." for i in range(1000)])
+    error = _manager().finish_job(_job(output), str(tmp_path))
+    assert error and error.startswith("Output '0' could not be protected. Output '1'")
+    assert "(998 more errors)" in error
+    assert len(error) < 300
+
+
+def _conversion_of(tmp_path):
+    source, _ = _protected_output(tmp_path, "source.dat")
+    converted, _ = _protected_output(tmp_path, "converted.dat")
+    converted.dataset.id = 2
+    association = Bunch(deleted=False, dataset=converted, dataset_ldda=None)
+    source.implicitly_converted_datasets = [association]
+    return source, converted, association
+
+
+def _grants_on(*datasets):
+    grant = DatasetProtectionGrant(
+        key_ref="cnk:abcdef0123456789",
+        expires_at=datetime.now(UTC).replace(tzinfo=None) + timedelta(days=3),
+        grant_data={"compute_header": "compute"},
+    )
+    ids = {dataset.dataset.id for dataset in datasets}
+    return lambda user, dataset: grant if dataset.id in ids else None
+
+
+def test_conversions_the_user_cant_decrypt_are_converted_again(tmp_path):
+    source, converted, association = _conversion_of(tmp_path)
+    manager = _manager()
+    manager.get_grant = mock.MagicMock(side_effect=_grants_on(source))
+    user = cast(User, Bunch(id=1))
+    assert manager.retire_unusable_conversion(user, cast(DatasetInstance, source), converted, ["tabular"])
+    assert association.deleted
+
+
+def test_users_who_cant_decrypt_the_dataset_keep_its_conversions(tmp_path):
+    # e.g. the conversion of another user, running a tool on their dataset.
+    source, converted, association = _conversion_of(tmp_path)
+    manager = _manager()
+    user = cast(User, Bunch(id=1))
+    assert not manager.retire_unusable_conversion(user, cast(DatasetInstance, source), converted, ["tabular"])
+    assert not association.deleted
+
+
+def test_grant_status_shows_until_when_jobs_can_use_the_grant(tmp_path):
+    output, _ = _protected_output(tmp_path)
+    expires_at = datetime(2099, 10, 14, 12)
+    grant = DatasetProtectionGrant(key_ref="cnk:1", expires_at=expires_at, grant_data={"compute_header": "compute"})
+    manager = _manager(walltime=timedelta(hours=48))
+    manager.get_grant = mock.MagicMock(return_value=grant)
+    status = manager.grant_status(cast(User, Bunch(id=1)), cast(DatasetInstance, output))
+    assert status.ready
+    # The key service refuses keypairs within a day of their expiration, and jobs may run until the walltime.
+    assert status.expires_at == expires_at - timedelta(days=3, hours=1)
+
+    # Extra files kept from the output's job expire with its keypair, authorizing again doesn't renew it.
+    job_expiration = datetime(2099, 10, 10, 12)
+    grant.grant_data = {
+        "compute_header": "compute",
+        "extra_files": {"part.txt": "job header"},
+        "extra_files_key": {"key_ref": "cnk:job", "expires_at": job_expiration.isoformat()},
+    }
+    status = manager.grant_status(cast(User, Bunch(id=1)), cast(DatasetInstance, output))
+    assert status.expires_at == job_expiration - timedelta(days=3, hours=1)
+
+
+def test_grants_expiring_before_a_job_can_end_are_refused_when_requested(tmp_path):
+    output, _ = _protected_output(tmp_path)
+    # The key service still accepts it, but not anymore when a job hitting the walltime ends.
+    expires_at = (datetime.now(UTC) + timedelta(hours=30)).replace(tzinfo=None)
+    grant = DatasetProtectionGrant(key_ref="cnk:1", expires_at=expires_at, grant_data={"compute_header": "compute"})
+    manager = _manager(walltime=timedelta(hours=48))
+    manager.get_grant = mock.MagicMock(return_value=grant)
+    manager.inputs_needing_decryption = mock.MagicMock(return_value=[output])
+    tool = cast(Tool, Bunch(tool_type="default", config_files=[]))
+
+    assert not manager.grant_status(cast(User, Bunch(id=1)), cast(DatasetInstance, output)).ready
+    with pytest.raises(RequestParameterInvalidException, match="not authorized to decrypt it in jobs"):
+        manager.check_job_inputs(cast(User, Bunch(id=1)), tool, {})

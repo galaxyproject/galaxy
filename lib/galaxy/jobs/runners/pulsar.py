@@ -54,6 +54,7 @@ from galaxy.job_execution.compute_environment import (
     dataset_path_to_extra_path,
 )
 from galaxy.job_execution.datasets import DatasetPath
+from galaxy.job_execution.protection import ProtectionError
 from galaxy.job_metrics.instrumenters.pulsar import PulsarPlugin
 from galaxy.jobs.command_factory import build_command
 from galaxy.jobs.handler import JobHandlerQueue
@@ -761,6 +762,8 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
             except Exception as e:
                 if isinstance(e, ParameterValueError):
                     log.info("parameter validation error preparing job %d: %s", job_wrapper.job_id, unicodify(e))
+                elif isinstance(e, ProtectionError):
+                    log.info("job %d rejected while preparing: %s", job_wrapper.job_id, unicodify(e))
                 else:
                     log.exception("failure preparing job %d", job_wrapper.job_id)
                 job_state = self._job_state(job_wrapper.get_job(), job_wrapper)
@@ -848,6 +851,11 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
             fail_or_resubmit = True
         except ContainerRequiredException as e:
             log.info("failure running job %d: %s", job_wrapper.job_id, e)
+            fail_message = str(e)
+            fail_or_resubmit = True
+        except ProtectionError as e:
+            # The destination can't run jobs decrypting data, tell the user why.
+            log.info("protected job %d refused: %s", job_wrapper.job_id, unicodify(e))
             fail_message = str(e)
             fail_or_resubmit = True
         except Exception:
@@ -1785,6 +1793,8 @@ class PulsarComputeEnvironment(ComputeEnvironment):
     def input_metadata_rewrite(self, dataset, metadata_name, metadata_file):
         # May technically be incorrect to not pass through local_path_config.input_metadata_rewrite
         # first but that adds untested logic that wouln't ever be used.
+        if metadata_file is None:
+            return None
         metadata_val = metadata_file.get_file_name()
         remote_input_path = self.path_mapper.remote_input_path_rewrite(
             metadata_val, client_input_path_type=CLIENT_INPUT_PATH_TYPES.INPUT_METADATA_PATH

@@ -335,11 +335,12 @@ def _job_directory_subdirectories(job_info: "JobInfo") -> list[str]:
     for Pulsar, the launch_config with the job's Galaxy callback credentials - none of which
     the tool needs, and some of which run outside of the container.
     """
+    subdirectories = list(JOB_DIRECTORY_CONTAINER_SUBDIRECTORIES)
     if job_info.job_directory_type == "pulsar":
         # Pulsar stages inputs, config files and unstructured files (e.g. referenced
         # by .loc files) into these.
-        return [*JOB_DIRECTORY_CONTAINER_SUBDIRECTORIES, "unstructured"]
-    return list(JOB_DIRECTORY_CONTAINER_SUBDIRECTORIES)
+        subdirectories.append("unstructured")
+    return [*subdirectories, *job_info.extra_job_subdirectories]
 
 
 def _job_directory_volumes(job_info: "JobInfo", tool_info: "ToolInfo") -> str:

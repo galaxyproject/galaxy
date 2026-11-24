@@ -5,6 +5,7 @@ from abc import (
 )
 from typing import (
     Any,
+    TYPE_CHECKING,
     TypedDict,
 )
 
@@ -15,6 +16,9 @@ from galaxy.model import (
     Job,
     MetadataFile,
 )
+
+if TYPE_CHECKING:
+    from galaxy.job_execution.protection import ProtectionPlan
 
 
 def dataset_path_to_extra_path(path: str) -> str:
@@ -51,8 +55,8 @@ class ComputeEnvironment(metaclass=ABCMeta):
         """Output extra files path rewrite for specified dataset."""
 
     @abstractmethod
-    def input_metadata_rewrite(self, dataset, metadata_name: str, metadata_file: MetadataFile) -> str | None:
-        """Path rewrite for the input dataset's metadata file of this name."""
+    def input_metadata_rewrite(self, dataset, metadata_name: str, metadata_file: MetadataFile | None) -> str | None:
+        """Path rewrite for the input dataset's metadata file of this name, ``metadata_file`` is ``None`` if unset."""
 
     @abstractmethod
     def unstructured_path_rewrite(self, path):
@@ -164,7 +168,7 @@ class SharedComputeEnvironment(SimpleComputeEnvironment, ComputeEnvironment):
         output_path_rewrite = self.output_path_rewrite(dataset)
         return dataset_path_to_extra_path(output_path_rewrite)
 
-    def input_metadata_rewrite(self, dataset, metadata_name: str, metadata_file: MetadataFile) -> str | None:
+    def input_metadata_rewrite(self, dataset, metadata_name: str, metadata_file: MetadataFile | None) -> str | None:
         return None
 
     def unstructured_path_rewrite(self, path):
@@ -232,7 +236,7 @@ class RemoteComputeEnvironment(SharedComputeEnvironment):
             return super().input_extra_files_rewrite(dataset)
         return path
 
-    def input_metadata_rewrite(self, dataset, metadata_name: str, metadata_file: MetadataFile) -> str | None:
+    def input_metadata_rewrite(self, dataset, metadata_name: str, metadata_file: MetadataFile | None) -> str | None:
         return self.paths["metadata_files"].get(metadata_file_key(dataset, metadata_name))
 
     def unstructured_path_rewrite(self, path):
@@ -274,3 +278,97 @@ def remote_evaluation_paths(
         "metadata_files": metadata_files,
         "unstructured": unstructured or {},
     }
+
+
+class ProtectedInputsComputeEnvironment(ComputeEnvironment):
+    """Point the tool at decrypted copies of protected inputs, delegate everything else.
+
+    The decrypted copies are produced on the compute host before the tool runs, as
+    described by the job's :class:`~galaxy.job_execution.protection.ProtectionPlan`.
+    """
+
+    def __init__(self, base: ComputeEnvironment, plan: "ProtectionPlan"):
+        self.base = base
+        self.plan = plan
+
+    @property
+    def materialized_objects(self) -> dict[str, DeferrableObjectsT]:
+        return self.base.materialized_objects
+
+    @materialized_objects.setter
+    def materialized_objects(self, value: dict[str, DeferrableObjectsT]) -> None:
+        # Set by the tool evaluator, read by runners from the environment they created.
+        self.base.materialized_objects = value
+
+    def input_path_rewrite(self, dataset):
+        base_path = self.base.input_path_rewrite(dataset)
+        protected_input = self.plan.staged_input(dataset.dataset.id)
+        return protected_input.primary.staged_path if protected_input else base_path
+
+    def input_extra_files_rewrite(self, dataset):
+        base_path = self.base.input_extra_files_rewrite(dataset)
+        protected_input = self.plan.staged_input(dataset.dataset.id)
+        return protected_input.staged_extra_files_path if protected_input else base_path
+
+    def output_names(self):
+        return self.base.output_names()
+
+    def output_path_rewrite(self, dataset):
+        return self.base.output_path_rewrite(dataset)
+
+    def output_extra_files_rewrite(self, dataset):
+        return self.base.output_extra_files_rewrite(dataset)
+
+    def input_metadata_rewrite(self, dataset, metadata_name: str, metadata_file: MetadataFile | None) -> str | None:
+        # Unset optional inputs (NoneDataset) have no dataset id.
+        dataset_id = getattr(dataset.dataset, "id", None)
+        protected_input = self.plan.staged_input(dataset_id) if isinstance(dataset_id, int) else None
+        if protected_input is None:
+            return self.base.input_metadata_rewrite(dataset, metadata_name, metadata_file)
+        # The stored metadata files of decrypted inputs are encrypted, the tool reads the decrypted ones.
+        return protected_input.staged_metadata_file(metadata_name) or str(dataset.metadata.spec[metadata_name].no_value)
+
+    def unstructured_path_rewrite(self, path):
+        return self.base.unstructured_path_rewrite(path)
+
+    def remote_evaluation_job_io(self, job_io: JobIO):
+        return self.base.remote_evaluation_job_io(job_io)
+
+    def remote_evaluation_unstructured_paths(self) -> dict[str, str]:
+        return self.base.remote_evaluation_unstructured_paths()
+
+    def container_path_rewrite(self, path):
+        return self.base.container_path_rewrite(path)
+
+    def working_directory(self):
+        return self.base.working_directory()
+
+    def config_directory(self):
+        return self.base.config_directory()
+
+    def env_config_directory(self):
+        return self.base.env_config_directory()
+
+    def sep(self):
+        return self.base.sep()
+
+    def new_file_path(self):
+        return self.base.new_file_path()
+
+    def tool_directory(self):
+        return self.base.tool_directory()
+
+    def version_path(self):
+        return self.base.version_path()
+
+    def home_directory(self):
+        return self.base.home_directory()
+
+    def tmp_directory(self):
+        return self.base.tmp_directory()
+
+    def galaxy_url(self):
+        return self.base.galaxy_url()
+
+    def get_file_sources_dict(self) -> dict[str, Any]:
+        return self.base.get_file_sources_dict()

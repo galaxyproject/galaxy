@@ -76,6 +76,30 @@ def test_pulsar_defaults_do_not_mount_galaxy_storage(container_class, metadata, 
         assert f"{path}:ro" not in volumes
 
 
+@pytest.mark.parametrize("job_directory_type", ["galaxy", "pulsar"])
+def test_extra_job_subdirectories_are_mounted_read_only(job_directory_type):
+    container = DockerContainer(
+        container_id="busybox",
+        app_info=AppInfo(galaxy_root_dir="/galaxy"),
+        tool_info=ToolInfo(tool_id="tool", profile=float(VERSION_MAJOR)),
+        destination_info={},
+        job_info=JobInfo(
+            working_directory="/jobs/1/working",
+            tool_directory=None,
+            job_directory="/jobs/1",
+            tmp_directory=None,
+            home_directory=None,
+            job_directory_type=job_directory_type,
+            output_paths=set(),
+            extra_job_subdirectories=["_protected/inputs"],
+        ),
+        container_description=None,
+    )
+    volumes = container._expand_volume_str("$defaults").split(",")
+    assert "/jobs/1/_protected/inputs:ro" in volumes
+    assert "/jobs/1:ro" not in volumes
+
+
 DEFAULT_ENV_PASS_THROUGH = ["GALAXY_SLOTS", "HOME", "_GALAXY_JOB_HOME_DIR", "_GALAXY_JOB_TMP_DIR"]
 
 
