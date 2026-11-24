@@ -20,7 +20,7 @@ from dataclasses import (
 from datetime import (
     datetime,
     timedelta,
-    timezone,
+    UTC,
 )
 from http.server import (
     BaseHTTPRequestHandler,
@@ -113,7 +113,7 @@ class MockRecryptorService:
         self.keypairs[key_ref] = ComputeKeypair(
             keypair=generate_keypair(),
             user_public=user_public,
-            expires_at=datetime.now(timezone.utc) + expires_in,
+            expires_at=datetime.now(UTC) + expires_in,
         )
         return key_ref
 
@@ -135,7 +135,7 @@ class MockRecryptorService:
         compute = self.keypairs.get(payload.get("crypt4gh_compute_keypair_id", ""))
         if compute is None:
             return 404, {"detail": "Unknown crypt4gh_compute_keypair_id"}
-        if compute.expires_at - datetime.now(timezone.utc) < self.expiry_margin:
+        if compute.expires_at - datetime.now(UTC) < self.expiry_margin:
             return 410, {"detail": "Expired crypt4gh_compute_keypair_id"}
         if route == "recrypt_header_to_job_key":
             recipient = parse_public_pem(payload["crypt4gh_job_public_key"])

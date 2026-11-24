@@ -5,7 +5,7 @@ import os
 from datetime import (
     datetime,
     timedelta,
-    timezone,
+    UTC,
 )
 from typing import Any
 
@@ -162,7 +162,7 @@ class BaseCrypt4GHExecutionIntegrationTestCase(integration_util.IntegrationTestC
         hda = self._app.model.session.get(HistoryDatasetAssociation, self._app.security.decode_id(dataset_id))
         assert hda and hda.dataset
         for grant in hda.dataset.protection_grants:
-            grant.expires_at = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=1)
+            grant.expires_at = datetime.now(UTC).replace(tzinfo=None) - timedelta(days=1)
         self._app.model.session.commit()
 
     def _check_tools_read_bam_indexes(self, history_id: str) -> None:

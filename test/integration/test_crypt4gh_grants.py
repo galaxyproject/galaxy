@@ -7,7 +7,7 @@ import struct
 from datetime import (
     datetime,
     timedelta,
-    timezone,
+    UTC,
 )
 
 from sqlalchemy import select
@@ -36,7 +36,7 @@ def grant_payload(**overrides) -> dict:
         "scheme": "crypt4gh",
         "crypt4gh_compute_header": COMPUTE_HEADER,
         "crypt4gh_compute_keypair_id": "cnk:abcdef0123456789",
-        "crypt4gh_compute_keypair_expiration_date": (datetime.now(timezone.utc) + timedelta(days=6)).isoformat(),
+        "crypt4gh_compute_keypair_expiration_date": (datetime.now(UTC) + timedelta(days=6)).isoformat(),
     }
     payload.update(overrides)
     return payload
@@ -187,7 +187,7 @@ class TestCrypt4GHGrantsIntegration(integration_util.IntegrationTestCase):
         dataset = self._upload_protected(history_id)
         not_a_header = base64.b64encode(b"definitely not a crypt4gh header").decode()
         header_with_body = base64.b64encode(crypt4gh_header(b"packet") + b"body").decode()
-        in_a_week = datetime.now(timezone.utc) + timedelta(days=7)
+        in_a_week = datetime.now(UTC) + timedelta(days=7)
         for invalid in (
             {"crypt4gh_compute_header": "not base64!"},
             {"crypt4gh_compute_header": not_a_header},

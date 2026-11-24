@@ -8,6 +8,7 @@ from datetime import (
     datetime,
     timedelta,
     timezone,
+    UTC,
 )
 from typing import cast
 from unittest import mock
@@ -66,7 +67,7 @@ def _payload(**overrides) -> Crypt4GHGrantPayload:
         "scheme": "crypt4gh",
         "crypt4gh_compute_header": base64.b64encode(_header(b"compute packet")).decode(),
         "crypt4gh_compute_keypair_id": "cnk:0123456789abcdef",
-        "crypt4gh_compute_keypair_expiration_date": datetime.now(timezone.utc) + timedelta(days=6),
+        "crypt4gh_compute_keypair_expiration_date": datetime.now(UTC) + timedelta(days=6),
     }
     values.update(overrides)
     return Crypt4GHGrantPayload(**values)
@@ -77,7 +78,7 @@ def test_valid_grant_is_stored_as_naive_utc():
     record = validate_crypt4gh_grant(_payload(crypt4gh_compute_keypair_expiration_date=expiration), JOB_MARGIN)
     assert record.key_ref == "cnk:0123456789abcdef"
     assert record.expires_at.tzinfo is None
-    assert record.expires_at == expiration.astimezone(timezone.utc).replace(tzinfo=None)
+    assert record.expires_at == expiration.astimezone(UTC).replace(tzinfo=None)
     assert record.grant_data.compute_header
     assert base64.b64decode(record.grant_data.compute_header) == _header(b"compute packet")
 
@@ -88,9 +89,9 @@ def test_valid_grant_is_stored_as_naive_utc():
         {"crypt4gh_compute_header": "not base64!"},
         {"crypt4gh_compute_header": base64.b64encode(b"not a header").decode()},
         {"crypt4gh_compute_header": base64.b64encode(_header(b"packet") + b"trailing body").decode()},
-        {"crypt4gh_compute_keypair_expiration_date": datetime.now(timezone.utc) - timedelta(minutes=1)},
-        {"crypt4gh_compute_keypair_expiration_date": datetime.now(timezone.utc) + timedelta(hours=20)},
-        {"crypt4gh_compute_keypair_expiration_date": datetime.now(timezone.utc) + timedelta(days=60)},
+        {"crypt4gh_compute_keypair_expiration_date": datetime.now(UTC) - timedelta(minutes=1)},
+        {"crypt4gh_compute_keypair_expiration_date": datetime.now(UTC) + timedelta(hours=20)},
+        {"crypt4gh_compute_keypair_expiration_date": datetime.now(UTC) + timedelta(days=60)},
     ],
 )
 def test_invalid_grants_are_rejected(overrides):
@@ -100,7 +101,7 @@ def test_invalid_grants_are_rejected(overrides):
 
 def test_keypairs_expiring_before_a_job_could_finish_are_rejected():
     # Accepted by the key service for another day, but not until a job hitting a 48h walltime ends.
-    payload = _payload(crypt4gh_compute_keypair_expiration_date=datetime.now(timezone.utc) + timedelta(hours=60))
+    payload = _payload(crypt4gh_compute_keypair_expiration_date=datetime.now(UTC) + timedelta(hours=60))
     with pytest.raises(RequestParameterInvalidException, match="expires before a job using it could finish"):
         validate_crypt4gh_grant(payload, _manager(walltime=timedelta(hours=48)).job_margin)
 
@@ -178,7 +179,7 @@ def _job(*outputs):
 def _write_sidecar(job_directory, datasets, errors=(), expiration=None):
     path = os.path.join(job_directory, SIDECAR_FILE)
     os.makedirs(os.path.dirname(path), exist_ok=True)
-    expiration = expiration or (datetime.now(timezone.utc) + timedelta(days=5)).isoformat()
+    expiration = expiration or (datetime.now(UTC) + timedelta(days=5)).isoformat()
     with open(path, "w") as f:
         json.dump({"key_ref": "cnk:1", "key_expiration": expiration, "datasets": datasets, "errors": list(errors)}, f)
 
@@ -370,7 +371,7 @@ def test_grants_record_extra_files_copying_encrypted_inputs(tmp_path):
     # Authorizing the dataset again can't make them decryptable.
     stored = DatasetProtectionGrant(
         key_ref=grant.key_ref,
-        expires_at=datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(days=3),
+        expires_at=datetime.now(UTC).replace(tzinfo=None) + timedelta(days=3),
         grant_data=grant.grant_data,
     )
     manager.get_grant = mock.MagicMock(return_value=stored)
@@ -511,7 +512,7 @@ def test_finish_job_fails_on_cleanup_failure_without_purging(tmp_path):
 
 def test_renewing_a_grant_keeps_extra_files_and_metadata_files_of_job_outputs(tmp_path):
     manager = _manager()
-    job_expiration = datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(days=3)
+    job_expiration = datetime.now(UTC).replace(tzinfo=None) + timedelta(days=3)
     grant = DatasetProtectionGrant(
         key_ref="cnk:job",
         expires_at=job_expiration,
@@ -644,7 +645,7 @@ def test_jobs_refuse_extra_files_protected_for_another_user(tmp_path, creator_ex
 def test_jobs_refuse_extra_files_whose_authorization_expires(tmp_path):
     output, _ = _protected_output(tmp_path)
     output.dataset.protection_grants = []
-    expires_at = (datetime.now(timezone.utc) + timedelta(hours=12)).replace(tzinfo=None)
+    expires_at = (datetime.now(UTC) + timedelta(hours=12)).replace(tzinfo=None)
     grant = _grant_on(
         output.dataset,
         2,
@@ -671,13 +672,13 @@ def test_jobs_create_the_metadata_files_they_cant_decrypt(tmp_path, index_key_ex
     # Renewed by the user, the index keeps the compute keypair of the job that created it.
     grant = DatasetProtectionGrant(
         key_ref="cnk:user",
-        expires_at=(datetime.now(timezone.utc) + timedelta(days=6)).replace(tzinfo=None),
+        expires_at=(datetime.now(UTC) + timedelta(days=6)).replace(tzinfo=None),
         grant_data={
             "compute_header": "h",
             "metadata_files": {"bam_index": "index header"},
             "extra_files_key": {
                 "key_ref": "cnk:job",
-                "expires_at": (datetime.now(timezone.utc) + index_key_expires_in).replace(tzinfo=None).isoformat(),
+                "expires_at": (datetime.now(UTC) + index_key_expires_in).replace(tzinfo=None).isoformat(),
             },
         },
     )
@@ -712,7 +713,7 @@ def _conversion_of(tmp_path):
 def _grants_on(*datasets):
     grant = DatasetProtectionGrant(
         key_ref="cnk:abcdef0123456789",
-        expires_at=datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(days=3),
+        expires_at=datetime.now(UTC).replace(tzinfo=None) + timedelta(days=3),
         grant_data={"compute_header": "compute"},
     )
     ids = {dataset.dataset.id for dataset in datasets}
@@ -762,7 +763,7 @@ def test_grant_status_shows_until_when_jobs_can_use_the_grant(tmp_path):
 def test_grants_expiring_before_a_job_can_end_are_refused_when_requested(tmp_path):
     output, _ = _protected_output(tmp_path)
     # The key service still accepts it, but not anymore when a job hitting the walltime ends.
-    expires_at = (datetime.now(timezone.utc) + timedelta(hours=30)).replace(tzinfo=None)
+    expires_at = (datetime.now(UTC) + timedelta(hours=30)).replace(tzinfo=None)
     grant = DatasetProtectionGrant(key_ref="cnk:1", expires_at=expires_at, grant_data={"compute_header": "compute"})
     manager = _manager(walltime=timedelta(hours=48))
     manager.get_grant = mock.MagicMock(return_value=grant)
