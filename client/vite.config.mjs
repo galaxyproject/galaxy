@@ -58,10 +58,6 @@ export default defineConfig(({ command }) => ({
         // the vue-router 3 component, which renders nothing under Vue 3.
         dedupe: ["vue-router"],
         alias: [
-            // Use @vue/compat for Vue 2 compatibility mode
-            { find: "vue", replacement: "@vue/compat" },
-            // Also alias the direct Vue 2 dist path that some libraries use
-            { find: "vue/dist/vue.esm.js", replacement: "@vue/compat" },
             // galaxy-ui is internal-only (no library build) and always
             // resolved from source -- the main client consumes the .vue
             // files directly. Exact match: subpaths such as tokens.css resolve
