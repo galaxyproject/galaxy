@@ -603,7 +603,7 @@ class TestUnprivilegedToolsApi(ApiTestCase, TestsTools):
             )
             dataset = self.dataset_populator.new_dataset(history_id=history_id, content="abc", wait=True)
             inputs = {"input": {"src": "hda", "id": dataset["id"]}}
-            self._run(
+            user_tool_run = self._run(
                 history_id=history_id, tool_uuid=user_tool["uuid"], inputs=inputs, assert_ok=True, wait_for_job=True
             )
             toolbox_run = self._run(
@@ -629,8 +629,8 @@ class TestUnprivilegedToolsApi(ApiTestCase, TestsTools):
                 assert_ok=True,
                 wait_for_job=True,
             )
-            user_tool_job = self.dataset_populator.get_job_details(user_tool_again["jobs"][0]["id"], full=True).json()
-            assert user_tool_job["copied_from_job_id"] != toolbox_job["id"], user_tool_job
+            # The user tool still finds its own job when a same-id toolbox job is newer.
+            assert self._copied_from_job_id(user_tool_again["jobs"][0]["id"]) == user_tool_run["jobs"][0]["id"]
 
     @skip_without_tool("help_features_markdown")
     def test_tool_request_use_cached_job_does_not_reuse_toolbox_jobs(self):
