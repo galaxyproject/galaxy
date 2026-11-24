@@ -2,7 +2,6 @@ import logging
 import os
 import shutil
 import tempfile
-from dataclasses import asdict
 from json import dumps
 from typing import (
     Any,
@@ -59,7 +58,6 @@ from galaxy.schema.fetch_data import (
 from galaxy.schema.schema import CreateToolLandingRequestPayload
 from galaxy.schema.tool_outputs import (
     ToolOutputActionsByName,
-    ToolOutputPreview,
     ToolOutputsPreview,
     ToolOutputsPreviewRequest,
 )
@@ -315,12 +313,7 @@ class ToolsService(ServiceBase):
                 supported=False, unsupported_reason="Outputs of runs that fetch inputs from URLs can't be described."
             )
         request_context = proxy_work_context_for_history(trans, history=history)
-        planned = tool.preview_outputs(request_context, request_internal_state.input_state, tool_state)
-        return ToolOutputsPreview(
-            supported=True,
-            job_count=planned.job_count,
-            outputs=[ToolOutputPreview(**asdict(output)) for output in planned.outputs],
-        )
+        return tool.preview_outputs(request_context, request_internal_state.input_state, tool_state)
 
     def curated_tool_tags_by_id(self, trans: ProvidesUserContext) -> dict[str, list[str]]:
         """Return {tool_id: [tag, ...]} for currently-loaded tools that carry curated tags.

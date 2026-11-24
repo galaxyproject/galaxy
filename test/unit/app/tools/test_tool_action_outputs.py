@@ -16,9 +16,9 @@ from galaxy.job_execution.actions.post import ActionBox
 from galaxy.managers.collections import DatasetCollectionManager
 from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.objectstore import BaseObjectStore
+from galaxy.schema.tool_outputs import ToolOutputPreview
 from galaxy.tool_util.unittest_utils import functional_test_tool_path
 from galaxy.tools.actions import DefaultToolAction
-from galaxy.tools.output_planning import PlannedOutput
 from galaxy.util.unittest import TestCase
 from .test_actions import (
     MockObjectStore,
@@ -45,6 +45,10 @@ STRUCTURED_LIKE_OPTIONAL_INPUT_TOOL = """<tool id="structured_like_optional" nam
 REPEAT_MATCHING_FILTER = [{"cond": {"select": "a", "inner_cond": {"inner_select": "2", "text": "x"}}}]
 
 
+def _described(name: str, label: str | None, output_type: str, **fields: Any) -> ToolOutputPreview:
+    return ToolOutputPreview(name=name, label=label, output_type=output_type, **fields)
+
+
 class ToolOutputsTestCase(TestCase, tools_support.UsesTools):
     def setUp(self):
         self.setup_app()
@@ -65,7 +69,7 @@ class ToolOutputsTestCase(TestCase, tools_support.UsesTools):
         )
         return job, out_data
 
-    def _planned(self, tool_file: str, incoming: dict[str, Any]) -> list[PlannedOutput]:
+    def _planned(self, tool_file: str, incoming: dict[str, Any]) -> list[ToolOutputPreview]:
         tool = self._init_tool_for_path(functional_test_tool_path(tool_file))
         tool_action = cast(DefaultToolAction, tool.tool_action)
         planner = tool_action.preview_output_planner(
@@ -208,7 +212,7 @@ class TestPreviewOutputPlanner(ToolOutputsTestCase):
             cast(ProvidesHistoryContext, self.trans), tool, {"input1": None}, self.history
         )
 
-        assert planner.planned_outputs() == [PlannedOutput("output", "structured_like_optional", "collection")]
+        assert planner.planned_outputs() == [_described("output", "structured_like_optional", "collection")]
 
     def test_describes_outputs_without_creating_anything(self):
         incoming = {
@@ -222,18 +226,18 @@ class TestPreviewOutputPlanner(ToolOutputsTestCase):
 
         label = "output_format on dataset 1 and 2"
         assert planned == [
-            PlannedOutput("direct_output", label, "data", format="txt"),
-            PlannedOutput("input_based_output", label, "data", format="fasta"),
-            PlannedOutput("format_source_1_output", label, "data", format="fasta", format_source="input_data_1"),
-            PlannedOutput("format_source_2_output", label, "data", format="tabular", format_source="input_data_2"),
-            PlannedOutput("change_format_output", label, "data", format="fastqillumina"),
+            _described("direct_output", label, "data", format="txt"),
+            _described("input_based_output", label, "data", format="fasta"),
+            _described("format_source_1_output", label, "data", format="fasta", format_source="input_data_1"),
+            _described("format_source_2_output", label, "data", format="tabular", format_source="input_data_2"),
+            _described("change_format_output", label, "data", format="fastqillumina"),
         ]
         assert self._row_counts() == rows_before
 
     def test_format_input_since_profile_16_04_is_left_to_the_job(self):
         planned = self._planned("output_format_input.xml", {"input": self._dataset("tabular")})
 
-        assert planned == [PlannedOutput("output", "output_format_input on dataset 1", "data", format=None)]
+        assert planned == [_described("output", "output_format_input on dataset 1", "data", format=None)]
 
     def test_format_changed_by_actions_is_left_to_the_job(self):
         incoming = {
@@ -243,20 +247,18 @@ class TestPreviewOutputPlanner(ToolOutputsTestCase):
 
         planned = self._planned("output_action_change_format.xml", incoming)
 
-        assert planned == [PlannedOutput("out1", "output_action_change_format on dataset 1", "data", format=None)]
+        assert planned == [_described("out1", "output_action_change_format on dataset 1", "data", format=None)]
 
     def test_hidden_output_that_discovers_datasets(self):
         planned = self._planned("discover_metadata_files.xml", {"input_bam": self._dataset("bam")})
 
-        assert planned == [
-            PlannedOutput("bam_output", "discovered bam", "data", format="txt", hidden=True, dynamic=True)
-        ]
+        assert planned == [_described("bam_output", "discovered bam", "data", format="txt", hidden=True, dynamic=True)]
 
     def test_static_collection_with_mixed_formats(self):
         planned = self._planned("collection_creates_pair.xml", {"input1": self._dataset("tabular")})
 
         assert planned == [
-            PlannedOutput("paired_output", "Split Pair", "collection", collection_type="paired", element_count=2)
+            _described("paired_output", "Split Pair", "collection", collection_type="paired", element_count=2)
         ]
 
     def test_structured_like_collection(self):
@@ -264,7 +266,7 @@ class TestPreviewOutputPlanner(ToolOutputsTestCase):
 
         # inherit_format gives the elements txt and fasta, so the collection has no single format
         assert planned == [
-            PlannedOutput("list_output", "Duplicate List", "collection", collection_type="paired", element_count=2)
+            _described("list_output", "Duplicate List", "collection", collection_type="paired", element_count=2)
         ]
 
     def test_type_source_collection_discovers_its_elements(self):
@@ -273,13 +275,13 @@ class TestPreviewOutputPlanner(ToolOutputsTestCase):
         planned = self._planned("collection_type_source.xml", incoming)
 
         assert planned == [
-            PlannedOutput("list_output", "Duplicate List", "collection", collection_type="paired", dynamic=True)
+            _described("list_output", "Duplicate List", "collection", collection_type="paired", dynamic=True)
         ]
 
     def test_expression_output(self):
         planned = self._planned("expression_forty_two.xml", {})
 
-        assert planned == [PlannedOutput("out1", "expression_forty_two", "parameter")]
+        assert planned == [_described("out1", "expression_forty_two", "parameter")]
 
     def _row_counts(self) -> dict[str, int]:
         session = self.app.model.context

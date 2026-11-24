@@ -14,7 +14,6 @@ from dataclasses import dataclass
 from typing import (
     Any,
     cast,
-    Literal,
     TYPE_CHECKING,
 )
 
@@ -25,6 +24,7 @@ from galaxy.job_execution.output_format import (
     resolve_format_source,
 )
 from galaxy.model.dataset_collections.structure import Tree
+from galaxy.schema.tool_outputs import ToolOutputPreview
 from galaxy.tool_util.parser.output_actions import (
     FormatToolOutputAction,
     ToolOutputActionConditional,
@@ -238,21 +238,25 @@ class OutputPlanner:
     def hidden(self, output: "ToolOutputBase") -> bool:
         return bool(output.hidden) or self.mapping_over
 
-    def planned_outputs(self) -> list["PlannedOutput"]:
+    def planned_outputs(self) -> list[ToolOutputPreview]:
         """Describe the outputs of this job as a run would create them."""
         planned = []
         for name, output in self.included_outputs():
             if tool_output_is_collection(output):
                 planned.append(self._planned_collection(name, output))
             elif isinstance(output, ToolExpressionOutput):
-                planned.append(PlannedOutput(name, self._label(output), "parameter", hidden=self.hidden(output)))
+                planned.append(
+                    ToolOutputPreview(
+                        name=name, label=self._label(output), output_type="parameter", hidden=self.hidden(output)
+                    )
+                )
             else:
                 output = cast("ToolOutput", output)
                 planned.append(
-                    PlannedOutput(
-                        name,
-                        self._label(output),
-                        "data",
+                    ToolOutputPreview(
+                        name=name,
+                        label=self._label(output),
+                        output_type="data",
                         format=self.known_format(output),
                         format_source=output.format_source,
                         hidden=self.hidden(output),
@@ -273,7 +277,7 @@ class OutputPlanner:
         ext = self.format(output)
         return None if ext in RUNTIME_FORMATS else ext
 
-    def _planned_collection(self, name: str, output: "ToolOutputCollection") -> "PlannedOutput":
+    def _planned_collection(self, name: str, output: "ToolOutputCollection") -> ToolOutputPreview:
         try:
             collection_type: str | None = output_collection_type(
                 self.trans, output, self.input_collections, self.input_collection_parameters
@@ -294,10 +298,10 @@ class OutputPlanner:
         if parts is not None:
             element_count = len({(part.parent_ids or [part.element_identifier])[0] for part in parts})
             part_formats = {self.known_format(part.output_def) for part in parts}
-        return PlannedOutput(
-            name,
-            self._label(output),
-            "collection",
+        return ToolOutputPreview(
+            name=name,
+            label=self._label(output),
+            output_type="collection",
             format=part_formats.pop() if len(part_formats) == 1 else None,
             collection_type=collection_type,
             element_count=element_count,
@@ -342,36 +346,9 @@ def _actions_can_change_format(group: "ToolOutputActionGroup") -> bool:
     return False
 
 
-@dataclass(frozen=True)
-class PlannedOutput:
-    """An output that a tool run would create, as described before it runs.
-
-    ``format``, ``collection_type`` and ``element_count`` are None when only the job decides them.
-    """
-
-    name: str
-    label: str | None
-    output_type: Literal["data", "collection", "parameter"]
-    format: str | None = None
-    format_source: str | None = None
-    collection_type: str | None = None
-    element_count: int | None = None
-    hidden: bool = False
-    dynamic: bool = False
-    mapped_over: bool = False
-
-
-@dataclass(frozen=True)
-class PlannedRun:
-    """The jobs and outputs a tool request would create."""
-
-    job_count: int
-    outputs: list[PlannedOutput]
-
-
 def planned_implicit_outputs(
     plans: Mapping[str, "ImplicitOutputPlan"], job_planner: OutputPlanner | None
-) -> list[PlannedOutput]:
+) -> list[ToolOutputPreview]:
     """Describe the output collections of a mapped-over run.
 
     :param job_planner: the planner of the run's first job, which decides the formats of the
@@ -389,10 +366,10 @@ def planned_implicit_outputs(
         ):
             format = job_planner.known_format(cast("ToolOutput", output))
         planned.append(
-            PlannedOutput(
-                name,
-                plan.name,
-                "collection",
+            ToolOutputPreview(
+                name=name,
+                label=plan.name,
+                output_type="collection",
                 format=format,
                 format_source=getattr(output, "format_source", None),
                 collection_type=structure.collection_type_description.collection_type,

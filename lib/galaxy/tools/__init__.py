@@ -79,7 +79,10 @@ from galaxy.model.dataset_collections.types.sample_sheet_workbook import _sample
 from galaxy.model.store.discover import safe_path_from_directory
 from galaxy.objectstore import ObjectStorePopulator
 from galaxy.schema.credentials import CredentialsContext
-from galaxy.schema.tool_outputs import ToolOutputActions
+from galaxy.schema.tool_outputs import (
+    ToolOutputActions,
+    ToolOutputsPreview,
+)
 from galaxy.tool_shed.util.repository_util import get_installed_repository
 from galaxy.tool_shed.util.shed_util_common import set_image_paths
 from galaxy.tool_util.abstract_tool import AbstractTool
@@ -197,10 +200,7 @@ from galaxy.tools.output_actions import (
     output_actions_of_job,
     post_job_actions_for_outputs,
 )
-from galaxy.tools.output_planning import (
-    planned_implicit_outputs,
-    PlannedRun,
-)
+from galaxy.tools.output_planning import planned_implicit_outputs
 from galaxy.tools.parameters import (
     check_param,
     fill_dynamic_defaults,
@@ -2523,7 +2523,7 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
         request_context: WorkRequestContext,
         request_template: ToolRequestT,
         tool_state: RequestInternalDereferencedToolState,
-    ) -> PlannedRun:
+    ) -> ToolOutputsPreview:
         """Describe the jobs and outputs a tool request would create, without creating anything.
 
         :param request_template: the decoded request state, as ``handle_input_async`` gets it from
@@ -2555,7 +2555,7 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
         else:
             # A request that expands to no jobs creates nothing.
             outputs = []
-        return PlannedRun(job_count=len(all_params), outputs=outputs)
+        return ToolOutputsPreview(supported=True, job_count=len(all_params), outputs=outputs)
 
     def handle_input(
         self,
