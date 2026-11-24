@@ -14,11 +14,17 @@ from galaxy.celery.tasks import (
     _cleanup_jwds,
     cached_create_tool_from_representation,
     clean_object_store_caches,
+    queue_jobs,
 )
 from galaxy.exceptions import ObjectNotFound
 from galaxy.model.unittest_utils.model_testing_utils import initialize_model
 from galaxy.objectstore import BaseObjectStore
 from galaxy.objectstore.caching import CacheTarget
+from galaxy.schema.tasks import (
+    QueueJobs,
+    RequestUser,
+    ToolSource,
+)
 
 
 class MockObjectStore:
@@ -231,19 +237,32 @@ SIMPLE_TOOL = """<tool id="cache_key_tool" name="Cache key tool" version="1.0">
 </tool>"""
 
 
-def test_cached_tool_is_per_dynamic_tool_revision():
-    # queue_jobs sets per-revision state on the cached tool, so revisions with identical
-    # source must not share one object between concurrent tasks.
-    app = MockApp()
+@pytest.fixture
+def clean_tool_cache():
     cached_create_tool_from_representation.cache_clear()
-    revision_a = cached_create_tool_from_representation(
-        app=app, raw_tool_source=SIMPLE_TOOL, tool_source_class="XmlToolSource", dynamic_tool_id=1
+    yield
+    cached_create_tool_from_representation.cache_clear()
+
+
+def _queue_jobs_request(dynamic_tool_id):
+    return QueueJobs(
+        tool_source=ToolSource(raw_tool_source=SIMPLE_TOOL, tool_source_class="XmlToolSource"),
+        tool_request_id=1,
+        user=RequestUser(user_id=1),
+        use_cached_jobs=True,
+        rerun_remap_job_id=None,
+        dynamic_tool_id=dynamic_tool_id,
     )
-    revision_b = cached_create_tool_from_representation(
-        app=app, raw_tool_source=SIMPLE_TOOL, tool_source_class="XmlToolSource", dynamic_tool_id=2
-    )
-    again_a = cached_create_tool_from_representation(
-        app=app, raw_tool_source=SIMPLE_TOOL, tool_source_class="XmlToolSource", dynamic_tool_id=1
-    )
-    assert revision_a is not revision_b
+
+
+def test_queue_jobs_uses_a_tool_per_dynamic_tool_revision(clean_tool_cache):
+    # JobSubmitter.queue_jobs sets per-revision state on the cached tool, so revisions with
+    # identical source must not share one object between concurrent tasks.
+    # MockApp registers itself as the app the task wrapper injects.
+    MockApp()
+    job_submitter = MagicMock()
+    for dynamic_tool_id in (1, 2, None, 1):
+        queue_jobs(request=_queue_jobs_request(dynamic_tool_id), job_submitter=job_submitter)
+    revision_a, revision_b, not_dynamic, again_a = (call.args[0] for call in job_submitter.queue_jobs.call_args_list)
+    assert len({id(revision_a), id(revision_b), id(not_dynamic)}) == 3
     assert revision_a is again_a
