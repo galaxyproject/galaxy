@@ -110,8 +110,8 @@ def cached_create_tool_from_representation(
     tool_source_class: TOOL_SOURCE_CLASS,
     tool_dir: str | None = None,
     tool_id: str | None = None,
-    # Only part of the cache key: queue_jobs sets per-revision state on the tool, so
-    # revisions with identical source must not share one object between threads.
+    # Unused in the body, it only keys the cache: queue_jobs sets per-revision state on the
+    # tool, so revisions with identical source must not share one object between threads.
     dynamic_tool_id: int | None = None,
 ):
     return create_tool_from_representation(
