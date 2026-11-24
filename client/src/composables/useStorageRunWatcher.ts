@@ -152,7 +152,7 @@ export function useStorageHistoryRunsWatcher(historyId: string, options?: Storag
             runSummariesByRunId.value = next;
 
             if (hasNewlyTerminalRun) {
-                userStore.refreshStorageUsageInBackground();
+                userStore.refreshStorageUsageUnlessLive();
             }
         };
 

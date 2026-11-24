@@ -51,6 +51,14 @@ from galaxy.model.db.role import (
     get_npns_roles,
     get_private_user_role,
 )
+from galaxy.model.user_quota_updates import (
+    queue_user_quota_update,
+    user_quota_updates_enabled,
+)
+from galaxy.quota import (
+    any_group_has_quota,
+    queue_group_membership_change,
+)
 from galaxy.security import (
     Action,
     get_permitted_actions,
@@ -705,6 +713,7 @@ WHERE history.user_id != :user_id and history_dataset_association.dataset_id = :
     def associate_user_group(self, user, group):
         assoc = UserGroupAssociation(user, group)
         self.sa_session.add(assoc)
+        queue_group_membership_change(self.sa_session, [user.id], [group.id])
         self.sa_session.commit()
         return assoc
 
@@ -1507,6 +1516,13 @@ WHERE history.user_id != :user_id and history_dataset_association.dataset_id = :
         self.sa_session.commit()
 
     def _set_user_groups(self, user, group_ids):
+        if user_quota_updates_enabled(self.sa_session):
+            old_group_ids = set(
+                self.sa_session.scalars(
+                    select(UserGroupAssociation.group_id).where(UserGroupAssociation.user_id == user.id)
+                )
+            )
+            queue_group_membership_change(self.sa_session, [user.id], old_group_ids.symmetric_difference(group_ids))
         delete_stmt = delete(UserGroupAssociation).where(UserGroupAssociation.user_id == user.id)
         insert_values = [{"user_id": user.id, "group_id": group_id} for group_id in group_ids]
         self._set_associations(user, UserGroupAssociation, delete_stmt, insert_values)
@@ -1533,6 +1549,14 @@ WHERE history.user_id != :user_id and history_dataset_association.dataset_id = :
         return [role_id for role_id in role_ids if role_id not in private_role_ids]
 
     def _set_group_users(self, group, user_ids):
+        # Checked first, so the members of a group without a quota aren't loaded
+        if user_quota_updates_enabled(self.sa_session) and any_group_has_quota(self.sa_session, [group.id]):
+            old_user_ids = set(
+                self.sa_session.scalars(
+                    select(UserGroupAssociation.user_id).where(UserGroupAssociation.group_id == group.id)
+                )
+            )
+            queue_user_quota_update(self.sa_session, old_user_ids.symmetric_difference(user_ids))
         delete_stmt = delete(UserGroupAssociation).where(UserGroupAssociation.group_id == group.id)
         insert_values = [{"group_id": group.id, "user_id": user_id} for user_id in user_ids]
         self._set_associations(group, UserGroupAssociation, delete_stmt, insert_values)
