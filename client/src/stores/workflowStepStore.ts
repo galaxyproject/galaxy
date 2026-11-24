@@ -115,6 +115,7 @@ export interface NewStep {
     type: "tool" | "data_input" | "data_collection_input" | "subworkflow" | "parameter_input" | "pause";
     uuid?: string;
     when?: string | null;
+    in?: Record<string, { default?: unknown }>;
     workflow_id?: string;
     workflow_outputs?: WorkflowOutput[];
 }

@@ -1,7 +1,9 @@
 import os
 
 EXPRESSION_SCRIPT_NAME = "_evaluate_expression_.py"
-EXPRESSION_SCRIPT_CALL = f"python {EXPRESSION_SCRIPT_NAME}"
+# Run from the job directory. The script is written to configs/, which tool containers mount even when the job directory
+# itself is not mounted.
+EXPRESSION_SCRIPT_CALL = f"python configs/{EXPRESSION_SCRIPT_NAME}"
 
 
 def write_evalute_script(in_directory):
