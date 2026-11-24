@@ -1,7 +1,6 @@
 import logging
 import re
 from typing import TYPE_CHECKING
-from urllib.parse import quote
 
 from galaxy import util
 from galaxy.managers.context import ProvidesAppContext
@@ -9,7 +8,6 @@ from galaxy.tool_shed.util import repository_util
 from galaxy.util.tool_shed import common_util
 
 if TYPE_CHECKING:
-    from galaxy.model.tool_shed_install import ToolShedRepository
     from galaxy.tool_shed.tools.data_table_manager import RequiredAppT
 
 log = logging.getLogger(__name__)
@@ -17,6 +15,8 @@ log = logging.getLogger(__name__)
 MAX_CONTENT_SIZE = 1048576
 DATATYPES_CONFIG_FILENAME = "datatypes_conf.xml"
 REPOSITORY_DATA_MANAGER_CONFIG_FILENAME = "data_manager_conf.xml"
+LOCAL_IMAGE_DIRECTIVE = re.compile(r"\.\. image:: (?!https?://)/?(.+)")
+LOCAL_IMAGE_OR_FIGURE_DIRECTIVE = re.compile(r"\.\. (image|figure):: (?!https?://)/?(.+)")
 
 
 def can_eliminate_repository_dependency(metadata_dict, tool_shed_url, name, owner):
@@ -142,32 +142,25 @@ def have_shed_tool_conf_for_install(app):
     return bool(app.toolbox.dynamic_confs(include_migrated_tool_conf=False))
 
 
-LOCAL_IMAGE_DIRECTIVE = re.compile(r"\.\. image:: (?!https?://)/?(.+)")
-
-
 def _strip_legacy_image_prefixes(text: str) -> str:
     # Shed help used to require $PATH_TO_IMAGES and ${static_path}; they are now ignored.
     return text.replace("$PATH_TO_IMAGES", "").replace("${static_path}", "")
 
 
 def make_image_paths_relative(text: str) -> str:
-    """Rewrite Tool Shed help ``.. image::`` targets to paths relative to the tool."""
-    return LOCAL_IMAGE_DIRECTIVE.sub(r".. image:: \1", _strip_legacy_image_prefixes(text))
+    """Rewrite Tool Shed help ``.. image::``/``.. figure::`` targets to paths relative to the tool."""
+    return LOCAL_IMAGE_OR_FIGURE_DIRECTIVE.sub(r".. \1:: \2", _strip_legacy_image_prefixes(text))
 
 
 def set_image_paths(
     app: "RequiredAppT",
     text: str,
     encoded_repository_id: str | None = None,
-    tool_shed_repository: "ToolShedRepository | None" = None,
-    tool_id: str | None = None,
-    tool_version: str | None = None,
     changeset_revision: str | None = None,
 ) -> str:
     """
-    Handle tool help image display for tools that are contained in repositories in
-    the tool shed or installed into Galaxy as well as image display in repository
-    README files.  This method will determine the location of the image file and
+    Route tool help and repository README images to the Tool Shed's or Galaxy's
+    repository image route.  This method will determine the location of the image file and
     return the path to it that will enable the caller to open the file.  In the tool shed, pass
     changeset_revision to point at the images as of that repository revision rather than the
     current files; Galaxy's image routes ignore it.
@@ -178,15 +171,8 @@ def set_image_paths(
         elif encoded_repository_id:
             # We're in the tool shed.
             route_to_images = f"/repository/static/images/{encoded_repository_id}"
-        elif tool_shed_repository and tool_id and tool_version:
-            route_to_images = quote(
-                f"shed_tool_static/{tool_shed_repository.tool_shed}/{tool_shed_repository.owner}/{tool_shed_repository.name}/{tool_id}/{tool_version}",
-                safe="/",
-            )
         else:
-            raise Exception(
-                "encoded_repository_id or tool_shed_repository and tool_id and tool_version must be provided"
-            )
+            raise Exception("encoded_repository_id must be provided")
         text = _strip_legacy_image_prefixes(text)
         # Use regex to instantiate routes into the defined image paths, but replace
         # paths that start with neither http:// nor https://, which will allow for

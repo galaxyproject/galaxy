@@ -1,4 +1,4 @@
-"""Locate files that tool help references by paths relative to the tool."""
+"""Locate files shipped with a tool, such as its icon and help images."""
 
 import mimetypes
 import os

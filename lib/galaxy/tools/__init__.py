@@ -2168,12 +2168,12 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
         if help_content and help_content.format == "restructuredtext":
             help_text = help_content.content or ""
             try:
-                if help_text.find(".. image:: ") >= 0:
-                    if self.repository_id:
+                if self.repository_id:
+                    if help_text.find(".. image:: ") >= 0:
                         help_text = set_image_paths(self.app, help_text, encoded_repository_id=self.repository_id)
-                    elif self.tool_shed_repository:
-                        # The client serves relative image paths from the tool's help_image endpoint.
-                        help_text = make_image_paths_relative(help_text)
+                elif (".. image:: " in help_text or ".. figure:: " in help_text) and self.tool_shed_repository:
+                    # Text check first: after startup tool_shed_repository may query the install database.
+                    help_text = make_image_paths_relative(help_text)
             except Exception:
                 log.exception(
                     "Exception in parse_help, so images may not be properly displayed for tool with id '%s'", self.id

@@ -57,6 +57,8 @@ MINIMAL_TOOL_NO_ID = {
     "outputs": {"output1": {"format": "txt", "type": "data", "from_work_dir": "output.txt"}},
 }
 
+HELP_IMAGE_CSP = "default-src 'none'; img-src data:; font-src data:; style-src 'unsafe-inline'; sandbox"
+
 
 class TestToolsApi(ApiTestCase, TestsTools):
     dataset_populator: DatasetPopulator
@@ -295,12 +297,12 @@ class TestToolsApi(ApiTestCase, TestsTools):
             assert response.headers["Content-Type"] == "image/png"
             with open(expected_file, "rb") as fh:
                 assert response.content == fh.read()
-            assert "sandbox" in response.headers["Content-Security-Policy"]
+            assert response.headers["Content-Security-Policy"] == HELP_IMAGE_CSP
             assert response.headers["X-Content-Type-Options"] == "nosniff"
         response = self._get_tool_help_image("help_images_markdown", "help_image.svg", tool_version="1.0.0")
         self._assert_status_code_is(response, 200)
         assert response.headers["Content-Type"].startswith("image/svg+xml")
-        assert "sandbox" in response.headers["Content-Security-Policy"]
+        assert response.headers["Content-Security-Policy"] == HELP_IMAGE_CSP
         for path in ["missing.png", "help_images_markdown.xml", "../../../../test-data/im3_a.png"]:
             response = self._get_tool_help_image("help_images_markdown", path)
             self._assert_status_code_is(response, 404)
@@ -325,6 +327,9 @@ class TestToolsApi(ApiTestCase, TestsTools):
             )
             self._assert_status_code_is(revalidated, 304)
             assert not revalidated.content
+            assert revalidated.headers["ETag"] == response.headers["ETag"]
+            assert revalidated.headers["Cache-Control"] == response.headers["Cache-Control"]
+            assert revalidated.headers["Content-Security-Policy"] == HELP_IMAGE_CSP
         # If-None-Match takes precedence over If-Modified-Since.
         stale = {"If-None-Match": '"stale"', "If-Modified-Since": response.headers["Last-Modified"]}
         refetched = self._get_tool_help_image(

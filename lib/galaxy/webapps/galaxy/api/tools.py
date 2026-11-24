@@ -122,7 +122,7 @@ ICON_CACHE_CONTROL = f"public, max-age={ICON_CACHE_MAX_AGE}"
 HELP_IMAGE_CACHE_CONTROL = "private, max-age=3600"
 # SVG can carry script; keep it from running if a help image is opened directly.
 HELP_IMAGE_SECURITY_HEADERS = {
-    "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'; sandbox",
+    "Content-Security-Policy": "default-src 'none'; img-src data:; font-src data:; style-src 'unsafe-inline'; sandbox",
     "X-Content-Type-Options": "nosniff",
 }
 
