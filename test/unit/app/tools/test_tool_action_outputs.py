@@ -12,6 +12,7 @@ import pytest
 
 from galaxy import model
 from galaxy.app_unittest_utils import tools_support
+from galaxy.job_execution.actions.post import ActionBox
 from galaxy.managers.collections import DatasetCollectionManager
 from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.objectstore import BaseObjectStore
@@ -322,25 +323,50 @@ class TestRerunRemap(ToolOutputsTestCase):
         old_job.add_post_job_action(model.PostJobAction("DeleteDatasetAction", output_name="out_file1"))
         old_job.add_post_job_action(model.PostJobAction("HideDatasetAction", output_name="out_file1"))
         if of_workflow:
-            workflow = model.Workflow()
-            workflow_step = model.WorkflowStep()
-            workflow_step.order_index = 0
-            workflow.steps = [workflow_step]
-            invocation = model.WorkflowInvocation()
-            invocation.workflow = workflow
-            invocation.history = self.history
-            invocation_step = model.WorkflowInvocationStep()
-            invocation_step.workflow_invocation = invocation
-            invocation_step.workflow_step = workflow_step
-            invocation_step.job = old_job
-            self.app.model.context.add(invocation_step)
+            self._run_by_workflow_step(old_job)
         self.app.model.context.commit()
         new_job, out_data = self._execute("environment_variables.xml", {"inttest": "2"})
 
-        DefaultToolAction()._remap_job_on_rerun(
-            cast(ProvidesHistoryContext, self.trans), None, old_job.id, new_job, out_data
-        )
+        self._remap(old_job, new_job, out_data)
 
         self.app.model.context.commit()
         self.app.model.context.refresh(new_job)
         assert sorted(pjaa.post_job_action.action_type for pjaa in new_job.post_job_actions) == expected_actions
+
+    def test_rename_asked_for_the_rerun_wins_over_the_workflow_step(self):
+        old_job, _ = self._execute("environment_variables.xml", {"inttest": "1"})
+        workflow_step = self._run_by_workflow_step(old_job)
+        model.PostJobAction(
+            "RenameDatasetAction", workflow_step, output_name="out_file1", action_arguments={"newname": "step name"}
+        )
+        self.app.model.context.commit()
+        new_job, out_data = self._execute("environment_variables.xml", {"inttest": "2"})
+        # As the job callback of a tool run attaches the rename asked for in the tool form
+        requested = model.PostJobAction(
+            "RenameDatasetAction", output_name="out_file1", action_arguments={"newname": "my name"}
+        )
+        ActionBox.apply_to_job(self.app, self.app.model.context, [requested], new_job, record_executed=True)
+
+        self._remap(old_job, new_job, out_data)
+
+        assert out_data["out_file1"].name == "my name"
+
+    def _run_by_workflow_step(self, job: model.Job) -> model.WorkflowStep:
+        workflow = model.Workflow()
+        workflow_step = model.WorkflowStep()
+        workflow_step.order_index = 0
+        workflow.steps = [workflow_step]
+        invocation = model.WorkflowInvocation()
+        invocation.workflow = workflow
+        invocation.history = self.history
+        invocation_step = model.WorkflowInvocationStep()
+        invocation_step.workflow_invocation = invocation
+        invocation_step.workflow_step = workflow_step
+        invocation_step.job = job
+        self.app.model.context.add(invocation_step)
+        return workflow_step
+
+    def _remap(self, old_job: model.Job, new_job: model.Job, out_data) -> None:
+        DefaultToolAction()._remap_job_on_rerun(
+            cast(ProvidesHistoryContext, self.trans), None, old_job.id, new_job, out_data
+        )

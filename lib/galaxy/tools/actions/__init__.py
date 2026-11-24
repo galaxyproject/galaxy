@@ -911,6 +911,7 @@ class DefaultToolAction(ToolAction):
             # Duplicate the PJAs of the old job before remap. The output changes asked for a tool
             # run come with the rerun request; other actions, e.g. of a remapped workflow job, stay.
             from_workflow = job_belongs_to_workflow(old_job)
+            requested_pjas = [pjaa.post_job_action for pjaa in current_job.post_job_actions]
             for pjaa in old_job.post_job_actions:
                 if from_workflow or pjaa.post_job_action.action_type not in OUTPUT_ACTION_TYPES:
                     current_job.add_post_job_action(pjaa.post_job_action)
@@ -923,6 +924,10 @@ class DefaultToolAction(ToolAction):
                     # execute immediate actions here, with workflow context.
                     if pja.action_type in ActionBox.immediate_actions:
                         ActionBox.execute(trans.app, trans.sa_session, pja, current_job, replacement_dict)
+                # The output changes asked for the rerun win over the workflow step's.
+                for pja in requested_pjas:
+                    if pja.action_type in ActionBox.immediate_actions:
+                        ActionBox.execute(trans.app, trans.sa_session, pja, current_job)
             for p in old_job.parameters:
                 if is_element_identifier_parameter(p.name):
                     current_job.parameters.append(p.copy())
