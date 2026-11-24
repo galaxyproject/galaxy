@@ -4058,7 +4058,10 @@ class UnzipCollectionTool(DatabaseOperationTool):
             # It is an HDCA
             collection = has_collection.collection
 
-        assert collection.collection_type == "paired"
+        if collection.collection_type != "paired":
+            raise exceptions.RequestParameterInvalidException(
+                f"Unzip collection takes a collection of type 'paired', got '{collection.collection_type}'."
+            )
         forward_o, reverse_o = collection.dataset_instances
         forward, reverse = (
             forward_o.copy(copy_tags=forward_o.tags, flush=False),
