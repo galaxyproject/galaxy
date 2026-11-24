@@ -69,6 +69,8 @@ jobs:
           echo "Checking only the following converters:"
           cat tool_list.txt
       - name: Lint converters
+        env:
+          DATATYPES_CONF: ${{ github.workspace }}/galaxy root/lib/galaxy/config/sample/datatypes_conf.xml.sample
         run: |
           mapfile -t TOOL_ARRAY < tool_list.txt
           planemo lint --skip CitationsMissing,HelpEmpty,HelpMissing --report_level warn "${TOOL_ARRAY[@]}"

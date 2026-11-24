@@ -43,6 +43,7 @@ include src/galaxy/datatypes/converters/interval_to_bed_converter.xml
 include src/galaxy/datatypes/converters/gff_to_bed_converter.xml
 include src/galaxy/datatypes/converters/uncompressed_to_gz.xml
 include src/galaxy/datatypes/converters/fasta_to_tabular_converter.xml
+include src/galaxy/datatypes/converters/pearson_fasta_to_fasta_converter.xml
 include src/galaxy/datatypes/converters/to_qname_sorted_bam.xml
 include src/galaxy/datatypes/converters/tool_data_table_conf.xml.test
 include src/galaxy/datatypes/converters/bedgraph_to_bigwig_converter.xml
@@ -345,6 +346,11 @@ include src/galaxy/datatypes/test/1.bed
 include src/galaxy/datatypes/test/test_tab.bed
 include src/galaxy/datatypes/test/seg_image_ct_binary.dcm
 include src/galaxy/datatypes/test/sequence.fasta
+include src/galaxy/datatypes/test/sequence.pearson_fasta
+include src/galaxy/datatypes/test/sequence_comment_only.txt
+include src/galaxy/datatypes/test/sequence_comment_not_fasta.txt
+include src/galaxy/datatypes/test/sequence_comment_qual454.txt
+include src/galaxy/datatypes/test/sequence_comment_csfasta.txt
 include src/galaxy/datatypes/test/16_bit_binary.pgm
 include src/galaxy/datatypes/test/1.fastqcssanger
 include src/galaxy/datatypes/test/0.txt
