@@ -12,6 +12,7 @@ from galaxy import model
 from galaxy.app_unittest_utils.galaxy_mock import MockApp
 from galaxy.celery.tasks import (
     _cleanup_jwds,
+    cached_create_tool_from_representation,
     clean_object_store_caches,
 )
 from galaxy.exceptions import ObjectNotFound
@@ -221,3 +222,28 @@ class TestCleanupJwds:
 
         assert result == 2
         assert mock_jwd_delete.call_count == 3
+
+
+SIMPLE_TOOL = """<tool id="cache_key_tool" name="Cache key tool" version="1.0">
+    <command>echo hi > '$out'</command>
+    <inputs/>
+    <outputs><data name="out" format="txt"/></outputs>
+</tool>"""
+
+
+def test_cached_tool_is_per_dynamic_tool_revision():
+    # queue_jobs sets per-revision state on the cached tool, so revisions with identical
+    # source must not share one object between concurrent tasks.
+    app = MockApp()
+    cached_create_tool_from_representation.cache_clear()
+    revision_a = cached_create_tool_from_representation(
+        app=app, raw_tool_source=SIMPLE_TOOL, tool_source_class="XmlToolSource", dynamic_tool_id=1
+    )
+    revision_b = cached_create_tool_from_representation(
+        app=app, raw_tool_source=SIMPLE_TOOL, tool_source_class="XmlToolSource", dynamic_tool_id=2
+    )
+    again_a = cached_create_tool_from_representation(
+        app=app, raw_tool_source=SIMPLE_TOOL, tool_source_class="XmlToolSource", dynamic_tool_id=1
+    )
+    assert revision_a is not revision_b
+    assert revision_a is again_a
