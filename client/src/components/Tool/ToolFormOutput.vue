@@ -26,11 +26,12 @@ const addTagsId = computed(() => `${elementId.value}-add-tags`);
 const removeTagsId = computed(() => `${elementId.value}-remove-tags`);
 const hideId = computed(() => `${elementId.value}-hide`);
 
-const title = computed(() => props.output.label || props.output.name);
-
 const details = computed(() => {
     const output = props.output;
     const parts: string[] = [];
+    if (output.label) {
+        parts.push(`${localize("Default name:")} ${output.label}`);
+    }
     if (output.collection_type) {
         parts.push(output.collection_type);
         if (output.element_count !== null && output.element_count !== undefined) {
@@ -101,11 +102,10 @@ function onRemoveTags(tags: string[]) {
     <div class="tool-form-output" :data-output-name="props.output.name">
         <div class="d-flex align-items-start">
             <div class="flex-grow-1">
-                <span class="font-weight-bold mr-2" data-description="output title">{{ title }}</span>
-                <span class="text-muted small" data-description="output details">
-                    <span class="text-monospace text-break mr-1">{{ props.output.name }}</span
-                    >{{ details }}
-                </span>
+                <span class="font-weight-bold text-monospace text-break mr-2" data-description="output title">{{
+                    props.output.name
+                }}</span>
+                <span class="text-muted small" data-description="output details">{{ details }}</span>
             </div>
             <GButton
                 :id="hideId"
