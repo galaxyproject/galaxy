@@ -8513,6 +8513,10 @@ class HistoryDatasetCollectionAssociation(
             )
         if implicit_input_collections:
             rval["implicit_input_collections"] = implicit_input_collections
+        if self.implicit_collection_jobs:
+            rval["implicit_collection_jobs"] = serialization_options.get_identifier(
+                id_encoder, self.implicit_collection_jobs
+            )
 
         # Handle copied_from_history_dataset_association information...
         copied_from_history_dataset_collection_association_chain = []

@@ -467,6 +467,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
         self._reassign_hids(object_import_tracker, history)
         self._import_jobs(object_import_tracker, history)
         self._import_implicit_collection_jobs(object_import_tracker)
+        self._import_collection_implicit_collection_jobs(object_import_tracker, collections_attrs)
         self._import_workflow_invocations(object_import_tracker, history)
         self._flush()
         return object_import_tracker
@@ -1479,6 +1480,21 @@ class ModelImportStore(metaclass=abc.ABCMeta):
             object_import_tracker.implicit_collection_jobs_by_key[icj_attrs[object_key]] = icj
 
             self._session_add(icj)
+
+    def _import_collection_implicit_collection_jobs(
+        self, object_import_tracker: "ObjectImportTracker", collections_attrs: list[dict[str, Any]]
+    ) -> None:
+        """Link imported implicit collections to the imported jobs that populate them."""
+        object_key = self.object_key
+        for collection_attrs in collections_attrs:
+            icj_key = collection_attrs.get("implicit_collection_jobs")
+            if icj_key is None or object_key not in collection_attrs:
+                continue
+            # The ICJ is only in the store if the jobs it groups were exported.
+            icj = object_import_tracker.implicit_collection_jobs_by_key.get(icj_key)
+            hdca = object_import_tracker.hdcas_by_key.get(collection_attrs[object_key])
+            if icj is not None and hdca is not None:
+                hdca.implicit_collection_jobs = icj
 
     def _session_add(self, obj: model.RepresentById) -> None:
         self.sa_session.add(obj)

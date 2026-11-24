@@ -940,6 +940,37 @@ class ImportExportTests(BaseHistories):
             imported_history_id, hid=1, collection_type="list", elements_checker=check_elements
         )
 
+    @skip_without_tool("cat1")
+    def test_import_export_map_over_collection(self):
+        history_name = f"for_export_with_map_over_{uuid4()}"
+        history_id = self.dataset_populator.new_history(name=history_name)
+        fetch_response = self.dataset_collection_populator.create_list_in_history(
+            history_id, contents=["a\n", "b\n"], direct_upload=True
+        )
+        hdca = self.dataset_collection_populator.wait_for_fetched_collection(fetch_response)
+        run_response = self.dataset_populator.run_tool(
+            tool_id="cat1",
+            inputs={"input1": {"batch": True, "values": [{"src": "hdca", "id": hdca["id"]}]}},
+            history_id=history_id,
+        )
+        self.dataset_populator.wait_for_history_jobs(history_id, assert_ok=True)
+        implicit_hid = run_response["implicit_collections"][0]["hid"]
+
+        imported_history_id = self._reimport_history(history_id, history_name, wait_on_history_length=6)
+
+        imported_hdca = self.dataset_populator.get_history_collection_details(imported_history_id, hid=implicit_hid)
+        assert imported_hdca["job_source_type"] == "ImplicitCollectionJobs", imported_hdca
+        for element in imported_hdca["elements"]:
+            element_id = element["object"]["id"]
+            job_id = self.dataset_populator.get_history_dataset_details(imported_history_id, dataset_id=element_id)[
+                "creating_job"
+            ]
+            # Regression test for https://github.com/galaxyproject/galaxy/issues/25004 on imported histories.
+            outputs = self._get(f"jobs/{job_id}/parameters_display").json()["outputs"]
+            assert {name: [output["value"] for output in values] for name, values in outputs.items()} == {
+                "out_file1": [{"src": "hda", "id": element_id}]
+            }
+
     def test_import_export_nested_collection(self):
         history_name = f"for_export_with_nested_collections_{uuid4()}"
         history_id = self.dataset_populator.new_history(name=history_name)
