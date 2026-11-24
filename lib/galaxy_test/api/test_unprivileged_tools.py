@@ -534,8 +534,7 @@ class TestUnprivilegedToolsApi(ApiTestCase, TestsTools):
                 assert_ok=True,
                 wait_for_job=True,
             )
-            job_b = self.dataset_populator.get_job_details(run_b["jobs"][0]["id"], full=True).json()
-            assert not job_b["copied_from_job_id"], job_b
+            assert not self._copied_from_job_id(run_b["jobs"][0]["id"])
             output_b = self.dataset_populator.get_history_dataset_content(
                 history_id, dataset_id=run_b["outputs"][0]["id"]
             )
@@ -549,8 +548,7 @@ class TestUnprivilegedToolsApi(ApiTestCase, TestsTools):
                 assert_ok=True,
                 wait_for_job=True,
             )
-            job_a_again = self.dataset_populator.get_job_details(run_a_again["jobs"][0]["id"], full=True).json()
-            assert job_a_again["copied_from_job_id"] == run_a["jobs"][0]["id"], job_a_again
+            assert self._copied_from_job_id(run_a_again["jobs"][0]["id"]) == run_a["jobs"][0]["id"]
 
     def test_run_use_cached_job_renamed_input_keys_on_tool_revision(self):
         # Renaming the input makes the request-time lookup miss, so only the late lookup in prepare can copy here.
@@ -614,8 +612,7 @@ class TestUnprivilegedToolsApi(ApiTestCase, TestsTools):
                 assert_ok=True,
                 wait_for_job=True,
             )
-            toolbox_job = self.dataset_populator.get_job_details(toolbox_run["jobs"][0]["id"], full=True).json()
-            assert not toolbox_job["copied_from_job_id"], toolbox_job
+            assert not self._copied_from_job_id(toolbox_run["jobs"][0]["id"])
             toolbox_output = self.dataset_populator.get_history_dataset_content(
                 history_id, dataset_id=toolbox_run["outputs"][0]["id"]
             )
