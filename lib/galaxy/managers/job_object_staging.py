@@ -1,11 +1,8 @@
-"""Serve a running job's inputs to a remote job runner from the object store.
+"""Serve a running job's inputs to a remote job runner (Pulsar) from the object store.
 
-Galaxy gives a remote runner (Pulsar) one signed URL per input (``input_url``,
-kept beside the code that verifies it) instead of a path on its own disk. A request for such a URL is answered from the
-object store by identity (``staged_input``): with a redirect to a presigned URL
-when the URL asks for one and the store can issue it, else with a stream read
-straight from the store, else from a local file (disk stores).
-Nothing here needs a filesystem shared between Galaxy hosts.
+The runner gets a signed URL per input (``input_url``), which ``staged_input`` answers by
+redirecting to a presigned URL if asked and available, else by streaming from the store, else
+from a local file. Nothing here needs a filesystem shared between Galaxy hosts.
 """
 
 import logging
@@ -51,10 +48,8 @@ StagedInputKind = Literal["dataset", "metadata_file", "extra_file"]
 # job leaving Job.non_ready_states ends them sooner.
 INPUT_URL_LIFETIME_SECONDS = 7 * 24 * 60 * 60
 
-# A presigned URL Galaxy redirects to outlives the job, as Galaxy cannot revoke it.
-# The runner follows it at once and comes back to the staging URL to resume or
-# retry, so it need only last one request, with a margin for clock skew between
-# Galaxy and the store.
+# Galaxy cannot revoke a presigned URL, so it lasts one request plus a margin for clock
+# skew: the runner returns to the staging URL to resume or retry.
 REDIRECT_URL_LIFETIME_SECONDS = 15 * 60
 
 

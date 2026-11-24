@@ -119,7 +119,7 @@ MINIMUM_PULSAR_VERSIONS = {
     "object_store_staging_redirect": Version("0.15.16"),  # curl transport follows redirects
 }
 OBJECT_STORE_STAGING_MODES = ("stream", "redirect")
-# The file actions with which Pulsar fetches an input from its URL; the others read its path on Galaxy.
+# File actions that fetch an input from its URL rather than its path on Galaxy.
 URL_FILE_ACTIONS = ("remote_transfer", "remote_transfer_tus")
 
 NO_REMOTE_GALAXY_FOR_METADATA_MESSAGE = "Pulsar misconfiguration - Pulsar client configured to set metadata remotely, but remote Pulsar isn't properly configured with a galaxy_home directory."
@@ -944,10 +944,8 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
     ) -> ClientInputs:
         """Describe a job's inputs for the Pulsar client.
 
-        With ``object_store_staging``, each input kept in the object store carries a signed URL that
-        Galaxy answers from the store by identity, so Galaxy need not pull the input into its own
-        cache and the Galaxy host answering Pulsar need not share that cache. Other inputs, such as a
-        deferred input materialized into the job directory, are still staged by path.
+        With ``object_store_staging``, inputs in the object store get a signed URL that Galaxy answers
+        from the store; others, such as materialized deferred inputs, are staged by path.
         """
         issue_url = None
         staging = compute_environment.object_store_staging
@@ -1804,8 +1802,8 @@ class PulsarComputeEnvironment(ComputeEnvironment):
         self.path_rewrites_unstructured = {}
         self.path_rewrites_input_extra = {}
         self.path_rewrites_input_metadata = {}
-        # Inputs are staged by object store identity; metadata file ids, and the dataset id and file
-        # names of extra files directories, are keyed by local path.
+        # For object_store_staging: by local path, each metadata file's id and each extra files
+        # directory's dataset id and file names.
         self.object_store_staging = pulsar_client.destination_params.get("object_store_staging")
         self.input_metadata_file_ids: dict[str, int] = {}
         self.input_extra_files: dict[str, tuple[int, list[str]]] = {}
@@ -1858,13 +1856,11 @@ class PulsarComputeEnvironment(ComputeEnvironment):
             # Pulsar reads unstaged inputs in place, so their extra files stay where Galaxy keeps them.
             return self.local_path_config.input_extra_files_rewrite(dataset)
         remote_extra_files_path_rewrite = dataset_path_to_extra_path(input_path_rewrite)
-        # A deferred input materialized into the job directory has no object store identity, and its
-        # extra files are staged from there by path.
+        # A materialized deferred input has no object store identity; its extra files are staged by path.
         if self.object_store_staging in OBJECT_STORE_STAGING_MODES and dataset.dataset.id is not None:
-            # Staged by identity: only the directory's path is needed here, not its files.
             local_extra_files_path = dataset.dataset.get_extra_files_path(sync_cache=False)
             if local_extra_files_path not in self.input_extra_files:
-                # Listed while the job is prepared, so a store that cannot list them fails the job with its reason.
+                # Listed now, so a store that can't list fails the job here with its reason.
                 names = dataset.dataset.list_extra_files()
                 self.input_extra_files[local_extra_files_path] = (dataset.dataset.id, names)
         else:
@@ -1889,7 +1885,6 @@ class PulsarComputeEnvironment(ComputeEnvironment):
         # May technically be incorrect to not pass through local_path_config.input_metadata_rewrite
         # first but that adds untested logic that wouln't ever be used.
         if staged_by_identity:
-            # Only the file's path is needed here, not its bytes.
             metadata_val = metadata_file.get_file_name(sync_cache=False)
         else:
             metadata_val = metadata_file.get_file_name()
