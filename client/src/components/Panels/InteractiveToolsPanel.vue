@@ -55,6 +55,13 @@ function onToolClick(tool: Tool, evt: Event) {
     router.push(`/?tool_id=${encodeURIComponent(tool.id)}&version=latest`);
 }
 
+function toolIconUrl(toolId: string) {
+    // A Tool Shed tool ID contains slashes. The route accepts them as path
+    // segments, and some reverse proxies reject a percent-encoded slash.
+    const toolPath = toolId.split("/").map(encodeURIComponent).join("/");
+    return `${getAppRoot()}api/tools/${toolPath}/icon`;
+}
+
 function stopInteractiveTool(toolId: string, toolName: string) {
     interactiveToolsStore.stopInteractiveTool(toolId, toolName);
 }
@@ -126,10 +133,7 @@ function openInteractiveTool(toolId: string) {
                     @click="onToolClick(tool, $event)">
                     <div class="d-flex">
                         <div class="tool-icon mr-2">
-                            <img
-                                v-if="tool.icon"
-                                :src="getAppRoot() + 'api/tools/' + encodeURIComponent(tool.id) + '/icon'"
-                                alt="tool icon" />
+                            <img v-if="tool.icon" :src="toolIconUrl(tool.id)" alt="tool icon" />
                             <FontAwesomeIcon v-else :icon="faTools" size="2x" />
                         </div>
                         <div class="text-break">

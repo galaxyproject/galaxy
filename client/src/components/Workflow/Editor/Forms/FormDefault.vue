@@ -124,7 +124,7 @@ const { stepId, contentId, annotation, label, name, type, configForm, stepInputs
     useStepProps(stepRef);
 const { stepStore, undoRedoStore, stateStore, connectionStore } = useWorkflowStores();
 const { setInputDefaults } = useStepActions(stepStore, undoRedoStore, stateStore, connectionStore);
-const uniqueErrorLabel = useUniqueLabelError(stepStore, label.value);
+const uniqueErrorLabel = useUniqueLabelError(stepStore, stepId, label);
 const stepTitle = computed(() => {
     if (isSubworkflow.value) {
         return name.value;

@@ -4,11 +4,13 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { ArrowLeftFromLine, ArrowRightToLine } from "@lucide/vue";
 import { computed } from "vue";
 
+import { useWorkflowStores } from "@/composables/workflowStores";
 import { useWorkflowNodeInspectorStore } from "@/stores/workflowNodeInspectorStore";
 import type { PostJobActions, Step } from "@/stores/workflowStepStore";
 
 import FormDefault from "./Forms/FormDefault.vue";
 import FormTool from "./Forms/FormTool.vue";
+import MissingToolForm from "./Forms/MissingToolForm.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
 import GCheckbox from "@/components/BaseComponents/GCheckbox.vue";
@@ -18,6 +20,7 @@ import GDropdownItemButton from "@/components/BaseComponents/GDropdownItemButton
 import DraggableSeparator from "@/components/Common/DraggableSeparator.vue";
 import Heading from "@/components/Common/Heading.vue";
 import IdleLoad from "@/components/Common/IdleLoad.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
 
 const props = defineProps<{
     step: Step;
@@ -29,13 +32,14 @@ const emit = defineEmits<{
     (e: "annotationChanged", id: string, annotation: string): void;
     (e: "labelChanged", id: string, label: string): void;
     (e: "dataChanged", id: number, data: object): void;
-    (e: "stepUpdated", id: number, step: Step): void;
+    (e: "stepUpdated", id: number, step: Partial<Step>): void;
     (e: "editSubworkflow", id: string): void;
     (e: "attemptRefactor", ...args: any[]): void;
     (e: "close"): void;
 }>();
 
 const inspectorStore = useWorkflowNodeInspectorStore();
+const { stateStore } = useWorkflowStores();
 
 const maximized = computed(() => inspectorStore.maximized(props.step));
 const width = computed(() => inspectorStore.width(props.step));
@@ -45,6 +49,13 @@ const cssVars = computed(() => ({
 }));
 
 const isTool = computed(() => props.step.type === "tool");
+// a tool step gets its config form from the server, unless the tool is not installed or loading it failed
+const hasConfigForm = computed(() => Boolean(props.step.config_form?.id));
+const toolError = computed(() => {
+    const error = props.step.errors || stateStore.getStepLoadingState(props.step.id)?.error;
+    // the editor payload sends a plain string here despite the Step typing
+    return error ? String(error) : undefined;
+});
 
 const title = computed(() => `${props.step.id + 1}: ${props.step.label ?? props.step.name}`);
 
@@ -123,7 +134,7 @@ function updateStored(v: boolean) {
         <div class="inspector-content">
             <IdleLoad :key="props.step.id" spinner center class="w-100 h-50">
                 <FormTool
-                    v-if="isTool"
+                    v-if="isTool && hasConfigForm"
                     class="w-100"
                     :step="props.step"
                     :datatypes="props.datatypes"
@@ -132,6 +143,15 @@ function updateStored(v: boolean) {
                     @onChangePostJobActions="(id: number, a: PostJobActions) => emit('postJobActionsChanged', id, a)"
                     @onAnnotation="(id: string, a: string) => emit('annotationChanged', id, a)"
                     @onLabel="(id: string, l: string) => emit('labelChanged', id, l)"></FormTool>
+                <MissingToolForm
+                    v-else-if="isTool && toolError"
+                    class="w-100"
+                    :step="props.step"
+                    :error="toolError"
+                    @onUpdateStep="(id: number, s: Partial<Step>) => emit('stepUpdated', id, s)"
+                    @onAnnotation="(id: number, a: string) => emit('annotationChanged', String(id), a)"
+                    @onLabel="(id: number, l: string) => emit('labelChanged', String(id), l)" />
+                <LoadingSpan v-else-if="isTool" message="Loading tool" />
                 <FormDefault
                     v-else
                     class="w-100"

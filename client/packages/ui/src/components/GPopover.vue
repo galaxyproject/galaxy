@@ -17,6 +17,7 @@ import { useUid } from "../composables/uid";
 import { closeEscapeLayer, isTopEscapeLayer, openEscapeLayer } from "../utils/escapeStack";
 import { nextTabbableAfter, tabbableElements } from "../utils/focusOrder";
 import { computeHoverBridge, computeHoverGap, isPointInPolygon, type Point } from "../utils/hoverBridge";
+import { addIdReference, removeIdReference } from "../utils/idReferences";
 import {
     DEFAULT_TOOLTIP_HOVER_DELAY_MS,
     INTERACTIVE_POPOVER_CLOSE_DELAY_MS,
@@ -528,13 +529,10 @@ function dialogName(hasTitle: boolean) {
 
 let attributeCleanups: Array<() => void> = [];
 
-// Appends the popover id to an id-list attribute, keeping ids others (e.g. v-g-tooltip) put there.
+// Links the popover id in an id-list attribute, next to ids others (e.g. v-g-tooltip) put there.
 function linkIdReference(el: Element, attribute: string) {
     const id = popoverId.value;
-    const ids = (el.getAttribute(attribute) ?? "").split(/\s+/).filter(Boolean);
-    if (!ids.includes(id)) {
-        el.setAttribute(attribute, [...ids, id].join(" "));
-    }
+    addIdReference(el, attribute, id);
     attributeCleanups.push(() => removeIdReference(el, attribute, id));
 }
 
@@ -545,15 +543,6 @@ function setTriggerAttribute(el: Element, attribute: string, value: string) {
     attributeCleanups.push(() =>
         previous === null ? el.removeAttribute(attribute) : el.setAttribute(attribute, previous),
     );
-}
-
-function removeIdReference(el: Element, attribute: string, id: string) {
-    const ids = (el.getAttribute(attribute) ?? "").split(/\s+/).filter((existing) => existing && existing !== id);
-    if (ids.length) {
-        el.setAttribute(attribute, ids.join(" "));
-    } else {
-        el.removeAttribute(attribute);
-    }
 }
 
 // :focus-visible tells keyboard focus apart from the focus a mouse click leaves on a button.

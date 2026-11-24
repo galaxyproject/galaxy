@@ -55,7 +55,7 @@ class FormDefinitionFactory:
         rval = FormDefinition(
             name=name,
             desc=description,
-            form_type=self.form_types[form_type],
+            type=self.form_types[form_type],
             form_definition_current=form_definition_current,
             layout=layout,
             fields=fields,

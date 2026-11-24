@@ -35,10 +35,12 @@ describe("storeFirstItems", () => {
         resetListRefreshTracking();
     });
 
-    it("hydrates the listing once and answers later keystrokes from the cache", async () => {
+    it("hydrates the listing once and answers later keystrokes from a complete cache", async () => {
         const list = fakeList();
+        list.state.complete = true;
 
         await storeFirstItems(list, "", 8);
+        // two cached matches fill the limit of one, and a complete list needs no backend
         const items = await storeFirstItems(list, "alp", 1);
 
         expect(items.map((item) => item.title)).toEqual(["alpha"]);
@@ -53,7 +55,7 @@ describe("storeFirstItems", () => {
         await expect(storeFirstItems(list, "", 8)).rejects.toBeInstanceOf(PaletteFetchError);
     });
 
-    it("only asks the backend for a long enough query an incomplete cache cannot fill", async () => {
+    it("asks the backend only for a long enough query on an incomplete cache", async () => {
         const list = fakeList();
 
         await storeFirstItems(list, "a", 8);
@@ -65,6 +67,20 @@ describe("storeFirstItems", () => {
         list.state.complete = false;
         await storeFirstItems(list, "alp", 8);
         expect(list.searchItems).toHaveBeenCalledWith("alp");
+    });
+
+    it("searches an incomplete list even when loose cached matches fill the limit", async () => {
+        const exact = row("exact", "rna seq 02");
+        const list = fakeList();
+        list.state.loaded = true;
+        list.cachedItems = () => Array.from({ length: 10 }, (_, i) => row(`loose${i}`, `rna seq run ${i}`));
+        list.searchItems.mockResolvedValue([exact]);
+
+        const items = await storeFirstItems(list, "rna seq 02", 8);
+
+        expect(list.searchItems).toHaveBeenCalledWith("rna seq 02");
+        expect(items).toHaveLength(8);
+        expect(items[0]).toEqual(exact);
     });
 
     it("merges the found rows into the cached ones, one row per entity", async () => {
@@ -80,6 +96,66 @@ describe("storeFirstItems", () => {
         const items = await storeFirstItems(list, "alp", 8);
 
         expect(items.map((item) => item.title).sort()).toEqual(["alpha", "alpine"]);
+    });
+
+    describe("with a signal a newer search can abort", () => {
+        beforeEach(() => {
+            vi.useFakeTimers();
+        });
+
+        afterEach(() => {
+            vi.useRealTimers();
+        });
+
+        it("waits for the input to settle before searching the backend", async () => {
+            const list = fakeList();
+            const controller = new AbortController();
+
+            const answer = storeFirstItems(list, "alp", 8, { signal: controller.signal });
+            await vi.advanceTimersByTimeAsync(PALETTE_LIMITS.backendSettle - 1);
+            expect(list.searchItems).not.toHaveBeenCalled();
+            await vi.advanceTimersByTimeAsync(1);
+
+            expect((await answer).map((item) => item.title).sort()).toEqual(["alpaca", "alpha", "alpine"]);
+            expect(list.searchItems).toHaveBeenCalledWith("alp");
+        });
+
+        it("never searches the backend once a newer search took over, and answers from the cache", async () => {
+            const list = fakeList();
+            const controller = new AbortController();
+
+            const answer = storeFirstItems(list, "alp", 8, { signal: controller.signal });
+            controller.abort();
+            await vi.advanceTimersByTimeAsync(PALETTE_LIMITS.backendSettle);
+
+            expect((await answer).map((item) => item.title).sort()).toEqual(["alpha", "alpine"]);
+            expect(list.searchItems).not.toHaveBeenCalled();
+        });
+
+        it("hands the cached rows over before the pause ends", async () => {
+            const list = fakeList();
+            const onLocal = vi.fn<(items: PaletteItem[]) => void>();
+
+            const answer = storeFirstItems(list, "alp", 8, { onLocal, signal: new AbortController().signal });
+            await vi.advanceTimersByTimeAsync(0);
+
+            expect(onLocal).toHaveBeenCalledTimes(1);
+            expect(onLocal.mock.calls[0]![0].map((item) => item.title).sort()).toEqual(["alpha", "alpine"]);
+            expect(list.searchItems).not.toHaveBeenCalled();
+            await vi.advanceTimersByTimeAsync(PALETTE_LIMITS.backendSettle);
+            expect((await answer).map((item) => item.title)).toContain("alpaca");
+            expect(onLocal).toHaveBeenCalledTimes(1);
+        });
+
+        it("skips the early answer when the cache answers alone", async () => {
+            const list = fakeList();
+            list.state.complete = true;
+            const onLocal = vi.fn();
+
+            await storeFirstItems(list, "alp", 8, { onLocal, signal: new AbortController().signal });
+
+            expect(onLocal).not.toHaveBeenCalled();
+        });
     });
 });
 
@@ -132,6 +208,59 @@ describe("rootListItems", () => {
         );
 
         expect(items).toHaveLength(PALETTE_LIMITS.section);
+    });
+
+    it("fills the section with own rows when the listings find nothing", async () => {
+        const own = fakeList();
+        await own.fetchListing();
+        own.cachedItems = () => Array.from({ length: 10 }, (_, index) => row(`own${index}`, `alpine ${index}`));
+
+        const items = await rootListItems("alp", own, [async () => []]);
+
+        expect(items).toHaveLength(PALETTE_LIMITS.section);
+    });
+
+    it("keeps room for the rows the other listings matched when own rows fill the section", async () => {
+        const own = fakeList();
+        await own.fetchListing();
+        own.cachedItems = () => Array.from({ length: 8 }, (_, index) => row(`own${index}`, `alpine ${index}`));
+        const shared = Array.from({ length: 3 }, (_, index) => row(`shared${index}`, `alpine ${index} shared`));
+        const published = Array.from({ length: 3 }, (_, index) => row(`published${index}`, `alpine ${index} public`));
+
+        const items = await rootListItems("alp", own, [async () => shared, async () => published]);
+
+        expect(items).toHaveLength(PALETTE_LIMITS.section);
+        expect(items.filter((item) => shared.includes(item) || published.includes(item)).length).toBeGreaterThanOrEqual(
+            PALETTE_LIMITS.rootListing,
+        );
+    });
+
+    it("reserves only the slots the matched listing rows need", async () => {
+        const own = fakeList();
+        await own.fetchListing();
+        own.cachedItems = () => Array.from({ length: 8 }, (_, index) => row(`own${index}`, `alpine ${index}`));
+        const shared = row("shared", "alpine shared");
+
+        const items = await rootListItems("alp", own, [async () => [shared]]);
+
+        expect(items).toHaveLength(PALETTE_LIMITS.section);
+        expect(items).toContain(shared);
+        expect(items.filter((item) => item !== shared)).toHaveLength(PALETTE_LIMITS.section - 1);
+    });
+
+    it("keeps a matched listing row when another listing only holds a copy of a cut own row", async () => {
+        const own = fakeList();
+        await own.fetchListing();
+        const ownRows = Array.from({ length: 8 }, (_, index) => row(`own${index}`, `alpine ${index}`));
+        own.cachedItems = () => ownRows;
+        const copy: PaletteItem = { id: "fake:copy", mru: { type: "fake", id: "own7" }, title: "alpine 7" };
+        const shared = row("shared", "alpine shared");
+
+        const items = await rootListItems("alp", own, [async () => [copy, shared]]);
+
+        expect(items).toHaveLength(PALETTE_LIMITS.section);
+        expect(items).toContain(shared);
+        expect(items).not.toContain(copy);
     });
 
     it("skips the listing searches and the hydration for a short or local-only query", async () => {

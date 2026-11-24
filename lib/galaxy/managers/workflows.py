@@ -1702,6 +1702,10 @@ class WorkflowContentsManager(UsesAnnotations):
             version_changes = getattr(module, "version_changes", None)
             if version_changes:
                 upgrade_message_dict[module.get_name()] = "\n".join(version_changes)
+            if isinstance(module, ToolModule):
+                # Show the step input defaults that replace the tool state at run time in the tool form.
+                connected_input_names = {conn.input_name for conn in step.input_connections}
+                module.show_step_input_defaults(step.input_defaults, connected_input_names)
             # Get user annotation.
             config_form = module.get_config_form(step=step)
             annotation_str = self.get_item_annotation_str(trans.sa_session, trans.user, step) or ""
@@ -1731,6 +1735,8 @@ class WorkflowContentsManager(UsesAnnotations):
             input_connections = step.input_connections
             input_connections_type = {}
             multiple_input = {}  # Boolean value indicating if this can be multiple
+            if isinstance(module, ToolModule) and not module.tool:
+                step_dict["tool_version"] = step.tool_version
             if isinstance(module, ToolModule) and module.tool:
                 # Serialize tool version
                 step_dict["tool_version"] = module.tool.version
@@ -2383,7 +2389,16 @@ class WorkflowContentsManager(UsesAnnotations):
                     trans.sa_session.add(m)
 
         if "in" in step_dict:
+            changed_in_form: set[str] = set()
+            if kwds.get("from_tool_form") and isinstance(module, ToolModule):
+                # The editor's tool form shows these defaults, a value the user changed there replaces them.
+                defaults = {name: d["default"] for name, d in step_dict["in"].items() if "default" in d}
+                changed_in_form = module.step_input_defaults_changed_in_form(
+                    defaults, step_dict.get("input_connections") or {}
+                )
             for input_name, input_dict in step_dict["in"].items():
+                if input_name in changed_in_form:
+                    continue
                 # This is just a bug in gxformat? I think the input
                 # defaults should be called input to match the input modules's
                 # input parameter name.

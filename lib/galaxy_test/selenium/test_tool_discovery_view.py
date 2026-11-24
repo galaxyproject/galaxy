@@ -1,3 +1,8 @@
+from urllib.parse import (
+    parse_qs,
+    urlparse,
+)
+
 from galaxy.util.unittest_utils import transient_failure
 from .framework import (
     playwright_only,
@@ -147,7 +152,13 @@ class TestToolDiscoveryViewAnonymous(SeleniumTestCase):
                 break
 
         assert matching_index is not None, "Expected Get Data autocomplete suggestion to be present."
-        suggestions.nth(matching_index).click()
+        # The unfiltered list starts with the Get Data section, so the checks below compare
+        # the rendered cards with the hits of the search the pick triggers.
+        with self.page.expect_response(is_get_data_tag_search) as response_info:
+            suggestions.nth(matching_index).click()
+        response = response_info.value
+        assert response.ok, f"Tag search failed: {response.status} {response.text()}"
+        hit_ids = response.json()
 
         search_input = self.page.locator('.tools-list [data-description="filter text input"]')
         self._wait_on(
@@ -155,7 +166,31 @@ class TestToolDiscoveryViewAnonymous(SeleniumTestCase):
             'tools/list search input to contain tag:"Get Data"',
         )
 
-        tools_list.tool_card(tool_id="upload1").wait_for_visible()
+        # Hits for a tag-only query all score the same, so their order is the order the
+        # server indexed them in, which changes between server processes. The list renders
+        # only its first few cards, so check the cards it does render rather than one tool:
+        # they are hits of the search, in the order of the hits, and tagged Get Data.
+        tool_cards = self.page.locator('.tools-list [id^="g-card-content-"]')
+
+        def search_hits_rendered():
+            cards = tool_cards.evaluate_all("""cards => cards.map(card => ({
+                    id: card.id.slice("g-card-content-".length),
+                    tags: [...card.querySelectorAll(".curated-tag")].map(tag => tag.textContent.trim()),
+                }))""")
+            remaining_hit_ids = iter(hit_ids)
+            return (
+                bool(cards)
+                and all(card["id"] in remaining_hit_ids for card in cards)
+                and all("Get Data" in card["tags"] for card in cards)
+            )
+
+        self._wait_on(search_hits_rendered, "tools/list to render the Get Data tag search hits")
+
+
+def is_get_data_tag_search(response) -> bool:
+    url = urlparse(response.url)
+    queries = parse_qs(url.query).get("q", [])
+    return url.path.endswith("/api/tools") and any('tool_tags:("get data")' in query for query in queries)
 
 
 class TestToolDiscoveryViewLoggedIn(SeleniumTestCase):
