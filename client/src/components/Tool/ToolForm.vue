@@ -388,8 +388,9 @@ async function requestTool(newVersion?: string) {
         });
         currentVersion.value = data.version;
         formConfig.value = data;
-        // Only on the first load; switching versions keeps the changes made in the form.
-        if (!newVersion && data.job_output_actions) {
+        // Only on the first load; switching versions keeps the changes made in the form. Only tools
+        // with typed parameters show the Outputs section, so only they can show and clear these.
+        if (!newVersion && data.has_parameters && data.job_output_actions) {
             outputActions.value = data.job_output_actions;
         }
         remapAllowed.value = (props.jobId && data.job_remap) || false;

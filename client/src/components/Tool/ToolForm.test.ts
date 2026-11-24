@@ -152,6 +152,27 @@ describe("ToolForm", () => {
         useConfigStore().setConfiguration({ ...useConfigStore().config, enable_notification_system: false });
     });
 
+    it("doesn't resend output changes of an earlier run that a tool without typed parameters can't show", async () => {
+        let submitted: { output_actions?: unknown } = {};
+        server.use(
+            http.untyped.post("/api/tools", async ({ request }) => {
+                submitted = (await request.json()) as typeof submitted;
+                return HttpResponse.json({ err_msg: "Submission captured" }, { status: 400 });
+            }),
+        );
+        useBuildResponse({
+            job_output_actions: { out_file1: { rename: "old", add_tags: [], remove_tags: [], hide: false } },
+        });
+        mountToolForm();
+        await flushPromises();
+
+        wrapper.findComponent(FormDisplay).vm.$emit("onChange", {}, false);
+        await wrapper.find("[data-description='run tool button']").trigger("click");
+        await flushPromises();
+
+        expect(submitted.output_actions).toBeUndefined();
+    });
+
     it("adds the executed tool to recent tools", async () => {
         await flushPromises();
         wrapper.findComponent(FormDisplay).vm.$emit("onChange", {}, false);
