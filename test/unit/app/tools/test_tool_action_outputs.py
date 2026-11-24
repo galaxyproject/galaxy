@@ -31,6 +31,16 @@ OUTPUT_FILTER_DEFAULTS = {
     "produce_paired_collection": False,
     "repeat": [],
 }
+STRUCTURED_LIKE_OPTIONAL_INPUT_TOOL = """<tool id="structured_like_optional" name="structured_like_optional" version="1.0">
+    <command>true</command>
+    <inputs>
+        <param name="input1" type="data_collection" collection_type="list" optional="true" />
+    </inputs>
+    <outputs>
+        <collection name="output" structured_like="input1" format="txt" />
+    </outputs>
+</tool>
+"""
 REPEAT_MATCHING_FILTER = [{"cond": {"select": "a", "inner_cond": {"inner_select": "2", "text": "x"}}}]
 
 
@@ -190,6 +200,15 @@ class TestToolActionOutputs(ToolOutputsTestCase):
 
 
 class TestPreviewOutputPlanner(ToolOutputsTestCase):
+    def test_structured_like_an_empty_optional_input(self):
+        tool = self._init_tool(STRUCTURED_LIKE_OPTIONAL_INPUT_TOOL)
+        tool_action = cast(DefaultToolAction, tool.tool_action)
+        planner = tool_action.preview_output_planner(
+            cast(ProvidesHistoryContext, self.trans), tool, {"input1": None}, self.history
+        )
+
+        assert planner.planned_outputs() == [PlannedOutput("output", "structured_like_optional", "collection")]
+
     def test_describes_outputs_without_creating_anything(self):
         incoming = {
             "input_data_1": self._dataset("fasta"),

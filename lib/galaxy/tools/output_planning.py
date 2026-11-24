@@ -282,10 +282,16 @@ class OutputPlanner:
             collection_type = None
         element_count = None
         part_formats: set[str | None] = set()
+        parts = None
         if not output.dynamic_structure:
-            parts = output.known_outputs(
-                self.input_collections, self.trans.app.dataset_collection_manager.type_registry
-            )
+            try:
+                parts = output.known_outputs(
+                    self.input_collections, self.trans.app.dataset_collection_manager.type_registry
+                )
+            except (AttributeError, KeyError):
+                # structured_like can name an optional collection input the form hasn't filled.
+                parts = None
+        if parts is not None:
             element_count = len({(part.parent_ids or [part.element_identifier])[0] for part in parts})
             part_formats = {self.known_format(part.output_def) for part in parts}
         return PlannedOutput(
