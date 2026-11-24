@@ -419,6 +419,7 @@ steps:
         assert step.get("in") is None
         assert json.loads(step["tool_state"])["parameter"] == "3"
 
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_non_data_connections(self):
         self.open_in_workflow_editor("""
