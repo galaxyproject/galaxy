@@ -9,6 +9,7 @@ import { pluralize } from "@/utils/strings";
 
 import StatelessTags from "../TagsMultiselect/StatelessTags.vue";
 import GFormInput from "@/components/BaseComponents/Form/GFormInput.vue";
+import GBadge from "@/components/BaseComponents/GBadge.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 
 const props = defineProps<{
@@ -75,6 +76,9 @@ const hideTitle = computed(() => {
 
 const hideIcon = computed(() => (hidden.value ? faEyeSlash : faEye));
 
+// The Outputs section only keeps the actions of outputs that have changes.
+const changed = computed(() => Boolean(props.actions));
+
 function update(changes: Partial<ToolOutputActions>) {
     const current: ToolOutputActions = {
         rename: props.actions?.rename ?? null,
@@ -96,17 +100,33 @@ function onAddTags(tags: string[]) {
 function onRemoveTags(tags: string[]) {
     update({ remove_tags: tags });
 }
+
+function onReset() {
+    emit("update", props.output.name, { rename: null, add_tags: [], remove_tags: [], hide: false });
+}
 </script>
 
 <template>
-    <div class="tool-form-output" :data-output-name="props.output.name">
+    <div class="tool-form-output" :class="{ changed }" :data-output-name="props.output.name">
         <div class="d-flex align-items-start">
             <div class="flex-grow-1">
                 <span class="font-weight-bold text-monospace text-break mr-2" data-description="output title">{{
                     props.output.name
                 }}</span>
+                <GBadge v-if="changed" class="mr-2" data-description="output changed">{{ localize("Changed") }}</GBadge>
                 <span class="text-muted small" data-description="output details">{{ details }}</span>
             </div>
+            <GButton
+                v-if="changed"
+                class="ml-2"
+                size="small"
+                transparent
+                tooltip
+                :title="localize('Undo the changes to this output')"
+                data-description="output reset"
+                @click="onReset">
+                {{ localize("Reset") }}
+            </GButton>
             <GButton
                 :id="hideId"
                 class="ml-2 px-1"
@@ -154,7 +174,13 @@ function onRemoveTags(tags: string[]) {
 
 <style scoped>
 .tool-form-output {
-    padding: 0.5rem 0;
+    padding: 0.5rem 0.5rem 0.5rem 0.75rem;
+    border-left: 3px solid transparent;
+}
+
+.tool-form-output.changed {
+    border-left-color: var(--color-blue-600);
+    background-color: var(--color-blue-100);
 }
 
 .tool-form-output + .tool-form-output {

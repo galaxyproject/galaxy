@@ -120,6 +120,22 @@ describe("ToolFormOutputs", () => {
         expect(lastEmitted(wrapper)).toEqual({ out_file1: actions({ hide: true }) });
     });
 
+    it("marks the changed outputs and resets one", async () => {
+        usePreviewResponse([previewOutput("out_file1"), previewOutput("out_file2")]);
+        const wrapper = mountOutputs({ out_file2: actions({ hide: true }) });
+        await flushPromises();
+        const changedOutputs = () =>
+            wrapper
+                .findAll(".tool-form-output")
+                .filter((row) => row.find("[data-description='output changed']").exists())
+                .map((row) => row.attributes("data-output-name"));
+        expect(changedOutputs()).toEqual(["out_file2"]);
+
+        await wrapper.find("[data-output-name='out_file2'] [data-description='output reset']").trigger("click");
+
+        expect(lastEmitted(wrapper)).toEqual({});
+    });
+
     it("leaves out an output once its changes are cleared", async () => {
         usePreviewResponse([previewOutput("out_file1")]);
         const wrapper = mountOutputs({ out_file1: actions({ rename: "sorted" }) });
