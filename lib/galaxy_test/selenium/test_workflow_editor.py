@@ -366,6 +366,39 @@ steps:
         self.screenshot("workflow_editor_parameter_input_deleted")
 
     @selenium_test
+    def test_step_input_default_survives_save_until_form_changes_it(self):
+        name = self._get_random_name()
+        workflow_id = self.workflow_populator.upload_yaml_workflow(
+            """
+class: GalaxyWorkflow
+steps:
+  int_step:
+    tool_id: gx_int
+    in:
+      parameter:
+        default: 7
+""",
+            name=name,
+        )
+        self.workflow_index_open()
+        self.workflow_index_open_with_name(name)
+        parameter_input = self.components.tool_form.parameter_input(parameter="parameter")
+
+        self.workflow_editor_set_node_annotation("unrelated edit", node="int_step")
+        self.assert_workflow_has_changes_and_save()
+        step = self.workflow_populator.download_workflow(workflow_id)["steps"]["0"]
+        assert step["annotation"] == "unrelated edit"
+        assert step.get("in") == {"parameter": {"default": 7}}
+        assert parameter_input.wait_for_value() == "7"
+
+        parameter_input.wait_for_and_clear_and_send_keys("3")
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.assert_workflow_has_changes_and_save()
+        step = self.workflow_populator.download_workflow(workflow_id)["steps"]["0"]
+        assert step.get("in") is None
+        assert json.loads(step["tool_state"])["parameter"] == "3"
+
+    @selenium_test
     def test_non_data_connections(self):
         self.open_in_workflow_editor(
             """

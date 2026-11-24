@@ -1092,6 +1092,130 @@ steps:
         # Make sure the positions have been updated.
         map(tweak_step, updated_workflow_content["steps"].items())
 
+    def _save_from_editor(self, workflow_id, editor_workflow):
+        """PUT an editor-style workflow back with the keys and flag the workflow editor sends on save."""
+        client_keys = ["steps", "report", "license", "creator", "annotation", "name", "comments", "tags"]
+        client_keys += ["readme", "help", "logo_url", "doi"]
+        put_response = self.workflow_populator.update_workflow_fields(
+            workflow_id,
+            {"workflow": {key: editor_workflow.get(key) for key in client_keys}, "from_tool_form": True},
+        )
+        self._assert_status_code_is(put_response, 200)
+
+    def _change_editor_tool_form(self, editor_step, inputs):
+        """Change tool form values the way the workflow editor does: build the module, then update the step."""
+        module = self.workflow_populator.build_module("tool", content_id=editor_step["content_id"], inputs=inputs)
+        for key in ["inputs", "outputs", "config_form", "tool_state", "errors"]:
+            editor_step[key] = module[key]
+
+    @skip_without_tool("random_lines1")
+    def test_update_from_editor_keeps_data_step_input_default(self, mock_http_server):
+        location = mock_http_server.get_url(
+            remote_url="https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bed",
+            body="chr1\t147962192\t147962580\tCCDS989.1_cds_0_0_chr1_147962193_r\t0\t-\n",
+        )
+        workflow_id = self._upload_yaml_workflow(
+            f"""
+class: GalaxyWorkflow
+steps:
+  random_lines:
+    tool_id: random_lines1
+    in:
+      input:
+        default:
+          class: File
+          basename: a file
+          format: txt
+          location: {location}
+      num_lines:
+        default: 2
+"""
+        )
+        data_default = self._download_workflow(workflow_id)["steps"]["0"]["in"]["input"]
+        editor_workflow = self._download_workflow(workflow_id, style="editor")
+        form_inputs = {"num_lines": "3", "input": {"__class__": "RuntimeValue"}}
+        self._change_editor_tool_form(editor_workflow["steps"]["0"], form_inputs)
+        self._save_from_editor(workflow_id, editor_workflow)
+
+        assert self._download_workflow(workflow_id)["steps"]["0"]["in"] == {"input": data_default}
+
+    @skip_without_tool("gx_text")
+    def test_update_from_editor_keeps_numeric_text_step_input_default(self):
+        workflow_id = self._upload_yaml_workflow(
+            """
+class: GalaxyWorkflow
+steps:
+  text_step:
+    tool_id: gx_text
+    in:
+      parameter:
+        default: 7
+"""
+        )
+        self._save_from_editor(workflow_id, self._download_workflow(workflow_id, style="editor"))
+
+        assert self._download_workflow(workflow_id)["steps"]["0"].get("in") == {"parameter": {"default": 7}}
+
+    @skip_without_tool("gx_int")
+    def test_update_from_editor_keeps_connected_step_input_default(self):
+        # Format 2 drops a default next to a source, so connect the input in the native format.
+        workflow = self._download_workflow(
+            self._upload_yaml_workflow(
+                """
+class: GalaxyWorkflow
+inputs:
+  int_input:
+    type: int
+    optional: true
+steps:
+  int_step:
+    tool_id: gx_int
+    in:
+      parameter:
+        default: 7
+"""
+            )
+        )
+        int_step = workflow["steps"]["1"]
+        int_step["input_connections"] = {"parameter": {"id": 0, "output_name": "output"}}
+        int_step["tool_state"] = json.dumps(
+            {**json.loads(int_step["tool_state"]), "parameter": {"__class__": "ConnectedValue"}}
+        )
+        workflow_id = self.workflow_populator.create_workflow(workflow)
+        assert self._download_workflow(workflow_id)["steps"]["1"]["in"] == {"parameter": {"default": 7}}
+        self._save_from_editor(workflow_id, self._download_workflow(workflow_id, style="editor"))
+
+        saved_step = self._download_workflow(workflow_id)["steps"]["1"]
+        assert saved_step["in"] == {"parameter": {"default": 7}}
+        assert "parameter" in saved_step["input_connections"]
+
+    @skip_without_tool("gx_int")
+    def test_update_from_editor_keeps_subworkflow_step_input_default(self):
+        workflow_id = self._upload_yaml_workflow(
+            """
+class: GalaxyWorkflow
+steps:
+  nested:
+    run:
+      class: GalaxyWorkflow
+      inputs:
+        int_input:
+          type: int
+      steps:
+        int_step:
+          tool_id: gx_int
+          in:
+            parameter: int_input
+    in:
+      int_input:
+        default: 7
+"""
+        )
+        assert self._download_workflow(workflow_id)["steps"]["0"]["in"] == {"int_input": {"default": 7}}
+        self._save_from_editor(workflow_id, self._download_workflow(workflow_id, style="editor"))
+
+        assert self._download_workflow(workflow_id)["steps"]["0"].get("in") == {"int_input": {"default": 7}}
+
     def test_update_tags(self):
         workflow_object = self.workflow_populator.load_workflow(name="test_import")
         workflow_id = self.__test_upload(workflow=workflow_object).json()["id"]
@@ -8789,13 +8913,6 @@ input:
             self.workflow_populator.rerun(wf_run)
             result = self.dataset_populator.get_history_dataset_content(history_id)
             assert result.count("\n") == 4
-
-    @skip_without_tool("random_lines1")
-    def test_defaults_editor(self):
-        workflow_id = self._upload_yaml_workflow(WORKFLOW_ONE_STEP_DEFAULT, publish=True)
-        workflow_object = self._download_workflow(workflow_id, style="editor")
-        put_response = self._update_workflow(workflow_id, workflow_object)
-        assert put_response.status_code == 200
 
     @skip_without_tool("multi_data_optional")
     def test_invalid_collection_input_rejected(self):
