@@ -552,6 +552,38 @@ class TestUnprivilegedToolsApi(ApiTestCase, TestsTools):
             job_a_again = self.dataset_populator.get_job_details(run_a_again["jobs"][0]["id"], full=True).json()
             assert job_a_again["copied_from_job_id"] == run_a["jobs"][0]["id"], job_a_again
 
+    def test_run_use_cached_job_renamed_input_keys_on_tool_revision(self):
+        # Renaming the input makes the request-time lookup miss, so only the late lookup in prepare can copy here.
+        with (
+            self.dataset_populator.test_history() as history_id,
+            self.dataset_populator.user_tool_execute_permissions(),
+        ):
+            revision_a = self.dataset_populator.create_unprivileged_tool(UserToolSource(**TOOL_WITH_SHELL_COMMAND))
+            revision_b = self.dataset_populator.create_unprivileged_tool(
+                UserToolSource(
+                    **{**TOOL_WITH_SHELL_COMMAND, "shell_command": "echo 'revision b' > output.fastq"},
+                )
+            )
+            dataset = self.dataset_populator.new_dataset(history_id=history_id, content="abc", wait=True)
+            inputs = {"input": {"src": "hda", "id": dataset["id"]}}
+            run_a = self._run(
+                history_id=history_id, tool_uuid=revision_a["uuid"], inputs=inputs, assert_ok=True, wait_for_job=True
+            )
+            # A newer job from the other revision, which the late lookup must skip.
+            self._run(
+                history_id=history_id, tool_uuid=revision_b["uuid"], inputs=inputs, assert_ok=True, wait_for_job=True
+            )
+            self.dataset_populator.rename_dataset(dataset["id"])
+            run_a_again = self._run(
+                history_id=history_id,
+                tool_uuid=revision_a["uuid"],
+                inputs=inputs,
+                use_cached_job=True,
+                assert_ok=True,
+                wait_for_job=True,
+            )
+            assert self._copied_from_job_id(run_a_again["jobs"][0]["id"]) == run_a["jobs"][0]["id"]
+
     @skip_without_tool("help_features_markdown")
     def test_run_use_cached_job_does_not_mix_user_tools_and_toolbox_tools(self):
         # A user tool may take the id and version of a toolbox tool; neither may reuse the other's jobs.
