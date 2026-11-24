@@ -136,6 +136,11 @@ function onOpen(record: Record) {
     load(record.url);
 }
 
+function onUndo() {
+    urlTracker.backward();
+    load();
+}
+
 /** Called when user decides to upload new data */
 function onUpload() {
     const propsData = {
@@ -216,7 +221,7 @@ watch(
         @onClick="onClick"
         @onOk="onOk"
         @onOpen="onOpen"
-        @onUndo="load()">
+        @onUndo="onUndo">
         <template v-slot:buttons>
             <GButton v-if="allowUpload" size="small" @click="onUpload">
                 <FontAwesomeIcon :icon="faUpload" />
