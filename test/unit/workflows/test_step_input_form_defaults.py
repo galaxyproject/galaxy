@@ -3,6 +3,7 @@ import pytest
 from galaxy.tools.parameters import (
     params_from_strings,
     params_to_strings,
+    ToolInputsT,
 )
 from galaxy.tools.parameters.basic import (
     BooleanToolParameter,
@@ -53,7 +54,7 @@ def test_step_input_form_defaults_selects_defaults_the_form_shows():
     repeat.inputs = {"r": _param(FloatToolParameter, '<param name="r" type="float" value="1"/>')}
     section = Section("sec")
     section.inputs = {"b": _param(BooleanToolParameter, '<param name="b" type="boolean"/>')}
-    inputs = {
+    inputs: ToolInputsT = {
         "i": _int("i"),
         "d": _param(DataToolParameter, '<param name="d" type="data" format="txt"/>'),
         "connected": _int("connected"),
@@ -99,7 +100,7 @@ def test_step_input_form_defaults_selects_defaults_the_form_shows():
 
 
 def test_step_input_form_defaults_match_the_saved_form_state():
-    inputs = {
+    inputs: ToolInputsT = {
         "t": _param(TextToolParameter, '<param name="t" type="text" value=""/>'),
         "s": _param(
             SelectToolParameter,
