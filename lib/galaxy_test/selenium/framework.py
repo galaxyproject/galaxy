@@ -437,11 +437,10 @@ class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin, Use
         self.target_url_from_selenium = self._target_url_from_selenium()
         self.snapshots = []
         self.setup_driver_and_session()
-        with self._tear_down_driver_on_error():
-            if self.run_as_admin and GALAXY_TEST_SELENIUM_ADMIN_USER_EMAIL == DEFAULT_ADMIN_USER:
-                self._setup_interactor()
-                self._setup_user(GALAXY_TEST_SELENIUM_ADMIN_USER_EMAIL)
-            self._try_setup_with_driver()
+        if self.run_as_admin and GALAXY_TEST_SELENIUM_ADMIN_USER_EMAIL == DEFAULT_ADMIN_USER:
+            self._setup_interactor()
+            self._setup_user(GALAXY_TEST_SELENIUM_ADMIN_USER_EMAIL)
+        self._try_setup_with_driver()
 
     @contextmanager
     def _tear_down_driver_on_error(self):
