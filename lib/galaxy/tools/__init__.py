@@ -194,7 +194,7 @@ from galaxy.tools.job_parameters import (
     TEMPLATE_JOB_PARAMETERS,
 )
 from galaxy.tools.output_actions import (
-    output_actions_from_post_job_actions,
+    output_actions_of_job,
     post_job_actions_for_outputs,
 )
 from galaxy.tools.output_planning import (
@@ -3352,12 +3352,7 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
                 "job_remap": job.remappable() if job else None,
                 "job_credentials_context": job_credentials_context.model_dump() if job_credentials_context else None,
                 "job_output_actions": (
-                    {
-                        output_name: actions.model_dump()
-                        for output_name, actions in output_actions_from_post_job_actions(
-                            pjaa.post_job_action for pjaa in job.post_job_actions
-                        ).items()
-                    }
+                    {output_name: actions.model_dump() for output_name, actions in output_actions_of_job(job).items()}
                     if job
                     else None
                 ),

@@ -1,17 +1,17 @@
 """Turn the output changes requested for a tool run into post job actions."""
 
 from collections import defaultdict
-from collections.abc import (
-    Iterable,
-    Mapping,
-)
+from collections.abc import Mapping
 from typing import (
     Any,
     TYPE_CHECKING,
 )
 
 from galaxy.exceptions import RequestParameterInvalidException
-from galaxy.model import PostJobAction
+from galaxy.model import (
+    Job,
+    PostJobAction,
+)
 from galaxy.schema.tool_outputs import ToolOutputActions
 
 if TYPE_CHECKING:
@@ -49,14 +49,26 @@ def _action(action_type: str, output_name: str, action_arguments: dict[str, str]
     return PostJobAction(action_type, output_name=output_name, action_arguments=action_arguments)
 
 
-def output_actions_from_post_job_actions(post_job_actions: Iterable[PostJobAction]) -> dict[str, ToolOutputActions]:
+def job_belongs_to_workflow(job: Job) -> bool:
+    """Whether ``job`` was created by a workflow invocation, including a mapped-over step.
+
+    All post job actions of such a job belong to the workflow, also the runtime ones that have no
+    workflow step; a tool run attaches the changes asked for it.
+    """
+    return job.effective_workflow_invocation_step is not None
+
+
+def output_actions_of_job(job: Job) -> dict[str, ToolOutputActions]:
     """Return the output changes a tool run asked for, from the post job actions of one of its jobs.
 
-    Actions of workflow steps are left out; they belong to the workflow, not to the run.
+    Jobs of workflow invocations have none; their actions belong to the workflow, not to the run.
     """
+    if job_belongs_to_workflow(job):
+        return {}
     fields: dict[str, dict[str, Any]] = defaultdict(dict)
-    for pja in post_job_actions:
-        if pja.workflow_step_id is not None or not pja.output_name:
+    for pjaa in job.post_job_actions:
+        pja = pjaa.post_job_action
+        if not pja.output_name:
             continue
         arguments = pja.action_arguments or {}
         output_fields = fields[pja.output_name]

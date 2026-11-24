@@ -64,6 +64,7 @@ from galaxy.tools.job_parameters import (
     element_identifier_parameter,
     is_element_identifier_parameter,
 )
+from galaxy.tools.output_actions import job_belongs_to_workflow
 from galaxy.tools.output_planning import (
     input_ext_for,
     output_collection_type,
@@ -904,10 +905,10 @@ class DefaultToolAction(ToolAction):
         try:
             # Start by hiding current job outputs before taking over the old job's (implicit) outputs.
             current_job.hide_outputs(flush=False)
-            # Duplicate the PJAs of the workflow step before remap; the changes asked for a tool run
+            # Duplicate the PJAs of a workflow job before remap; the changes asked for a tool run
             # come with the rerun request.
-            for pjaa in old_job.post_job_actions:
-                if pjaa.post_job_action.workflow_step_id is not None:
+            if job_belongs_to_workflow(old_job):
+                for pjaa in old_job.post_job_actions:
                     current_job.add_post_job_action(pjaa.post_job_action)
             if old_job.workflow_invocation_step:
                 replacement_dict = {}

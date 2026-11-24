@@ -267,3 +267,59 @@ class TestPreviewOutputPlanner(ToolOutputsTestCase):
             model_class.__name__: session.query(model_class).count()
             for model_class in (model.Job, model.HistoryDatasetAssociation, model.HistoryDatasetCollectionAssociation)
         }
+
+
+class _SingleToolToolbox:
+    def __init__(self, tool):
+        self.tool = tool
+
+    def get_tool(self, tool_id, exact=False):
+        return self.tool
+
+
+class TestRerunRemap(ToolOutputsTestCase):
+    def setUp(self):
+        super().setUp()
+        user = model.User(email="remap@example.org", password="password")
+        self.app.model.context.add(user)
+        self.app.model.context.commit()
+        self.trans.user = user
+        # The remap only asks the toolbox whether old and new job ran the same tool.
+        tool = self._init_tool_for_path(functional_test_tool_path("environment_variables.xml"))
+        self.app._toolbox = cast(Any, _SingleToolToolbox(tool))
+
+    @pytest.mark.parametrize(
+        "of_workflow, expected_actions",
+        [
+            # Runtime actions of a workflow run have no workflow step; the rerun keeps them.
+            (True, ["DeleteDatasetAction"]),
+            # The changes asked for a tool run come with the rerun request instead.
+            (False, []),
+        ],
+    )
+    def test_rerun_takes_over_the_post_job_actions_of_a_workflow_job(self, of_workflow, expected_actions):
+        old_job, _ = self._execute("environment_variables.xml", {"inttest": "1"})
+        old_job.add_post_job_action(model.PostJobAction("DeleteDatasetAction", output_name="out_file1"))
+        if of_workflow:
+            workflow = model.Workflow()
+            workflow_step = model.WorkflowStep()
+            workflow_step.order_index = 0
+            workflow.steps = [workflow_step]
+            invocation = model.WorkflowInvocation()
+            invocation.workflow = workflow
+            invocation.history = self.history
+            invocation_step = model.WorkflowInvocationStep()
+            invocation_step.workflow_invocation = invocation
+            invocation_step.workflow_step = workflow_step
+            invocation_step.job = old_job
+            self.app.model.context.add(invocation_step)
+        self.app.model.context.commit()
+        new_job, out_data = self._execute("environment_variables.xml", {"inttest": "2"})
+
+        DefaultToolAction()._remap_job_on_rerun(
+            cast(ProvidesHistoryContext, self.trans), None, old_job.id, new_job, out_data
+        )
+
+        self.app.model.context.commit()
+        self.app.model.context.refresh(new_job)
+        assert [pjaa.post_job_action.action_type for pjaa in new_job.post_job_actions] == expected_actions
