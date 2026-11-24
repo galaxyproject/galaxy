@@ -333,6 +333,19 @@ class TestRerunRemap(ToolOutputsTestCase):
         self.app.model.context.refresh(new_job)
         assert sorted(pjaa.post_job_action.action_type for pjaa in new_job.post_job_actions) == expected_actions
 
+    def test_rerun_of_a_rerun_workflow_job_keeps_the_workflow_step_actions(self):
+        old_job, _ = self._execute("environment_variables.xml", {"inttest": "1"})
+        workflow_step = self._run_by_workflow_step(self._execute("environment_variables.xml", {"inttest": "0"})[0])
+        old_job.add_post_job_action(model.PostJobAction("HideDatasetAction", workflow_step, output_name="out_file1"))
+        self.app.model.context.commit()
+        new_job, out_data = self._execute("environment_variables.xml", {"inttest": "2"})
+
+        self._remap(old_job, new_job, out_data)
+
+        self.app.model.context.commit()
+        self.app.model.context.refresh(new_job)
+        assert [pjaa.post_job_action.action_type for pjaa in new_job.post_job_actions] == ["HideDatasetAction"]
+
     def test_rename_asked_for_the_rerun_wins_over_the_workflow_step(self):
         old_job, _ = self._execute("environment_variables.xml", {"inttest": "1"})
         workflow_step = self._run_by_workflow_step(old_job)

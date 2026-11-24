@@ -58,6 +58,11 @@ def _action(action_type: str, output_name: str, action_arguments: dict[str, str]
     return PostJobAction(action_type, output_name=output_name, action_arguments=action_arguments)
 
 
+def is_requested_output_change(pja: PostJobAction) -> bool:
+    """Whether ``pja`` is a rename, tag or hide asked for a tool run, not one copied from a workflow step."""
+    return pja.action_type in OUTPUT_ACTION_TYPES and pja.workflow_step is None
+
+
 def job_belongs_to_workflow(job: Job) -> bool:
     """Whether ``job`` was created by a workflow invocation, including a mapped-over step.
 
@@ -77,7 +82,7 @@ def output_actions_of_job(job: Job) -> dict[str, ToolOutputActions]:
     fields: dict[str, dict[str, Any]] = defaultdict(dict)
     for pjaa in job.post_job_actions:
         pja = pjaa.post_job_action
-        if not pja.output_name:
+        if not pja.output_name or not is_requested_output_change(pja):
             continue
         arguments = pja.action_arguments or {}
         if pja.action_type == "RenameDatasetAction":

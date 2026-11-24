@@ -28,3 +28,13 @@ def test_has_no_changes_for_a_job_of_a_workflow_invocation():
     invocation_step.job = job
 
     assert output_actions_of_job(job) == {}
+
+
+def test_leaves_out_actions_copied_from_a_workflow_step():
+    # A rerun of a workflow job copies the step's actions onto a job that has no invocation step.
+    step = model.WorkflowStep()
+    job = _job_with(
+        model.PostJobAction("RenameDatasetAction", step, output_name="out_file1", action_arguments={"newname": "x"})
+    )
+
+    assert output_actions_of_job(job) == {}

@@ -65,8 +65,8 @@ from galaxy.tools.job_parameters import (
     is_element_identifier_parameter,
 )
 from galaxy.tools.output_actions import (
+    is_requested_output_change,
     job_belongs_to_workflow,
-    OUTPUT_ACTION_TYPES,
 )
 from galaxy.tools.output_planning import (
     input_ext_for,
@@ -913,7 +913,7 @@ class DefaultToolAction(ToolAction):
             from_workflow = job_belongs_to_workflow(old_job)
             requested_pjas = [pjaa.post_job_action for pjaa in current_job.post_job_actions]
             for pjaa in old_job.post_job_actions:
-                if from_workflow or pjaa.post_job_action.action_type not in OUTPUT_ACTION_TYPES:
+                if from_workflow or not is_requested_output_change(pjaa.post_job_action):
                     current_job.add_post_job_action(pjaa.post_job_action)
             if old_job.workflow_invocation_step:
                 replacement_dict = {}
