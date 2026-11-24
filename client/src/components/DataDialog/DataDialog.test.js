@@ -149,6 +149,52 @@ describe("DataDialog.vue", () => {
         // SelectionDialog DOM properties are tested now in SelectionDialog.test.js however.
     });
 
+    it("navigates back through nested folders to the history root", async () => {
+        const folder = { id: "folder", label: "Folder", url: "/api/libraries/library/contents", isLeaf: false };
+        const nestedFolder = {
+            id: "nested",
+            label: "Nested folder",
+            url: "/api/folders/nested/contents",
+            isLeaf: false,
+        };
+        const get = vi
+            .spyOn(Services.prototype, "get")
+            .mockResolvedValueOnce([folder])
+            .mockResolvedValueOnce([nestedFolder])
+            .mockResolvedValueOnce([])
+            .mockResolvedValueOnce([nestedFolder])
+            .mockResolvedValueOnce([folder]);
+        wrapper = shallowMount(DataDialog, {
+            propsData: { ...mockOptions, library: false },
+        });
+        await flushPromises();
+        const dialog = () => wrapper.findComponent(SelectionDialog);
+        const historyUrl = get.mock.calls[0][0];
+        expect(dialog().props("undoShow")).toBe(false);
+
+        dialog().vm.$emit("onClick", folder);
+        await flushPromises();
+        expect(get).toHaveBeenLastCalledWith(folder.url);
+        expect(dialog().props("undoShow")).toBe(true);
+
+        dialog().vm.$emit("onOpen", nestedFolder);
+        await flushPromises();
+        expect(get).toHaveBeenLastCalledWith(nestedFolder.url);
+
+        dialog().vm.$emit("onUndo");
+        await flushPromises();
+        expect(get).toHaveBeenLastCalledWith(folder.url);
+        expect(dialog().props("items")).toEqual([nestedFolder]);
+        expect(dialog().props("undoShow")).toBe(true);
+
+        dialog().vm.$emit("onUndo");
+        await flushPromises();
+        expect(get).toHaveBeenLastCalledWith(historyUrl);
+        expect(dialog().props("items")).toEqual([folder]);
+        expect(dialog().props("undoShow")).toBe(false);
+        expect(get).toHaveBeenCalledTimes(5);
+    });
+
     it("reloads the listing from the new history when the history prop changes", async () => {
         const get = vi.spyOn(Services.prototype, "get").mockResolvedValue([]);
         const requestedUrls = () => get.mock.calls.map(([url]) => url);
