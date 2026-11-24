@@ -452,7 +452,7 @@ class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin, Use
         # setUp with "Sync API inside the asyncio loop".
         try:
             yield
-        except Exception:
+        except BaseException:
             try:
                 self.tear_down_driver()
             except Exception:
