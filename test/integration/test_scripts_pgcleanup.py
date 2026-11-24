@@ -109,6 +109,7 @@ class TestScriptsPgCleanupIntegration(RunsCachedBamJob, BaseScriptsIntegrationTe
         db_user.preferences["extra_user_preferences"] = '{"section|field": "personal value"}'
         db_user.display_name = "Personal Name"
         private_role = self._app.security_agent.get_private_user_role(db_user)
+        assert private_role is not None
         private_role.name = email
         private_role.description = f"Private Role for {email}"
         self._app.model.session.commit()
@@ -123,6 +124,7 @@ class TestScriptsPgCleanupIntegration(RunsCachedBamJob, BaseScriptsIntegrationTe
         assert "extra_user_preferences" not in purged_user.preferences
         assert purged_user.display_name is None
         purged_private_role = self._app.model.session.get(model.Role, private_role_id)
+        assert purged_private_role is not None
         assert purged_private_role.name == purged_user.email
         assert purged_private_role.description == f"Private Role for {purged_user.email}"
 
