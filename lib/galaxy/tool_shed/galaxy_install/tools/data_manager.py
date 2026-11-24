@@ -10,6 +10,7 @@ from galaxy.tool_shed.galaxy_install.client import (
     INSTALLATION_RELOAD_TIMEOUT,
     InstallationTarget,
 )
+from galaxy.tool_shed.galaxy_install.repository_operation_lock import with_repository_operation_lock
 from galaxy.util import (
     Element,
     etree,
@@ -84,6 +85,7 @@ class DataManagerHandler:
         except Exception:
             log.exception("Exception in DataManagerHandler._data_manager_config_elems_to_xml_file")
 
+    @with_repository_operation_lock
     def install_data_managers(
         self,
         shed_data_manager_conf_filename: StrPath,
@@ -204,6 +206,7 @@ class DataManagerHandler:
                 self._wait_for_data_managers_reload(reload_count)
         return rval
 
+    @with_repository_operation_lock
     def remove_from_data_manager(self, repository):
         metadata_dict = repository.metadata_
         if metadata_dict and "data_manager" in metadata_dict:

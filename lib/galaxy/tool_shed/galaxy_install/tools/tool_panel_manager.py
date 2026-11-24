@@ -8,6 +8,7 @@ from typing import (
 
 from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.tool_shed.galaxy_install.client import InstallationTarget
+from galaxy.tool_shed.galaxy_install.repository_operation_lock import with_repository_operation_lock
 from galaxy.tool_shed.util.basic_util import strip_path
 from galaxy.tool_shed.util.repository_util import get_repository_owner
 from galaxy.tool_shed.util.shed_util_common import get_tool_panel_config_tool_path_install_dir
@@ -72,6 +73,7 @@ class ToolPanelManager:
     def __init__(self, app: InstallationTarget):
         self.app = app
 
+    @with_repository_operation_lock
     def add_to_shed_tool_config(
         self, shed_tool_conf_dict: dict[str, Any], elem_list: list, wait_for_reload: bool = True
     ) -> None:
@@ -527,6 +529,7 @@ class ToolPanelManager:
                 )
         return tool_section, tool_panel_section_key
 
+    @with_repository_operation_lock
     def remove_from_shed_tool_config(self, shed_tool_conf_dict, metadata):
         """
         A tool shed repository is being uninstalled so change the

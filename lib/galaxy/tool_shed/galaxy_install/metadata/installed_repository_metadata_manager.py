@@ -10,6 +10,7 @@ from sqlalchemy import false
 from galaxy import util
 from galaxy.model.tool_shed_install import ToolShedRepository
 from galaxy.tool_shed.galaxy_install.client import InstallationTarget
+from galaxy.tool_shed.galaxy_install.repository_operation_lock import with_repository_operation_lock
 from galaxy.tool_shed.galaxy_install.tools import tool_panel_manager
 from galaxy.tool_shed.metadata.metadata_generator import GalaxyMetadataGenerator
 from galaxy.tool_shed.util.repository_util import (
@@ -117,6 +118,7 @@ class InstalledRepositoryMetadataManager(GalaxyMetadataGenerator):
                 repository_tools_tups.append((relative_path, guid, tool))
         return repository_tools_tups
 
+    @with_repository_operation_lock
     def reset_all_metadata_on_installed_repository(self):
         """Reset all metadata on a single tool shed repository installed into a Galaxy instance."""
         if self.relative_install_dir:
@@ -201,6 +203,7 @@ class InstalledRepositoryMetadataManager(GalaxyMetadataGenerator):
             .rstrip("/")
         )
 
+    @with_repository_operation_lock
     def update_in_shed_tool_config(self):
         """
         A tool shed repository is being updated so change the shed_tool_conf file.  Parse the config

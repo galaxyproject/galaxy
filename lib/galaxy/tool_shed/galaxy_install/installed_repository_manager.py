@@ -17,6 +17,7 @@ from galaxy.tool_shed.galaxy_install.client import InstallationTarget
 from galaxy.tool_shed.galaxy_install.metadata.installed_repository_metadata_manager import (
     InstalledRepositoryMetadataManager,
 )
+from galaxy.tool_shed.galaxy_install.repository_operation_lock import with_repository_operation_lock
 from galaxy.tool_shed.galaxy_install.tools import (
     data_manager,
     tool_panel_manager,
@@ -72,6 +73,7 @@ class InstalledRepositoryManager:
         # the key.
         self.installed_dependent_repositories_of_installed_repositories = {}
 
+    @with_repository_operation_lock
     def activate_repository(self, repository: ToolShedRepository) -> None:
         """Activate an installed tool shed repository that has been marked as deactivated."""
         shed_tool_conf, tool_path, relative_install_dir = suc.get_tool_panel_config_tool_path_install_dir(
@@ -215,6 +217,7 @@ class InstalledRepositoryManager:
                     deleted_tool_dependency_names.append(original_dependency_val_dict["name"])
         return updated_tool_dependency_names, deleted_tool_dependency_names
 
+    @with_repository_operation_lock
     def uninstall_repository(self, repository: ToolShedRepository, remove_from_disk=True) -> str:
         errors = ""
         shed_tool_conf, tool_path, relative_install_dir = suc.get_tool_panel_config_tool_path_install_dir(

@@ -63,6 +63,7 @@ EMPTY_TOOL_DATA_TABLE_CONFIG = """<?xml version="1.0"?>
 
 
 class Config:
+    data_dir: str
     tool_data_path: str
     install_database_connection: str
     install_database_engine_options: dict[str, Any] = {}
@@ -185,6 +186,7 @@ class StandaloneInstallationTarget(InstallationTarget):
     ):
         tool_root_dir = target_directory / "tools"
         config: Config = Config()
+        config.data_dir = str(target_directory)
         install_db_path = str(target_directory / "install.sqlite")
         config.tool_data_path = str(target_directory / "tool_data")
         config.shed_tool_data_path = config.tool_data_path
