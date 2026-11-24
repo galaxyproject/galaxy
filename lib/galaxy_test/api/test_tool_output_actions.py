@@ -204,6 +204,18 @@ class TestToolOutputActionsApi(ApiTestCase):
             "out_file1": {"rename": "fixed", "add_tags": [], "remove_tags": [], "hide": False}
         }
 
+    @skip_without_tool("upload1")
+    def test_tool_that_does_not_run_post_job_actions_is_rejected(self):
+        response = self.dataset_populator.run_tool_raw(
+            "upload1",
+            {"files_0|url_paste": "1\t2\n", "files_0|type": "upload_dataset", "file_type": "tabular"},
+            self.history.id,
+            output_actions=json.dumps({"output0": {"rename": "uploaded"}}),
+        )
+
+        self._assert_status_code_is(response, 400)
+        assert response.json()["err_msg"] == "The outputs of tool 'upload1' can't be renamed, tagged or hidden."
+
     @skip_without_tool("output_format")
     def test_legacy_tool_api_rejects_unknown_output_name(self):
         response = self.dataset_populator.run_tool_raw(

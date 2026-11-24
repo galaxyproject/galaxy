@@ -21,9 +21,13 @@ if TYPE_CHECKING:
 def post_job_actions_for_outputs(tool: "Tool", output_actions: Mapping[str, ToolOutputActions]) -> list[PostJobAction]:
     """Return the post job actions that make the requested changes to the outputs of ``tool``.
 
-    Raises ``RequestParameterInvalidException`` for names that aren't outputs of the tool and for
-    tags with a comma.
+    Raises ``RequestParameterInvalidException`` for names that aren't outputs of the tool, for
+    tags with a comma and for tools whose action does not run post job actions.
     """
+    from galaxy.tools.actions import DefaultToolAction
+
+    if output_actions and not isinstance(tool.tool_action, DefaultToolAction):
+        raise RequestParameterInvalidException(f"The outputs of tool '{tool.id}' can't be renamed, tagged or hidden.")
     if unknown := sorted(set(output_actions) - set(tool.outputs)):
         raise RequestParameterInvalidException(f"Tool '{tool.id}' has no output named {', '.join(unknown)}.")
     for actions in output_actions.values():
