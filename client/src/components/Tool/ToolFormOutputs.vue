@@ -14,6 +14,7 @@ import { errorMessageAsString } from "@/utils/simple-error";
 import ToolFormOutput from "./ToolFormOutput.vue";
 import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GBadge from "@/components/BaseComponents/GBadge.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
 import GCollapse from "@/components/BaseComponents/GCollapse.vue";
 import Heading from "@/components/Common/Heading.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
@@ -107,6 +108,10 @@ function onUpdateOutput(outputName: string, actions: ToolOutputActions) {
     emit("update:modelValue", updated);
 }
 
+function onClearChanges() {
+    emit("update:modelValue", {});
+}
+
 function onToggle() {
     expanded.value = !expanded.value;
     fetchPreview();
@@ -130,6 +135,12 @@ onMounted(fetchPreview);
             </GAlert>
             <GAlert v-else-if="unsupportedReason" variant="info" data-description="outputs preview unsupported">
                 {{ unsupportedReason }}
+                <div v-if="changedCount" class="mt-2">
+                    {{ localize("Changes to the outputs from the earlier run will still be applied.") }}
+                    <GButton size="small" data-description="outputs clear changes" @click="onClearChanges">
+                        {{ localize("Clear changes") }}
+                    </GButton>
+                </div>
             </GAlert>
             <div v-else>
                 <p v-if="outputs.length" class="text-muted small mb-1">

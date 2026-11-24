@@ -194,6 +194,20 @@ describe("ToolFormOutputs", () => {
         expect(outputNames(wrapper)).toEqual([]);
     });
 
+    it("lets the changes of a rerun be cleared when the outputs can't be described", async () => {
+        server.use(
+            http.post("/api/tools/outputs_preview", ({ response }) =>
+                response(200).json({ supported: false, unsupported_reason: "Reason from the server.", job_count: 0 }),
+            ),
+        );
+        const wrapper = mountOutputs({ out_file1: actions({ hide: true }) });
+        await flushPromises();
+
+        await wrapper.find("[data-description='outputs clear changes']").trigger("click");
+
+        expect(lastEmitted(wrapper)).toEqual({});
+    });
+
     it("keeps the form usable when the inputs are not complete yet", async () => {
         server.use(
             http.post("/api/tools/outputs_preview", () =>
