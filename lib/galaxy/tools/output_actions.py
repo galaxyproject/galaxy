@@ -71,15 +71,14 @@ def output_actions_of_job(job: Job) -> dict[str, ToolOutputActions]:
         if not pja.output_name:
             continue
         arguments = pja.action_arguments or {}
-        output_fields = fields[pja.output_name]
         if pja.action_type == "RenameDatasetAction":
-            output_fields["rename"] = arguments.get("newname")
+            fields[pja.output_name]["rename"] = arguments.get("newname")
         elif pja.action_type == "TagDatasetAction":
-            output_fields["add_tags"] = _split_tags(arguments.get("tags", ""))
+            fields[pja.output_name]["add_tags"] = _split_tags(arguments.get("tags", ""))
         elif pja.action_type == "RemoveTagDatasetAction":
-            output_fields["remove_tags"] = _split_tags(arguments.get("tags", ""))
+            fields[pja.output_name]["remove_tags"] = _split_tags(arguments.get("tags", ""))
         elif pja.action_type == "HideDatasetAction":
-            output_fields["hide"] = True
+            fields[pja.output_name]["hide"] = True
     return {output_name: ToolOutputActions(**output_fields) for output_name, output_fields in fields.items()}
 
 
