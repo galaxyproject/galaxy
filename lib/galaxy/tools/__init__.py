@@ -21,7 +21,10 @@ from contextlib import (
 )
 from copy import deepcopy
 from datetime import datetime
-from itertools import chain
+from itertools import (
+    chain,
+    islice,
+)
 from typing import (
     Any,
     cast,
@@ -2238,6 +2241,28 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
 
         This is responsible for breaking the map over job requests into individual jobs for execution.
         """
+        all_params, all_errors, collection_info, internal_states, _ = self._expand_incoming_async(
+            request_context, tool_request_internal_state, rerun_remap_job_id
+        )
+        return all_params, all_errors, collection_info, internal_states
+
+    def _expand_incoming_async(
+        self,
+        request_context: WorkRequestContext,
+        tool_request_internal_state: RequestInternalDereferencedToolState,
+        rerun_remap_job_id: int | None,
+        limit: int | None = None,
+    ) -> tuple[
+        list[ToolStateJobInstancePopulatedT],
+        list[ParameterValidationErrorsT],
+        MatchingCollections | None,
+        list[JobInternalToolState],
+        int,
+    ]:
+        """Expand the request into jobs, populating and validating at most ``limit`` of them.
+
+        Also returns the number of jobs the request expands to.
+        """
         if self.input_translator:
             raise exceptions.RequestParameterInvalidException(
                 "Failure executing tool request with id '%s' (cannot validate inputs from this type of data source tool - please POST to /api/tools).",
@@ -2266,7 +2291,7 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
         if self.parameters is None:
             raise RequestParameterInvalidException(f"Tool {self.id} has no parameters defined")
         parameter_bundle = ToolParameterBundleModel(parameters=self.parameters)
-        for expanded_incoming, job_tool_state in zip(expanded_incomings, job_tool_states):
+        for expanded_incoming, job_tool_state in islice(zip(expanded_incomings, job_tool_states), limit):
             expanded_incoming = fill_static_defaults(
                 expanded_incoming, parameter_bundle, self.profile, yaml_origin=self.yaml_origin
             )
@@ -2286,7 +2311,7 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
         unset_dataset_matcher_factory(request_context)
 
         log.info(validation_timer)
-        return all_params, all_errors, collection_info, internal_states
+        return all_params, all_errors, collection_info, internal_states, len(expanded_incomings)
 
     def expand_incoming(
         self, request_context: WorkRequestContext, incoming: ToolRequestT, input_format: InputFormatT = "legacy"
@@ -2531,8 +2556,9 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
         """
         assert self.can_preview_outputs
         tool_action = cast(DefaultToolAction, self.tool_action)
-        all_params, all_errors, collection_info, job_tool_states = self.expand_incoming_async(
-            request_context, tool_state, None
+        # The outputs only depend on the first job; the others only count.
+        all_params, all_errors, collection_info, job_tool_states, job_count = self._expand_incoming_async(
+            request_context, tool_state, None, limit=1
         )
         self.handle_incoming_errors(all_errors)
         history = request_context.history
@@ -2554,7 +2580,7 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
         else:
             # A request that expands to no jobs creates nothing.
             outputs = []
-        return ToolOutputsPreview(supported=True, job_count=len(all_params), outputs=outputs)
+        return ToolOutputsPreview(supported=True, job_count=job_count, outputs=outputs)
 
     def handle_input(
         self,
