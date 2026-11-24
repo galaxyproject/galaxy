@@ -38,7 +38,10 @@
                         @change="changeToggleCheckboxState($event)"></b-form-checkbox>
                 </template>
                 <template v-slot:head(selected)="">
-                    <b-form-checkbox v-model="toggleState" @change="toggleSelectAll"></b-form-checkbox>
+                    <b-form-checkbox
+                        v-model="toggleState"
+                        :disabled="!items.length"
+                        @change="toggleSelectAll"></b-form-checkbox>
                 </template>
                 <template v-slot:cell(requirement)="row">
                     <requirements :requirements="row.item.requirements" />
@@ -186,6 +189,10 @@ export default {
         },
     },
     watch: {
+        items() {
+            // Rebuilt rows all start unticked, so the header must too
+            this.toggleState = false;
+        },
         resolverType: function (val) {
             this.load();
         },
