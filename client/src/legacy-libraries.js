@@ -70,7 +70,9 @@ export function legacyComponent(component, seen = new Set()) {
 // Vue.extend. This module has to be evaluated before bootstrap-vue is:
 // compat-config.js imports it first, and vite-plugin-legacy-libraries-first.js
 // covers the production chunking.
+/* eslint-disable no-restricted-properties -- this is the hook that wraps bootstrap-vue's Vue.extend */
 const originalExtend = Vue.extend;
 Vue.extend = function legacyExtend(definition = {}) {
     return originalExtend.call(this, legacyComponent(definition));
 };
+/* eslint-enable no-restricted-properties */

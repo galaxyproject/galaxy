@@ -33,6 +33,14 @@ const baseRules = {
             property,
             message: `${property} is Vue 2 instance API; compat has it turned off for Galaxy code.`,
         })),
+        // compat-config.js keeps these on for every component because bootstrap-vue
+        // needs them, so neither compat nor the unit tests flag them in Galaxy code.
+        ...["$on", "$off", "$once"].map((property) => ({
+            property,
+            message: `${property} is Vue 2 instance API; use an event bus or emits instead.`,
+        })),
+        { object: "Vue", property: "extend", message: "Vue.extend is Vue 2 API; use defineComponent() instead." },
+        { property: "$mount", message: "$mount is Vue 2 API; use createApp(Component).mount() instead." },
     ],
     // RENDER_FUNCTION is off, so a render function's first argument is the
     // instance proxy, not `h`.
@@ -42,6 +50,16 @@ const baseRules = {
             selector:
                 "Property[key.name='render'] > :matches(FunctionExpression, ArrowFunctionExpression)[params.0.name=/^(h|createElement)$/]",
             message: "Vue 3 render functions don't receive `h`; import { h } from 'vue' instead.",
+        },
+        {
+            // Kept on globally for bootstrap-vue's functional components (see compat-config.js).
+            selector: "Property[key.name='functional'][value.value=true]",
+            message: "Vue 3 functional components are plain functions; `functional: true` is Vue 2.",
+        },
+        {
+            // GLOBAL_MOUNT is kept on for bootstrap-vue too (see compat-config.js).
+            selector: "NewExpression[callee.name='Vue']",
+            message: "new Vue() is Vue 2 API; use createApp(Component).mount() instead.",
         },
     ],
     "vue/no-deprecated-data-object-declaration": "error",
