@@ -16,6 +16,11 @@ from galaxy.model.metadata import (
     MetadataTempFile,
     MetadataTempFilePathError,
 )
+from galaxy.model.store import (
+    EditableObjects,
+    get_import_model_store_for_directory,
+    ImportOptions,
+)
 from galaxy.model.store.discover import (
     ensure_job_path_in_job_directory,
     InvalidDiscoveredFilePathError,
@@ -730,11 +735,30 @@ class TestMetadata(TestCase, tools_support.UsesTools):
             outside_file.write("outside job directory\n")
         return outside_path
 
-    def _run_from_work_dir_output(self, stray_files, write_output=True, output_link=None):
+    def test_extended_metadata_uncollected_output_imports_with_file_size(self):
+        output_dataset = self._run_from_work_dir_output(0, write_output=False, stray_outside_link=True)
+        assert self._exported_dataset_state(output_dataset) == model.Dataset.states.ERROR
+
+        import_model_store = get_import_model_store_for_directory(
+            os.path.join(self.job_working_directory, "metadata", "outputs_populated"),
+            app=self.app,
+            import_options=ImportOptions(
+                allow_dataset_object_edit=True, allow_edit=True, editable_objects=EditableObjects(self.job)
+            ),
+            user=self.job.user,
+            commit=False,
+        )
+        import_model_store.perform_import(history=self.history, job=self.job)
+
+        assert output_dataset.dataset.state == model.Dataset.states.ERROR
+        output_dataset.__strict_check_before_flush__()
+
+    def _run_from_work_dir_output(self, stray_files, write_output=True, output_link=None, stray_outside_link=False):
         self.app.config.metadata_strategy = "extended"
         source_file_name = os.path.join(galaxy_directory(), "test/functional/tools/for_workflows/cat.xml")
         self._init_tool_for_path(source_file_name)
         output_dataset = self._create_output_dataset(extension="txt")
+        self.job.add_output_dataset("out_file1", output_dataset)
         self.app.model.session.commit()
         outputs_directory = os.path.join(self.job_working_directory, "outputs")
         output_path = os.path.join(outputs_directory, f"dataset_{output_dataset.dataset.uuid}.dat")
@@ -749,6 +773,8 @@ class TestMetadata(TestCase, tools_support.UsesTools):
         command = self.metadata_command({"out_file1": output_dataset}, output_fnames=output_fnames)
         for i in range(stray_files):
             self._write_work_dir_file(f"stray.{i}.txt", f"stray {i}\n")
+        if stray_outside_link:
+            os.symlink(self._write_outside_file(), os.path.join(self.tool_working_directory, "stray.0.txt"))
         if write_output:
             self._write_file(output_path, "written to output\n")
         if output_link:
