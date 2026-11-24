@@ -54,7 +54,9 @@ class DropboxFilesSource(
 
     def _open_fs(self, context: FilesSourceRuntimeContext[DropboxFilesSourceConfiguration]):
         if not context.config.access_token:
-            raise AuthenticationRequired("No Dropbox access token is set. Add one in your user preferences.")
+            raise AuthenticationRequired(
+                f"No Dropbox access token is set for {self.label}. Add one in your user preferences."
+            )
 
         if DropboxFS is None:
             raise self.required_package_exception
