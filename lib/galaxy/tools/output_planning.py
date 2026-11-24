@@ -166,12 +166,13 @@ class OutputPlanner:
         input_collections: Mapping[str, "HistoryDatasetCollectionAssociation"],
         input_ext: str,
         on_text: str | None,
-        history: "History | None" = None,
-        job_params: Any = None,
-        execution_cache: ToolExecutionCache | None = None,
-        mapping_over: bool = False,
-        input_collection_parameters: Mapping[str, "BaseDataToolParameter"] | None = None,
-        unconverted_inputs: Iterable[str] = (),
+        *,
+        history: "History | None",
+        job_params: Any,
+        execution_cache: ToolExecutionCache | None,
+        mapping_over: bool,
+        input_collection_parameters: Mapping[str, "BaseDataToolParameter"],
+        unconverted_inputs: Iterable[str],
     ):
         """
         :param incoming: populated tool state, read by output filters
@@ -195,8 +196,12 @@ class OutputPlanner:
         self.job_params = job_params
         self.execution_cache = execution_cache
         self.mapping_over = mapping_over
-        self.input_collection_parameters = input_collection_parameters or {}
+        self.input_collection_parameters = input_collection_parameters
         self.unconverted_inputs = frozenset(unconverted_inputs)
+        # format_source names an input without its section or conditional prefix
+        self._unconverted_names = {
+            name.rsplit("|", 1)[-1] for name in self.unconverted_inputs
+        } | self.unconverted_inputs
 
     def included_outputs(self) -> Iterator[tuple[str, "ToolOutputBase"]]:
         """Yield the tool outputs that the output filters keep, in tool order."""
@@ -267,11 +272,6 @@ class OutputPlanner:
             return None
         ext = self.format(output)
         return None if ext in RUNTIME_FORMATS else ext
-
-    @property
-    def _unconverted_names(self) -> set[str]:
-        # format_source names an input without its section or conditional prefix
-        return {name.rsplit("|", 1)[-1] for name in self.unconverted_inputs} | set(self.unconverted_inputs)
 
     def _planned_collection(self, name: str, output: "ToolOutputCollection") -> "PlannedOutput":
         try:

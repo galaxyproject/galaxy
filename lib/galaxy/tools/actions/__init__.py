@@ -1051,7 +1051,7 @@ class DefaultToolAction(ToolAction):
             job_params=job_params,
             execution_cache=execution_cache,
             mapping_over=mapping_over,
-            input_collection_parameters=input_collection_parameters,
+            input_collection_parameters=input_collection_parameters or {},
             unconverted_inputs=unconverted_inputs,
         )
 
