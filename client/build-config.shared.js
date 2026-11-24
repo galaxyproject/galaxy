@@ -18,8 +18,11 @@ export const legacyAliases = {
     jqueryVendor: path.join(libsBase, "jquery/jquery.js"),
     storemodern: path.join(__dirname, "node_modules/store/dist/store.modern.js"),
 
-    // Vue - use @vue/compat for Vue 3 compatibility mode
-    vue: path.join(__dirname, "node_modules/@vue/compat"),
+    // Vue - use @vue/compat for Vue 3 compatibility mode. Its runtime-only
+    // build: templates are compiled at build time. Vitest loads the full
+    // build instead (vitest.config.mts), so patches/@vue__compat@*.patch
+    // has to cover both files.
+    vue: path.join(__dirname, "node_modules/@vue/compat/dist/vue.runtime.esm-bundler.js"),
 
     // Build config
     config: path.join(scriptsBase, "config", process.env.NODE_ENV || "development") + ".js",

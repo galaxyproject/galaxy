@@ -15,7 +15,7 @@ packageExtensionsChecksum: sha256-HCgSDZGFiQVIm6oAHSr+b8liWpdEb2gns2T056M1GkA=
 
 patchedDependencies:
   '@vue/compat@3.5.43':
-    hash: 3c17256baf827d47ff3f8021577b9396f4c7745d92c74ab1fb952cc416d397ae
+    hash: fb451f2d62de254b67e291a80764df2ee7da7af6d9d90434cc99436a66e715b6
     path: patches/@vue__compat@3.5.43.patch
   bootstrap-vue@2.23.1:
     hash: 8d6ee546ef0cc1c1178bc1ad8eaadd36be6dedb922c3e1eefc5dd2da4e76f567
@@ -81,7 +81,7 @@ importers:
         version: 10.57.0(pinia@4.0.3(@vue/devtools-api@8.2.1)(typescript@5.8.3)(vue@3.5.43(typescript@5.8.3)))(vue@3.5.43(typescript@5.8.3))
       '@vue/compat':
         specifier: 3.5.43
-        version: 3.5.43(patch_hash=3c17256baf827d47ff3f8021577b9396f4c7745d92c74ab1fb952cc416d397ae)(vue@3.5.43(typescript@5.8.3))
+        version: 3.5.43(patch_hash=fb451f2d62de254b67e291a80764df2ee7da7af6d9d90434cc99436a66e715b6)(vue@3.5.43(typescript@5.8.3))
       '@vue/devtools-api':
         specifier: ^8.2.1
         version: 8.2.1
@@ -7241,7 +7241,7 @@ snapshots:
     optionalDependencies:
       vue: 3.5.43(typescript@5.8.3)
 
-  '@vue/compat@3.5.43(patch_hash=3c17256baf827d47ff3f8021577b9396f4c7745d92c74ab1fb952cc416d397ae)(vue@3.5.43(typescript@5.8.3))':
+  '@vue/compat@3.5.43(patch_hash=fb451f2d62de254b67e291a80764df2ee7da7af6d9d90434cc99436a66e715b6)(vue@3.5.43(typescript@5.8.3))':
     dependencies:
       '@babel/parser': 7.29.9
       entities: 7.0.1
