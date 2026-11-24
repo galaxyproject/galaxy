@@ -101,6 +101,11 @@ function mountComponent(propsData: { pageId: string; historyId?: string; display
     return wrapper;
 }
 
+/** createTestingPinia makes getters writable; unlike a getter spy, storeToRefs still sees the value. */
+function setDirty(store: ReturnType<typeof usePageEditorStore>, isDirty: boolean) {
+    (store as { isDirty: boolean }).isDirty = isDirty;
+}
+
 function setupLoadedPage(historyId?: string) {
     const store = usePageEditorStore();
     store.isLoadingList = false;
@@ -117,7 +122,7 @@ function setupLoadedPage(historyId?: string) {
     store.currentContent = "# Hello";
     store.currentTitle = "My Page";
     vi.spyOn(store, "hasCurrentPage", "get").mockReturnValue(true);
-    vi.spyOn(store, "isDirty", "get").mockReturnValue(false);
+    setDirty(store, false);
     return store;
 }
 
@@ -190,7 +195,7 @@ describe("PageEditorView", () => {
 
         it("waits for pending notebook edits to save before extracting", async () => {
             const store = usePageEditorStore();
-            vi.spyOn(store, "isDirty", "get").mockReturnValue(true);
+            setDirty(store, true);
             let completeSave!: () => void;
             vi.mocked(store.savePage).mockImplementation(
                 () =>
@@ -210,7 +215,7 @@ describe("PageEditorView", () => {
 
         it("keeps the editor open and displays an error when saving for extraction fails", async () => {
             const store = usePageEditorStore();
-            vi.spyOn(store, "isDirty", "get").mockReturnValue(true);
+            setDirty(store, true);
             vi.mocked(store.savePage).mockImplementation(async () => {
                 store.error = "Could not save notebook";
                 throw new Error(store.error);
@@ -280,7 +285,7 @@ describe("PageEditorView", () => {
     describe("SaveChangesModal wiring", () => {
         it("passes hasChanges, onSave and onDiscard through to SaveChangesModal", async () => {
             const store = setupLoadedPage(HISTORY_ID);
-            vi.spyOn(store, "isDirty", "get").mockReturnValue(true);
+            setDirty(store, true);
             const wrapper = mountComponent({ pageId: PAGE_ID, historyId: HISTORY_ID });
             await flushPromises();
 

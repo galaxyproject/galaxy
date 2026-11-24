@@ -1,5 +1,5 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue, nth, suppressDebugConsole } from "@tests/vitest/helpers";
+import { getLocalVue, nth, suppressDebugConsole, withPlugins } from "@tests/vitest/helpers";
 import { mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
@@ -54,10 +54,7 @@ function mountForm(canMutateCurrentHistory = true) {
             model: new WorkflowRunModel(JSON.parse(JSON.stringify(sampleRunData1))),
             canMutateCurrentHistory,
         },
-        global: {
-            ...globalConfig,
-            plugins: [...(globalConfig.plugins ?? []), pinia],
-        },
+        global: withPlugins(globalConfig, pinia),
     });
 }
 

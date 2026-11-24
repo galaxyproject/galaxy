@@ -1,5 +1,5 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue, injectTestRouter } from "@tests/vitest/helpers";
+import { getLocalVue, injectTestRouter, withPlugins } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
@@ -261,7 +261,7 @@ describe("ToolsList", () => {
         await flushPromises();
         routerPushMock.mockClear();
 
-        wrapper.findComponent(FilterMenu).vm.$emit("update:filterText", "tag:collection_ops owner:devteam");
+        wrapper.findComponent(FilterMenu).vm.$emit("update:filter-text", "tag:collection_ops owner:devteam");
         await flushPromises();
         expect(routerPushMock).toHaveBeenCalledTimes(1);
         expect(routerPushMock).toHaveBeenLastCalledWith({
@@ -455,10 +455,7 @@ describe("ToolsList", () => {
 
     it("performs an advanced search with a router push", async () => {
         const wrapper = mount(ToolsList as object, {
-            global: {
-                ...localVue,
-                plugins: [...(localVue.plugins ?? []), pinia],
-            },
+            global: withPlugins(localVue, pinia),
         });
 
         // By default, no search text, fetch tools is still called but without a query
@@ -490,10 +487,7 @@ describe("ToolsList", () => {
 
     it("detects filters in the route and searches the backend", async () => {
         mount(ToolsList as object, {
-            global: {
-                ...localVue,
-                plugins: [...(localVue.plugins ?? []), pinia],
-            },
+            global: withPlugins(localVue, pinia),
             props: FILTER_SETTINGS,
         });
 

@@ -73,6 +73,8 @@ vi.mock("../providers/DatasetProvider", () => ({
     // which doesn't play well with a hand-built component here. `setup()` returning
     // a render function sidesteps that entirely.
     default: {
+        // Like the real provider: its attributes (the dataset id) are lookup parameters.
+        inheritAttrs: false,
         setup(_props, { slots }) {
             return () => slots.default?.({ loading: false, result: providerResult });
         },

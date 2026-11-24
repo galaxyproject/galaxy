@@ -1,5 +1,5 @@
+import { createTestRouter } from "@tests/vitest/helpers";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { createMemoryHistory, createRouter } from "vue-router";
 
 import { getGalaxyInstance } from "@/app";
 
@@ -13,9 +13,12 @@ function setUser(id: string | null) {
     vi.mocked(getGalaxyInstance).mockReturnValue({ user: { id } } as ReturnType<typeof getGalaxyInstance>);
 }
 
-/** Drive the real router, so this covers the route wiring and not just the guard. */
+/**
+ * Drive the real router, so this covers the route wiring and not just the guard.
+ * The test router's catch-all stands in for the app routes the guard redirects to.
+ */
 async function navigateTo(path: string) {
-    const router = createRouter({ history: createMemoryHistory(), routes: LoginRoutes });
+    const router = createTestRouter(LoginRoutes);
     // vue-router rejects the push promise when a guard redirects; currentRoute still
     // settles on wherever the guard sent us, which is what we are asserting on.
     await router.push(path).catch(() => undefined);

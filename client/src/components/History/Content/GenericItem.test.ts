@@ -3,7 +3,6 @@ import { getLocalVue } from "@tests/vitest/helpers";
 import { mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { createMemoryHistory, createRouter } from "vue-router";
 
 import { fetchCollectionSummary } from "@/api/datasetCollections";
 import { fetchDatasetDetails } from "@/api/datasets";
@@ -60,7 +59,6 @@ describe.each(["hda", "hdca"])("GenericItem (%s)", (itemSrc) => {
     function mountItem() {
         wrapper = mount(GenericItem as object, {
             localVue,
-            router: createRouter({ history: createMemoryHistory(), routes: [] }),
             pinia: createTestingPinia({ createSpy: vi.fn }),
             propsData: { itemId: item.id, itemSrc },
             stubs: { ContentOptions: true, DatasetDetails: true, StatelessTags: true },

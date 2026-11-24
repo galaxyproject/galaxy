@@ -1,9 +1,8 @@
 import { createTestingPinia } from "@pinia/testing";
-import { emittedArg, getLocalVue } from "@tests/vitest/helpers";
+import { createTestRouter, emittedArg, getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { nextTick } from "vue";
-import { createMemoryHistory, createRouter } from "vue-router";
 
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 import { updateContentFields } from "@/components/History/model/queries";
@@ -16,7 +15,7 @@ vi.mock("@/components/History/model/queries");
 const { server, http } = useServerMock();
 
 const localVue = getLocalVue();
-const router = createRouter({ history: createMemoryHistory(), routes: [] });
+const router = createTestRouter();
 
 vi.mock("vue-router", async (importOriginal) => ({
     ...(await importOriginal()),

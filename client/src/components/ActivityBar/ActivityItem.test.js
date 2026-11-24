@@ -1,3 +1,5 @@
+import { faStar } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
@@ -15,7 +17,7 @@ describe("ActivityItem", () => {
             props: {
                 id: "activity-test-id",
                 activityBarId: "activity-bar-test-id",
-                icon: "activity-test-icon",
+                icon: faStar,
                 indicator: 0,
                 progressPercentage: 0,
                 progressStatus: null,
@@ -34,7 +36,7 @@ describe("ActivityItem", () => {
     it("rendering", async () => {
         const reference = wrapper.find(".activity-item");
         expect(reference.text()).toBe("activity-test-title");
-        expect(reference.find("[icon='activity-test-icon']").exists()).toBeTruthy();
+        expect(reference.findComponent(FontAwesomeIcon).props("icon")).toEqual(faStar);
         expect(reference.find(".progress").exists()).toBeFalsy();
         await wrapper.setProps({ progressStatus: "success" });
         expect(reference.find(".progress").exists()).toBeTruthy();

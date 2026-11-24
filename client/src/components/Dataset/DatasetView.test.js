@@ -1,12 +1,11 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue } from "@tests/vitest/helpers";
+import { createTestRouter, getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { http as mswHttp, HttpResponse } from "msw";
 import { setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ref } from "vue";
-import { createMemoryHistory, createRouter } from "vue-router";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import { testDatatypesMapper } from "@/components/Datatypes/test_fixtures";
@@ -102,7 +101,7 @@ async function mountDatasetView(tab = "preview", options = {}) {
     };
     const pinia = setupPinia(datasetStore, "datatypesMapper" in options ? options.datatypesMapper : undefined);
 
-    const router = createRouter({ history: createMemoryHistory(), routes: [] });
+    const router = createTestRouter();
     router.push = vi.fn();
     router.replace = vi.fn();
 
@@ -160,7 +159,7 @@ async function mountLoadingDatasetView({ pendingFetch = true } = {}) {
     };
     const pinia = setupPinia(datasetStore);
 
-    const router = createRouter({ history: createMemoryHistory(), routes: [] });
+    const router = createTestRouter();
     router.push = vi.fn();
     router.replace = vi.fn();
 
