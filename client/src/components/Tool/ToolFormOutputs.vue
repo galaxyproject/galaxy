@@ -46,10 +46,10 @@ const unsupportedReason = computed(() =>
 const outputs = computed(() => (preview.value?.supported ? (preview.value.outputs ?? []) : []));
 const jobCountText = computed(() => {
     const jobCount = preview.value?.supported ? preview.value.job_count : 1;
-    return jobCount === 1 ? "" : localize(`This run creates ${jobCount} jobs.`);
+    return jobCount === 1 ? "" : `${localize("Jobs this run creates:")} ${jobCount}`;
 });
 const changedCount = computed(() => Object.keys(props.modelValue).length);
-const changedText = computed(() => localize(`${changedCount.value} changed`));
+const changedText = computed(() => `${changedCount.value} ${localize("changed")}`);
 
 let fetchedKey: string | null = null;
 let controller: AbortController | null = null;
