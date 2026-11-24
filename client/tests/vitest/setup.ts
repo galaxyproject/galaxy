@@ -5,6 +5,7 @@ import "vitest-location-mock";
 
 import { config } from "@vue/test-utils";
 import { vi } from "vitest";
+import type { ComponentPublicInstance } from "vue";
 
 import { GLOBAL_COMPAT_CONFIG } from "@/compat-config";
 import { vNoSanitizeHtml } from "@/directives/vNoSanitizeHtml";
@@ -13,14 +14,6 @@ import { LEGACY_COMPAT_CONFIG } from "@/legacy-libraries";
 // Straight from the file: the galaxy-ui index would load every component here,
 // before test files can mock their dependencies (@floating-ui/dom).
 import { vSanitizeHtml } from "../../packages/ui/src/directives/vSanitizeHtml";
-
-// Vue passes a warning's component props to console.warn as raw objects, and
-// vitest-fail-on-console formats every argument before deciding whether to
-// silence it -- a big enough props object overflows the string it builds.
-// Hand Vue's warnings to the console as the plain strings Vue already has.
-config.global.config.warnHandler = (message: string, _instance: unknown, trace: string) => {
-    console.warn(`[Vue warn]: ${message}${trace ? `\n${trace}` : ""}`);
-};
 
 // Mock g-tooltip directive globally so components don't trigger
 // "Failed to resolve directive" warnings during tests.
@@ -126,11 +119,35 @@ const ENABLED_COMPAT_DEPRECATIONS = new Set(
         .filter(([, value]) => value === true)
         .map(([flag]) => flag),
 );
-const COMPAT_DEPRECATION = /^\[Vue warn\]: \(deprecation ([A-Z_]+)\)/;
+// Compat reads this global flag without looking at the component, so Galaxy
+// components get Vue 2's deep data merge too. Let its warning through only when
+// the component merging its data is a Vue 2 library one.
+const LIBRARY_ONLY_DEPRECATIONS = new Set(["OPTIONS_DATA_MERGE"]);
+const COMPAT_DEPRECATION = /^(?:\[Vue warn\]: )?\(deprecation ([A-Z_]+)\)/;
+
+function compatDeprecationFlag(message: string) {
+    return COMPAT_DEPRECATION.exec(message)?.[1];
+}
+
+function isLibraryComponent(instance: ComponentPublicInstance | null) {
+    return (instance?.$.type as { compatConfig?: unknown } | undefined)?.compatConfig === LEGACY_COMPAT_CONFIG;
+}
+
+// Vue passes a warning's component props to console.warn as raw objects, and
+// vitest-fail-on-console formats every argument before deciding whether to
+// silence it -- a big enough props object overflows the string it builds.
+// Hand Vue's warnings to the console as the plain strings Vue already has.
+config.global.config.warnHandler = (message: string, instance, trace: string) => {
+    const flag = compatDeprecationFlag(message);
+    if (flag && LIBRARY_ONLY_DEPRECATIONS.has(flag) && isLibraryComponent(instance)) {
+        return;
+    }
+    console.warn(`[Vue warn]: ${message}${trace ? `\n${trace}` : ""}`);
+};
 
 function isEnabledCompatDeprecation(message: string) {
-    const flag = COMPAT_DEPRECATION.exec(message)?.[1];
-    return flag !== undefined && ENABLED_COMPAT_DEPRECATIONS.has(flag);
+    const flag = compatDeprecationFlag(message);
+    return flag !== undefined && ENABLED_COMPAT_DEPRECATIONS.has(flag) && !LIBRARY_ONLY_DEPRECATIONS.has(flag);
 }
 
 // A test-utils stub renders the stubbed component's props on its <x-stub>
