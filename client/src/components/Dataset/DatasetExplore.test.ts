@@ -100,6 +100,7 @@ const TOOLS: Tool[] = [
     }),
     interactiveTool(`${RADIANT_ID}/1.0`, "Radiant", "1.0", [dataInput("inputs|infile", ["csv"])], {
         description: "Business analytics",
+        icon: "radiant.png",
     }),
     interactiveTool(`${RADIANT_ID}/0.9`, "Radiant", "0.9", [dataInput("infile", ["csv"])]),
     interactiveTool("interactive_tool_jupyter_notebook", "Jupyter Notebook", "1.0.1", [dataInput(null, ["data"])], {
@@ -165,6 +166,13 @@ describe("DatasetExplore", () => {
         expect(row(wrapper, "cat1").exists()).toBe(false);
         expect(row(wrapper, "interactive_tool_openrefine").find("img").attributes("src")).toBe(
             "/api/tools/interactive_tool_openrefine/icon",
+        );
+    });
+
+    it("keeps the slashes of a Tool Shed tool ID unencoded in the icon URL", async () => {
+        const wrapper = await mountComponent();
+        expect(row(wrapper, `${RADIANT_ID}/1.0`).find("img").attributes("src")).toBe(
+            `/api/tools/${RADIANT_ID}/1.0/icon`,
         );
     });
 

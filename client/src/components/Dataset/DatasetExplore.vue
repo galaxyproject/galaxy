@@ -114,7 +114,10 @@ const groups = computed(() =>
 );
 
 function iconUrl(tool: ExploreTool) {
-    return `${getAppRoot()}api/tools/${encodeURIComponent(tool.id)}/icon`;
+    // A Tool Shed tool ID contains slashes. The route accepts them as path
+    // segments, and some reverse proxies reject a percent-encoded slash.
+    const toolPath = tool.id.split("/").map(encodeURIComponent).join("/");
+    return `${getAppRoot()}api/tools/${toolPath}/icon`;
 }
 
 function launchTool(tool: ExploreTool) {
