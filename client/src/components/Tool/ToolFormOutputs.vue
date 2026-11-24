@@ -155,7 +155,7 @@ onMounted(fetchPreview);
                     }}
                     {{ jobCountText }}
                 </p>
-                <p v-if="!outputs.length" class="mb-0" data-description="outputs preview empty">
+                <p v-else class="mb-0" data-description="outputs preview empty">
                     {{ localize("This run creates no outputs with the current settings.") }}
                 </p>
                 <ToolFormOutput
