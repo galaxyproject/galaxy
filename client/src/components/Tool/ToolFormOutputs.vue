@@ -59,7 +59,8 @@ async function fetchPreview() {
     if ((!expanded.value && changedCount.value === 0) || requestKey.value === fetchedKey) {
         return;
     }
-    fetchedKey = requestKey.value;
+    const key = requestKey.value;
+    fetchedKey = key;
     controller?.abort();
     const currentController = new AbortController();
     controller = currentController;
@@ -68,7 +69,10 @@ async function fetchPreview() {
         const result = await previewToolOutputs(props.request, currentController.signal);
         preview.value = result;
         errorMessage.value = "";
-        dropActionsOfMissingOutputs(result);
+        // The form may have changed while the preview loaded; the next preview decides then.
+        if (requestKey.value === key) {
+            dropActionsOfMissingOutputs(result);
+        }
     } catch (e) {
         if (currentController.signal.aborted) {
             return;

@@ -155,6 +155,38 @@ describe("ToolFormOutputs", () => {
         expect(lastEmitted(wrapper)).toEqual({});
     });
 
+    it("keeps the changes when a preview arrives after the form changed back", async () => {
+        const filtered = { ...REQUEST, inputs: { input: { src: "hda", id: "hda2" } } };
+        let releaseFilteredPreview = () => {};
+        server.use(
+            http.post("/api/tools/outputs_preview", async ({ request, response }) => {
+                const body = (await request.json()) as ToolOutputsPreviewRequest;
+                if (JSON.stringify(body) === JSON.stringify(filtered)) {
+                    await new Promise<void>((resolve) => (releaseFilteredPreview = resolve));
+                    return response(200).json({ supported: true, unsupported_reason: null, job_count: 1, outputs: [] });
+                }
+                return response(200).json({
+                    supported: true,
+                    unsupported_reason: null,
+                    job_count: 1,
+                    outputs: [previewOutput("out_file1")],
+                });
+            }),
+        );
+        const wrapper = mountOutputs({ out_file1: actions({ hide: true }) });
+        await flushPromises();
+        vi.useFakeTimers();
+
+        await wrapper.setProps({ request: filtered });
+        await vi.advanceTimersByTimeAsync(300);
+        await wrapper.setProps({ request: REQUEST });
+        releaseFilteredPreview();
+        await vi.advanceTimersByTimeAsync(300);
+        await flushPromises();
+
+        expect(wrapper.emitted("update:modelValue")).toBeUndefined();
+    });
+
     it("asks again after the form changes, once it settles", async () => {
         usePreviewResponse([previewOutput("out_file1")]);
         const wrapper = mountOutputs();
