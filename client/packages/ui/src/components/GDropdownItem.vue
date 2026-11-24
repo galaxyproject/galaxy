@@ -2,6 +2,7 @@
 /** Replaces BDropdownItem. Always an <a>, since Selenium finds items by link text and "a.dropdown-item". */
 
 import { computed, inject } from "vue";
+import { RouterLink } from "vue-router";
 
 import { dropdownHideKey } from "./dropdownContext";
 
@@ -74,7 +75,7 @@ function onClick(event: MouseEvent) {
 
 <template>
     <!-- A disabled item is a plain anchor: RouterLink navigates before any click handler here could cancel it -->
-    <router-link
+    <RouterLink
         v-if="to && !disabled"
         :class="classes"
         :to="to"
@@ -86,7 +87,7 @@ function onClick(event: MouseEvent) {
         tabindex="-1"
         @click="onClick">
         <slot />
-    </router-link>
+    </RouterLink>
     <a
         v-else
         :class="classes"

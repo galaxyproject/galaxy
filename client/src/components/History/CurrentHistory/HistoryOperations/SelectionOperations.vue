@@ -157,6 +157,7 @@
             v-model:show="collectionModalShow"
             :history-id="history.id"
             :collection-type="collectionModalType"
+            :extended-collection-type="extendedCollectionType"
             :file-sources-configured="config.file_sources_configured"
             :filter-text="filterText"
             :selected-items="collectionSelection"
@@ -274,6 +275,8 @@ export default {
             collectionModalShow: false,
             collectionModalType: null,
             collectionSelection: undefined,
+            // Only sample sheet builders read it, and the selection builds plain lists.
+            extendedCollectionType: {},
             selectedTags: [],
         };
     },

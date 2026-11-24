@@ -49,7 +49,9 @@ export default [
             {
                 // vue-router 4 catch-all; Vue Router 3 accepted a bare "*"
                 path: ":pathMatch(.*)*",
-                redirect: { name: "StorageDashboard" },
+                // A named redirect keeps the matched params unless it sets its own,
+                // and the dashboard has no `pathMatch`.
+                redirect: { name: "StorageDashboard", params: {} },
             },
         ],
     },

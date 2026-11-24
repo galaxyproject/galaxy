@@ -32,7 +32,8 @@ const page = computed(() => props.mode == "page");
 
         <p>
             The Galaxy extensions to Markdown are represented as code blocks, these blocks start with the line
-            <tt>```galaxy</tt> and end with the line <tt>```</tt> and have a command with arguments between these lines.
+            <code>```galaxy</code> and end with the line <code>```</code> and have a command with arguments between
+            these lines.
             <span v-if="page">
                 These arguments reference your Galaxy objects such as datasets, jobs, and workflows.
             </span>
@@ -126,12 +127,12 @@ workflow_display()
 
         <p v-if="page">
             These commands reference a Galaxy job. For instance, the following example would show the job parameters the
-            job ID <tt>33b43b4e7093c91f</tt>.
+            job ID <code>33b43b4e7093c91f</code>.
         </p>
         <p v-else>
             These commands reference a Galaxy job or collection of jobs associated with a labeled step in the workflow.
             For instance, the following example would show the job parameters for the step with the label
-            <tt>mapping</tt>.
+            <code>mapping</code>.
         </p>
 
         <pre v-if="page">
