@@ -8810,6 +8810,10 @@ class HistoryDatasetCollectionAssociation(
             )
         if implicit_input_collections:
             rval["implicit_input_collections"] = implicit_input_collections
+        if self.implicit_collection_jobs:
+            rval["implicit_collection_jobs"] = serialization_options.get_identifier(
+                id_encoder, self.implicit_collection_jobs
+            )
 
         # Handle copied_from_history_dataset_association information...
         copied_from_history_dataset_collection_association_chain = []
@@ -9834,6 +9838,15 @@ class WorkflowStep(Base, RepresentById, UsesCreateAndUpdateTime):
                     default_value = step_input.default_value
                     break
         return default_value
+
+    @property
+    def input_defaults(self) -> dict[str, Any]:
+        """Step input defaults by input name."""
+        return {
+            step_input.name: step_input.default_value
+            for step_input in self.inputs
+            if step_input.name and step_input.default_value_set
+        }
 
     @property
     def input_optional(self):

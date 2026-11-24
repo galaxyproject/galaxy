@@ -1515,6 +1515,87 @@ steps:
             f"/api/datasets/{dataset_id}/parameters_display", data={"hda_ldda": "hda"}
         )
         self._assert_status_code_is(display_parameters_by_dataset_response, 200)
+        output_id = search_response.json()[0]["outputs"]["out_file1"]["id"]
+        expected_outputs = {"out_file1": [{"src": "hda", "id": output_id}]}
+        assert _output_values(display_parameters_by_job_response.json()) == expected_outputs
+        display_parameters_by_output_response = self._get(
+            f"/api/datasets/{output_id}/parameters_display", data={"hda_ldda": "hda"}
+        )
+        self._assert_status_code_is(display_parameters_by_output_response, 200)
+        assert _output_values(display_parameters_by_output_response.json()) == expected_outputs
+
+    @skip_without_tool("collection_creates_pair")
+    @requires_new_history
+    def test_parameters_display_collection_output(self, history_id):
+        job_id, hdca_id = self._run_collection_only_job(history_id)
+        hdca = self.dataset_populator.get_history_collection_details(history_id, content_id=hdca_id)
+        element_ids = {element["object"]["id"] for element in hdca["elements"]}
+        displayed = self._displayed_output_values(job_id)
+        assert displayed.pop("paired_output") == [{"src": "hdca", "id": hdca_id}]
+        # The other outputs are the collection's element datasets.
+        assert [value["src"] for values in displayed.values() for value in values] == ["hda", "hda"]
+        assert {value["id"] for values in displayed.values() for value in values} == element_ids
+
+    @skip_without_tool("cat1")
+    @requires_new_history
+    def test_parameters_display_map_over(self, history_id):
+        # Regression test for https://github.com/galaxyproject/galaxy/issues/25004.
+        hdca_id = self._list_in_history(history_id, ["a\n", "b\n"])
+        run_response = self.dataset_populator.run_tool(
+            tool_id="cat1",
+            inputs={"input1": {"batch": True, "values": [{"src": "hdca", "id": hdca_id}]}},
+            history_id=history_id,
+        )
+        self.dataset_populator.wait_for_history_jobs(history_id, assert_ok=True)
+        implicit_hdca = self.dataset_populator.get_history_collection_details(
+            history_id, content_id=run_response["implicit_collections"][0]["id"]
+        )
+        element_ids = {element["object"]["id"] for element in implicit_hdca["elements"]}
+        displayed_ids: set[str] = set()
+        for job in run_response["jobs"]:
+            displayed = self._displayed_output_values(job["id"])
+            assert list(displayed) == ["out_file1"]
+            [value] = displayed["out_file1"]
+            assert value["src"] == "hda"
+            displayed_ids.add(value["id"])
+        assert displayed_ids == element_ids
+
+    @skip_without_tool("collection_creates_pair")
+    @requires_new_history
+    def test_parameters_display_map_over_collection_output(self, history_id):
+        hdca_id = self._list_in_history(history_id, ["a\nb\nc\nd\n", "e\nf\ng\nh\n"])
+        run_response = self.dataset_populator.run_tool(
+            tool_id="collection_creates_pair",
+            inputs={"input1": {"batch": True, "values": [{"src": "hdca", "id": hdca_id}]}},
+            history_id=history_id,
+        )
+        self.dataset_populator.wait_for_history_jobs(history_id, assert_ok=True)
+        implicit_hdca = self.dataset_populator.get_history_collection_details(
+            history_id, content_id=run_response["implicit_collections"][0]["id"]
+        )
+        assert implicit_hdca["collection_type"] == "list:paired"
+        leaf_ids = {
+            pair_element["object"]["id"]
+            for element in implicit_hdca["elements"]
+            for pair_element in element["object"]["elements"]
+        }
+        displayed_ids: set[str] = set()
+        for job in run_response["jobs"]:
+            displayed = self._displayed_output_values(job["id"])
+            values = [value for values in displayed.values() for value in values]
+            # Each job shows the two datasets it made, not the list:paired it was mapped into.
+            assert [value["src"] for value in values] == ["hda", "hda"]
+            displayed_ids.update(value["id"] for value in values)
+        assert displayed_ids == leaf_ids
+
+    def _list_in_history(self, history_id, contents):
+        fetch_response = self.dataset_collection_populator.create_list_in_history(history_id, contents=contents)
+        return self.dataset_collection_populator.wait_for_fetched_collection(fetch_response)["id"]
+
+    def _displayed_output_values(self, job_id):
+        response = self._get(f"/api/jobs/{job_id}/parameters_display")
+        self._assert_status_code_is(response, 200)
+        return _output_values(response.json())
 
     def _create_and_search_job(self, history_id, inputs, tool_id):
         # create a job
@@ -1642,3 +1723,8 @@ def _mapped_inputs(hdca_id):
 
 def _plain_inputs(hda_id):
     return {"input1": {"src": "hda", "id": hda_id}}
+
+
+def _output_values(parameters_display):
+    """Map each output name in a parameters_display response to its ``{"src", "id"}`` values."""
+    return {name: [output["value"] for output in outputs] for name, outputs in parameters_display["outputs"].items()}

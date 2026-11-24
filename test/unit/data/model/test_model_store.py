@@ -1185,6 +1185,45 @@ def test_export_history_with_orphan_icjja(tmp_path):
     assert len(imported_icj.jobs) == 1
 
 
+def test_import_export_history_with_implicit_collection_jobs():
+    app = _mock_app()
+    sa_session = app.model.context
+    u = model.User(email="collection@example.com", password="password")
+    h = model.History(name="Test History", user=u)
+    d1, d2 = _create_datasets(sa_session, h, 2)
+    collection = model.DatasetCollection(collection_type="list")
+    hdca = model.HistoryDatasetCollectionAssociation(
+        history=h, hid=3, collection=collection, name="mapped output", implicit_output_name="out_file1"
+    )
+    icj = model.ImplicitCollectionJobs()
+    hdca.implicit_collection_jobs = icj
+    to_add: list[model.RepresentById] = [h, hdca, icj]
+    for index, dataset in enumerate([d1, d2]):
+        model.DatasetCollectionElement(
+            collection=collection, element=dataset, element_identifier=f"e{index}", element_index=index
+        )
+        job = model.Job()
+        job.user = u
+        job.tool_id = "cat1"
+        job.add_output_dataset("out_file1", dataset)
+        job.add_output_dataset_collection("out_file1", hdca)
+        icja = model.ImplicitCollectionJobsJobAssociation()
+        icja.order_index = index
+        icja.implicit_collection_jobs = icj
+        icja.job = job
+        to_add.extend([job, icja])
+    app.add_and_commit(*to_add)
+
+    imported_history = _import_export_history(app, h)
+
+    [imported_hdca] = imported_history.active_dataset_collections
+    imported_icj = imported_hdca.implicit_collection_jobs
+    assert imported_icj is not None
+    assert imported_icj is not icj
+    element_jobs = [element.element_object.creating_job for element in imported_hdca.collection.elements]
+    assert [icja.job for icja in imported_icj.jobs] == element_jobs
+
+
 def test_export_history_with_null_param_id(tmp_path):
     """Job params shaped {"src": "hda"|"hdca"|"dce", "id": null} are persisted
     by the import path at model/store/__init__.py:1860-1888 when a referenced
