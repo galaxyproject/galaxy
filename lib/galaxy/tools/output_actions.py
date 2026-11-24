@@ -45,6 +45,11 @@ def post_job_actions_for_outputs(tool: "Tool", output_actions: Mapping[str, Tool
     return post_job_actions
 
 
+OUTPUT_ACTION_TYPES = frozenset(
+    ["RenameDatasetAction", "TagDatasetAction", "RemoveTagDatasetAction", "HideDatasetAction"]
+)
+
+
 def _action(action_type: str, output_name: str, action_arguments: dict[str, str]) -> PostJobAction:
     return PostJobAction(action_type, output_name=output_name, action_arguments=action_arguments)
 

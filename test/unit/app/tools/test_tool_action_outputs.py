@@ -291,15 +291,17 @@ class TestRerunRemap(ToolOutputsTestCase):
     @pytest.mark.parametrize(
         "of_workflow, expected_actions",
         [
-            # Runtime actions of a workflow run have no workflow step; the rerun keeps them.
-            (True, ["DeleteDatasetAction"]),
-            # The changes asked for a tool run come with the rerun request instead.
-            (False, []),
+            # Runtime actions of a workflow run have no workflow step; the rerun keeps them all.
+            (True, ["DeleteDatasetAction", "HideDatasetAction"]),
+            # Output changes asked for a tool run come with the rerun request; other actions, e.g. of
+            # an earlier rerun of a workflow job, stay.
+            (False, ["DeleteDatasetAction"]),
         ],
     )
-    def test_rerun_takes_over_the_post_job_actions_of_a_workflow_job(self, of_workflow, expected_actions):
+    def test_rerun_takes_over_post_job_actions_of_the_old_job(self, of_workflow, expected_actions):
         old_job, _ = self._execute("environment_variables.xml", {"inttest": "1"})
         old_job.add_post_job_action(model.PostJobAction("DeleteDatasetAction", output_name="out_file1"))
+        old_job.add_post_job_action(model.PostJobAction("HideDatasetAction", output_name="out_file1"))
         if of_workflow:
             workflow = model.Workflow()
             workflow_step = model.WorkflowStep()
@@ -322,4 +324,4 @@ class TestRerunRemap(ToolOutputsTestCase):
 
         self.app.model.context.commit()
         self.app.model.context.refresh(new_job)
-        assert [pjaa.post_job_action.action_type for pjaa in new_job.post_job_actions] == expected_actions
+        assert sorted(pjaa.post_job_action.action_type for pjaa in new_job.post_job_actions) == expected_actions
