@@ -273,6 +273,9 @@ def file_landing_payload_to_fetch_targets(data_landing_payload: CreateFileLandin
     return [target.model_dump(mode="json", exclude_unset=True) for target in TargetsAdapter.validate_python(targets)]
 
 
+OUTPUT_ACTIONS_ADAPTER = TypeAdapter(ToolOutputActionsByName)
+
+
 class ToolsService(ServiceBase):
     def __init__(
         self,
@@ -514,14 +517,8 @@ class ToolsService(ServiceBase):
         if "data_manager_mode" in payload:
             incoming[DATA_MANAGER_MODE] = payload["data_manager_mode"]
         tags = payload.get("__tags")
-        raw_output_actions = payload.get("output_actions") or {}
-        output_actions_adapter = TypeAdapter(ToolOutputActionsByName)
         try:
-            # A JSON string when posted as a form, like inputs
-            if isinstance(raw_output_actions, str):
-                output_actions = output_actions_adapter.validate_json(raw_output_actions)
-            else:
-                output_actions = output_actions_adapter.validate_python(raw_output_actions)
+            output_actions = OUTPUT_ACTIONS_ADAPTER.validate_python(payload.get("output_actions") or {})
         except ValidationError as e:
             raise exceptions.RequestParameterInvalidException(f"output_actions invalid: {e}")
         vars = tool.handle_input(
