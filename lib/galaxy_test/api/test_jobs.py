@@ -4,6 +4,7 @@ import os
 import time
 from operator import itemgetter
 from unittest import SkipTest
+from uuid import uuid4
 
 import requests
 from dateutil.parser import isoparse
@@ -20,6 +21,7 @@ from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
     DatasetPopulator,
     skip_without_tool,
+    TOOL_WITH_SHELL_COMMAND,
     wait_on,
     wait_on_state,
     WorkflowPopulator,
@@ -890,6 +892,16 @@ steps:
         delete_response = self._delete(f"histories/{new_history_id}/contents/{new_dataset_id}")
         self._assert_status_code_is_ok(delete_response)
         self._search(search_payload, expected_search_count=0)
+
+    @requires_new_history
+    def test_search_admin_dynamic_tool(self, history_id):
+        tool_id = f"search_dynamic_{uuid4().hex[:8]}"
+        tool = {**TOOL_WITH_SHELL_COMMAND, "class": "GalaxyTool", "id": tool_id}
+        self.dataset_populator.create_tool(tool)
+        dataset_id = self.__history_with_ok_dataset(history_id)
+        inputs = json.dumps({"input": {"src": "hda", "id": dataset_id}})
+        # The search has to pass this tool's revision; None would only match jobs of non-dynamic tools.
+        self._job_search(tool_id=tool_id, history_id=history_id, inputs=inputs)
 
     @requires_new_history
     def test_search_handle_identifiers(self, history_id):
