@@ -201,7 +201,7 @@ function unselectPath(path: string, unselectOnlyAboveDirectories = false, unsele
 
 function selectDirectoryRecursive(record: SelectionItem) {
     // if directory is `selected` or `mixed` unselect everything
-    if (isDirectorySelected(record.id) || selectionModel.value.pathExists(record.url)) {
+    if (isDirectorySelected(record) || selectionModel.value.pathExists(record.url)) {
         unselectPath(record.url, false, record.id);
         endFolderListing(record.id);
     } else {
@@ -214,7 +214,7 @@ function selectDirectoryRecursive(record: SelectionItem) {
         pendingListings.value++;
         browseRemoteFiles(record.url, recursive)
             .then((incoming) => {
-                if (folderListings.get(record.id) !== listing || !isDirectorySelected(record.id)) {
+                if (folderListings.get(record.id) !== listing || !isDirectorySelected(record)) {
                     return;
                 }
                 incoming.entries.forEach((item) => {
@@ -272,7 +272,7 @@ function formatRows() {
         }
         // if directory
         else if (!item.isLeaf) {
-            _rowVariant = getIcon(isDirectorySelected(item.id), item.url);
+            _rowVariant = getIcon(isDirectorySelected(item), item.url);
         }
         Vue.set(item, "_rowVariant", _rowVariant);
     }
@@ -282,14 +282,18 @@ function formatRows() {
     }
 }
 
-function isDirectorySelected(directoryId: string): boolean {
-    return selectedDirectories.value.some(({ id }) => id === directoryId);
+// below a selected folder too: recursive listings may skip folders, and unselecting below drops that folder
+function isDirectorySelected(directory: SelectionItem): boolean {
+    return (
+        !directory.isLeaf &&
+        selectedDirectories.value.some(({ id, url }) => id === directory.id || isSubPath(url, directory.url))
+    );
 }
 
 /** whether the row, or anything under it, is selected **/
 function isRowSelected(item: SelectionItem): boolean {
     return (
-        selectionModel.value.exists(item.id) || selectionModel.value.pathExists(item.id) || isDirectorySelected(item.id)
+        selectionModel.value.exists(item.id) || selectionModel.value.pathExists(item.id) || isDirectorySelected(item)
     );
 }
 
@@ -297,13 +301,13 @@ function isRowSelected(item: SelectionItem): boolean {
 function checkIfAllSelected(): boolean {
     const isAllSelected =
         Boolean(items.value.length) &&
-        items.value.every(({ id }) => selectionModel.value.exists(id) || isDirectorySelected(id));
+        items.value.every((item) => selectionModel.value.exists(item.id) || isDirectorySelected(item));
 
     if (
         isAllSelected &&
         !isPaginated.value &&
         urlTracker.current.value &&
-        !isDirectorySelected(urlTracker.current.value.id)
+        !isDirectorySelected(urlTracker.current.value)
     ) {
         // if all selected, select current folder
         selectedDirectories.value.push(urlTracker.current.value);
@@ -484,7 +488,8 @@ function onSelectAll() {
     // a paginated folder shows one page, so select all toggles that page and keeps the other pages' selection
     const isUnselectAll = isPaginated.value
         ? items.value.some(isRowSelected)
-        : selectionModel.value.pathExists(urlTracker.current.value.url);
+        : isDirectorySelected(urlTracker.current.value) ||
+          selectionModel.value.pathExists(urlTracker.current.value.url);
 
     for (const item of items.value) {
         if (isUnselectAll) {
@@ -503,7 +508,7 @@ function onSelectAll() {
         }
     } else if (!isUnselectAll && items.value.length !== 0) {
         selectedDirectories.value.push(urlTracker.current.value);
-    } else if (isDirectorySelected(urlTracker.current.value.id)) {
+    } else if (isDirectorySelected(urlTracker.current.value)) {
         selectDirectoryRecursive(urlTracker.current.value);
     }
 

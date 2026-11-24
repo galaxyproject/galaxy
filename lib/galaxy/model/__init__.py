@@ -9544,6 +9544,15 @@ class WorkflowStep(Base, RepresentById, UsesCreateAndUpdateTime):
         return default_value
 
     @property
+    def input_defaults(self) -> dict[str, Any]:
+        """Step input defaults by input name."""
+        return {
+            step_input.name: step_input.default_value
+            for step_input in self.inputs
+            if step_input.name and step_input.default_value_set
+        }
+
+    @property
     def input_optional(self):
         tool_state = self.tool_inputs
         return tool_state.get("optional") or False
