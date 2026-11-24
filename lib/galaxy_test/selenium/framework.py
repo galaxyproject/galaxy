@@ -535,8 +535,11 @@ class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin, Use
         self.display = driver_factory.virtual_display_if_enabled(virtual_display_enabled)
         try:
             self.configured_driver = get_configured_driver()
-        except Exception:
-            self.display.stop()
+        except BaseException:
+            try:
+                self.display.stop()
+            except Exception:
+                logger.exception("Error stopping virtual display after driver allocation failure")
             raise
         self._driver_allocated = True
         with self._tear_down_driver_on_error():

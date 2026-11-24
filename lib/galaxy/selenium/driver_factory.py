@@ -38,6 +38,8 @@ from .has_playwright_driver import (
 logger = logging.getLogger("selenium.webdriver.remote.remote_connection")
 logger.setLevel(logging.WARNING)
 
+log = logging.getLogger(__name__)
+
 DEFAULT_BROWSER = "auto"
 DEFAULT_DOWNLOAD_PATH = "/tmp/"
 LOGGING_PREFS = {
@@ -298,7 +300,10 @@ def get_playwright_driver(browser: str = DEFAULT_BROWSER, headless: bool = False
         # Create page with viewport size matching Selenium's window size
         page = browser_instance.new_page(viewport={"width": DEFAULT_WINDOW_WIDTH, "height": DEFAULT_WINDOW_HEIGHT})
     except BaseException:
-        playwright.stop()
+        try:
+            playwright.stop()
+        except Exception:
+            log.exception("Error stopping Playwright after browser launch failure")
         raise
 
     return PlaywrightResources(
