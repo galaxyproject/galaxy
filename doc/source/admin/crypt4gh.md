@@ -129,6 +129,12 @@ decrypts and encrypts the data. The following are **outside** the protection:
 
 ## Deployment requirements
 
+Protected jobs are only supported, and security issues in them only fixed, on
+[Pulsar](#pulsar) destinations running tools in containers (Docker or
+Singularity). Other destinations can run protected jobs when they meet the
+requirements below, for example for development or evaluation, but aren't
+covered by that support.
+
 - **Job isolation.** Jobs must not be able to read each other's job directories:
   run jobs as the real user, in containers, or on Pulsar.
 - **No network egress** from jobs, and a vetted set of tools on the destinations
@@ -148,20 +154,18 @@ decrypts and encrypts the data. The following are **outside** the protection:
 
 ### Pulsar
 
-The recommended production topology is [Pulsar](https://pulsar.readthedocs.io/)
-without a shared filesystem, so that the Galaxy server never has access to
-plaintext. Inputs are staged to the Pulsar host encrypted, decrypted there, and
-outputs are encrypted there before they are stored. Pulsar destinations running
-protected jobs need, in addition to the requirements below:
+The supported topology is [Pulsar](https://pulsar.readthedocs.io/), running
+tools in containers, without a shared filesystem, so that the Galaxy server
+never has access to plaintext. Inputs are staged to the Pulsar host encrypted,
+decrypted there, and outputs are encrypted there before they are stored. Pulsar
+destinations running protected jobs need, in addition to the requirements below:
 
 - `remote_metadata: true`, so outputs are encrypted on the Pulsar host. With
   `metadata_strategy: extended`, the Pulsar host then writes outputs directly to
   Galaxy's object store, which must be reachable from it.
-- `rewrite_parameters: true`, the default of the REST, message queue and
-  embedded Pulsar runners.
-- Outputs staged to the remote job directory: don't map outputs to the `none`
-  file action. Don't set `outputs_to_working_directory` either, Pulsar relocates
-  outputs anyway.
+- No legacy Pulsar runners (`PulsarLegacyJobRunner`) or legacy settings such as
+  `rewrite_parameters: false`, `outputs_to_working_directory: true` or the `none`
+  file action for outputs.
 - No remote tool evaluation (`tool_evaluation_strategy: remote`): on Pulsar the
   tool runs right after being evaluated, its inputs couldn't be decrypted in
   between.
