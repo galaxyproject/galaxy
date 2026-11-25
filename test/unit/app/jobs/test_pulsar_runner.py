@@ -490,6 +490,8 @@ def test_failure_without_runner_state_has_no_message(full_status):
         JobState.runner_states.NODE_FAILURE,
         JobState.runner_states.PREEMPTED,
         JobState.runner_states.CANCELLED,
+        JobState.runner_states.INPUT_STAGING_FAILED,
+        JobState.runner_states.OUTPUT_STAGING_FAILED,
     ],
 )
 def test_failure_with_runner_state_is_classified(runner_state):
@@ -534,6 +536,14 @@ def test_failed_job_is_failed_with_the_remote_message_and_full_status():
     assert job_state.runner_state == JobState.runner_states.MEMORY_LIMIT_REACHED
     assert _fail_message(runner) == RUNNER_STATE_DEFINITIONS[JobState.runner_states.MEMORY_LIMIT_REACHED].fail_message
     assert runner.fail_job.call_args.kwargs["full_status"] == full_status
+
+
+@pytest.mark.parametrize("runner_state", ["input_staging_failed", "output_staging_failed"])
+def test_staging_failure_is_failed_with_the_registered_message(runner_state):
+    job_state = _failing_job_state()
+    runner = _update(job_state, "failed", {"status": "failed", "runner_state": runner_state})
+    assert job_state.runner_state == runner_state
+    assert _fail_message(runner) == RUNNER_STATE_DEFINITIONS[runner_state].fail_message
 
 
 def test_failed_job_without_runner_state_keeps_generic_message():

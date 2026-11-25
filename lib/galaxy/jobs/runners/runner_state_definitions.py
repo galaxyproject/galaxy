@@ -95,6 +95,22 @@ register_runner_state(
     resubmit_description="it was preempted",
     condition="preempted",
 )
+# Reported by Pulsar when it cannot transfer a job's inputs, so the tool has not run.
+register_runner_state(
+    "INPUT_STAGING_FAILED",
+    runner_states.INPUT_STAGING_FAILED,
+    fail_message="This job failed because its input files could not be transferred to the compute server.",
+    resubmit_description="its input files could not be transferred",
+    condition="input_staging_failed",
+)
+# The tool has already run, so resubmitting runs it again.
+register_runner_state(
+    "OUTPUT_STAGING_FAILED",
+    runner_states.OUTPUT_STAGING_FAILED,
+    fail_message="This job failed because its outputs could not be transferred back from the compute server.",
+    resubmit_description="its outputs could not be transferred",
+    condition="output_staging_failed",
+)
 # Stopped on purpose by someone outside of Galaxy, so never resubmitted.
 register_runner_state(
     "CANCELLED",

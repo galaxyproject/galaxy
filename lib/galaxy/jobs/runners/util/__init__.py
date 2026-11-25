@@ -19,6 +19,8 @@ runner_states = Bunch(
     NODE_FAILURE="node_failure",
     PREEMPTED="preempted",
     CANCELLED="cancelled",  # stopped by someone outside of Galaxy
+    INPUT_STAGING_FAILED="input_staging_failed",  # the job's inputs could not be staged in, it never ran
+    OUTPUT_STAGING_FAILED="output_staging_failed",  # the job ran, but its outputs could not be staged out
 )
 
 
