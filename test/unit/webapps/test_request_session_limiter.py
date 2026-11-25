@@ -34,7 +34,10 @@ from sqlalchemy.pool import (
     NullPool,
     QueuePool,
 )
-from starlette.responses import FileResponse
+from starlette.responses import (
+    FileResponse,
+    JSONResponse,
+)
 
 from galaxy.exceptions import ObjectNotFound
 from galaxy.model.base import ModelMapping
@@ -348,6 +351,31 @@ async def test_failed_request_gives_its_slot_up(gx_app, thread_limit):
         response = await asyncio.wait_for(http.get("/thing"), STUCK)
 
     assert response.status_code == 200
+
+
+async def test_failed_request_closes_its_session_before_the_error_response(gx_app, thread_limit):
+    app = gx_app()
+    api = make_api()
+    pool = app.model.engine.pool
+    checked_out = []
+
+    class Failure(Exception):
+        pass
+
+    @api.exception_handler(Failure)
+    async def failure(request, exc):
+        checked_out.append(pool.checkedout())
+        return JSONResponse({}, status_code=500)
+
+    @api.get("/failing")
+    def failing(service: Service = depends(Service)):
+        app.model.session.execute(text("select 1"))
+        raise Failure()
+
+    async with client(api) as http:
+        assert (await http.get("/failing")).status_code == 500
+
+    assert checked_out == [0]
 
 
 async def test_queued_request_is_dropped_when_its_client_goes_away(gx_app, thread_limit):
