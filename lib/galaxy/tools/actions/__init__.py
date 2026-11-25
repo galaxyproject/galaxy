@@ -537,6 +537,13 @@ class DefaultToolAction(ToolAction):
                 access_action = app.security_agent.get_action("access")
                 if access_action in default_history_permissions and access_action not in output_permissions:
                     output_permissions[access_action] = default_history_permissions[access_action]
+                    # This restriction comes from the history defaults, not from the inputs, so the
+                    # history's default managers (usually the user) must be able to lift it again.
+                    manage_action = app.security_agent.get_action("manage permissions")
+                    output_managers = output_permissions.setdefault(manage_action, [])
+                    for role in default_history_permissions.get(manage_action, []):
+                        if role.id not in output_managers:
+                            output_managers.append(role.id)
             else:
                 # No valid inputs, we will use history defaults
                 output_permissions = default_history_permissions
