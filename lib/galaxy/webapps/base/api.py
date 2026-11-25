@@ -23,6 +23,7 @@ from fastapi import (
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from sqlalchemy.pool import QueuePool
+from starlette.requests import ClientDisconnect
 from starlette.responses import (
     FileResponse,
     Response,
@@ -130,6 +131,8 @@ RESERVED_POOL_FRACTION = 0.2
 MIN_RESERVED_POOL_CONNECTIONS = 2
 #: A request that waits this many seconds for a session slot is logged.
 SLOW_SLOT_WAIT = 30
+#: Status of the response to a request whose client went away while it waited for a slot, nginx's "client closed request".
+CLIENT_CLOSED_REQUEST = 499
 REQUEST_SESSION_SLOT_KEY = "galaxy_request_session_slot"
 
 
@@ -149,6 +152,21 @@ def request_session_limit(pool: "Pool", thread_tokens: float) -> int | None:
     capacity = pool.size() + max_overflow
     reserved = max(MIN_RESERVED_POOL_CONNECTIONS, int(capacity * RESERVED_POOL_FRACTION))
     return max(1, int(min(thread_tokens, capacity - reserved)))
+
+
+def _has_body(request: Request) -> bool:
+    headers = request.headers
+    return "transfer-encoding" in headers or headers.get("content-length", "0") != "0"
+
+
+async def _client_disconnect(request: Request) -> None:
+    """Return once the client of ``request``, whose body has been read, goes away."""
+    try:
+        while (await request.receive())["type"] != "http.disconnect":
+            pass
+    except Exception:
+        # Nothing can be received from the client any more.
+        pass
 
 
 class RequestSessionSlot:
@@ -190,23 +208,59 @@ class RequestSessionLimiter:
         self._loop = asyncio.get_running_loop()
         self._semaphore = asyncio.Semaphore(limit)
 
-    async def acquire(self) -> RequestSessionSlot:
-        if self._semaphore.locked():
-            # Waiting has no timeout, so this is what shows that the requests holding the slots are stuck.
-            slow = self._loop.call_later(
-                SLOW_SLOT_WAIT,
-                log.warning,
-                "A request has waited %d seconds for a database session slot, all %d are held",
-                SLOW_SLOT_WAIT,
-                self.limit,
-            )
-            try:
-                await self._semaphore.acquire()
-            finally:
-                slow.cancel()
-        else:
+    async def acquire(self, request: Optional[Request] = None) -> RequestSessionSlot:
+        """Wait for a slot.
+
+        A ``request`` without a body is dropped with :data:`CLIENT_CLOSED_REQUEST`
+        when its client goes away while it waits, so that the slot it would get
+        later serves a client that is still there. Watching a request with a body
+        would read the whole body into memory before its endpoint can stream it.
+        """
+        if not self._semaphore.locked():
             await self._semaphore.acquire()
+            return RequestSessionSlot(self)
+        # Waiting has no timeout, so this is what shows that the requests holding the slots are stuck.
+        slow = self._loop.call_later(
+            SLOW_SLOT_WAIT,
+            log.warning,
+            "A request has waited %d seconds for a database session slot, all %d are held",
+            SLOW_SLOT_WAIT,
+            self.limit,
+        )
+        try:
+            if request is None or _has_body(request):
+                await self._semaphore.acquire()
+            elif not await self._acquire_unless_disconnected(request):
+                raise HTTPException(
+                    CLIENT_CLOSED_REQUEST, "The client closed the request while it waited for a database session slot."
+                )
+        finally:
+            slow.cancel()
         return RequestSessionSlot(self)
+
+    async def _acquire_unless_disconnected(self, request: Request) -> bool:
+        """Acquire the semaphore, or return ``False`` when the client goes away first."""
+        try:
+            # Caches the empty body, so that the endpoint can still read it and only a disconnect is left to receive.
+            await request.body()
+        except ClientDisconnect:
+            return False
+        acquired = asyncio.ensure_future(self._semaphore.acquire())
+        disconnected = asyncio.ensure_future(_client_disconnect(request))
+        try:
+            await asyncio.wait((acquired, disconnected), return_when=asyncio.FIRST_COMPLETED)
+        except BaseException:
+            acquired.cancel()
+            if acquired.done() and not acquired.cancelled():
+                self._semaphore.release()
+            raise
+        finally:
+            disconnected.cancel()
+        if acquired.done():
+            return True
+        # A waiter that is cancelled after it was woken up hands the semaphore on.
+        acquired.cancel()
+        return False
 
     def _release(self) -> None:
         try:
@@ -246,7 +300,9 @@ def _request_session_slot() -> RequestSessionSlot | None:
     return context.data.get(REQUEST_SESSION_SLOT_KEY)
 
 
-async def acquire_request_session_slot(engine: "Engine") -> RequestSessionSlot | None:
+async def acquire_request_session_slot(
+    engine: "Engine", request: Optional[Request] = None
+) -> RequestSessionSlot | None:
     """Wait until this request may hold a request-scoped session on ``engine``.
 
     A request takes one slot however many of its dependencies ask for one.
@@ -256,7 +312,7 @@ async def acquire_request_session_slot(engine: "Engine") -> RequestSessionSlot |
     if slot is None:
         limiter = _request_session_limiter(engine)
         if limiter is not None:
-            slot = context.data[REQUEST_SESSION_SLOT_KEY] = await limiter.acquire()
+            slot = context.data[REQUEST_SESSION_SLOT_KEY] = await limiter.acquire(request)
     return slot
 
 

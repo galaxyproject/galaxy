@@ -110,11 +110,11 @@ def get_app() -> StructuredApp:
     return cast(StructuredApp, galaxy_app.app)
 
 
-async def get_app_with_request_session() -> AsyncGenerator[StructuredApp, None]:
+async def get_app_with_request_session(request: Request) -> AsyncGenerator[StructuredApp, None]:
     app = get_app()
     request_id = request_context.data["X-Request-ID"]
     # Wait for a session slot before anything can check a connection out, see RequestSessionLimiter.
-    slot = await acquire_request_session_slot(app.model.engine)
+    slot = await acquire_request_session_slot(app.model.engine, request)
     app.model.set_request_id(request_id)
     app.install_model.set_request_id(request_id)
     try:
@@ -147,7 +147,7 @@ def depends(dep_type: type[T], app=get_app_with_request_session) -> T:
     async def _do_resolve(request: Request):
         # An exception thrown in at the yield leaves the loop. aclosing runs the teardown of app()
         # right then, not when the generator is garbage collected.
-        async with aclosing(app()) as app_generator:
+        async with aclosing(app(request)) as app_generator:
             async for _dep in app_generator:
                 yield _dep.resolve(dep_type)
 
