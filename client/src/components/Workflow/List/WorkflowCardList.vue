@@ -88,10 +88,19 @@ function onInsertSteps(workflow: WorkflowSummary) {
 }
 
 const workflowPublished = ref<InstanceType<typeof WorkflowPublished>>();
+const cardList = ref<HTMLElement>();
+
+function scrollToTop() {
+    if (cardList.value) {
+        cardList.value.scrollTop = 0;
+    }
+}
+
+defineExpose({ scrollToTop });
 </script>
 
 <template>
-    <div class="workflow-card-list d-flex flex-wrap overflow-auto pt-1">
+    <div ref="cardList" class="workflow-card-list d-flex flex-wrap overflow-auto pt-1">
         <WorkflowCard
             v-for="workflow in workflows"
             :ref="props.itemRefs[workflow.id]"

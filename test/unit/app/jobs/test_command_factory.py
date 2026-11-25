@@ -279,6 +279,54 @@ class TestCommandFactory(TestCase):
         assert _read(os.path.join(outputs, "real")) == ""
         assert os.path.exists(rejected_file)
 
+    def test_work_dir_directory_output_copy_quotes_paths(self):
+        working = os.path.join(self.job_dir, "working")
+        source = os.path.join(working, "out $(touch injected)")
+        os.makedirs(source)
+        os.makedirs(os.path.join(self.job_dir, "outputs"))
+        with open(os.path.join(source, "index.txt"), "w") as f:
+            f.write("index")
+        destination = os.path.join(self.job_dir, "outputs", "dataset_1_files")
+        self.include_metadata = True
+        self.include_work_dir_outputs = False
+        self.job_wrapper.command_line = "true"
+        self.job_wrapper.metadata_line = "true"
+        command = self.__command(
+            remote_command_params=dict(metadata_kwds=dict(work_dir_directory_outputs=[(source, destination, False)]))
+        )
+
+        subprocess.run(["/bin/sh", "-c", command], cwd=self.job_dir)
+
+        assert not os.path.exists(os.path.join(working, "injected"))
+        assert not os.path.exists(os.path.join(self.job_dir, "injected"))
+        with open(os.path.join(destination, "index.txt")) as f:
+            assert f.read() == "index"
+
+    def test_work_dir_directory_output_copy_stays_in_job_directory(self):
+        working = os.path.join(self.job_dir, "working")
+        outputs = os.path.join(self.job_dir, "outputs")
+        os.makedirs(working)
+        os.makedirs(outputs)
+        outside_directory = f"{self.job_dir}_outside"
+        os.makedirs(outside_directory)
+        _write(os.path.join(outside_directory, "outside.txt"), "outside")
+        source = os.path.join(working, "linked_out")
+        os.symlink(outside_directory, source)
+        destination = os.path.join(outputs, "dataset_1_files")
+        self.include_metadata = True
+        self.include_work_dir_outputs = False
+        self.job_wrapper.command_line = "true"
+        self.job_wrapper.metadata_line = "true"
+        command = self.__command(
+            remote_command_params=dict(metadata_kwds=dict(work_dir_directory_outputs=[(source, destination, False)]))
+        )
+
+        subprocess.run(["/bin/sh", "-c", command], cwd=self.job_dir)
+
+        assert not os.path.exists(destination)
+        assert "Not collecting" in _read(os.path.join(outputs, "tool_stderr"))
+        assert _read(os.path.join(self.job_dir, f"galaxy_{self.job_wrapper.job_id}.ec")).strip() == "1"
+
     def test_set_metadata_skipped_if_unneeded(self):
         self.include_metadata = True
         self.include_work_dir_outputs = False
