@@ -231,8 +231,11 @@ def setup_for_runtimeify(
             "class": "Directory" if is_directory else "File",
             "location": f"step_input://{index}",
             "format": hda_entry.extension,
-            # A deferred dataset has no local file to measure.
-            "size": hda_entry.dataset.get_size(calculate_size=not hda_entry.has_deferred_data),
+            # Measure only a size that is unknown: a deferred dataset has no local file, and remote
+            # evaluation has no object store, so a recorded size (0 included) is used as is.
+            "size": hda_entry.dataset.get_size(
+                calculate_size=hda_entry.dataset.file_size is None and not hda_entry.has_deferred_data
+            ),
             "listing": [],
         }
         if hda_entry.has_deferred_data:
