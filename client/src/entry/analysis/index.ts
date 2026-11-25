@@ -6,6 +6,7 @@ import { installPendingRequestsInterceptor } from "@/api/pendingRequests";
 import { initGalaxyInstance } from "@/app";
 import { initSentry } from "@/app/addons/sentry";
 import { initWebhooks } from "@/app/addons/webhooks";
+import { onDomReady } from "@/utils/onDomReady";
 
 import { getRouter } from "./router";
 
@@ -20,7 +21,7 @@ const pinia = createPinia();
 // clobber the authenticated cookie.
 installPendingRequestsInterceptor();
 
-window.addEventListener("load", async () => {
+onDomReady(async () => {
     // Create Galaxy object
     const Galaxy = await initGalaxyInstance();
 

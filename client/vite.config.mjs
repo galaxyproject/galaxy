@@ -9,6 +9,7 @@ import { defineConfig } from "vite";
 import tsconfigPaths from "vite-tsconfig-paths";
 
 import { buildMetadataPlugin } from "./vite-plugin-build-metadata.js";
+import { entryLoaderPlugin } from "./vite-plugin-entry-loader.js";
 import { galaxyDevServerPlugin } from "./vite-plugin-galaxy-dev-server.js";
 import { galaxyLegacyPlugin } from "./vite-plugin-galaxy-legacy.js";
 
@@ -76,6 +77,7 @@ export default defineConfig({
         ViteYaml(), // YAML file support
         galaxyLegacyPlugin(), // Handle legacy module resolution
         buildMetadataPlugin(), // Generate build metadata (replaces DumpMetaPlugin)
+        entryLoaderPlugin(), // Emit <entry>.bundled.js loaders for the hashed entry chunks
         d3v3CompatPlugin(), // Fix D3 v3 ES module compatibility
         // Inject imports for underscore and Buffer
         // jQuery is set up as window.$ and window.jQuery by libs.bundled.js
@@ -116,7 +118,8 @@ export default defineConfig({
                 generic: resolve(__dirname, "src/entry/generic.js"),
             },
             output: {
-                entryFileNames: "[name].bundled.js",
+                // Hashed, so the loaders and lazy chunks import the entry by one URL
+                entryFileNames: "[name]-[hash].js",
                 chunkFileNames: "[name]-[hash].js",
                 // CSS should be named 'base.css' to match what templates expect
                 assetFileNames: (assetInfo) => {
