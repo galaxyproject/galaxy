@@ -5,10 +5,6 @@ from .framework import (
 
 
 class TestToolDescribingTours(SeleniumTestCase):
-    def setUp(self):
-        super().setUp()
-        self.home()
-
     @selenium_test
     def test_generate_tour_no_data(self):
         """Ensure a tour without data is generated and pops up."""
