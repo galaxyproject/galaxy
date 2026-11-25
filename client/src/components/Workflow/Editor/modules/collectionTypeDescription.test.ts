@@ -44,3 +44,22 @@ describe("canMapOver over compound :paired_or_unpaired inputs", () => {
         expect(ct("list:paired_or_unpaired").canMapOver(ct("list:paired_or_unpaired"))).toBe(false);
     });
 });
+
+describe("splitCollectionType", () => {
+    it.each([
+        ["list", "paired_or_unpaired", "single_datasets"],
+        ["list:list", "paired_or_unpaired", "single_datasets"],
+        ["list:paired", "paired_or_unpaired", "paired"],
+        ["list:list:paired", "paired_or_unpaired", "paired"],
+        ["list:paired_or_unpaired", "paired_or_unpaired", "paired_or_unpaired"],
+        ["list:paired", "paired", "paired"],
+        ["list:list", "list", "list"],
+        ["list:list", "list:paired_or_unpaired", "list"],
+        ["list:list:paired", "list:paired_or_unpaired", "list:paired"],
+        ["list:list:list", "list:paired_or_unpaired", "list"],
+        ["list:list:paired_or_unpaired", "list:paired_or_unpaired", "list:paired_or_unpaired"],
+        ["list:list:list:paired", "list:list:paired_or_unpaired", "list:list:paired"],
+    ])("splits %s mapped over %s into %s", (collectionType, subcollectionType, splitType) => {
+        expect(ct(collectionType).splitCollectionType(subcollectionType)).toBe(splitType);
+    });
+});

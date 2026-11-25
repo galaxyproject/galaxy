@@ -11,7 +11,6 @@ import {
     isCollectionElement,
     isDatasetElement,
     isDCE,
-    isHDCA,
     isHistoryItem,
     type SampleSheetColumnDefinition,
 } from "@/api";
@@ -28,6 +27,7 @@ import { type EventData, useEventStore } from "@/stores/eventStore";
 import localize from "@/utils/localization";
 import { orList } from "@/utils/strings";
 
+import { matchCollectionType } from "./collectionMatch";
 import type { DataOption, ExtendedCollectionType } from "./types";
 import { containsDataOption } from "./types";
 import { BATCH, isBatchSelection, SOURCE, VARIANTS } from "./variants";
@@ -125,6 +125,11 @@ const canBrowse = computed(() => variant.value && !!variant.value.find((v) => v.
 const validSrcs = computed(() => {
     return variant.value ? variant.value.map((v) => v.src) : [];
 });
+
+/**
+ * Collection types a collection input is restricted to, or null (unset or empty) if it accepts any collection
+ */
+const restrictedCollectionTypes = computed(() => (props.collectionTypes?.length ? props.collectionTypes : null));
 
 /**
  * Provides the currently shown source type
@@ -251,9 +256,11 @@ const formattedOptions = computed(() => {
                 otherOptions.forEach((option) => {
                     const keepKey = `${option.id}_${option.src}`;
                     const sourceLabel = getSourceLabel(getSourceType(option));
+                    // the server lists a selected element without the map-over type it was dropped with
+                    const mapOverType = option.map_over_type || keepOptions[keepKey]?.value?.map_over_type;
                     const newOption = {
                         label: `${option.name} (as ${sourceLabel})`,
-                        value: option || null,
+                        value: mapOverType ? { ...option, map_over_type: mapOverType } : option,
                     };
                     keepOptions[keepKey] = newOption;
                 });
@@ -478,7 +485,7 @@ function handleIncoming(incoming: Record<string, unknown> | Record<string, unkno
 }
 
 function toDataOption(item: HistoryOrCollectionItem): DataOption | null {
-    const { newSrc, datasetCollectionDataset } = getElementAttributes(item);
+    const { newSrc, datasetCollectionDataset, collectionType } = getElementAttributes(item);
 
     // for name, somehow even though schema says otherwise, DCESummary can return a name
     const newName = "name" in item && typeof item.name === "string" ? item.name : null;
@@ -501,17 +508,14 @@ function toDataOption(item: HistoryOrCollectionItem): DataOption | null {
         keep: true,
         tags: [],
     };
-    if (isHistoryItem(v) && isHDCA(v) && props.collectionTypes?.length > 0) {
-        const itemCollectionType = v.collection_type;
-        if (!props.collectionTypes.includes(itemCollectionType as CollectionType)) {
-            const mapOverType = props.collectionTypes.find((collectionType) =>
-                itemCollectionType.endsWith(collectionType),
-            );
-            if (!mapOverType) {
-                return null;
-            }
+    if (collectionType && restrictedCollectionTypes.value) {
+        const match = matchCollectionType(collectionType, restrictedCollectionTypes.value);
+        if (!match) {
+            return null;
+        }
+        if (match.mapOverType) {
             newValue["batch"] = true;
-            newValue["map_over_type"] = mapOverType;
+            newValue["map_over_type"] = match.mapOverType;
         }
     }
     return newValue;
@@ -682,41 +686,32 @@ function canAcceptSrc(
         if (!collectionType) {
             // Should always be set if item is dataset collection
             throw Error("Item is a dataset collection of unknown type.");
-        } else if (!props.collectionTypes) {
+        }
+        const inputTypes = restrictedCollectionTypes.value;
+        if (!inputTypes) {
             // if no collection_type is set all collections are valid
             return true;
-        } else {
-            if (props.collectionTypes.includes(collectionType as CollectionType)) {
-                // Check column_definitions compatibility for sample sheets
-                if (
-                    props.extendedCollectionType?.columnDefinitions &&
-                    !columnDefinitionsCompatible(columnDefinitions, props.extendedCollectionType.columnDefinitions)
-                ) {
-                    $emit("alert", "dataset collection has incompatible column definitions for this parameter.");
-                    return false;
-                }
-                return true;
-            }
-            if (props.collectionTypes.some((element) => collectionType.endsWith(element))) {
-                // Check column_definitions compatibility for sample sheets
-                if (
-                    props.extendedCollectionType?.columnDefinitions &&
-                    !columnDefinitionsCompatible(columnDefinitions, props.extendedCollectionType.columnDefinitions)
-                ) {
-                    $emit("alert", "dataset collection has incompatible column definitions for this parameter.");
-                    return false;
-                }
-                return true;
-            } else {
-                $emit(
-                    "alert",
-                    `${collectionTypeToText(collectionType)} dataset collection is not a valid input for ${orList(
-                        props.collectionTypes,
-                    )} type dataset collection parameter.`,
-                );
-                return false;
-            }
         }
+        const match = matchCollectionType(collectionType, inputTypes);
+        if (!match) {
+            $emit(
+                "alert",
+                `${collectionTypeToText(collectionType)} dataset collection is not a valid input for ${orList(
+                    inputTypes,
+                )} type dataset collection parameter.`,
+            );
+            return false;
+        }
+        // like the server, only directly used sample sheets must have compatible column_definitions
+        if (
+            match.mapOverType === null &&
+            props.extendedCollectionType?.columnDefinitions &&
+            !columnDefinitionsCompatible(columnDefinitions, props.extendedCollectionType.columnDefinitions)
+        ) {
+            $emit("alert", "dataset collection has incompatible column definitions for this parameter.");
+            return false;
+        }
+        return true;
     } else {
         throw Error("Unknown history content type.");
     }
