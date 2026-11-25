@@ -91,7 +91,10 @@ from galaxy.tool_util.parameters import (
     ToolState,
 )
 from galaxy.web.framework.decorators import require_admin_message
-from galaxy.webapps.base.api import acquire_request_session_slot
+from galaxy.webapps.base.api import (
+    acquire_request_session_slot,
+    long_request_turn,
+)
 from galaxy.webapps.base.controller import BaseAPIController
 from galaxy.webapps.galaxy.api.cbv import cbv
 from galaxy.work.context import (
@@ -130,6 +133,16 @@ async def get_app_with_request_session() -> AsyncGenerator[StructuredApp, None]:
 
 
 DependsOnApp = cast(StructuredApp, Depends(get_app_with_request_session))
+
+
+async def wait_for_long_request_turn() -> AsyncGenerator[None, None]:
+    async with long_request_turn(get_app().model.engine):
+        yield
+
+
+#: For the ``dependencies`` of a route that holds its session while it waits on something slow,
+#: see ``long_request_turn``. Route dependencies run before the ones that take the session slot.
+LongRequest = Depends(wait_for_long_request_turn)
 
 
 T = TypeVar("T")
