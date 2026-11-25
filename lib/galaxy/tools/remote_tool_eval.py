@@ -115,9 +115,10 @@ def evaluate_tool(tmpdir: str, working_directory: str, import_store_directory: s
         tool_dir=job_io.tool_dir,
         tool_source_class=job_io.tool_source_class,
     )
-    tool_evaluator = evaluation.RemoteToolEvaluator(
-        app=app, tool=tool, job=job_io.job, local_working_directory=working_directory
+    evaluator_class = (
+        evaluation.RemoteUserToolEvaluator if tool.uses_user_tool_evaluator else evaluation.RemoteToolEvaluator
     )
+    tool_evaluator = evaluator_class(app=app, tool=tool, job=job_io.job, local_working_directory=working_directory)
     with open(os.path.join(import_store_directory, "compute_environment.json")) as f:
         compute_environment = RemoteComputeEnvironment(job_io=job_io, job=job_io.job, paths=json.load(f))
     tool_evaluator.set_compute_environment(compute_environment=compute_environment)
