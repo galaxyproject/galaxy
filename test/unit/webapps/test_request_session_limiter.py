@@ -12,13 +12,17 @@ against a real ``QueuePool`` that is smaller than the burst.
 """
 
 import asyncio
+import json
 import threading
 import time
+from contextlib import asynccontextmanager
 from types import SimpleNamespace
+from typing import Optional
 
 import anyio.to_thread
 import pytest
 from fastapi import (
+    APIRouter,
     Depends,
     FastAPI,
 )
@@ -39,8 +43,15 @@ from starlette.responses import (
     JSONResponse,
 )
 
+from galaxy.config import GalaxyAppConfiguration
 from galaxy.exceptions import ObjectNotFound
+from galaxy.managers.agents import AgentService
+from galaxy.managers.chat import ChatManager
 from galaxy.model.base import ModelMapping
+from galaxy.schema.agents import AgentResponse
+from galaxy.schema.fields import Security
+from galaxy.security.idencoding import IdEncodingHelper
+from galaxy.util.config_parsers import parse_allowlist_ips
 from galaxy.webapps.base.api import (
     add_exception_handler,
     add_request_id_middleware,
@@ -50,15 +61,26 @@ from galaxy.webapps.base.api import (
     request_session_limit,
 )
 from galaxy.webapps.galaxy.api import (
+    agents,
+    chat,
+    datasets,
     depends,
     DependsOnApp,
+    get_required_user,
+    get_trans,
+    plugins,
+    proxy,
 )
+from galaxy.webapps.galaxy.fast_app import limiter
+from galaxy.webapps.galaxy.services.datasets import DatasetsService
 
 # Fewer threads than connections, as in production (40 threads, 50 connections).
 THREADS = 4
 POOL_SIZE = 6
 # request_session_limit(pool of 6, 4 threads): 2 connections stay reserved, and 4 threads cap the rest.
 SESSION_LIMIT = 4
+# A quarter of the session slots, see long_request_turn.
+LONG_REQUEST_LIMIT = 1
 REQUESTS = 60
 # How long a request may wait before a test calls it stuck.
 STUCK = 10
@@ -111,6 +133,14 @@ async def thread_limit():
     limiter.total_tokens = total_tokens
 
 
+@pytest.fixture
+def security(monkeypatch) -> IdEncodingHelper:
+    """Encodes and decodes the ids of Galaxy's API models."""
+    security = IdEncodingHelper(id_secret="testing")
+    monkeypatch.setattr(Security, "security", security, raising=False)
+    return security
+
+
 def make_api() -> FastAPI:
     api = FastAPI()
     add_request_id_middleware(api)
@@ -130,6 +160,35 @@ def get_session(app=DependsOnApp):
 def get_user(session=Depends(get_session)):
     # A second sync dependency: the request queues for a thread again, holding its connection.
     return session
+
+
+USER = SimpleNamespace(id=1, username="someone")
+
+
+def galaxy_api(app, routers: list[APIRouter], services: Optional[dict[type, object]] = None) -> FastAPI:
+    """Serve Galaxy's own ``routers`` with stub ``services`` and a ``trans`` that queries the database."""
+
+    def trans(session=Depends(get_session)):
+        return SimpleNamespace(
+            anonymous=False,
+            user=USER,
+            user_is_admin=False,
+            sa_session=app.model.session,
+            app=SimpleNamespace(config=SimpleNamespace(fetch_url_allowlist_ips=parse_allowlist_ips(["127.0.0.1"]))),
+        )
+
+    app.resolve = lambda dep_type: (services or {}).get(dep_type, SimpleNamespace())
+    api = make_api()
+    for router in routers:
+        api.include_router(router)
+    api.dependency_overrides[get_trans] = trans
+    api.dependency_overrides[get_required_user] = lambda: USER
+
+    @api.get("/thing")
+    def thing(session=Depends(get_session)):
+        return {}
+
+    return api
 
 
 async def test_burst_larger_than_pool_is_served_without_pool_timeouts(gx_app, thread_limit):
@@ -428,6 +487,169 @@ async def test_queued_request_is_dropped_when_its_client_goes_away(gx_app, threa
     assert statuses == [499]
     assert served == ["thing"]
     assert response.status_code == 200
+
+
+
+
+async def test_structured_content_gives_its_slot_up_before_the_body(gx_app, thread_limit, security):
+    app = gx_app(pool_size=3)  # a single slot
+
+    def get_structured_content(trans, dataset_id, content_type, **params):
+        # Like the HDF5 datatype streaming a dataset's data from its file.
+        return iter([b"chunk"] * 3), {"Content-Type": "application/octet-stream"}
+
+    api = galaxy_api(
+        app,
+        [datasets.router],
+        {DatasetsService: SimpleNamespace(get_structured_content=get_structured_content)},
+    )
+    path = f"/api/datasets/{security.encode_id(1)}/content/data"
+    sending, read = asyncio.Event(), asyncio.Event()
+    download = asyncio.create_task(download_without_reading(api, path, sending, read))
+    try:
+        await asyncio.wait_for(sending.wait(), STUCK)
+        async with client(api) as http:
+            response = await asyncio.wait_for(http.get("/thing"), STUCK)
+    finally:
+        read.set()
+        await download
+
+    assert response.status_code == 200
+
+
+@asynccontextmanager
+async def slow_upstream(body: bytes, content_type: str = "text/plain"):
+    """An HTTP server that answers once ``answer`` is set, yielding ``(url, asked, answer)``."""
+    asked, answer = asyncio.Event(), asyncio.Event()
+
+    async def respond(reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
+        await reader.readuntil(b"\r\n\r\n")
+        asked.set()
+        await answer.wait()
+        writer.write(
+            b"HTTP/1.1 200 OK\r\nContent-Type: %s\r\nContent-Length: %d\r\nConnection: close\r\n\r\n%s"
+            % (content_type.encode(), len(body), body)
+        )
+        await writer.drain()
+        writer.close()
+
+    server = await asyncio.start_server(respond, "127.0.0.1", 0)
+    try:
+        yield f"http://127.0.0.1:{server.sockets[0].getsockname()[1]}", asked, answer
+    finally:
+        server.close()
+        await server.wait_closed()
+
+
+async def request_while_upstream_is_slow(http: AsyncClient, asked: asyncio.Event, answer: asyncio.Event):
+    try:
+        await asyncio.wait_for(asked.wait(), STUCK)
+        # Shorter than the proxy's read timeout, after which the proxy request would give its slot up anyway.
+        return await asyncio.wait_for(http.get("/thing"), 5)
+    finally:
+        answer.set()
+
+
+async def test_proxy_gives_its_slot_up_while_it_waits_for_the_upstream(gx_app, thread_limit):
+    app = gx_app(pool_size=3)  # a single slot
+    api = galaxy_api(app, [proxy.router])
+
+    async with slow_upstream(b"ok") as (url, asked, answer), client(api) as http:
+        proxied, response = await asyncio.gather(
+            http.get("/api/proxy", params={"url": f"{url}/file"}),
+            request_while_upstream_is_slow(http, asked, answer),
+        )
+
+    assert response.status_code == 200
+    assert proxied.status_code == 200
+    assert proxied.content == b"ok"
+
+
+async def test_plugin_chat_gives_its_slot_up_while_it_waits_for_the_model(gx_app, thread_limit):
+    app = gx_app(pool_size=3)  # a single slot
+    app.visualizations_registry = SimpleNamespace(
+        get_plugin=lambda name: SimpleNamespace(config={"specs": {"ai_prompt": "Help with notebooks."}})
+    )
+    completion = {
+        "id": "completion",
+        "object": "chat.completion",
+        "created": 0,
+        "model": "model",
+        "choices": [{"index": 0, "finish_reason": "stop", "message": {"role": "assistant", "content": "answer"}}],
+    }
+
+    async with slow_upstream(json.dumps(completion).encode(), "application/json") as (url, asked, answer):
+        config = SimpleNamespace(inference_services=None, ai_model="model", ai_api_key="key", ai_api_base_url=url)
+        api = galaxy_api(app, [plugins.router], {GalaxyAppConfiguration: config})
+        api.state.limiter = limiter
+        async with client(api) as http:
+            reply, response = await asyncio.gather(
+                http.post(
+                    "/api/plugins/jupyterlite/chat/completions",
+                    json={"messages": [{"role": "user", "content": "why did my job fail?"}]},
+                ),
+                request_while_upstream_is_slow(http, asked, answer),
+            )
+
+    assert response.status_code == 200
+    assert reply.status_code == 200
+    assert reply.json()["choices"][0]["message"]["content"] == "answer"
+
+
+@pytest.mark.parametrize(
+    "path,params,body",
+    [
+        ("/api/chat", {"query": "why did my job fail?"}, None),
+        ("/api/ai/agents/query", None, {"query": "why did my job fail?"}),
+    ],
+)
+async def test_language_model_queries_leave_slots_to_other_requests(gx_app, thread_limit, security, path, params, body):
+    app = gx_app()
+    answer = asyncio.Event()
+    queries = []
+
+    async def route_and_execute(query, trans, user, context, agent_type):
+        # The agents query Galaxy while they wait for the model, so they keep the request's session.
+        queries.append(query)
+        await answer.wait()
+        return AgentResponse(content="answer", confidence="high", agent_type="router")
+
+    api = galaxy_api(
+        app,
+        [chat.router, agents.router],
+        {
+            AgentService: SimpleNamespace(route_and_execute=route_and_execute),
+            ChatManager: SimpleNamespace(
+                resolve_page_from_interface_context=lambda trans, query_context: (None, None),
+                create_general_chat=lambda trans, query, result, agent_type: SimpleNamespace(id=1),
+            ),
+        },
+    )
+    asking = []
+
+    async def request_while_model_is_slow(http: AsyncClient):
+        try:
+            while not queries:
+                await asyncio.sleep(0.01)
+            # Give the other queries time to take whatever slots they may.
+            await asyncio.sleep(0.5)
+            asking.append(len(queries))
+            return await asyncio.wait_for(http.get("/thing"), STUCK)
+        finally:
+            answer.set()
+
+    async with client(api) as http:
+        *replies, response = await asyncio.gather(
+            *(http.post(path, params=params, json=body) for _ in range(SESSION_LIMIT + 1)),
+            asyncio.wait_for(request_while_model_is_slow(http), STUCK * 2),
+        )
+
+    assert response.status_code == 200
+    assert asking == [LONG_REQUEST_LIMIT]
+    assert [reply.status_code for reply in replies] == [200] * (SESSION_LIMIT + 1)
+    # /api/chat answers errors with a 200 too.
+    assert [reply.json().get("error_code", 0) for reply in replies] == [0] * (SESSION_LIMIT + 1)
+    assert len(queries) == SESSION_LIMIT + 1
 
 
 @pytest.mark.parametrize(

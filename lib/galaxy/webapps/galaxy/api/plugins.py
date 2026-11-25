@@ -52,7 +52,10 @@ from galaxy.model import (
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.visualization import VisualizationPluginResponse
 from galaxy.structured_app import StructuredApp
-from galaxy.webapps.base.api import GalaxyStreamingResponse
+from galaxy.webapps.base.api import (
+    GalaxyStreamingResponse,
+    release_request_sessions,
+)
 from galaxy.webapps.galaxy.api import (
     depends,
     DependsOnApp,
@@ -273,14 +276,14 @@ class FastAPIPlugins:
             log.debug("Failed to initialize OpenAI client.", exc_info=e)
             return self._create_error("Failed to initialize OpenAI client.", 500)
 
-        # Release the request-scoped DB session before the (potentially long)
-        # upstream call. All DB work for this request is done; proxying to the AI
-        # provider and streaming its response back never touches the database, so
-        # holding the pooled connection open for the whole exchange would needlessly
-        # pin a connection per in-flight chat request. This covers the upstream
-        # call itself, which happens here in the handler before GalaxyStreamingResponse
-        # gets a chance to release at stream start.
-        trans.sa_session().close()
+        # Release the request-scoped DB session and its session slot before the
+        # (potentially long) upstream call. All DB work for this request is done;
+        # proxying to the AI provider and streaming its response back never touches
+        # the database, so holding them for the whole exchange would needlessly
+        # pin a connection and a slot per in-flight chat request. This covers the
+        # upstream call itself, which happens here in the handler before
+        # GalaxyStreamingResponse gets a chance to release at stream start.
+        release_request_sessions()
 
         # Connect to ai provider
         log.info(f"Proxying to {ai_model}, tokens: {max_tokens}.")

@@ -28,6 +28,7 @@ from galaxy.webapps.galaxy.api import (
     depends,
     DependsOnTrans,
     DependsOnUser,
+    LongRequest,
     Router,
 )
 from galaxy.work.context import SessionRequestContext
@@ -87,7 +88,7 @@ class AgentAPI:
 
         return AgentListResponse(agents=agents, total_count=len(agents))
 
-    @router.post("/api/ai/agents/query", unstable=True)
+    @router.post("/api/ai/agents/query", unstable=True, dependencies=[LongRequest])
     async def query_agent(
         self,
         request: AgentQueryRequest,
@@ -123,7 +124,7 @@ class AgentAPI:
             log.exception(f"Error in agent query: {e}")
             raise ConfigurationError(f"Agent query failed: {str(e)}")
 
-    @router.post("/api/ai/agents/error-analysis", unstable=True)
+    @router.post("/api/ai/agents/error-analysis", unstable=True, dependencies=[LongRequest])
     async def analyze_error(
         self,
         query: str = Body(..., description="Description of the error or problem"),
@@ -176,7 +177,7 @@ class AgentAPI:
             log.exception(f"Error in error analysis: {e}")
             raise ConfigurationError(f"Error analysis failed: {str(e)}")
 
-    @router.post("/api/ai/agents/custom-tool", unstable=True)
+    @router.post("/api/ai/agents/custom-tool", unstable=True, dependencies=[LongRequest])
     async def create_custom_tool(
         self,
         query: str = Body(..., description="Description of the tool to create"),

@@ -3,7 +3,11 @@ import os
 import stat
 import threading
 import uuid
-from collections.abc import Mapping
+from collections.abc import (
+    AsyncIterator,
+    Mapping,
+)
+from contextlib import asynccontextmanager
 from logging import getLogger
 from typing import (
     Any,
@@ -132,6 +136,9 @@ MIN_RESERVED_POOL_CONNECTIONS = 2
 SLOW_SLOT_WAIT = 30
 #: Status of the response to a request whose client went away while it waited for a slot, nginx's "client closed request".
 CLIENT_CLOSED_REQUEST = 499
+#: Share of the session slots that requests which hold their session while they
+#: wait on something slow may take together, see :func:`long_request_turn`.
+LONG_REQUEST_SHARE = 0.25
 REQUEST_SESSION_SLOT_KEY = "galaxy_request_session_slot"
 
 
@@ -207,6 +214,8 @@ class RequestSessionLimiter:
         self.limit = limit
         self._loop = asyncio.get_running_loop()
         self._semaphore = asyncio.Semaphore(limit)
+        #: Entered before a session slot is taken by the requests that hold it for long.
+        self.long_requests = asyncio.Semaphore(max(1, int(limit * LONG_REQUEST_SHARE)))
 
     async def acquire(self, request: Optional[Request] = None) -> RequestSessionSlot:
         """Wait for a slot.
@@ -314,6 +323,27 @@ async def acquire_request_session_slot(
         if limiter is not None:
             slot = context.data[REQUEST_SESSION_SLOT_KEY] = await limiter.acquire(request)
     return slot
+
+
+@asynccontextmanager
+async def long_request_turn(engine: "Engine") -> AsyncIterator[None]:
+    """Wait until this request may take a session slot on ``engine`` that it holds for long.
+
+    For requests that keep their session while they wait on something slow
+    outside the database, e.g. a language model whose tools query Galaxy while
+    it runs, so the session cannot be released for the wait. Together they hold
+    at most a quarter of the slots, and the other requests keep the rest.
+
+    Enter it before the request takes its session slot, from a route dependency.
+    """
+    if _request_session_slot() is not None:
+        raise RuntimeError("A request must wait for its long request turn before it takes a session slot")
+    limiter = _request_session_limiter(engine)
+    if limiter is None:
+        yield
+    else:
+        async with limiter.long_requests:
+            yield
 
 
 class GalaxyFileResponse(FileResponse):
