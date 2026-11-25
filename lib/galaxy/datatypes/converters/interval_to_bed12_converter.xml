@@ -19,7 +19,15 @@
     <tests>
         <test>
             <param name="input1" ftype="interval" value="2.interval"/>
-            <output name="output1" ftype="bed12" value="2.bed12"/>
+            <output name="output1" ftype="bed12" value="2_no_strand.bed12"/>
+        </test>
+        <test>
+            <param name="input1" ftype="bed12" value="unstranded.bed12"/>
+            <output name="output1" ftype="bed12" value="unstranded.bed12"/>
+        </test>
+        <test>
+            <param name="input1" ftype="bed" value="unstranded_5col.bed"/>
+            <output name="output1" ftype="bed12" value="unstranded_5col.bed12"/>
         </test>
     </tests>
     <help>

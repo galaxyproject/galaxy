@@ -12,7 +12,7 @@ def force_bed_field_count(fields, region_count: int, force_num_columns: int):
     if force_num_columns >= 5 and len(fields) < 5:
         fields.append("0")
     if force_num_columns >= 6 and len(fields) < 6:
-        fields.append("+")
+        fields.append(".")
     if force_num_columns >= 7 and len(fields) < 7:
         fields.append(fields[1])
     if force_num_columns >= 8 and len(fields) < 8:
@@ -101,7 +101,8 @@ def __main__():
                             assert fields[5] in [
                                 "+",
                                 "-",
-                            ], "Invalid strand"  # strand - Defines the strand - either '+' or '-'.
+                                ".",
+                            ], "Invalid strand"  # strand - Defines the strand - either '+', '-' or '.' (no strand).
                             if len(fields) > 6:
                                 int(
                                     fields[6]
@@ -159,6 +160,7 @@ def __main__():
                     start_col=startCol,
                     end_col=endCol,
                     strand_col=strandCol,
+                    default_strand=".",
                     fix_strand=True,
                     return_header=False,
                     return_comments=False,
