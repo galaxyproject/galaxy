@@ -124,6 +124,10 @@ describe("safeReturnPath", () => {
             // URL parsing drops tabs and newlines, leaving //evil.example
             "/\t/evil.example",
             "/\n/evil.example",
+            // Dot segments normalize these to //evil.example
+            "/..//evil.example",
+            "/./\\evil.example",
+            "/%2e%2e//evil.example",
             "javascript:alert(1)",
             "repos/x",
             "",

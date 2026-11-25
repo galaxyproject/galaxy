@@ -106,12 +106,17 @@ function isApiException(e: unknown): e is ApiMessageException {
 
 // Only paths on this site, so a crafted ?redirect= can't send someone off-site after logging in. Resolving
 // against our origin catches what prefix checks miss, like "/\t/evil.example" parsing as "//evil.example".
+// The resolved path must not start with "//" either: dot segments normalize "/..//evil.example" to
+// "//evil.example", which the browser reads as a link to another host.
 export function safeReturnPath(value: string | null | undefined): string | null {
     if (!value?.startsWith("/")) {
         return null
     }
     const url = new URL(value, window.location.origin)
-    return url.origin === window.location.origin ? url.pathname + url.search + url.hash : null
+    if (url.origin !== window.location.origin || url.pathname.startsWith("//")) {
+        return null
+    }
+    return url.pathname + url.search + url.hash
 }
 
 // Login and register links that carry the page to return to after logging in.
