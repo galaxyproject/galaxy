@@ -59,7 +59,9 @@ def get_app() -> ToolShedApp:
     return tool_shed_app_mod.app
 
 
-async def get_app_with_request_session() -> AsyncGenerator[ToolShedApp, None]:
+async def get_app_with_request_session(request: Request) -> AsyncGenerator[ToolShedApp, None]:
+    # ``request`` is what galaxy.webapps.galaxy.api.depends() passes to every app dependency; the tool
+    # shed does not wait for a session slot.
     app = get_app()
     request_id = request_context.data["X-Request-ID"]
     app.model.set_request_id(request_id)

@@ -216,9 +216,8 @@ async def test_stream_gives_its_slot_up_before_the_body(gx_app, thread_limit):
     assert [stream.status_code for stream in streams] == [200] * (SESSION_LIMIT + 2)
 
 
-async def download_without_reading(api: FastAPI, path: str, sending: asyncio.Event, read: asyncio.Event) -> None:
-    """Request ``path`` as a client that does not read the response body until ``read`` is set."""
-    scope = {
+def get_scope(path: str) -> dict:
+    return {
         "type": "http",
         "asgi": {"version": "3.0", "spec_version": "2.4"},
         "http_version": "1.1",
@@ -232,6 +231,11 @@ async def download_without_reading(api: FastAPI, path: str, sending: asyncio.Eve
         "client": ("client", 1),
         "root_path": "",
     }
+
+
+async def download_without_reading(api: FastAPI, path: str, sending: asyncio.Event, read: asyncio.Event) -> None:
+    """Request ``path`` as a client that does not read the response body until ``read`` is set."""
+    scope = get_scope(path)
 
     async def receive():
         await read.wait()
@@ -343,6 +347,58 @@ async def test_failed_request_gives_its_slot_up(gx_app, thread_limit):
             assert (await http.get("/missing")).status_code == 404
         response = await asyncio.wait_for(http.get("/thing"), STUCK)
 
+    assert response.status_code == 200
+
+
+async def test_queued_request_is_dropped_when_its_client_goes_away(gx_app, thread_limit):
+    gx_app(pool_size=3)  # a single slot
+    api = make_api()
+    holding, finish_slow = threading.Event(), threading.Event()
+    served: list[str] = []
+
+    @api.get("/slow")
+    def slow(session=Depends(get_session)):
+        holding.set()
+        assert finish_slow.wait(STUCK)
+        return {}
+
+    @api.get("/thing")
+    def thing(session=Depends(get_session)):
+        served.append("thing")
+        return {}
+
+    listening, gone = asyncio.Event(), asyncio.Event()
+    received: list[str] = []
+    statuses: list[int] = []
+
+    async def receive():
+        if not received:
+            received.append("body")
+            return {"type": "http.request", "body": b"", "more_body": False}
+        listening.set()
+        await gone.wait()
+        return {"type": "http.disconnect"}
+
+    async def send(message):
+        if message["type"] == "http.response.start":
+            statuses.append(message["status"])
+
+    async with client(api) as http:
+        slow_request = asyncio.create_task(http.get("/slow"))
+        try:
+            assert await asyncio.to_thread(holding.wait, STUCK)
+            queued = asyncio.create_task(api(get_scope("/thing"), receive, send))
+            await asyncio.wait_for(listening.wait(), STUCK)
+            gone.set()
+            await asyncio.wait_for(queued, STUCK)
+        finally:
+            finish_slow.set()
+            gone.set()
+        assert (await slow_request).status_code == 200
+        response = await asyncio.wait_for(http.get("/thing"), STUCK)
+
+    assert statuses == [499]
+    assert served == ["thing"]
     assert response.status_code == 200
 
 
