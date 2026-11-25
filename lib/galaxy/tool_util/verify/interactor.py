@@ -1346,13 +1346,13 @@ def verify_collection(output_collection_def, data_collection, verify_dataset):
             raise AssertionError(message)
 
     actual_element_count = len(data_collection["elements"])
-    if output_collection_def.count and output_collection_def.count != actual_element_count:
+    if output_collection_def.count is not None and output_collection_def.count != actual_element_count:
         message = f"Output collection '{name}': expected to have {output_collection_def.count} elements, but it had {actual_element_count}."
         raise AssertionError(message)
-    if output_collection_def.min and output_collection_def.min > actual_element_count:
+    if output_collection_def.min is not None and output_collection_def.min > actual_element_count:
         message = f"Output collection '{name}': expected to have at least {output_collection_def.min} elements, but it had {actual_element_count}."
         raise AssertionError(message)
-    if output_collection_def.max and output_collection_def.max < actual_element_count:
+    if output_collection_def.max is not None and output_collection_def.max < actual_element_count:
         message = f"Output collection '{name}': expected to have at most {output_collection_def.max} elements, but it had {actual_element_count}."
         raise AssertionError(message)
 
