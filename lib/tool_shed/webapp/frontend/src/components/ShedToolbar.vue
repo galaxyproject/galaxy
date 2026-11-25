@@ -5,7 +5,7 @@ import { GButton, GDropdown, GDropdownGroup, GDropdownItem } from "@galaxyprojec
 import { computed } from "vue"
 import { useRoute } from "vue-router"
 import { useAuthStore } from "@/stores"
-import { withRedirect } from "@/util"
+import { queryParamToString, withRedirect } from "@/util"
 
 defineProps({
     title: {
@@ -22,8 +22,6 @@ const admin = computed(() => authStore.user && authStore.user.is_admin)
 // Come back here after logging in, unless "here" is already an auth or post-auth page
 const NO_RETURN_PATHS = [
     "/",
-    "/login",
-    "/register",
     "/login_success",
     "/logout_success",
     "/registration_success",
@@ -32,7 +30,13 @@ const NO_RETURN_PATHS = [
     "/user/change_password_success",
 ]
 const route = useRoute()
-const loginTo = computed(() => withRedirect("/login", NO_RETURN_PATHS.includes(route.path) ? null : route.fullPath))
+const loginTo = computed(() => {
+    if (route.path === "/login" || route.path === "/register") {
+        // Keep the page the user is already logging in for
+        return withRedirect("/login", queryParamToString(route.query.redirect))
+    }
+    return withRedirect("/login", NO_RETURN_PATHS.includes(route.path) ? null : route.fullPath)
+})
 </script>
 <template>
     <nav class="shed-masthead" aria-label="Main navigation">

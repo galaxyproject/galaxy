@@ -66,7 +66,7 @@ describe("ShedToolbar", () => {
 
     it("does not redirect back to the auth pages", async () => {
         for (const path of [
-            "/login?redirect=%2Fhelp",
+            "/login",
             "/register",
             "/login_success",
             "/user/forgot_password",
@@ -75,6 +75,15 @@ describe("ShedToolbar", () => {
             const { wrapper } = await mountToolbar(null, path)
 
             expect(wrapper.get(".toolbar-login").attributes("href")).toBe("/login")
+            wrapper.unmount()
+        }
+    })
+
+    it("keeps the pending return path on the login and register pages", async () => {
+        for (const path of ["/login?redirect=%2Fhelp", "/register?redirect=%2Fhelp"]) {
+            const { wrapper } = await mountToolbar(null, path)
+
+            expect(wrapper.get(".toolbar-login").attributes("href")).toBe("/login?redirect=%2Fhelp")
             wrapper.unmount()
         }
     })
