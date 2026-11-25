@@ -20,7 +20,10 @@ from galaxy.datatypes.sniff import (
     get_headers,
     iter_headers,
 )
-from galaxy.datatypes.tabular import Tabular
+from galaxy.datatypes.tabular import (
+    column_index_header_cell,
+    Tabular,
+)
 from galaxy.util import unicodify
 
 log = logging.getLogger(__name__)
@@ -1080,11 +1083,11 @@ class SffFlow(Tabular):
 
             # Generate column header
             out += "<tr>"
-            out += "<th>1. Name</th>"
-            out += "<th>2. Flows</th>"
+            out += column_index_header_cell("1", "Name")
+            out += column_index_header_cell("2", "Flows")
             for i in range(3, dataset.metadata.columns + 1):
                 base = dataset.metadata.flow_order[(i + 1) % 4]
-                out += f"<th>{i - 2}. {base}</th>"
+                out += column_index_header_cell(str(i), base)
             out += "</tr>"
             out += self.make_html_peek_rows(dataset, skipchars=skipchars)
             out += "</table>"

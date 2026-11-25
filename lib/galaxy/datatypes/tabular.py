@@ -81,6 +81,20 @@ log = logging.getLogger(__name__)
 MAX_DATA_LINES = 100000
 
 
+def column_index_header_cell(number: str, name: Optional[str] = None) -> str:
+    """Header cell of a tabular peek: Galaxy's column number, plus the column name when known.
+
+    The client styles the number and the name separately (see ``.column-index`` in dataset.scss).
+    """
+    label = f"Column {number}: {name}" if name else f"Column {number}"
+    title = escape(f"{label}. Galaxy metadata, not part of the file.")
+    name_html = f' <span class="column-name">{escape(name)}</span>' if name else ""
+    return (
+        f'<th title="{title}"><span class="column-index">'
+        f'<span class="column-number">{number}</span>{name_html}</span></th>'
+    )
+
+
 @dataproviders.decorators.has_dataproviders
 class TabularData(Text):
     """Generic tabular data"""
@@ -277,12 +291,7 @@ class TabularData(Text):
 
             out.append("<tr>")
             for i, header in enumerate(column_headers):
-                out.append("<th>")
-                if header is None:
-                    out.append(column_number_format % str(i + 1))
-                else:
-                    out.append(f"{str(i + 1)}.{escape(header)}")
-                out.append("</th>")
+                out.append(column_index_header_cell(column_number_format % str(i + 1), header))
             out.append("</tr>")
         except Exception as exc:
             log.exception("make_html_peek_header failed on HDA %s", dataset.id)
@@ -396,12 +405,6 @@ class Tabular(TabularData):
 
     def get_column_names(self, first_line: str) -> Optional[list[str]]:
         return None
-
-    def make_html_peek_header(self, dataset: DatasetProtocol, *args, **kwargs) -> str:
-        # Only generic tabular loses generated headers; subclasses may define real column labels.
-        if type(self) is Tabular:
-            return ""
-        return super().make_html_peek_header(dataset, *args, **kwargs)
 
     def set_meta(
         self,
@@ -1235,11 +1238,11 @@ class Eland(Tabular):
             # Generate column header
             out.append("<tr>")
             for i, name in enumerate(self.column_names):
-                out.append(f"<th>{str(i + 1)}.{name}</th>")
+                out.append(column_index_header_cell(str(i + 1), name))
             # This data type requires at least 11 columns in the data
             if dataset.metadata.columns - len(self.column_names) > 0:
                 for i in range(len(self.column_names), max(dataset.metadata.columns, self.max_peek_columns)):
-                    out.append(f"<th>{str(i + 1)}</th>")
+                    out.append(column_index_header_cell(str(i + 1)))
                 out.append("</tr>")
             out.append(self.make_html_peek_rows(dataset, skipchars=skipchars, peek=peek))
             out.append("</table>")

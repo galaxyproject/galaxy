@@ -62,10 +62,24 @@ const fieldKeys = computed(() => {
     return Array.from({ length: columns.value.length }, (_, index) => `column_${index}`);
 });
 
+const headers = computed(() => {
+    return fieldKeys.value.map((key, index) => {
+        const name = columns.value[index];
+        const label = name ? `Column ${index + 1}: ${name}` : `Column ${index + 1}`;
+        return { key, number: index + 1, name, title: `${label}. Galaxy metadata, not part of the file.` };
+    });
+});
+
+function headSlot(key: string) {
+    return `head(${key})`;
+}
+
 const fields = computed<TableField[]>(() => {
     return fieldKeys.value.map((key, index) => ({
         key,
-        label: columns.value[index] || `Column ${index + 1}`,
+        // same "1.name" / "1" labels as the dataset peek, for every datatype
+        label: columns.value[index] ? `${index + 1}.${columns.value[index]}` : `${index + 1}`,
+        headerClass: "column-index-header",
         cellClass: columnStyle.value[index],
     }));
 });
@@ -194,14 +208,43 @@ onMounted(() => {
 <template>
     <div>
         <!-- TODO loading spinner locked to top right -->
-        <GTable
-            compact
-            hover
-            striped
-            head-variant="dark"
-            :fields="fields"
-            :hide-header="props.options.file_ext === 'tabular'"
-            :items="tableRows"
-            :load-more-loading="loading" />
+        <GTable compact hover striped :fields="fields" :items="tableRows" :load-more-loading="loading">
+            <!-- same markup as column_index_header_cell() in lib/galaxy/datatypes/tabular.py -->
+            <template v-for="header in headers" v-slot:[headSlot(header.key)]>
+                <span :key="header.key" class="column-index" :title="header.title">
+                    <span class="column-number">{{ header.number }}</span>
+                    <span v-if="header.name" class="column-name">{{ header.name }}</span>
+                </span>
+            </template>
+        </GTable>
     </div>
 </template>
+
+<style scoped lang="scss">
+@import "@/style/scss/theme/blue.scss";
+
+// Same look as the dataset peek header (see %column-index-header in dataset.scss):
+// Galaxy's column index, not a header line from the file.
+:deep(.g-table thead th.column-index-header) {
+    color: $text-muted;
+    background: $gray-300;
+    font-weight: normal;
+    border-bottom: 1px solid $border-color;
+    border-right: 1px solid $border-color;
+    // not a line of the file, so keep it out of copied text
+    user-select: none;
+
+    &:last-child {
+        border-right: none;
+    }
+    padding: 0.25rem 0.75rem;
+    font-size: 0.85em;
+}
+:deep(.g-table tbody td) {
+    border-right: 1px solid $gray-300;
+
+    &:last-child {
+        border-right: none;
+    }
+}
+</style>
