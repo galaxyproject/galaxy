@@ -1,0 +1,21 @@
+<tool id="color_param_string_method" name="color_param_string_method" version="1.0.0">
+    <command>
+        echo "${color.lstrip('#')}" > '$out_file1'
+    </command>
+    <inputs>
+        <param name="color" type="color" value="#aabbcc" />
+    </inputs>
+    <outputs>
+        <data name="out_file1" format="txt" />
+    </outputs>
+    <tests>
+        <test>
+            <param name="color" value="#aaaaaa" />
+            <output name="out_file1">
+                <assert_contents>
+                    <has_line line="aaaaaa" />
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+</tool>
