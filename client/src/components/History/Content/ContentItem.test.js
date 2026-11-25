@@ -52,6 +52,30 @@ const deletedCollection = {
     deleted: true,
 };
 
+function mountItem(content = { ...item, tags: [...item.tags] }) {
+    return mount(ContentItem, {
+        props: {
+            expandDataset: true,
+            item: content,
+            id: 1,
+            isDataset: content.history_content_type !== "dataset_collection",
+            isHistoryItem: true,
+            name: "name",
+            selected: false,
+            selectable: false,
+            filterable: true,
+            onTagChange: (content, tags) => (content.tags = tags),
+        },
+        global: localVue,
+        stubs: {
+            DatasetDetails: true,
+            vueTagsInput: false,
+        },
+        pinia: createTestingPinia({ createSpy: vi.fn, stubActions: false }),
+        router,
+    });
+}
+
 describe("ContentItem", () => {
     let wrapper;
 
@@ -70,32 +94,122 @@ describe("ContentItem", () => {
             }),
         );
 
-        wrapper = mount(ContentItem, {
-            props: {
-                expandDataset: true,
-                item: { ...item, tags: [...item.tags] },
-                id: 1,
-                isDataset: true,
-                isHistoryItem: true,
-                name: "name",
-                selected: false,
-                selectable: false,
-                filterable: true,
-                onTagChange: (content, tags) => (content.tags = tags),
-            },
-            global: localVue,
-            stubs: {
-                DatasetDetails: true,
-                vueTagsInput: false,
-            },
-            pinia: createTestingPinia({ createSpy: vi.fn, stubActions: false }),
-            router,
-        });
+        wrapper = mountItem();
     });
 
     afterEach(() => {
         wrapper.unmount();
         vi.restoreAllMocks();
+    });
+
+    it("keeps the item queue and updates the new editor across a row remount", async () => {
+        const first = deferred();
+        const second = deferred();
+        updateContentFields.mockReturnValueOnce(first.promise).mockReturnValueOnce(second.promise);
+        try {
+            wrapper.getComponent(StatelessTags).vm.$emit("update:modelValue", ["first"]);
+            await flushPromises();
+            wrapper.unmount();
+            wrapper = mountItem({ ...item, tags: [] });
+            const editor = wrapper.getComponent(StatelessTags);
+            const pendingTags = editor.props("modelValue");
+            editor.vm.$emit("update:modelValue", ["first", "group=two"]);
+            await flushPromises();
+
+            expect(updateContentFields).toHaveBeenCalledTimes(1);
+            expect(pendingTags).toEqual(["first"]);
+            first.resolve({ tags: ["first"] });
+            await flushPromises();
+            expect(updateContentFields).toHaveBeenCalledTimes(2);
+            expect(editor.props("modelValue")).toEqual(["first", "group=two"]);
+            second.resolve({ tags: ["first", "group:two"] });
+            await flushPromises();
+            expect(editor.props("modelValue")).toEqual(["first", "group:two"]);
+        } finally {
+            first.resolve({ tags: ["first"] });
+            second.resolve({ tags: ["first", "group:two"] });
+            await flushPromises();
+        }
+    });
+
+    it.each(["dataset", "dataset_collection"])("reloads a failed %s save into the remounted row", async (type) => {
+        const isDataset = type === "dataset";
+        const content = { ...(isDataset ? item : deletedCollection), deleted: false, tags: [] };
+        await wrapper.setProps({ isDataset, item: content });
+        await flushPromises();
+        const reload = isDataset
+            ? vi.spyOn(datasetsApi, "fetchDatasetDetails")
+            : vi.spyOn(datasetCollectionsApi, "fetchCollectionSummary");
+        reload.mockResolvedValue({ ...content, tags: ["stored"] });
+        const save = deferred();
+        updateContentFields.mockReturnValueOnce(save.promise);
+        try {
+            wrapper.getComponent(StatelessTags).vm.$emit("update:modelValue", ["unsaved"]);
+            await flushPromises();
+            wrapper.unmount();
+            wrapper = mountItem({ ...content, tags: [] });
+            await flushPromises();
+            reload.mockClear();
+
+            save.reject(new Error("save failed"));
+            await flushPromises();
+            expect(Toast.error).toHaveBeenCalledExactlyOnceWith("Failed to save tags: save failed");
+            expect(reload).toHaveBeenCalledExactlyOnceWith(isDataset ? { id: item.id } : { hdca_id: item.id });
+            expect(wrapper.getComponent(StatelessTags).props("modelValue")).toEqual(["stored"]);
+        } finally {
+            save.resolve({ tags: [] });
+            await flushPromises();
+        }
+    });
+
+    it("applies a recovery fetch to a row remounted while the fetch is pending", async () => {
+        await flushPromises();
+        const reload = deferred();
+        vi.spyOn(datasetsApi, "fetchDatasetDetails").mockReturnValueOnce(reload.promise);
+        updateContentFields.mockRejectedValueOnce(new Error("save failed"));
+        try {
+            wrapper.getComponent(StatelessTags).vm.$emit("update:modelValue", ["unsaved"]);
+            await flushPromises();
+            expect(datasetsApi.fetchDatasetDetails).toHaveBeenCalledWith({ id: item.id });
+            wrapper.unmount();
+            wrapper = mountItem({ ...item, tags: [] });
+            expect(wrapper.getComponent(StatelessTags).props("modelValue")).toEqual(["unsaved"]);
+
+            reload.resolve({ ...item, tags: ["stored"] });
+            await flushPromises();
+            expect(wrapper.getComponent(StatelessTags).props("modelValue")).toEqual(["stored"]);
+        } finally {
+            reload.resolve({ ...item, tags: ["stored"] });
+            await flushPromises();
+        }
+    });
+
+    it("shares one queue and the saved tags between mounted editors of the same item", async () => {
+        const other = mountItem({ ...item, tags: [] });
+        const first = deferred();
+        const second = deferred();
+        updateContentFields.mockReturnValueOnce(first.promise).mockReturnValueOnce(second.promise);
+        try {
+            wrapper.getComponent(StatelessTags).vm.$emit("update:modelValue", ["first"]);
+            await flushPromises();
+            expect(other.getComponent(StatelessTags).props("modelValue")).toEqual(["first"]);
+            other.getComponent(StatelessTags).vm.$emit("update:modelValue", ["first", "group=two"]);
+            await flushPromises();
+            expect(updateContentFields).toHaveBeenCalledTimes(1);
+
+            first.resolve({ tags: ["first"] });
+            await flushPromises();
+            expect(updateContentFields).toHaveBeenCalledTimes(2);
+            second.resolve({ tags: ["first", "group:two"] });
+            await flushPromises();
+            expect(wrapper.getComponent(StatelessTags).props("modelValue")).toEqual(["first", "group:two"]);
+            expect(other.getComponent(StatelessTags).props("modelValue")).toEqual(["first", "group:two"]);
+        } finally {
+            first.resolve({ tags: [] });
+            second.resolve({ tags: [] });
+            await flushPromises();
+            other.unmount();
+        }
     });
 
     it("serializes tag saves and keeps the newest tags visible across an item refresh", async () => {

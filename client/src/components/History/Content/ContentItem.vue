@@ -12,21 +12,15 @@ import { BBadge } from "bootstrap-vue";
 import { computed, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
-import type { HistoryItemSummary } from "@/api";
-import { fetchCollectionSummary } from "@/api/datasetCollections";
-import { fetchDatasetDetails } from "@/api/datasets";
 import type { ItemUrls } from "@/components/History/Content/Dataset/index";
-import { updateContentFields } from "@/components/History/model/queries";
-import { useSerialTagSaves } from "@/composables/serialTagSaves";
-import { Toast } from "@/composables/toast";
 import { useWindowAwareNavigation } from "@/composables/windowAwareNavigation";
 import { useEntryPointStore } from "@/stores/entryPointStore";
 import DATASET_STATES from "@/utils/datasetStates";
 import localize from "@/utils/localization";
 import { clearDrag } from "@/utils/setDrag";
-import { errorMessageAsString } from "@/utils/simple-error";
 
 import { getContentItemState, isContentItemPurged, type State, STATES } from "./model/states";
+import { useContentItemTagSaves } from "./useContentItemTagSaves";
 
 import CollectionDescription from "./Collection/CollectionDescription.vue";
 import ContentExpirationIndicator from "./ContentExpirationIndicator.vue";
@@ -100,7 +94,11 @@ const entryPointStore = useEntryPointStore();
 
 const contentItem = ref<HTMLElement | null>(null);
 const subItemsVisible = ref(false);
-const tagSaves = new Map<string, ReturnType<typeof useSerialTagSaves>["saveTags"]>();
+const onTags = useContentItemTagSaves(
+    () => props.item,
+    (item) => props.getItemKey(item),
+    (item, tags) => emit("tag-change", item, tags),
+);
 
 const itemIsRunningInteractiveTool = computed(() => {
     // If our dataset id is in the entrypOintStore it's a running it
@@ -293,43 +291,6 @@ function onView() {
 
 function onShowCollectionInfo() {
     router.push(itemUrls.value.showDetails!);
-}
-
-function tagSavesFor(item: HistoryItemSummary) {
-    const key = props.getItemKey(item);
-    let saveTags = tagSaves.get(key);
-    if (!saveTags) {
-        let tagVersion = 0;
-        const setTags = (tags: string[]) => {
-            tagVersion++;
-            // A refresh can replace the item object while its saves are pending.
-            const currentItem = props.getItemKey(props.item) === key ? props.item : item;
-            emit("tag-change", currentItem, tags);
-        };
-        saveTags = useSerialTagSaves({
-            setTags,
-            onFailed: async () => {
-                const failedVersion = tagVersion;
-                try {
-                    const storedItem = await (item.history_content_type === "dataset_collection"
-                        ? fetchCollectionSummary({ hdca_id: item.id })
-                        : fetchDatasetDetails({ id: item.id }));
-                    if (tagVersion === failedVersion) {
-                        setTags(storedItem.tags);
-                    }
-                } catch (error) {
-                    Toast.error(`Failed to reload tags: ${errorMessageAsString(error)}`);
-                }
-            },
-        }).saveTags;
-        tagSaves.set(key, saveTags);
-    }
-    return saveTags;
-}
-
-function onTags(newTags: string[]) {
-    const item = props.item;
-    tagSavesFor(item)(newTags, async () => (await updateContentFields(item, { tags: newTags })).tags ?? newTags);
 }
 
 function onTagClick(tag: string) {
