@@ -7551,6 +7551,58 @@ fastq_input:
             assert content["history_content_type"] == "dataset_collection", content
             assert content["name"] == "the_fastq_list and fasta1 suffix", content["name"]
 
+    @skip_without_tool("validation_empty_dataset")
+    def test_run_rename_based_on_multiple_input_on_mapped_over_collection(self):
+        with self.dataset_populator.test_history() as history_id:
+            self._run_jobs(
+                """
+class: GalaxyWorkflow
+inputs:
+  input1:
+    type: collection
+    collection_type: list
+  bed1: data
+  bed2: data
+steps:
+  validate:
+    tool_id: validation_empty_dataset
+    in:
+      input1: input1
+      input_mult:
+        - bed1
+        - bed2
+    outputs:
+      out_file1:
+        rename: "#{input_mult}, #{input_mult1} and #{input_mult2} suffix"
+""",
+                test_data="""
+input1:
+  collection_type: list
+  name: the_dataset_list
+  elements:
+    - identifier: el1
+      value: 1.bed
+      type: File
+      ext: txt
+bed1:
+  value: 1.bed
+  type: File
+  name: first.bed
+  file_type: txt
+bed2:
+  value: 2.bed
+  type: File
+  name: second.bed
+  file_type: txt
+""",
+                history_id=history_id,
+            )
+            content = self.dataset_populator.get_history_collection_details(
+                history_id, hid=5, wait=True, assert_ok=True
+            )
+            assert content["history_content_type"] == "dataset_collection", content
+            assert content["name"] == "first.bed, first.bed and second.bed suffix", content["name"]
+
     @skip_without_tool("collection_creates_pair")
     def test_run_rename_collection_output(self):
         with self.dataset_populator.test_history() as history_id:

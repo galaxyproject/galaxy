@@ -2667,8 +2667,15 @@ class ToolModule(WorkflowModule):
             # inputs as their collections.
             step_inputs: dict[str, Any] = {}
 
-            def add_input(prefixed_name: str, value: Any, **kwargs: Any) -> None:
-                step_inputs[prefixed_name] = value
+            def add_input(input: ToolParameter, prefixed_name: str, value: Any, **kwargs: Any) -> None:
+                if not (isinstance(input, DataToolParameter) and isinstance(value, list)):
+                    step_inputs[prefixed_name] = value
+                    return
+                # Name multiple="true" data inputs like a job's input datasets (galaxy.tools.actions):
+                # ``name`` for the first dataset, and ``name1``, ``name2``, ... for each one.
+                step_inputs[prefixed_name] = value[0] if value else None
+                for i, item in enumerate(value, start=1):
+                    step_inputs[f"{prefixed_name}{i}"] = item
 
             # Without jobs (empty collection) there are only placeholders in the step's tool state to read.
             if execution_tracker.param_combinations:
