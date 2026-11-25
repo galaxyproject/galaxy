@@ -626,6 +626,22 @@ def test_map_over_list_paired_or_unpaired_with_list_of_lists(
     assert output_collection.details["collection_type"] == "list"
 
 
+@requires_tool_id("collection_list_or_nested_list_input")
+def test_list_of_lists_direct_or_mapped_over_list_or_nested_list_input(
+    target_history: TargetHistory, required_tool: RequiredTool
+):
+    """An input accepting list and list:list takes a list:list whole, or mapped over one inner list per job."""
+    hdca = target_history.with_example_list_of_lists()
+    direct = required_tool.execute().with_inputs({"f1": hdca.src_dict})
+    direct.assert_has_n_jobs(1).assert_creates_n_implicit_collections(0)
+    direct.assert_has_single_job.assert_has_single_output.assert_contains("Nested List")
+    mapped = required_tool.execute().with_inputs(
+        {"f1": {"batch": True, "values": [{"map_over_type": "list", **hdca.src_dict}]}}
+    )
+    mapped.assert_has_n_jobs(1).assert_creates_n_implicit_collections(1)
+    mapped.assert_has_single_job.assert_has_single_output.assert_contains("Simple Dataset")
+
+
 @requires_tool_id("collection_paired_test")
 def test_paired_or_unpaired_not_consumed_by_paired_when_mapping(
     target_history: TargetHistory, required_tool: RequiredTool
