@@ -1,7 +1,7 @@
 import { defineStore } from "pinia"
 import { ensureCookie, errorMessageAsString, notifyOnCatch, safeReturnPath } from "@/util"
 
-import { ToolShedApi } from "@/schema"
+import { ApiRequestError, ToolShedApi } from "@/schema"
 
 export const useAuthStore = defineStore({
     id: "auth",
@@ -18,8 +18,11 @@ export const useAuthStore = defineStore({
                 localStorage.setItem("user", user ? JSON.stringify(user) : "null")
             } catch (e) {
                 console.debug(`Failed to get current user: ${errorMessageAsString(e)}`)
-                this.user = null
-                localStorage.setItem("user", "null")
+                // Only the server saying the session is gone clears the cached user, not a 5xx or a network error
+                if (e instanceof ApiRequestError && (e.status === 401 || e.status === 403)) {
+                    this.user = null
+                    localStorage.setItem("user", "null")
+                }
             }
         },
         async login(username: string, password: string, returnTo: string | null = null) {

@@ -4,6 +4,15 @@ import { errorMessageAsString } from "@/util"
 
 let client: ToolShedApiClient
 
+export class ApiRequestError extends Error {
+    constructor(
+        readonly status: number,
+        options?: ErrorOptions,
+    ) {
+        super(`Request failed with status ${status}`, options)
+    }
+}
+
 function apiClientFactory() {
     const errorHandlingMiddleware: Middleware = {
         async onResponse({ response }) {
@@ -11,9 +20,7 @@ function apiClientFactory() {
                 const message = response.headers.get("content-type")?.includes("json")
                     ? await response.clone().json()
                     : await response.clone().text()
-                throw new Error(`Request failed with status ${response.status}`, {
-                    cause: errorMessageAsString(message),
-                })
+                throw new ApiRequestError(response.status, { cause: errorMessageAsString(message) })
             }
             return response
         },

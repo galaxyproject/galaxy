@@ -1,11 +1,15 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { createPinia, setActivePinia } from "pinia"
+import { ApiRequestError } from "@/schema"
 import { useAuthStore } from "./auth.store"
 
-vi.mock("@/schema", () => ({
+const getCurrentUser = vi.fn()
+
+vi.mock("@/schema", async (importOriginal) => ({
+    ...(await importOriginal<typeof import("@/schema")>()),
     ToolShedApi: () => ({
         PUT: vi.fn().mockResolvedValue({}),
-        GET: vi.fn().mockRejectedValue(new Error("Request failed with status 403")),
+        GET: getCurrentUser,
     }),
 }))
 
@@ -34,12 +38,26 @@ describe("auth store login", () => {
 })
 
 describe("auth store setup", () => {
-    it("forgets a cached user whose session has expired", async () => {
-        localStorage.setItem("user", JSON.stringify({ id: "1", username: "shuser" }))
+    const cachedUser = { id: "1", username: "shuser" }
+
+    beforeEach(() => {
+        localStorage.setItem("user", JSON.stringify(cachedUser))
         setActivePinia(createPinia())
+    })
+
+    it("forgets a cached user whose session has expired", async () => {
+        getCurrentUser.mockRejectedValueOnce(new ApiRequestError(403))
         const store = useAuthStore()
         await store.setup()
         expect(store.user).toBeNull()
         expect(localStorage.getItem("user")).toBe("null")
+    })
+
+    it("keeps the cached user when the session check fails on the server", async () => {
+        getCurrentUser.mockRejectedValueOnce(new ApiRequestError(502))
+        const store = useAuthStore()
+        await store.setup()
+        expect(store.user).toEqual(cachedUser)
+        expect(localStorage.getItem("user")).toBe(JSON.stringify(cachedUser))
     })
 })
