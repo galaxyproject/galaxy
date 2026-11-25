@@ -34,12 +34,14 @@ from sqlalchemy.pool import (
     NullPool,
     QueuePool,
 )
+from starlette.responses import FileResponse
 
 from galaxy.exceptions import ObjectNotFound
 from galaxy.model.base import ModelMapping
 from galaxy.webapps.base.api import (
     add_exception_handler,
     add_request_id_middleware,
+    GalaxyFileResponse,
     GalaxyStreamingResponse,
     release_request_sessions,
     request_session_limit,
@@ -61,6 +63,10 @@ STUCK = 10
 
 class Service:
     """Resolved with ``depends``, the dependency most endpoints get their services from."""
+
+
+class OtherService:
+    pass
 
 
 @pytest.fixture
@@ -208,6 +214,87 @@ async def test_stream_gives_its_slot_up_before_the_body(gx_app, thread_limit):
 
     assert response.status_code == 200
     assert [stream.status_code for stream in streams] == [200] * (SESSION_LIMIT + 2)
+
+
+async def download_without_reading(api: FastAPI, path: str, sending: asyncio.Event, read: asyncio.Event) -> None:
+    """Request ``path`` as a client that does not read the response body until ``read`` is set."""
+    scope = {
+        "type": "http",
+        "asgi": {"version": "3.0", "spec_version": "2.4"},
+        "http_version": "1.1",
+        "method": "GET",
+        "scheme": "http",
+        "path": path,
+        "raw_path": path.encode(),
+        "query_string": b"",
+        "headers": [],
+        "server": ("galaxy", 80),
+        "client": ("client", 1),
+        "root_path": "",
+    }
+
+    async def receive():
+        await read.wait()
+        return {"type": "http.disconnect"}
+
+    async def send(message):
+        if message["type"] == "http.response.body":
+            sending.set()
+            await read.wait()
+
+    await api(scope, receive, send)
+
+
+@pytest.mark.parametrize("path", ["/galaxy_file", "/released_file"])
+async def test_download_gives_its_slot_up_before_the_body(gx_app, thread_limit, tmp_path, path):
+    gx_app(pool_size=3)  # a single slot
+    api = make_api()
+    dataset = tmp_path / "dataset"
+    dataset.write_bytes(b"content")
+
+    @api.get("/galaxy_file")
+    def galaxy_file(session=Depends(get_session)):
+        return GalaxyFileResponse(dataset)
+
+    @api.get("/released_file")
+    def released_file(session=Depends(get_session)):
+        release_request_sessions()
+        return FileResponse(dataset)
+
+    @api.get("/thing")
+    def thing(session=Depends(get_session)):
+        return {}
+
+    sending, read = asyncio.Event(), asyncio.Event()
+    download = asyncio.create_task(download_without_reading(api, path, sending, read))
+    try:
+        await asyncio.wait_for(sending.wait(), STUCK)
+        async with client(api) as http:
+            response = await asyncio.wait_for(http.get("/thing"), STUCK)
+    finally:
+        read.set()
+        await download
+
+    assert response.status_code == 200
+
+
+async def test_request_takes_one_slot_for_all_its_dependencies(gx_app, thread_limit):
+    gx_app(pool_size=3)  # a single slot
+    api = make_api()
+
+    @api.get("/thing")
+    def thing(
+        service: Service = depends(Service),
+        other_service: OtherService = depends(OtherService),
+        user=Depends(get_user),
+        app=DependsOnApp,
+    ):
+        return {}
+
+    async with client(api) as http:
+        response = await asyncio.wait_for(http.get("/thing"), STUCK)
+
+    assert response.status_code == 200
 
 
 async def test_released_sessions_give_the_slot_up_from_a_worker_thread(gx_app, thread_limit):

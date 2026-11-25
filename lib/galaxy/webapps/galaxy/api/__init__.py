@@ -7,6 +7,7 @@ from collections.abc import (
     AsyncGenerator,
     Callable,
 )
+from contextlib import aclosing
 from enum import StrEnum
 from string import Template
 from typing import (
@@ -146,8 +147,11 @@ class GalaxyTypeDepends(Depends):
 
 def depends(dep_type: type[T], app=get_app_with_request_session) -> T:
     async def _do_resolve(request: Request):
-        async for _dep in app():
-            yield _dep.resolve(dep_type)
+        # An exception thrown in at the yield leaves the loop. aclosing runs the teardown of app()
+        # right then, not when the generator is garbage collected.
+        async with aclosing(app()) as app_generator:
+            async for _dep in app_generator:
+                yield _dep.resolve(dep_type)
 
     return cast(T, GalaxyTypeDepends(_do_resolve, dep_type))
 

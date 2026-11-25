@@ -127,6 +127,8 @@ def release_request_sessions() -> None:
 #: database heartbeat, control tasks and other background threads.
 RESERVED_POOL_FRACTION = 0.2
 MIN_RESERVED_POOL_CONNECTIONS = 2
+#: A request that waits this many seconds for a session slot is logged.
+SLOW_SLOT_WAIT = 30
 REQUEST_SESSION_SLOT_KEY = "galaxy_request_session_slot"
 
 
@@ -188,7 +190,21 @@ class RequestSessionLimiter:
         self._semaphore = asyncio.Semaphore(limit)
 
     async def acquire(self) -> RequestSessionSlot:
-        await self._semaphore.acquire()
+        if self._semaphore.locked():
+            # Waiting has no timeout, so this is what shows that the requests holding the slots are stuck.
+            slow = self._loop.call_later(
+                SLOW_SLOT_WAIT,
+                log.warning,
+                "A request has waited %d seconds for a database session slot, all %d are held",
+                SLOW_SLOT_WAIT,
+                self.limit,
+            )
+            try:
+                await self._semaphore.acquire()
+            finally:
+                slow.cancel()
+        else:
+            await self._semaphore.acquire()
         return RequestSessionSlot(self)
 
     def _release(self) -> None:
