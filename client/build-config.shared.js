@@ -7,15 +7,12 @@ import { fileURLToPath } from "url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const scriptsBase = path.join(__dirname, "src");
-const libsBase = path.join(scriptsBase, "libs");
 const styleBase = path.join(scriptsBase, "style");
 
 // Legacy exact-match aliases
 export const legacyAliases = {
     // Core libraries
     // Note: jquery is NOT aliased - it resolves to node_modules/jquery directly
-    // The global setup (window.$, window.jQuery) is done in libs.js
-    jqueryVendor: path.join(libsBase, "jquery/jquery.js"),
     storemodern: path.join(__dirname, "node_modules/store/dist/store.modern.js"),
 
     // Vue - use @vue/compat for Vue 3 compatibility mode. Its runtime-only
@@ -53,10 +50,7 @@ export function getViteAliases() {
     }
 
     // Add prefix patterns for legacy paths
-    viteAliases.push(
-        { find: /^libs\//, replacement: libsBase + "/" },
-        { find: /^ui\//, replacement: path.join(scriptsBase, "ui") + "/" },
-    );
+    viteAliases.push({ find: /^ui\//, replacement: path.join(scriptsBase, "ui") + "/" });
 
     return viteAliases;
 }
