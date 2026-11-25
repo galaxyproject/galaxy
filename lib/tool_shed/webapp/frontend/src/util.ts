@@ -112,7 +112,13 @@ export function safeReturnPath(value: string | null | undefined): string | null 
     if (!value?.startsWith("/")) {
         return null
     }
-    const url = new URL(value, window.location.origin)
+    let url: URL
+    try {
+        url = new URL(value, window.location.origin)
+    } catch {
+        // Unparsable values like "//[" fall back too, rather than failing a login that already succeeded
+        return null
+    }
     if (url.origin !== window.location.origin || url.pathname.startsWith("//")) {
         return null
     }

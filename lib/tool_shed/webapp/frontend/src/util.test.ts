@@ -129,6 +129,7 @@ describe("safeReturnPath", () => {
             "/./\\evil.example",
             "/%2e%2e//evil.example",
             "javascript:alert(1)",
+            "//[",
             "repos/x",
             "",
             null,
