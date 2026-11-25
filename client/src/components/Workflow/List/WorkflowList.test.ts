@@ -1,6 +1,6 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getFakeRegisteredUser } from "@tests/test-data";
-import { createTestRouter, getLocalVue, suppressBootstrapVueWarnings } from "@tests/vitest/helpers";
+import { createTestRouter, getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
@@ -71,7 +71,6 @@ function deleteKeyEvent(): KeyboardEvent {
 
 describe("WorkflowList", () => {
     beforeEach(() => {
-        suppressBootstrapVueWarnings();
         vi.clearAllMocks();
         // Mock the workflow counts endpoint used by workflow card badges
         server.use(

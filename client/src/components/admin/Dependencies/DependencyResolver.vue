@@ -2,8 +2,8 @@
     <span class="dependency-resolver">
         <span v-if="dependencyResolver">
             <span v-if="dependencyResolver.resolver_type == 'conda'">
-                A Conda dependency resolver was used with prefix <tt>{{ dependencyResolver.prefix }}</tt> and channels
-                <tt>{{ dependencyResolver.ensure_channels }}</tt
+                A Conda dependency resolver was used with prefix <code>{{ dependencyResolver.prefix }}</code> and
+                channels <code>{{ dependencyResolver.ensure_channels }}</code
                 >.
                 <span v-if="dependencyResolver.use_local">
                     Local Conda packages are enabled for this resolver (this is not best practice for production but may

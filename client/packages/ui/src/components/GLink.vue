@@ -6,7 +6,7 @@
 
 import type { Placement } from "@floating-ui/dom";
 import { computed, ref } from "vue";
-import type { RouterLink } from "vue-router";
+import type { RouteLocationRaw, RouterLink } from "vue-router";
 
 import { useClickableElement } from "../composables/clickableElement";
 import { useCurrentTitle } from "../composables/currentTitle";
@@ -18,7 +18,7 @@ const props = defineProps<{
     /** Href to set on the underlying 'a' element. Using this will turn the element into an anchor, not affecting the styling */
     href?: string;
     /** Router link "to" prop. Using this will turn the element into a router-link, not affecting the styling  */
-    to?: string;
+    to?: RouteLocationRaw;
     /** Disabled state. Changes appearance, and will no longer accept or forward clicks */
     disabled?: boolean;
     /** Title attribute, or tooltip text */

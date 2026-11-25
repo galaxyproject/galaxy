@@ -1,3 +1,4 @@
+import { faMagic } from "@fortawesome/free-solid-svg-icons";
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/vitest/helpers";
 import { shallowMount } from "@vue/test-utils";
@@ -25,7 +26,7 @@ const mockGetHistory = vi.fn();
 const mockActiveContext = ref<ActiveContext | null>(null);
 
 vi.mock("@/composables/useActiveContext", () => ({
-    useActiveContext: () => ({ activeContext: mockActiveContext, contextLabel: ref("") }),
+    useActiveContext: () => ({ activeContext: mockActiveContext, contextLabel: ref(""), contextIcon: ref(faMagic) }),
 }));
 
 vi.mock("@/composables/userLocalStorage", () => ({

@@ -16,7 +16,8 @@ vi.mock("@/utils/localization", () => {
     return { default: localize, localize };
 });
 
-vi.mock("vue-router/composables", () => ({
+vi.mock("vue-router", async (importOriginal) => ({
+    ...(await importOriginal()),
     useRouter: vi.fn(() => ({ push: vi.fn() })),
 }));
 

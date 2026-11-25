@@ -1,3 +1,4 @@
+import { faStar } from "@fortawesome/free-solid-svg-icons";
 import { createTestingPinia } from "@pinia/testing";
 import { dispatchEvent, emittedArg, getLocalVue, mockUnprivilegedToolsRequest } from "@tests/vitest/helpers";
 import { shallowMount } from "@vue/test-utils";
@@ -44,7 +45,7 @@ function testActivity(id, newOptions = {}) {
         anonymous: true,
         id: `test-${id}`,
         description: "test-description",
-        icon: "test-icon",
+        icon: faStar,
         mutable: true,
         optional: false,
         title: "test-title",

@@ -1,11 +1,10 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getFakeRegisteredUser } from "@tests/test-data";
-import { getLocalVue, nth, suppressBootstrapVueWarnings } from "@tests/vitest/helpers";
+import { createTestRouter, getLocalVue, nth } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { createMemoryHistory, createRouter } from "vue-router";
 
 import type { AnonymousUser } from "@/api";
 import type { CuratedWorkflow } from "@/api/curatedWorkflows";
@@ -42,7 +41,7 @@ let toastError: ReturnType<typeof vi.spyOn>;
 let routerPush: ReturnType<typeof vi.spyOn>;
 
 const localVue = getLocalVue();
-const router = createRouter({ history: createMemoryHistory(), routes: [] });
+const router = createTestRouter();
 
 const VELOCYTO_TRS =
     "https://dockstore.org/api/ga4gh/trs/v2/tools/%23workflow%2Fgithub.com%2Fiwc-workflows%2Fvelocyto%2Fmain/versions";
@@ -159,7 +158,6 @@ function actionIds(wrapper: ReturnType<typeof mountCard>): string[] {
 
 describe("CuratedWorkflowCard", () => {
     beforeEach(() => {
-        suppressBootstrapVueWarnings();
         importTrsToolFromUrl.mockReset();
         copyWorkflow.mockReset();
         setMockConfig({});

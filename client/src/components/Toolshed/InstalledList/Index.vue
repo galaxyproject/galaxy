@@ -88,7 +88,7 @@ export default {
     props: {
         filter: {
             type: String,
-            required: true,
+            default: null,
         },
     },
     emits: ["onQuery"],

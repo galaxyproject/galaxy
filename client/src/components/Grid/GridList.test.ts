@@ -20,8 +20,6 @@ vi.useFakeTimers();
 
 setupMockConfig({ disabled: false, enabled: true });
 
-vi.mock("vue-router");
-
 vi.mock("@/composables/toast");
 
 const localVue = getLocalVue();
@@ -317,9 +315,9 @@ describe("GridList", () => {
         vi.runAllTimers();
         await flushPromises();
 
-        fast.resolve([[{ id: "fast-row" }], 1]);
+        fast.resolve([[{ id: "fast-row", link: "link-fast", operation: "operation-fast" }], 1]);
         await flushPromises();
-        slow.resolve([[{ id: "slow-row" }], 1]);
+        slow.resolve([[{ id: "slow-row", link: "link-slow", operation: "operation-slow" }], 1]);
         await flushPromises();
 
         expect(wrapper.find("[data-description='grid cell 0-0']").text()).toBe("fast-row");

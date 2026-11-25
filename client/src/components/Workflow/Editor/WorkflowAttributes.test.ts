@@ -1,4 +1,4 @@
-import { getLocalVue, suppressBootstrapVueWarnings, withPlugins } from "@tests/vitest/helpers";
+import { getLocalVue, withPlugins } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import { isDate } from "date-fns";
 import flushPromises from "flush-promises";
@@ -26,8 +26,6 @@ const autocompleteTags = ["#named_uer_tag", "abc", "my_tag"];
 
 describe("WorkflowAttributes", () => {
     it("test attributes", async () => {
-        suppressBootstrapVueWarnings();
-
         const pinia = createPinia();
         const localVue = getLocalVue(true);
 
@@ -102,7 +100,6 @@ describe("WorkflowAttributes", () => {
     });
 
     it("clears the creator highlight when the creator list changes in place", async () => {
-        suppressBootstrapVueWarnings();
         vi.useFakeTimers();
         try {
             const pinia = createPinia();

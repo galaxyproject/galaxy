@@ -1,4 +1,4 @@
-import { getLocalVue, suppressBootstrapVueWarnings } from "@tests/vitest/helpers";
+import { getLocalVue } from "@tests/vitest/helpers";
 import { DOMWrapper, mount } from "@vue/test-utils";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -52,7 +52,6 @@ const selectors = {
 
 describe("StatelessTags", () => {
     beforeEach(() => {
-        suppressBootstrapVueWarnings();
         onNewTagSeenMock.mockClear();
         toastWarning.mockClear();
         appRoot = document.createElement("div");

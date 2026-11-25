@@ -20,7 +20,7 @@ import { configureCompat } from "vue";
 // other per-component flag on here: a global `true` also reaches the Vue 3
 // libraries that opt in with only `{ MODE: 3 }` (vue-multiselect, vue-router's
 // RouterLink, ...).
-configureCompat({
+export const GLOBAL_COMPAT_CONFIG = Object.freeze({
     MODE: 3,
     // bootstrap-vue builds every one of its components with Vue.extend.
     GLOBAL_EXTEND: true,
@@ -47,3 +47,5 @@ configureCompat({
     // function is a Vue 3 functional component (lucide icons) in their slots too.
     COMPONENT_ASYNC: false,
 });
+
+configureCompat(GLOBAL_COMPAT_CONFIG);

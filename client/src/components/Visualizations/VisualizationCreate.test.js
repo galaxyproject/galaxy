@@ -112,6 +112,7 @@ it("displays create new visualization option if dataset is not required", async 
         props: {
             visualization: "scatterplot",
         },
+        global: localVue,
     });
     await flushPromises();
     const results = await wrapper.vm.doQuery();

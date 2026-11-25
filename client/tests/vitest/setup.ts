@@ -2,24 +2,18 @@
 import "@testing-library/jest-dom/vitest";
 import "fake-indexeddb/auto";
 import "vitest-location-mock";
-import "@/compat-config";
 
 import { config } from "@vue/test-utils";
 import { vi } from "vitest";
+import type { ComponentPublicInstance } from "vue";
 
+import { GLOBAL_COMPAT_CONFIG } from "@/compat-config";
 import { vNoSanitizeHtml } from "@/directives/vNoSanitizeHtml";
+import { LEGACY_COMPAT_CONFIG } from "@/legacy-libraries";
 
 // Straight from the file: the galaxy-ui index would load every component here,
 // before test files can mock their dependencies (@floating-ui/dom).
 import { vSanitizeHtml } from "../../packages/ui/src/directives/vSanitizeHtml";
-
-// Vue passes a warning's component props to console.warn as raw objects, and
-// vitest-fail-on-console formats every argument before deciding whether to
-// silence it -- a big enough props object overflows the string it builds.
-// Hand Vue's warnings to the console as the plain strings Vue already has.
-config.global.config.warnHandler = (message: string, _instance: unknown, trace: string) => {
-    console.warn(`[Vue warn]: ${message}${trace ? `\n${trace}` : ""}`);
-};
 
 // Mock g-tooltip directive globally so components don't trigger
 // "Failed to resolve directive" warnings during tests.
@@ -115,60 +109,62 @@ Object.defineProperty(global, "Worker", {
     value: MockWorker,
 });
 
-// Fail tests that log console errors or warnings
-// Replaces jest-fail-on-console functionality.
-//
-// vitest-fail-on-console treats shouldFailOnError/shouldFailOnWarn as booleans
-// (defaults: true). The predicate that decides whether to silence a particular
-// message is silenceMessage(message, methodName) -- returning true suppresses
-// it completely (no fail, no noisy print).
+// Vue warns once per component and deprecation when compat keeps a Vue 2
+// behavior on. That happens only where it's on by choice: in the Vue 2 library
+// components (LEGACY_COMPAT_CONFIG) and for the flags compat-config.js turns on
+// globally. Galaxy code hitting a Vue 2 behavior that is off gets the Vue 3
+// behavior or an error, never one of these warnings; an error still fails the test.
+const ENABLED_COMPAT_DEPRECATIONS = new Set(
+    [...Object.entries(LEGACY_COMPAT_CONFIG), ...Object.entries(GLOBAL_COMPAT_CONFIG)]
+        .filter(([, value]) => value === true)
+        .map(([flag]) => flag),
+);
+// Compat reads this global flag without looking at the component, so Galaxy
+// components get Vue 2's deep data merge too. Let its warning through only when
+// the component merging its data is a Vue 2 library one.
+const LIBRARY_ONLY_DEPRECATIONS = new Set(["OPTIONS_DATA_MERGE"]);
+const COMPAT_DEPRECATION = /^(?:\[Vue warn\]: )?\(deprecation ([A-Z_]+)\)/;
+
+function compatDeprecationFlag(message: string) {
+    return COMPAT_DEPRECATION.exec(message)?.[1];
+}
+
+function isLibraryComponent(instance: ComponentPublicInstance | null) {
+    return (instance?.$.type as { compatConfig?: unknown } | undefined)?.compatConfig === LEGACY_COMPAT_CONFIG;
+}
+
+// Vue passes a warning's component props to console.warn as raw objects, and
+// vitest-fail-on-console formats every argument before deciding whether to
+// silence it -- a big enough props object overflows the string it builds.
+// Hand Vue's warnings to the console as the plain strings Vue already has.
+config.global.config.warnHandler = (message: string, instance, trace: string) => {
+    const flag = compatDeprecationFlag(message);
+    if (flag && LIBRARY_ONLY_DEPRECATIONS.has(flag) && isLibraryComponent(instance)) {
+        return;
+    }
+    console.warn(`[Vue warn]: ${message}${trace ? `\n${trace}` : ""}`);
+};
+
+function isEnabledCompatDeprecation(message: string) {
+    const flag = compatDeprecationFlag(message);
+    return flag !== undefined && ENABLED_COMPAT_DEPRECATIONS.has(flag) && !LIBRARY_ONLY_DEPRECATIONS.has(flag);
+}
+
+// A test-utils stub renders the stubbed component's props on its <x-stub>
+// element, and Vue sets a prop as a DOM property when the element has one of
+// that name. For read-only ones (`prefix`, `attributes`) the assignment fails.
+// Only the stub's own element is involved, never a real component's.
+const STUB_DOM_PROP = /^\[Vue warn\]: Failed setting prop "[^"]+" on <[a-z0-9-]+-stub>/;
+
+// Fail tests that log console errors or warnings, except for the messages
+// silenceMessage lets through. Anything else, including every other Vue or
+// Vue Router warning, fails the test that logged it.
 const failOnConsole = (await import("vitest-fail-on-console")).default;
 failOnConsole({
     shouldFailOnError: true,
     shouldFailOnWarn: true,
     silenceMessage: (message: string, methodName: string) => {
-        if (methodName === "warn") {
-            // Vue compat mode warnings (resolveComponent / resolveDirective /
-            // withDirectives / Property "X" was accessed during render /
-            // Missing ref owner / injection not found / onScopeDispose /
-            // $scopedSlots / COMPONENT_FUNCTIONAL deprecation / Invalid vnode
-            // type / Unhandled error during execution of watcher callback)
-            if (message.includes("[Vue warn]")) {
-                return true;
-            }
-            // Vue Router compat warnings (e.g. "No match found for location");
-            // since vue-router 5 they come from nostics as "[VUE_ROUTER_R0004] ..."
-            if (message.includes("[Vue Router warn]") || message.includes("[VUE_ROUTER_")) {
-                return true;
-            }
-            // Pinia duplicate registration during test setup
-            if (message.includes("App already provides property with key")) {
-                return true;
-            }
-            // Bootstrap-Vue duplicate-registration noise
-            if (message.includes("has already been registered")) {
-                return true;
-            }
-            // Deprecation warnings during migration
-            if (message.includes("DEPRECATION") || message.includes("deprecated")) {
-                return true;
-            }
-        }
-        if (methodName === "error") {
-            // axios mock not installed during some tests (expected)
-            if (message.includes('No "default" export is defined on the "axios" mock')) {
-                return true;
-            }
-            // Network errors from unmocked endpoints (mocking issue, not a real error)
-            if (message.includes("ECONNREFUSED") || message.includes("socket hang up")) {
-                return true;
-            }
-            // FontAwesome icon-not-found noise from tests using made-up icon names
-            if (message.includes("Could not find one or more icon")) {
-                return true;
-            }
-        }
-        return false;
+        return methodName === "warn" && (isEnabledCompatDeprecation(message) || STUB_DOM_PROP.test(message));
     },
 });
 

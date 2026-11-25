@@ -1,5 +1,5 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue } from "@tests/vitest/helpers";
+import { getLocalVue, withPlugins } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { describe, expect, it, vi } from "vitest";
@@ -48,10 +48,7 @@ const USER_OBJECT_STORE_DATA = {
 function mountWithPreferredStoreId(preferredObjectStoreId) {
     const wrapper = mount(ShowSelectedObjectStore, {
         props: { preferredObjectStoreId, forWhat: "Data goes into..." },
-        global: {
-            ...localVue,
-            plugins: [...(localVue.plugins ?? []), createTestingPinia({ createSpy: vi.fn, stubActions: false })],
-        },
+        global: withPlugins(localVue, createTestingPinia({ createSpy: vi.fn, stubActions: false })),
     });
     return wrapper;
 }

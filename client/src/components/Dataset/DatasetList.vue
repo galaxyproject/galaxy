@@ -26,6 +26,7 @@ import GTable from "@/components/Common/GTable.vue";
 import ListHeader from "@/components/Common/ListHeader.vue";
 import SelectorModal from "@/components/History/Modals/SelectorModal.vue";
 import SwitchToHistoryLink from "@/components/History/SwitchToHistoryLink.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 import UtcDate from "@/components/UtcDate.vue";
 

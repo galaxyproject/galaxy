@@ -2,6 +2,7 @@ import { createTestingPinia } from "@pinia/testing";
 import { emittedArg, getLocalVue, nth } from "@tests/vitest/helpers";
 import { mount, type VueWrapper } from "@vue/test-utils";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { markRaw } from "vue";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import { HistoryFilters } from "@/components/History/HistoryFilters";
@@ -101,7 +102,9 @@ describe("FilterMenu", () => {
             props: {
                 name: name,
                 placeholder: placeholder,
-                filterClass: filterClass,
+                // Test-utils makes mount props deeply reactive. The app passes the filter class as a
+                // plain constant, so keep it raw here too, or its help components get proxied.
+                filterClass: markRaw(filterClass),
                 filterText: "",
                 showAdvanced: false,
             },

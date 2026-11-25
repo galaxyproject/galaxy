@@ -1,9 +1,8 @@
-import { getLocalVue } from "@tests/vitest/helpers";
+import { createTestRouter, getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { describe, expect, it } from "vitest";
 import { nextTick } from "vue";
-import { createMemoryHistory, createRouter } from "vue-router";
 
 import type { BreadcrumbItem } from "@/components/Common/index";
 
@@ -16,10 +15,9 @@ const BETA_CLASS = ".breadcrumb-heading-header-beta";
 const localVue = getLocalVue();
 
 async function mountComponent(items: BreadcrumbItem[] = [], routePath: string = "/home", slotContent: string = "") {
-    const router = createRouter({
-        history: createMemoryHistory(),
-        routes: [{ path: "/storage", name: "StorageDashboard", component: { template: "<div />" } }],
-    });
+    const router = createTestRouter([
+        { path: "/storage", name: "StorageDashboard", component: { template: "<div />" } },
+    ]);
 
     await router.push(routePath);
 

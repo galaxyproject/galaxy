@@ -126,13 +126,6 @@ describe("Notifications categories", () => {
         const notificationsStore = useNotificationsStore();
 
         const spyOnUpdateNotification = vi.spyOn(notificationsStore, "updateNotification");
-        spyOnUpdateNotification.mockImplementation(async (_notification, changes) => {
-            if (changes.deleted) {
-                wrapper.setProps({
-                    notification: null,
-                });
-            }
-        });
 
         await flushPromises();
 
@@ -143,6 +136,7 @@ describe("Notifications categories", () => {
         await nextTick();
 
         expect(spyOnUpdateNotification).toHaveBeenCalledTimes(1);
+        expect(spyOnUpdateNotification).toHaveBeenCalledWith(notification, { deleted: true });
     });
 
     it("renders the message markdown through v-sanitize-html", async () => {

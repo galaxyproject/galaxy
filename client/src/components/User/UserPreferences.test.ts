@@ -4,7 +4,6 @@ import { shallowMount } from "@vue/test-utils";
 import { faUnlockAlt } from "font-awesome-6";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { computed } from "vue";
-import { createMemoryHistory, createRouter } from "vue-router";
 
 import { hasSingleOidcProfile } from "@/components/User/ExternalIdentities/ExternalIDHelper";
 import { getUserPreferencesModel } from "@/components/User/UserPreferencesModel";
@@ -74,7 +73,6 @@ describe("UserPreferences.vue", () => {
 
         const wrapper = shallowMount(UserPreferences, {
             localVue,
-            router: createRouter({ history: createMemoryHistory(), routes: [] }),
             pinia: createTestingPinia({ createSpy: vi.fn }),
             stubs: {
                 BreadcrumbHeading: true,
@@ -107,7 +105,6 @@ describe("UserPreferences.vue", () => {
 
         const wrapper = shallowMount(UserPreferences, {
             localVue,
-            router: createRouter({ history: createMemoryHistory(), routes: [] }),
             pinia: createTestingPinia({ createSpy: vi.fn }),
             stubs: {
                 BreadcrumbHeading: true,
@@ -145,7 +142,6 @@ describe("UserPreferences.vue", () => {
 
         const wrapper = shallowMount(UserPreferences, {
             localVue,
-            router: createRouter({ history: createMemoryHistory(), routes: [] }),
             pinia: createTestingPinia({ createSpy: vi.fn }),
             stubs: {
                 BreadcrumbHeading: true,
@@ -176,7 +172,6 @@ describe("UserPreferences.vue", () => {
         mockPreferences(false);
         const wrapper = shallowMount(UserPreferences, {
             localVue,
-            router: createRouter({ history: createMemoryHistory(), routes: [] }),
             pinia: createTestingPinia({ createSpy: vi.fn }),
             stubs: {
                 BreadcrumbHeading: true,

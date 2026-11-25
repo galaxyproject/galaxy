@@ -8,7 +8,7 @@ import type { Placement } from "@floating-ui/dom";
 import { faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed, ref, useAttrs } from "vue";
-import type { RouterLink } from "vue-router";
+import type { RouteLocationRaw, RouterLink } from "vue-router";
 
 import { useClickableElement } from "../composables/clickableElement";
 import { useCurrentTitle } from "../composables/currentTitle";
@@ -22,7 +22,7 @@ const props = withDefaults(
         /** Href to set on the underlying 'a' element. Using this will turn the element into an anchor, not affecting the styling */
         href?: string;
         /** Router link "to" prop. Using this will turn the element into a router-link, not affecting the styling  */
-        to?: string;
+        to?: RouteLocationRaw;
         /** Which color scheme to use for the component. Not setting this will make the button appear grey */
         color?: ComponentColor;
         /** Outline variant of the button. Can be used together with the `pressed` state */

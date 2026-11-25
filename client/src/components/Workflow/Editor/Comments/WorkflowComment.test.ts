@@ -1,8 +1,8 @@
 import { createTestingPinia } from "@pinia/testing";
-import { emittedArg, suppressErrorForCustomIcons } from "@tests/vitest/helpers";
+import { emittedArg } from "@tests/vitest/helpers";
 import { mount, shallowMount } from "@vue/test-utils";
 import { setActivePinia } from "pinia";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { nextTick, reactive, ref } from "vue";
 
 import { sanitizeHtml } from "@/directives/sanitizeHtml";
@@ -68,10 +68,6 @@ describe("WorkflowComment", () => {
         size: [100, 100],
         data: {},
     };
-
-    beforeEach(() => {
-        suppressErrorForCustomIcons();
-    });
 
     it("changes position and size reactively", async () => {
         const wrapper = shallowMount(WorkflowComment as any, {

@@ -1,5 +1,5 @@
 import { createTestingPinia } from "@pinia/testing";
-import { nth } from "@tests/vitest/helpers";
+import { getLocalVue, nth } from "@tests/vitest/helpers";
 import { mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { describe, expect, it, vi } from "vitest";
@@ -103,6 +103,7 @@ async function mountWorkflowInvocationInputOutputTabs(
             terminal,
             tab,
         },
+        global: getLocalVue(),
         stubs: {
             // ParameterStep renders the actual parameters table (via GTable) from its
             // `parameters` prop rather than a slot, so stubbing it would hide the very

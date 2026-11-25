@@ -1,4 +1,4 @@
-import { getLocalVue } from "@tests/vitest/helpers";
+import { createTestRouter, getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { describe, expect, it, vi } from "vitest";
@@ -6,7 +6,8 @@ import { computed, ref } from "vue";
 
 import HistoryStorageOverview from "./HistoryStorageOverview.vue";
 
-vi.mock("vue-router", () => ({
+vi.mock("vue-router", async (importOriginal) => ({
+    ...(await importOriginal()),
     useRouter: () => ({ push: vi.fn() }),
 }));
 
@@ -35,6 +36,10 @@ describe("HistoryStorageOverview", () => {
     it("keeps selection off on the active vs deleted chart", async () => {
         const wrapper = mount(HistoryStorageOverview as object, {
             props: { historyId: "history-id" },
+            // The page links to the overview of all histories by route name.
+            router: createTestRouter([
+                { path: "/storage/histories", name: "HistoriesOverview", component: { template: "<div />" } },
+            ]),
             global: {
                 ...getLocalVue(),
                 stubs: { BarChart: true, BreadcrumbHeading: true, WarnDeletedDatasets: true },

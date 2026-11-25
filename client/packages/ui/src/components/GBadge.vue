@@ -5,7 +5,7 @@
  */
 
 import { computed, useAttrs } from "vue";
-import { RouterLink } from "vue-router";
+import { type RouteLocationRaw, RouterLink } from "vue-router";
 
 import type { BadgeVariant, ColorVariant } from "./componentVariants";
 
@@ -15,7 +15,7 @@ const props = defineProps<{
     /** Fully rounded ends */
     pill?: boolean;
     /** Router link "to" prop. Renders the badge as a router-link */
-    to?: string;
+    to?: RouteLocationRaw;
     /** Href for an anchor. Renders the badge as an anchor */
     href?: string;
     /** Renders the badge as a `type="button"` button, for badges that act on click */

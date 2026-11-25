@@ -1,9 +1,9 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue, nth } from "@tests/vitest/helpers";
+import { createTestRouter, getLocalVue, nth } from "@tests/vitest/helpers";
 import { mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { createMemoryHistory, createRouter, type Router } from "vue-router";
+import type { Router } from "vue-router";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import { resetMockConfig, setMockConfig } from "@/composables/__mocks__/config";
@@ -119,7 +119,7 @@ describe("CommandPalette", () => {
                 return response(200).json([]);
             }),
         );
-        router = createRouter({ history: createMemoryHistory(), routes: [] });
+        router = createTestRouter();
         wrapper = mount(MountTarget as object, {
             localVue,
             router,
