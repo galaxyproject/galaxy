@@ -648,6 +648,25 @@ class TestUserManager(BaseTestCase):
         assert user2.email != user2_email
         assert job.state == model.Job.states.DELETED
 
+    def test_purge_without_flush_commits_nothing(self):
+        self.log("purging a user should save the deletion, the stopped jobs and the redaction in one commit")
+        self.trans.app.config.allow_user_deletion = True
+        user2 = self.user_manager.create(**user2_data)
+        user2_email = user2.email
+        job = model.Job()
+        job.user = user2
+        job.state = model.Job.states.RUNNING
+        self.trans.sa_session.add(job)
+        self.trans.sa_session.commit()
+
+        self.user_manager.purge(user2, flush=False)
+        self.trans.sa_session.rollback()
+
+        assert not user2.deleted
+        assert not user2.purged
+        assert user2.email == user2_email
+        assert job.state == model.Job.states.RUNNING
+
     def test_failed_purge_leaves_user_undeleted(self):
         self.log("a purge that fails part way should not leave the user deleted or their jobs stopped")
         self.trans.app.config.allow_user_deletion = True

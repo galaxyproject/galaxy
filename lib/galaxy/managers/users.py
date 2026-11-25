@@ -290,15 +290,15 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             raise exceptions.ConfigDoesNotAllowException(
                 "The configuration of this Galaxy instance does not allow admins to delete users."
             )
-        super().delete(user, flush=flush)
+        super().delete(user, flush=False)
         self._stop_all_jobs_from_user(user)
+        if flush:
+            self.session().commit()
 
     def _stop_all_jobs_from_user(self, user):
         active_jobs = self._get_all_active_jobs_from_user(user)
-        session = self.session()
         for job in active_jobs:
             job.mark_deleted(self.app.config.track_jobs_in_database)
-        session.commit()
 
     def _get_all_active_jobs_from_user(self, user: User) -> list[Job]:
         """Get all jobs that are not ready yet and belong to the given user."""
@@ -328,7 +328,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
                 f"User {user.email} private role is missing while attempting to purge user."
             )
         # A user who is not deleted yet is deleted by super().purge() below, which also
-        # stops their active jobs, in the same commit as the rest of the purge.
+        # stops their active jobs, and the whole purge is saved in one commit.
         # Delete History
         for active_history in user.active_histories:
             self.session().refresh(active_history)
