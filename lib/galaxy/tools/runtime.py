@@ -102,15 +102,12 @@ def input_extra_files_path(
     """Return where a tool finds an input dataset's extra files on disk, if it has any.
 
     YAML tools get this as ``extra_files_path`` and XML tools as
-    ``$input.extra_files_path``. Rewriting the path makes Pulsar stage the
-    folder and fail the job if it is missing, so only call that for a folder
-    that exists.
+    ``$input.extra_files_path``.
     """
+    if compute_environment is not None:
+        return compute_environment.input_extra_files_path(dataset)
     extra_files_path: str = dataset.extra_files_path
-    if not os.path.exists(extra_files_path):
-        return None
-    rewrite: str | None = compute_environment.input_extra_files_rewrite(dataset) if compute_environment else None
-    return rewrite or extra_files_path
+    return extra_files_path if os.path.exists(extra_files_path) else None
 
 
 def is_list_like(collection_type: str) -> bool:

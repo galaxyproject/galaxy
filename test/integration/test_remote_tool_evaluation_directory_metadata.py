@@ -102,6 +102,31 @@ class TestRemoteToolEvaluationDirectoryMetadata(integration_util.IntegrationTest
     def test_user_defined_tool_empty_input(self, api):
         run_user_defined_tool(self._app, DatasetPopulator(self.galaxy_interactor), api, content="")
 
+    def test_user_defined_tool_reads_composite_input_extra_files(self):
+        populator = DatasetPopulator(self.galaxy_interactor)
+        with populator.test_history() as history_id:
+            velvet_hda = populator.fetch_hda(
+                history_id,
+                {
+                    "src": "composite",
+                    "ext": "velvet",
+                    "composite": {
+                        "items": [
+                            {"src": "pasted", "paste_content": "sequences content"},
+                            {"src": "pasted", "paste_content": "roadmaps content"},
+                            {"src": "pasted", "paste_content": "log content"},
+                        ]
+                    },
+                },
+                wait=True,
+            )
+            result = populator.run_tool(
+                "composite_user_defined", {"input1": {"src": "hda", "id": velvet_hda["id"]}}, history_id
+            )
+            populator.wait_for_job(result["jobs"][0]["id"], assert_ok=True)
+            output = populator.get_history_dataset_content(history_id, dataset_id=result["outputs"][0]["id"])
+            assert output.strip() == "roadmaps content"
+
     @pytest.mark.parametrize("tool_id", TOOL_IDS)
     def test_tool_evaluation(self, tool_id):
         self._run_tool_test(tool_id)
