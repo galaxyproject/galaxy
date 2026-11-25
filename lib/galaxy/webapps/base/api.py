@@ -144,6 +144,7 @@ def request_session_limit(pool: "Pool", thread_tokens: float) -> int | None:
     """
     if not isinstance(pool, QueuePool):
         return None
+    # QueuePool has no public accessor for its max_overflow.
     max_overflow = pool._max_overflow
     if pool.size() <= 0 or max_overflow < 0:
         # No upper bound on the number of connections.
