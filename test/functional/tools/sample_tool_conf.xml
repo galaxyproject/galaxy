@@ -14,6 +14,7 @@
   <tool file="test_data_source.xml" />
   <tool file="simple_constructs.xml" />
   <tool file="color_param.xml" />
+  <tool file="color_param_string_method.xml" />
   <tool file="inheritance_simple.xml" />
   <tool file="boolean_conditional.xml" />
   <tool file="composite.xml" />
