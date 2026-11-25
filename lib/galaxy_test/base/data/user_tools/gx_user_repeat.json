@@ -1,0 +1,36 @@
+{
+  "class": "GalaxyUserTool",
+  "id": "gx_user_repeat",
+  "name": "gx_user_repeat",
+  "version": "1.0.0",
+  "container": "busybox",
+  "shell_command": "printf '%s\\n' '$({group: inputs.group})' > output.json",
+  "inputs": [
+    {
+      "name": "group",
+      "type": "repeat",
+      "min": 1,
+      "parameters": [
+        {
+          "name": "count",
+          "type": "integer",
+          "value": 2
+        },
+        {
+          "name": "flag",
+          "type": "boolean",
+          "optional": true,
+          "value": null
+        }
+      ]
+    }
+  ],
+  "outputs": [
+    {
+      "name": "output",
+      "type": "data",
+      "format": "json",
+      "from_work_dir": "output.json"
+    }
+  ]
+}

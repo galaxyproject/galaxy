@@ -17,8 +17,10 @@ from selenium.webdriver.remote.webelement import WebElement
 from galaxy.selenium.navigates_galaxy import ColumnDefinition
 from galaxy.selenium.web_element_protocol import WebElementProtocol
 from galaxy_test.base.workflow_fixtures import (
+    parameter_input_workflow,
     WORKFLOW_NESTED_SIMPLE,
     WORKFLOW_OPTIONAL_TRUE_INPUT_COLLECTION,
+    WORKFLOW_RENAME_ON_REPLACEMENT_PARAM,
     WORKFLOW_SELECT_FROM_OPTIONAL_DATASET,
     WORKFLOW_SIMPLE_CAT_TWICE,
     WORKFLOW_SIMPLE_MAPPING,
@@ -154,9 +156,31 @@ class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows, UsesWorkflowAssertions
         assert "input must start with moocow" in element.text
 
     @selenium_test
+    def test_parameter_editor_save_keeps_validators_the_form_cannot_show(self):
+        hidden = {"type": "length", "min": 2, "negate": False}
+        workflow = parameter_input_workflow("text_param", "text", [hidden])
+        name = workflow["name"] = self._get_random_name()
+        workflow_id = self.workflow_populator.create_workflow(workflow)
+        self.workflow_editor_open_with_name(name)
+
+        self.components.workflow_editor.node._(label="text_param").wait_for_and_click()
+        self.components.tool_form.repeat_insert.wait_for_and_click()
+        self.components.tool_form.parameter_input(
+            parameter="parameter_definition|validators_0|regex_match"
+        ).wait_for_and_send_keys("^good")
+        self.components.tool_form.parameter_input(
+            parameter="parameter_definition|validators_0|regex_doc"
+        ).wait_for_and_send_keys("must start with good")
+        self.screenshot("workflow_editor_parameter_input_validator_added")
+        self.save_after_node_form_changes()
+
+        tool_state = json.loads(self.workflow_populator.download_workflow(workflow_id)["steps"]["0"]["tool_state"])
+        added = {"type": "regex", "expression": "^good", "message": "must start with good", "negate": False}
+        assert tool_state["validators"] == [hidden, added], tool_state["validators"]
+
+    @selenium_test
     def test_int_parameter_minimum_validation(self):
         editor = self.components.workflow_editor
-        workflow_run = self.components.workflow_run
 
         parameter_name = "int_param"
         name = self.create_and_wait_for_new_workflow_in_editor()
@@ -167,22 +191,18 @@ class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows, UsesWorkflowAssertions
         self.components.tool_form.parameter_input(parameter="parameter_definition|min").wait_for_and_send_keys("4")
         self.save_after_node_form_changes()
 
-        self.workflow_run_with_name(name)
-        self.sleep_for(self.wait_types.UX_TRANSITION)
-        input_element = workflow_run.simplified_input(label=parameter_name).wait_for_and_click()
-        input_element.send_keys("3")
-        workflow_run.run_workflow_disabled.wait_for_absent()
-        workflow_run.run_error.assert_absent_or_hidden()
-        self.workflow_run_submit()
-        element = workflow_run.run_error.wait_for_present()
-        # follow up with a bigger PR to just make this (4 <= value) right? need to set default message
-        # in parameter validators
-        assert "Value ('3') must fulfill (4 <= value <= +infinity)" in element.text, element.text
+        self._workflow_run_assert_number_clamped(
+            name,
+            parameter_name,
+            entered="3",
+            expected_alert="3 is out of range! (3 < 4)",
+            expected_value="4",
+            screenshot_name="workflow_run_int_parameter_below_minimum",
+        )
 
     @selenium_test
     def test_float_parameter_maximum_validation(self):
         editor = self.components.workflow_editor
-        workflow_run = self.components.workflow_run
 
         parameter_name = "float_param"
         name = self.create_and_wait_for_new_workflow_in_editor()
@@ -191,17 +211,26 @@ class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows, UsesWorkflowAssertions
         self.components.tool_form.parameter_input(parameter="parameter_definition|max").wait_for_and_send_keys("3.14")
         self.save_after_node_form_changes()
 
-        self.workflow_run_with_name(name)
-        self.sleep_for(self.wait_types.UX_TRANSITION)
-        input_element = workflow_run.simplified_input(label=parameter_name).wait_for_and_click()
-        input_element.send_keys("3.2")
-        workflow_run.run_workflow_disabled.wait_for_absent()
-        workflow_run.run_error.assert_absent_or_hidden()
-        self.workflow_run_submit()
-        element = workflow_run.run_error.wait_for_present()
-        # see message in test test_int_parameter_minimum_validation about making this a little more human
-        # friendly.
-        assert "Value ('3.2') must fulfill (-infinity <= value <= 3.14)" in element.text, element.text
+        self._workflow_run_assert_number_clamped(
+            name,
+            parameter_name,
+            entered="3.2",
+            expected_alert="3.2 is out of range! (3.2 > 3.14)",
+            expected_value="3.14",
+            screenshot_name="workflow_run_float_parameter_above_maximum",
+        )
+
+    def _workflow_run_assert_number_clamped(
+        self, workflow_name, label, entered, expected_alert, expected_value, screenshot_name
+    ):
+        workflow_run = self.components.workflow_run
+        self.workflow_run_with_name(workflow_name)
+        input_element = workflow_run.simplified_input(label=label).wait_for_and_click()
+        input_element.send_keys(entered, Keys.TAB)
+        alert = workflow_run.simplified_input_alert(label=label).wait_for_text()
+        self.screenshot(screenshot_name)
+        assert expected_alert in alert, alert
+        assert input_element.get_attribute("value") == expected_value
 
     @selenium_test
     def test_optional_select_data_field(self):
@@ -373,6 +402,39 @@ steps:
         data_input_node.wait_for_absent()
         self.sleep_for(self.wait_types.UX_RENDER)
         self.screenshot("workflow_editor_parameter_input_deleted")
+
+    @selenium_test
+    def test_step_input_default_survives_save_until_form_changes_it(self):
+        name = self._get_random_name()
+        workflow_id = self.workflow_populator.upload_yaml_workflow(
+            """
+class: GalaxyWorkflow
+steps:
+  int_step:
+    tool_id: gx_int
+    in:
+      parameter:
+        default: 7
+""",
+            name=name,
+        )
+        self.workflow_index_open()
+        self.workflow_index_open_with_name(name)
+        parameter_input = self.components.tool_form.parameter_input(parameter="parameter")
+
+        self.workflow_editor_set_node_annotation("unrelated edit", node="int_step")
+        self.assert_workflow_has_changes_and_save()
+        step = self.workflow_populator.download_workflow(workflow_id)["steps"]["0"]
+        assert step["annotation"] == "unrelated edit"
+        assert step.get("in") == {"parameter": {"default": 7}}
+        assert parameter_input.wait_for_value() == "7"
+
+        parameter_input.wait_for_and_clear_and_send_keys("3")
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.assert_workflow_has_changes_and_save()
+        step = self.workflow_populator.download_workflow(workflow_id)["steps"]["0"]
+        assert step.get("in") is None
+        assert json.loads(step["tool_state"])["parameter"] == "3"
 
     @selenium_test
     def test_non_data_connections(self):
@@ -561,6 +623,33 @@ steps:
             assert section_element.get_attribute("data-lint-status") == "ok"
 
         assert_linting_input_metadata_okay()
+
+    @selenium_test
+    def test_best_practices_extract_untyped_rename_parameter(self):
+        editor = self.components.workflow_editor
+        # No auto layout: it marks the workflow changed and the refactor would add a save-first confirm.
+        self.open_in_workflow_editor(WORKFLOW_RENAME_ON_REPLACEMENT_PARAM, auto_layout=False)
+        # Refactors are silently dropped while the workflow is still loading.
+        editor.canvas_loading.wait_for_absent()
+        editor.tool_bar.best_practices.wait_for_and_click()
+        best_practices = editor.best_practices
+        section_element = best_practices.section_formal_inputs.wait_for_present()
+        assert section_element.get_attribute("data-lint-status") == "warning"
+        item = best_practices.item_formal_input(index=0)
+        assert "replaceme" in item.wait_for_present().text
+        self.screenshot("workflow_editor_best_practices_untyped_parameter")
+
+        item.wait_for_and_click()
+        self.components.confirm_dialog.ok_button.wait_for_and_click()
+        editor.node._(label="replaceme").wait_for_present()
+
+        @retry_assertion_during_transitions
+        def assert_linting_formal_inputs_okay():
+            section_element = best_practices.section_formal_inputs.wait_for_present()
+            assert section_element.get_attribute("data-lint-status") == "ok"
+
+        assert_linting_formal_inputs_okay()
+        self.screenshot("workflow_editor_best_practices_untyped_parameter_extracted")
 
     @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
@@ -1895,13 +1984,16 @@ steps:
 
     def open_in_workflow_editor(self, yaml_content, auto_layout=True):
         name = self.workflow_upload_yaml_with_random_name(yaml_content)
-        self.workflow_index_open()
-        self.workflow_index_open_with_name(name)
-        self.workflow_editor_dismiss_state_upgrade_modal()
+        self.workflow_editor_open_with_name(name)
         if auto_layout:
             self.components.workflow_editor.tool_bar.auto_layout.wait_for_and_click()
             self.sleep_for(self.wait_types.UX_RENDER)
         return name
+
+    def workflow_editor_open_with_name(self, name: str):
+        self.workflow_index_open()
+        self.workflow_index_open_with_name(name)
+        self.workflow_editor_dismiss_state_upgrade_modal()
 
     def workflow_editor_dismiss_state_upgrade_modal(self):
         """Dismiss the StateUpgradeModal if it appears when opening a workflow.

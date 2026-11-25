@@ -28,7 +28,10 @@ from sqlalchemy import select
 from sqlalchemy.orm import object_session
 
 from galaxy import model
-from galaxy.exceptions import ConfigurationError
+from galaxy.exceptions import (
+    ConfigurationError,
+    InsufficientPermissionsException,
+)
 from galaxy.job_execution.output_collect import (
     default_exit_code_file,
     read_exit_code_from,
@@ -312,8 +315,8 @@ class BaseJobRunner:
                 modify_command_for_container=modify_command_for_container,
                 stream_stdout_stderr=stream_stdout_stderr,
             )
-        except (ParameterValueError, ExpressionTemplateError) as e:
-            log.info("(%s) validation error preparing job: %s", job_id, unicodify(e))
+        except (ParameterValueError, ExpressionTemplateError, InsufficientPermissionsException) as e:
+            log.info("(%s) job rejected while preparing: %s", job_id, unicodify(e))
             job_wrapper.fail(unicodify(e), exception=False)
             return False
         except Exception as e:

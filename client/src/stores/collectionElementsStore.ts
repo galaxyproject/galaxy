@@ -47,6 +47,8 @@ export const useCollectionElementsStore = defineStore("collectionElementsStore",
     const loadingCollectionElements = ref<{ [key: string]: boolean }>({});
     const loadingCollectionElementsErrors = ref<{ [key: string]: Error }>({});
     const storedCollectionElements = ref<{ [key: string]: DCEEntry[] }>({});
+    // Bumped on every invalidation, so responses to requests sent before it can be recognized as outdated.
+    const collectionElementsGeneration = ref<{ [key: string]: number }>({});
     // Keyed by HDCA id, apart from element state: an HDCA id can equal another collection's key.
     const collectionLoadErrors = ref<{ [key: string]: Error }>({});
     const collectionRetryGate = useRetryGate();
@@ -117,15 +119,21 @@ export const useCollectionElementsStore = defineStore("collectionElementsStore",
                 .slice(offset, offset + limit)
                 .forEach((element) => isPlaceholder(element) && (element.fetching = true));
 
+            const generation = collectionElementsGeneration.value[collectionKey] ?? 0;
             const fetchedElements = await fetchElementsFromCollection({
                 entry: collection,
                 offset: offset,
                 limit: limit,
             });
 
-            return { fetchedElements, elementOffset: offset };
+            del(loadingCollectionElementsErrors.value, collectionKey);
+            return { fetchedElements, elementOffset: offset, generation };
         } catch (error) {
             set(loadingCollectionElementsErrors.value, collectionKey, error);
+            // Let a later fetch request the elements again
+            storedElements
+                .slice(offset, offset + limit)
+                .forEach((element) => isPlaceholder(element) && (element.fetching = false));
         } finally {
             del(loadingCollectionElements.value, collectionKey);
         }
@@ -140,6 +148,8 @@ export const useCollectionElementsStore = defineStore("collectionElementsStore",
         if (!storedElements) {
             storedElements = initWithPlaceholderElements(collection);
             set(storedCollectionElements.value, key, storedElements);
+        } else {
+            addMissingPlaceholderElements(storedElements, collection);
         }
 
         try {
@@ -148,10 +158,12 @@ export const useCollectionElementsStore = defineStore("collectionElementsStore",
             if (data) {
                 const from = data.elementOffset;
                 const to = from + data.fetchedElements.length;
+                // Keep outdated elements marked as invalid, so they are fetched again.
+                const outdated = data.generation !== (collectionElementsGeneration.value[key] ?? 0);
 
                 for (let index = from; index < to; index++) {
                     const element = ensureDefined(data.fetchedElements[index - from]);
-                    set(storedElements, index, element);
+                    set(storedElements, index, outdated ? { ...element, valid: false } : element);
                 }
 
                 set(storedCollectionElements.value, key, storedElements);
@@ -164,10 +176,12 @@ export const useCollectionElementsStore = defineStore("collectionElementsStore",
     }
 
     async function invalidateCollectionElements(collection: CollectionEntry) {
-        const storedElements = storedCollectionElements.value[getCollectionKey(collection)] ?? [];
+        const key = getCollectionKey(collection);
+        const storedElements = storedCollectionElements.value[key] ?? [];
         storedElements.forEach((element) => {
             (element as InvalidDCEEntry).valid = false;
         });
+        set(collectionElementsGeneration.value, key, (collectionElementsGeneration.value[key] ?? 0) + 1);
     }
 
     function saveCollection(collection: HDCASummary | HDCADetailed) {
@@ -231,12 +245,17 @@ export const useCollectionElementsStore = defineStore("collectionElementsStore",
         return (element as InvalidDCEEntry)["valid"] === false;
     }
 
-    function initWithPlaceholderElements(collection: CollectionEntry): ContentPlaceholder[] {
+    /** Adds placeholders for elements added to the collection since its elements were stored, e.g. while it was populating. */
+    function addMissingPlaceholderElements(storedElements: DCEEntry[], collection: CollectionEntry) {
         const totalElements = collection.element_count ?? 0;
-        const placeholderElements = new Array<ContentPlaceholder>(totalElements);
-        for (let i = 0; i < totalElements; i++) {
-            placeholderElements[i] = { element_index: i };
+        for (let i = storedElements.length; i < totalElements; i++) {
+            storedElements.push({ element_index: i });
         }
+    }
+
+    function initWithPlaceholderElements(collection: CollectionEntry): ContentPlaceholder[] {
+        const placeholderElements: ContentPlaceholder[] = [];
+        addMissingPlaceholderElements(placeholderElements, collection);
         return placeholderElements;
     }
 

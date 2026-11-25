@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import type { FileSourceTemplateSummary } from "@/api/fileSources";
+import type { BrowsableFilesSourcePlugin } from "@/api/remoteFiles";
 import { SELECTION_STATES, type SelectionItem, type SelectionState } from "@/components/SelectionDialog/selectionTypes";
 
 /**
@@ -36,6 +37,10 @@ import {
     directoryId,
     ftpId,
     pdbResponse,
+    rdmDatasetId,
+    rdmFileSourceTypes,
+    rdmRootId,
+    rdmRootResponse,
     rootId,
     rootResponse,
     someErrorText,
@@ -48,6 +53,12 @@ import FilesDialog from "./FilesDialog.vue";
 import SelectionDialog from "@/components/SelectionDialog/SelectionDialog.vue";
 
 vi.mock("app");
+
+// Every directory-mode load also lists the RDM sources, which pushes this file past the
+// client's per-window request budget and stalls the last tests until the window resets.
+vi.mock("@/api/client/rateLimiter", () => ({
+    createRateLimiterMiddleware: () => ({ onRequest: ({ request }: { request: Request }) => request }),
+}));
 
 const { toastError } = vi.hoisted(() => ({ toastError: vi.fn() }));
 vi.mock("@/composables/toast", () => ({
@@ -85,18 +96,28 @@ const mockedOkApiRoutesMap = new Map<string, RemoteFilesList>([
         subsubdirectoryResponse,
     ],
     [paramsToKey({ target: "gxftp://", recursive: "false" }), pdbResponse],
+    [paramsToKey({ target: "dataverse://my-dataverse", recursive: "false" }), rdmRootResponse],
 ]);
 
 const mockedErrorApiRoutesMap = new Map<string, RemoteFilesList>([
     [paramsToKey({ target: "gxfiles://empty-dir", recursive: "false" }), []],
 ]);
 
-const initComponent = async (props: { multiple: boolean; mode?: string }, hasTemplates = false) => {
+const isRdmFileSource = (fs: BrowsableFilesSourcePlugin) => rdmFileSourceTypes.includes(fs.type);
+
+const initComponent = async (
+    props: { multiple: boolean; mode?: string },
+    hasTemplates = false,
+    plugins = rootResponse,
+) => {
     const localVue = getLocalVue();
 
     server.use(
-        http.get("/api/remote_files/plugins", ({ response }) => {
-            return response(200).json(rootResponse);
+        http.get("/api/remote_files/plugins", ({ response, query }) => {
+            if (query.get("include_kind") === "rdm") {
+                return response(200).json(plugins.filter(isRdmFileSource));
+            }
+            return response(200).json(plugins);
         }),
 
         http.get("/api/remote_files", ({ response, query }) => {
@@ -353,6 +374,31 @@ describe("FilesDialog, directory mode", () => {
         utils.openDirectoryById(directoryId);
 
         utils.expectOkButtonEnabled();
+    });
+
+    it("should not allow to select the root of a RDM repository, only its records", async () => {
+        await utils.openRoot();
+        await utils.openDirectoryById(rdmRootId);
+        utils.expectOkButtonDisabled();
+        expect(wrapper.find("#rdm-root-helper").exists()).toBe(true);
+
+        await utils.openDirectoryById(rdmDatasetId);
+        utils.expectOkButtonEnabled();
+        expect(wrapper.find("#rdm-root-helper").exists()).toBe(false);
+    });
+
+    it("should not allow to select the root of a RDM repository added after the dialog was opened", async () => {
+        const plugins = rootResponse.filter((fs) => !isRdmFileSource(fs));
+        const dialog = await initComponent({ multiple: false, mode: "directory" }, false, plugins);
+        const dialogUtils = new Utils(dialog);
+        await dialogUtils.openDirectoryById(rootId);
+
+        plugins.push(...rootResponse.filter(isRdmFileSource));
+        await dialogUtils.navigateBack();
+        await dialogUtils.openDirectoryById(rdmRootId);
+
+        dialogUtils.expectOkButtonDisabled();
+        dialog.destroy();
     });
 
     it("should show loading error and can return back when there is an error", async () => {

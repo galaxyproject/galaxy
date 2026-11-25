@@ -3,7 +3,8 @@ import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { deleteJob } from "@/api/jobs";
+import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
+import { stopJobs } from "@/api/jobs";
 import { jobsProvider } from "@/components/providers/JobProvider";
 
 import JobsList from "./JobsList.vue";
@@ -17,10 +18,11 @@ vi.mock("@/components/providers/JobProvider", () => ({
 
 vi.mock("@/api/jobs", async (importOriginal) => ({
     ...(await importOriginal<object>()),
-    deleteJob: vi.fn(async () => true),
+    stopJobs: vi.fn(async (jobIds: string[]) => ({ stopped: jobIds, failed: [] })),
 }));
 
 const localVue = getLocalVue();
+const { server, http } = useServerMock();
 
 async function mountJobsList() {
     const wrapper = mount(JobsList as object, {
@@ -45,7 +47,7 @@ function isChecked(box: { element: Element }) {
 
 describe("JobsList", () => {
     beforeEach(() => {
-        vi.mocked(deleteJob).mockClear();
+        vi.mocked(stopJobs).mockClear();
     });
 
     it("selects every unfinished job from the header checkbox", async () => {
@@ -71,9 +73,35 @@ describe("JobsList", () => {
         await stopForm?.trigger("submit");
         await flushPromises();
 
-        expect(deleteJob).toHaveBeenCalledTimes(2);
-        expect(deleteJob).toHaveBeenCalledWith("job1", "maintenance");
-        expect(deleteJob).toHaveBeenCalledWith("job2", "maintenance");
+        expect(stopJobs).toHaveBeenCalledTimes(1);
+        expect(vi.mocked(stopJobs).mock.calls[0]?.slice(0, 2)).toEqual([["job1", "job2"], "maintenance"]);
+        expect(wrapper.find(".alert-success").text()).toContain("Stopped 2 of 2 jobs.");
+    });
+
+    it("disables Submit and selection while a stop is in flight", async () => {
+        let finish: (result: Awaited<ReturnType<typeof stopJobs>>) => void = () => {};
+        vi.mocked(stopJobs).mockReturnValueOnce(new Promise((resolve) => (finish = resolve)));
+        const wrapper = await mountJobsList();
+        await headerBox(wrapper).setChecked(true);
+        await flushPromises();
+
+        await wrapper.find("#stop-message").setValue("maintenance");
+        const stopForm = wrapper.findAll("form").wrappers.find((form) => form.find("#stop-message").exists());
+        await stopForm?.trigger("submit");
+        await flushPromises();
+
+        expect(stopForm?.find("button[type='submit']").attributes("disabled")).toBeDefined();
+        expect([headerBox(wrapper), ...rowBoxes(wrapper)].map((box) => box.attributes("disabled"))).toEqual([
+            "disabled",
+            "disabled",
+            "disabled",
+        ]);
+
+        finish({ stopped: ["job1"], failed: [{ jobId: "job2", error: new Error("Too Many Requests") }] });
+        await flushPromises();
+
+        expect(stopForm?.find("button[type='submit']").attributes("disabled")).toBeUndefined();
+        expect(rowBoxes(wrapper).map((box) => box.attributes("disabled"))).toEqual([undefined, undefined]);
     });
 
     it("checks the header once every row is ticked", async () => {
@@ -108,7 +136,89 @@ describe("JobsList", () => {
         await stopForm?.trigger("submit");
         await flushPromises();
 
-        expect(deleteJob).toHaveBeenCalledTimes(1);
-        expect(deleteJob).toHaveBeenCalledWith("job1", "maintenance");
+        expect(stopJobs).toHaveBeenCalledTimes(1);
+        expect(vi.mocked(stopJobs).mock.calls[0]?.slice(0, 2)).toEqual([["job1"], "maintenance"]);
+        expect(wrapper.find(".alert-success").text()).toBe("Stopped 1 of 1 job.");
+    });
+
+    it("reports jobs that could not be stopped and keeps them selected", async () => {
+        vi.mocked(stopJobs).mockResolvedValueOnce({
+            stopped: ["job1"],
+            failed: [{ jobId: "job2", error: new Error("Too Many Requests") }],
+        });
+        const wrapper = await mountJobsList();
+        await headerBox(wrapper).setChecked(true);
+        await flushPromises();
+
+        await wrapper.find("#stop-message").setValue("maintenance");
+        const stopForm = wrapper.findAll("form").wrappers.find((form) => form.find("#stop-message").exists());
+        await stopForm?.trigger("submit");
+        await flushPromises();
+
+        const alert = wrapper.find(".alert-danger");
+        expect(alert.text()).toContain("Stopped 1 of 2 jobs.");
+        expect(alert.text()).toContain("1 could not be stopped and remain selected: Too Many Requests");
+        // Rows list the most recently updated job (job2) first.
+        expect(rowBoxes(wrapper).map(isChecked)).toEqual([true, false]);
+        expect((wrapper.find("#stop-message").element as HTMLInputElement).value).toBe("maintenance");
+    });
+
+    it("reports a failed refresh after stopping instead of hiding it", async () => {
+        const wrapper = await mountJobsList();
+        await headerBox(wrapper).setChecked(true);
+        await flushPromises();
+
+        vi.mocked(jobsProvider).mockRejectedValueOnce(new Error("Too Many Requests"));
+        vi.spyOn(console, "log").mockImplementationOnce(() => {});
+        await wrapper.find("#stop-message").setValue("maintenance");
+        const stopForm = wrapper.findAll("form").wrappers.find((form) => form.find("#stop-message").exists());
+        await stopForm?.trigger("submit");
+        await flushPromises();
+
+        expect(wrapper.find(".alert-danger").text()).toBe(
+            "Stopped 2 of 2 jobs. Refreshing the job list failed: Too Many Requests",
+        );
+    });
+
+    it("warns when some notifications could not be sent", async () => {
+        server.use(
+            http.post("/api/notifications", async ({ request, response }) => {
+                const body = (await request.json()) as { recipients: { user_ids: string[] } };
+                if (body.recipients.user_ids[0] === "user1") {
+                    return response.untyped(HttpResponse.json({ err_msg: "Server Error" }, { status: 500 }));
+                }
+                return response.untyped(HttpResponse.json({}));
+            }),
+        );
+        const wrapper = await mountJobsList();
+        await headerBox(wrapper).setChecked(true);
+        await flushPromises();
+
+        await wrapper.find("#send-notification").setChecked(true);
+        await wrapper.find("#stop-message").setValue("maintenance");
+        const stopForm = wrapper.findAll("form").wrappers.find((form) => form.find("#stop-message").exists());
+        await stopForm?.trigger("submit");
+        await flushPromises();
+
+        expect(wrapper.find(".alert-warning").text()).toBe(
+            "Stopped 2 of 2 jobs. Notification sent to 1 out of 2 users. 1 errors occurred.",
+        );
+    });
+
+    it("warns when notifications cannot be sent at all", async () => {
+        server.use(http.post("/api/notifications", ({ response }) => response.untyped(HttpResponse.error())));
+        const wrapper = await mountJobsList();
+        await headerBox(wrapper).setChecked(true);
+        await flushPromises();
+
+        await wrapper.find("#send-notification").setChecked(true);
+        await wrapper.find("#stop-message").setValue("maintenance");
+        const stopForm = wrapper.findAll("form").wrappers.find((form) => form.find("#stop-message").exists());
+        await stopForm?.trigger("submit");
+        await flushPromises();
+
+        expect(wrapper.find(".alert-warning").text()).toMatch(
+            /^Stopped 2 of 2 jobs\. Notifications could not be sent: /,
+        );
     });
 });

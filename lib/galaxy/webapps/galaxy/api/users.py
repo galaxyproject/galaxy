@@ -39,6 +39,7 @@ from galaxy.model import (
     FormDefinition,
     FormValues,
     HistoryDatasetAssociation,
+    NoConverterException,
     Role,
     User,
     UserAddress,
@@ -525,8 +526,10 @@ class FastAPIUsers:
                     new_linecount = new_len.get_converted_dataset(trans, "linecount")
                     build_dict["len"] = new_len.id
                     build_dict["linecount"] = new_linecount.id
-                except Exception:
-                    raise exceptions.ToolExecutionError("Failed to convert dataset.")
+                except NoConverterException as e:
+                    raise exceptions.RequestParameterInvalidException(
+                        f"Cannot create a custom build from this dataset: {e.value}"
+                    )
             dbkeys[key] = build_dict
             user.preferences["dbkeys"] = json.dumps(dbkeys)
             trans.sa_session.commit()

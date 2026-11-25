@@ -1,0 +1,30 @@
+<tool id="output_symlink_containment" name="output_symlink_containment" version="1.0.0" profile="26.1">
+    <command><![CDATA[
+echo 'regular output' > '$output' &&
+echo 'regular output' > from_work_dir.txt &&
+echo 'inside job directory' > inside.txt &&
+sentinel="\$PWD/\$(mktemp ../../output_symlink_sentinel.XXXXXX)" &&
+echo 'outside job directory sentinel' > "\$sentinel" &&
+#if $link == "named_outside"
+ln -sf "\$sentinel" '$output'
+#elif $link == "named_inside"
+ln -sf "\$PWD/inside.txt" '$output'
+#elif $link == "from_work_dir_outside"
+ln -sf "\$sentinel" from_work_dir.txt
+#else
+ln -sf inside.txt from_work_dir.txt
+#end if
+    ]]></command>
+    <inputs>
+        <param name="link" type="select">
+            <option value="named_outside">Named output links outside the job directory</option>
+            <option value="named_inside">Named output links inside the job directory</option>
+            <option value="from_work_dir_outside">from_work_dir output links outside the job directory</option>
+            <option value="from_work_dir_inside">from_work_dir output links inside the job directory</option>
+        </param>
+    </inputs>
+    <outputs>
+        <data name="output" format="txt" />
+        <data name="from_work_dir_output" format="txt" from_work_dir="from_work_dir.txt" />
+    </outputs>
+</tool>

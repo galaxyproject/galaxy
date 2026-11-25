@@ -132,7 +132,10 @@ from sqlalchemy.orm import (
 )
 from sqlalchemy.orm.attributes import flag_modified
 from sqlalchemy.orm.collections import attribute_keyed_dict
-from sqlalchemy.orm.session import Session
+from sqlalchemy.orm.session import (
+    Session,
+    SessionTransaction,
+)
 from sqlalchemy.sql.expression import FromClause
 from typing_extensions import (
     deprecated,
@@ -173,6 +176,7 @@ from galaxy.objectstore.templates import (
     ObjectStoreTemplate,
     template_to_configuration as object_store_template_to_configuration,
 )
+from galaxy.schema.fetch_data import encode_fetch_request_ids
 from galaxy.schema.invocation import (
     InvocationCancellationUserRequest,
     InvocationState,
@@ -260,6 +264,22 @@ def required_object_session(obj) -> Session:
     if not session:
         raise Exception("Object not attached to a session")
     return session
+
+
+def refresh_unmodified(obj) -> None:
+    """Reload ``obj`` from the database, keeping attributes with pending changes in its session.
+
+    Unmodified columns are refreshed and unmodified relationships are expired, so they load
+    again on next access, following the refreshed foreign keys.
+    """
+    state = inspect(obj)
+    session = required_object_session(obj)
+    unmodified = [key for key, attr in state.attrs.items() if not attr.history.has_changes()]
+    # An empty attribute_names list refreshes or expires every attribute, so skip the call instead.
+    if columns := [key for key in unmodified if key in state.mapper.column_attrs]:
+        session.refresh(obj, attribute_names=columns)
+    if relationships := [key for key in unmodified if key in state.mapper.relationships]:
+        session.expire(obj, relationships)
 
 
 class ConfigurationTemplateEnvironmentSecret(TypedDict):
@@ -698,33 +718,68 @@ class JobLike:
         raise NotImplementedError("Attempt to set stdout, must set tool_stderr or job_stderr")
 
 
-UNIQUE_DATASET_USER_USAGE = """
-WITH per_user_histories AS
-(
-    SELECT id
-    FROM history
-    WHERE user_id = :id
-        AND NOT purged
-),
-per_hist_hdas AS (
-    SELECT DISTINCT dataset_id
-    FROM history_dataset_association
-    WHERE NOT purged
-        AND history_id IN (SELECT id FROM per_user_histories)
-)
+# Datasets counted towards a user's usage: referenced by an unpurged HDA in an
+# unpurged history of the user and not part of any library. EXISTS / NOT EXISTS
+# count each dataset once and let PostgreSQL plan a semi join and an anti join
+# with row estimates taken from the table statistics.
+USER_DATASETS_CONDITION = """
+EXISTS (
+        SELECT 1
+        FROM history_dataset_association
+        JOIN history ON history.id = history_dataset_association.history_id
+        WHERE history_dataset_association.dataset_id = dataset.id
+            AND history.user_id = :id
+            AND NOT history.purged
+            AND NOT history_dataset_association.purged
+    )
+    AND NOT EXISTS (
+        SELECT 1
+        FROM library_dataset_dataset_association
+        WHERE library_dataset_dataset_association.dataset_id = dataset.id
+    )
+"""
+
+UNIQUE_DATASET_USER_USAGE = f"""
 SELECT COALESCE(SUM(COALESCE(dataset.total_size, dataset.file_size, 0)), 0)
 FROM dataset
-LEFT OUTER JOIN library_dataset_dataset_association ON dataset.id = library_dataset_dataset_association.dataset_id
-WHERE dataset.id IN (SELECT dataset_id FROM per_hist_hdas)
-    AND library_dataset_dataset_association.id IS NULL
-    AND (dataset.object_store_id NOT LIKE '{user_objects_scheme}%' OR dataset.object_store_id IS NULL)
+WHERE {USER_DATASETS_CONDITION}
+    AND (dataset.object_store_id NOT LIKE '{{user_objects_scheme}}%' OR dataset.object_store_id IS NULL)
+    {{and_dataset_condition}}
+"""
+
+UNIQUE_DATASET_USER_USAGE_PER_OBJECTSTORE = f"""
+SELECT SUM(COALESCE(dataset.total_size, dataset.file_size, 0)) AS usage, dataset.object_store_id
+FROM dataset
+WHERE {USER_DATASETS_CONDITION}
+GROUP BY dataset.object_store_id
+"""
+
+# Sums rows of UNIQUE_DATASET_USER_USAGE_PER_OBJECTSTORE. The source is aliased as
+# ``dataset`` so the object store conditions read the same as in UNIQUE_DATASET_USER_USAGE.
+PER_OBJECTSTORE_USAGE_SUM = """
+SELECT COALESCE(SUM(dataset.usage), 0)
+FROM {per_object_store_usage} AS dataset
+WHERE (dataset.object_store_id NOT LIKE '{user_objects_scheme}%' OR dataset.object_store_id IS NULL)
     {and_dataset_condition}
 """
 
 
+def _per_objectstore_usage_sum(per_object_store_usage: str, and_dataset_condition: str) -> str:
+    return PER_OBJECTSTORE_USAGE_SUM.format(
+        per_object_store_usage=per_object_store_usage,
+        and_dataset_condition=and_dataset_condition,
+        user_objects_scheme=USER_OBJECTS_SCHEME,
+    )
+
+
 def calculate_user_disk_usage_statements(user_id: int, quota_source_map: "QuotaSourceMap", for_sqlite: bool = False):
-    """Standalone function so can be reused for postgres directly in pgcleanup.py."""
-    statements: list[tuple[str, dict[str, Any]]] = []
+    """Standalone function so can be reused for postgres directly in pgcleanup.py.
+
+    On PostgreSQL this is a single statement that collects the user's datasets once,
+    grouped by object store, and derives the default and per quota source label usage
+    from that. The main query is the ``galaxy_user`` update so the statement's rowcount
+    is 1 for an existing user (pgcleanup.py rolls back statements that change no rows).
+    """
     default_quota_enabled = quota_source_map.default_quota_enabled
     default_exclude_ids = quota_source_map.default_usage_excluded_ids()
     default_cond = "dataset.object_store_id IS NULL" if default_quota_enabled and default_exclude_ids else ""
@@ -733,28 +788,69 @@ def calculate_user_disk_usage_statements(user_id: int, quota_source_map: "QuotaS
     default_usage_dataset_condition = f"{default_cond} {use_or} {exclude_cond}"
     if default_usage_dataset_condition.strip():
         default_usage_dataset_condition = f"AND ( {default_usage_dataset_condition} )"
-    default_usage = UNIQUE_DATASET_USER_USAGE.format(
-        and_dataset_condition=default_usage_dataset_condition, user_objects_scheme=USER_OBJECTS_SCHEME
-    )
+    source = quota_source_map.ids_per_quota_source()
+    source_labels = list(source.keys())
+    if source_labels:
+        clean_old_condition = "quota_source_label NOT IN :labels"
+    else:
+        clean_old_condition = "quota_source_label IS NOT NULL"
+    clean_old_statement = f"""
+DELETE FROM user_quota_source_usage
+WHERE user_id = :id AND {clean_old_condition}
+"""
+
+    if not for_sqlite:
+        params: dict[str, Any] = {"id": user_id}
+        if default_exclude_ids:
+            params["exclude_object_store_ids"] = default_exclude_ids
+        if source_labels:
+            params["labels"] = source_labels
+        label_values = []
+        for i, (quota_source_label, object_store_ids) in enumerate(source.items()):
+            label_usage = _per_objectstore_usage_sum(
+                "per_object_store_usage", f"AND ( dataset.object_store_id IN :label_{i}_object_store_ids )"
+            )
+            label_values.append(f"(:id, :label_{i}, ({label_usage}))")
+            params[f"label_{i}"] = quota_source_label
+            params[f"label_{i}_object_store_ids"] = object_store_ids
+        label_usage_cte = ""
+        if label_values:
+            label_usage_cte = f"""
+label_usage AS (
+    INSERT INTO user_quota_source_usage(user_id, quota_source_label, disk_usage)
+    VALUES {", ".join(label_values)}
+    ON CONFLICT
+    ON constraint uqsu_unique_label_per_user
+    DO UPDATE SET disk_usage = excluded.disk_usage
+),"""
+        default_usage = _per_objectstore_usage_sum("per_object_store_usage", default_usage_dataset_condition)
+        statement = f"""
+WITH per_object_store_usage AS (
+{UNIQUE_DATASET_USER_USAGE_PER_OBJECTSTORE}
+),{label_usage_cte}
+clean_old_labels AS ({clean_old_statement})
+UPDATE galaxy_user SET disk_usage = ({default_usage})
+WHERE id = :id
+"""
+        return [(statement, params)]
+
+    # SQLite has no data-modifying CTEs, run one statement per quota source.
+    statements: list[tuple[str, dict[str, Any]]] = []
+    per_object_store_usage = f"({UNIQUE_DATASET_USER_USAGE_PER_OBJECTSTORE})"
+    default_usage = _per_objectstore_usage_sum(per_object_store_usage, default_usage_dataset_condition)
     default_usage = f"""
 UPDATE galaxy_user SET disk_usage = ({default_usage})
 WHERE id = :id
 """
-    params: dict[str, Any] = {"id": user_id}
+    params = {"id": user_id}
     if default_exclude_ids:
         params["exclude_object_store_ids"] = default_exclude_ids
     statements.append((default_usage, params))
-    source = quota_source_map.ids_per_quota_source()
-    # TODO: Merge a lot of these settings together by generating a temp table for
-    # the object_store_id to quota_source_label into a temp table of values
     for quota_source_label, object_store_ids in source.items():
-        label_usage = UNIQUE_DATASET_USER_USAGE.format(
-            and_dataset_condition="AND ( dataset.object_store_id IN :include_object_store_ids )",
-            user_objects_scheme=USER_OBJECTS_SCHEME,
+        label_usage = _per_objectstore_usage_sum(
+            per_object_store_usage, "AND ( dataset.object_store_id IN :include_object_store_ids )"
         )
-        if for_sqlite:
-            # hacky alternative for older sqlite
-            statement = f"""
+        statement = f"""
 WITH new (user_id, quota_source_label, disk_usage) AS (
     VALUES(:id, :label, ({label_usage}))
 )
@@ -765,56 +861,15 @@ FROM new
         ON new.user_id = old.user_id
             AND new.quota_source_label = old.quota_source_label
 """
-        else:
-            statement = f"""
-INSERT INTO user_quota_source_usage(user_id, quota_source_label, disk_usage)
-VALUES(:id, :label, ({label_usage}))
-ON CONFLICT
-ON constraint uqsu_unique_label_per_user
-DO UPDATE SET disk_usage = excluded.disk_usage
-"""
         statements.append(
             (statement, {"id": user_id, "label": quota_source_label, "include_object_store_ids": object_store_ids})
         )
 
     params = {"id": user_id}
-    source_labels = list(source.keys())
-    if len(source_labels) > 0:
-        clean_old_statement = """
-DELETE FROM user_quota_source_usage
-WHERE user_id = :id AND quota_source_label NOT IN :labels
-"""
+    if source_labels:
         params["labels"] = source_labels
-    else:
-        clean_old_statement = """
-DELETE FROM user_quota_source_usage
-WHERE user_id = :id AND quota_source_label IS NOT NULL
-"""
     statements.append((clean_old_statement, params))
     return statements
-
-
-UNIQUE_DATASET_USER_USAGE_PER_OBJECTSTORE = """
-WITH per_user_histories AS
-(
-    SELECT id
-    FROM history
-    WHERE user_id = :id
-        AND NOT purged
-),
-per_hist_hdas AS (
-    SELECT DISTINCT dataset_id
-    FROM history_dataset_association
-    WHERE NOT purged
-        AND history_id IN (SELECT id FROM per_user_histories)
-)
-SELECT SUM(COALESCE(dataset.total_size, dataset.file_size, 0)) as usage, dataset.object_store_id
-FROM dataset
-LEFT OUTER JOIN library_dataset_dataset_association ON dataset.id = library_dataset_dataset_association.dataset_id
-WHERE dataset.id IN (SELECT dataset_id FROM per_hist_hdas)
-    AND library_dataset_dataset_association.id IS NULL
-GROUP BY dataset.object_store_id
-"""
 
 
 def calculate_disk_usage_per_objectstore(sa_session, user_id: int):
@@ -1762,6 +1817,8 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
     terminal_states = [states.OK, states.ERROR, states.DELETED]
     # deleting state should not turn back into any of the non-ready states
     finished_states = terminal_states + [states.DELETING]
+    # States a job won't leave without outside action, such as the user resuming a paused job.
+    settled_states = (states.OK, states.ERROR, states.DELETED, states.SKIPPED, states.PAUSED, states.STOPPED)
     #: job states where the job hasn't finished and the model may still change
     non_ready_states = [
         states.NEW,
@@ -1795,14 +1852,7 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
         Terminal states are those where the job will not change further without
         external intervention. This includes ok, error, deleted, skipped, paused, and stopped.
         """
-        return self.state in (
-            self.states.OK,
-            self.states.ERROR,
-            self.states.DELETED,
-            self.states.SKIPPED,
-            self.states.PAUSED,
-            self.states.STOPPED,
-        )
+        return self.state in self.settled_states
 
     def copy_from_job(self, job: "Job", copy_outputs: bool = False):
         self.copied_from_job_id = job.id
@@ -1826,13 +1876,28 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
             requires_addition_to_history = False
             outputs_to_copy = job.io_dicts(exclude_implicit_outputs=True)
             self_io = self.io_dicts(exclude_implicit_outputs=True)
+            # HistoryDatasetAssociation.copy_from locks each output; take those locks in id order.
+            output_hda_ids = [
+                output.id for output in self_io.out_data.values() if isinstance(output, HistoryDatasetAssociation)
+            ]
+            if output_hda_ids:
+                required_object_session(self).execute(
+                    select(HistoryDatasetAssociation.id)
+                    .where(HistoryDatasetAssociation.id.in_(output_hda_ids))
+                    .order_by(HistoryDatasetAssociation.id)
+                    .with_for_update()
+                )
             for output_name, out_data in outputs_to_copy.out_data.items():
                 if output_name in self_io.out_data:
                     self_output = self_io.out_data[output_name]
                     if isinstance(self_output, HistoryDatasetAssociation) and isinstance(
                         out_data, HistoryDatasetAssociation
                     ):
+                        # A map-over element job hides its outputs, a plain job shows them. The late job
+                        # cache search pairs either kind with either kind, so keep this job's visibility.
+                        visible = self_output.visible
                         self_output.copy_from(out_data, include_metadata=True)
+                        self_output.visible = visible
                 else:
                     assert output_name.startswith("__") and isinstance(out_data, HistoryDatasetAssociation)
                     if output_name.startswith("__new_primary_file_"):
@@ -1854,29 +1919,23 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
                     self.add_output_dataset(output_name, copied_output)
             for output_name, out_collection in outputs_to_copy.out_collections.items():
                 self_out_collection = self_io.out_collections[output_name]
-                if isinstance(self_out_collection, DatasetCollection) and isinstance(out_collection, DatasetCollection):
-                    # In the context of the job cache this should be unreachable.
-                    # If we have DatasetCollection here, the output was created as part of a map-over job.
-                    # If it is a map-over job, then we were working with element_identifiers instead of names.
-                    # So when we relax the name requirement in the job cache we won't find any additional jobs to consider,
-                    # and we will never get here.
-                    self_out_collection.copy_from(out_collection, history=self.history)
-                    requires_addition_to_history = True
-                elif isinstance(self_out_collection, HistoryDatasetCollectionAssociation) and isinstance(
-                    out_collection, HistoryDatasetCollectionAssociation
+                # A map-over element job records its part of the implicit output collection as a
+                # DatasetCollection, any other job the HDCA it created. The late job cache search
+                # pairs either kind with either kind.
+                if isinstance(self_out_collection, HistoryDatasetCollectionAssociation):
+                    self_out_collection = self_out_collection.collection
+                if isinstance(out_collection, HistoryDatasetCollectionAssociation):
+                    out_collection = out_collection.collection
+                if not isinstance(self_out_collection, DatasetCollection) or not isinstance(
+                    out_collection, DatasetCollection
                 ):
-                    self_out_collection.collection.copy_from(
-                        out_collection.collection,
-                        history=self.history,
-                    )
-                    requires_addition_to_history = True
-                else:
                     raise NotImplementedError(
                         f"Don't know how to copy {type(out_collection)} to {type(self_out_collection)}"
                     )
+                self_out_collection.copy_from(out_collection, history=self.history)
+                requires_addition_to_history = True
             if requires_addition_to_history:
-                assert job.history
-                job.history.add_pending_items()
+                self.history.add_pending_items()
 
     def io_dicts(self, exclude_implicit_outputs=False) -> IoDicts:
         inp_data: dict[str, Optional[DatasetInstance]] = {da.name: da.dataset for da in self.input_datasets}
@@ -2309,6 +2368,12 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
             return (k, obj)
 
         params_objects = remap(params_objects, remap_objects)
+        if self.tool_id == "__DATA_FETCH__" and isinstance(params_objects.get("request_json"), str):
+            request = encode_fetch_request_ids(
+                json.loads(params_objects["request_json"]),
+                lambda obj_id: serialization_options.get_identifier_for_id(id_encoder, obj_id),
+            )
+            params_objects["request_json"] = json.dumps(request)
 
         params_dict = {}
         for name, value in params_objects.items():
@@ -2404,17 +2469,56 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
 
     def set_final_state(self, final_state):
         self.set_state(final_state)
+        self.touch_dependent_update_times()
+
+    def touch_dependent_update_times(self):
+        """Bump update_time on the collections and workflow invocation steps this job contributes to."""
+        self.touch_collections_update_time()
+        self.touch_invocation_steps_update_time()
+
+    def touch_collections_update_time(self):
+        """Bump update_time on the collections this job contributes to."""
+        self.update_hdca_update_time_for_job(update_time=now(), sa_session=required_object_session(self))
+        # The job wrapper sets the final output dataset states directly, so this is the last chance to let the
+        # collections containing them, such as the implicit output collections of a mapped tool, know about it.
+        self.touch_output_collections_update_time()
+
+    def touch_invocation_steps_update_time(self):
+        """Bump update_time on the workflow invocation steps this job contributes to."""
         # TODO: migrate to where-in subqueries?
         statement = text("""
             UPDATE workflow_invocation_step
             SET update_time = :update_time
             WHERE job_id = :job_id;
         """)
+        params = {"job_id": self.id, "update_time": now()}
+        required_object_session(self).execute(statement, params)
+
+    def touch_output_collections_update_time(self, supports_skip_locked=None):
+        """
+        Update the update time of the collections containing the output datasets of this job, including
+        collections that aren't directly job-associated and the collections containing those.
+        """
         sa_session = required_object_session(self)
-        update_time = now()
-        self.update_hdca_update_time_for_job(update_time=update_time, sa_session=sa_session)
-        params = {"job_id": self.id, "update_time": update_time}
-        sa_session.execute(statement, params)
+        dialect_name = sa_session.bind.dialect.name
+        job_dataset_ids = select(Dataset.id).where(Dataset.job_id == self.id)
+        # A failed statement aborts the whole transaction on PostgreSQL, so isolate the update in a savepoint
+        savepoint = sa_session.begin_nested() if dialect_name == "postgresql" else None
+        try:
+            if dialect_name in ("postgresql", "sqlite"):
+                if dialect_name == "postgresql" and supports_skip_locked is None:
+                    supports_skip_locked = _check_supports_skip_locked(sa_session.get_bind())
+                Dataset._touch_collection_update_time_cte(sa_session, job_dataset_ids, supports_skip_locked)
+            else:
+                for dataset in sa_session.scalars(select(Dataset).where(Dataset.id.in_(job_dataset_ids))):
+                    dataset._touch_collection_update_time_fallback(sa_session)
+            if savepoint:
+                savepoint.commit()
+        except Exception:
+            if savepoint:
+                savepoint.rollback()
+            # Don't let collection update failures prevent job completion
+            log.exception(f"Failed to update collection times for the outputs of job {self.id}")
 
     def get_destination_configuration(self, dest_params, config, key, default=None):
         """Get a destination parameter that can be defaulted back
@@ -2476,15 +2580,7 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
             update_time=update_time,
             sa_session=sa_session,
         )
-        # Update general collection associations for all datasets in this job
-        # This handles collections that contain datasets from this job but aren't directly job-associated
-        job_datasets = sa_session.query(Dataset).filter(Dataset.job_id == self.id).all()
-        for dataset in job_datasets:
-            try:
-                dataset.touch_collection_update_time(supports_skip_locked=supports_skip_locked)
-            except Exception:
-                # Don't let collection update failures prevent job comion
-                log.error(f"Failed to update collection times for dataset {dataset.id} from job {self.id}")
+        self.touch_output_collections_update_time(supports_skip_locked=supports_skip_locked)
 
         params = {"job_id": self.id, "state": self.state, "info": self.info, "update_time": update_time}
         for statement in statements:
@@ -2955,6 +3051,24 @@ class ImplicitCollectionJobs(Base, Serializable):
     def __init__(self, populated_state=None):
         self.populated_state = populated_state or ImplicitCollectionJobs.populated_states.NEW
 
+    def _job_states_stmt(self):
+        return (
+            select(Job.state)
+            .select_from(Job)
+            .join(ImplicitCollectionJobsJobAssociation, Job.id == ImplicitCollectionJobsJobAssociation.job_id)
+            .where(ImplicitCollectionJobsJobAssociation.implicit_collection_jobs_id == self.id)
+        )
+
+    def has_job_not_in_states(self, states: Iterable[str]) -> bool:
+        """Whether any of these jobs is in a state not in ``states``."""
+        stmt = select(self._job_states_stmt().where(Job.state.not_in(states)).exists())
+        return bool(required_object_session(self).scalar(stmt))
+
+    def job_state_counts(self) -> dict[str, int]:
+        """Number of these jobs in each state."""
+        stmt = self._job_states_stmt().add_columns(func.count()).group_by(Job.state)
+        return dict(required_object_session(self).execute(stmt).tuples().all())
+
     @property
     def job_list(self):
         return (
@@ -3003,6 +3117,23 @@ class ImplicitCollectionJobs(Base, Serializable):
                 )
             )
         )
+
+    def job_attribute_by_order_index(self, attribute: str) -> dict[int, Any]:
+        """Return a job column's value for each recorded job, keyed by order index."""
+        stmt = (
+            select(ImplicitCollectionJobsJobAssociation.order_index, getattr(Job.table.columns, attribute))
+            .select_from(Job)
+            .join(ImplicitCollectionJobsJobAssociation, Job.id == ImplicitCollectionJobsJobAssociation.job_id)
+            .where(ImplicitCollectionJobsJobAssociation.implicit_collection_jobs_id == self.id)
+        )
+        return dict(required_object_session(self).execute(stmt).tuples().all())
+
+    def recorded_order_indexes(self) -> set[int]:
+        """Return the order indexes of the jobs already recorded for this map-over."""
+        stmt = select(ImplicitCollectionJobsJobAssociation.order_index).where(
+            ImplicitCollectionJobsJobAssociation.implicit_collection_jobs_id == self.id
+        )
+        return set(required_object_session(self).scalars(stmt))
 
     def _serialize(self, id_encoder, serialization_options):
         rval = dict_for(
@@ -3455,8 +3586,9 @@ class Notification(Base, Dictifiable, RepresentById):
     publication_time: Mapped[Optional[datetime]] = mapped_column(
         default=now
     )  # The date of publication, can be a future date to allow scheduling
+    # A callable, so the expiry date is computed for each new notification.
     expiration_time: Mapped[Optional[datetime]] = mapped_column(
-        default=now() + timedelta(days=30 * 6)
+        default=lambda: now() + timedelta(days=30 * 6)
     )  # The expiration date, expired notifications will be permanently removed from DB regularly
     source: Mapped[str] = mapped_column(
         String(32), index=True, nullable=True
@@ -4315,7 +4447,6 @@ class History(Base, HasTags, UsesAnnotations, HasName, Serializable, UsesCreateA
             # else ignoring object_store_ids on HDCAs...
 
         if "ids" in kwds:
-            assert "object_store_ids" not in kwds
             ids = kwds["ids"]
             max_in_filter_length = kwds.get("max_in_filter_length", MAX_IN_FILTER_LENGTH)
             if len(ids) < max_in_filter_length:
@@ -4774,6 +4905,8 @@ class Dataset(Base, StorableObject, Serializable):
 
     non_ready_states = (states.NEW, states.UPLOAD, states.QUEUED, states.RUNNING, states.SETTING_METADATA)
     ready_states = tuple(set(states.__members__.values()) - set(non_ready_states))
+    # States in which a late job cache hit can still replace the dataset (a paused job may be resumed).
+    swappable_states = (*non_ready_states, states.PAUSED)
     valid_input_states = tuple(
         set(states.__members__.values()) - {states.ERROR, states.DISCARDED, states.FAILED_METADATA}
     )
@@ -5100,7 +5233,7 @@ class Dataset(Base, StorableObject, Serializable):
 
         Args:
             supports_skip_locked: Boolean to indicate if database supports
-                FOR UPDATE SKIP LOCKED. Defaults to False.
+                FOR UPDATE SKIP LOCKED. Checked against the database if None.
         """
         session = object_session(self)
         if not session:
@@ -5110,13 +5243,17 @@ class Dataset(Base, StorableObject, Serializable):
         if dialect_name in ("postgresql", "sqlite"):
             if dialect_name == "postgresql" and supports_skip_locked is None:
                 supports_skip_locked = _check_supports_skip_locked(session.get_bind())
-            self._touch_collection_update_time_cte(session, supports_skip_locked)
+            self._touch_collection_update_time_cte(session, [self.id], supports_skip_locked)
         else:
             # Fallback for other databases
             self._touch_collection_update_time_fallback(session)
 
-    def _touch_collection_update_time_cte(self, session, supports_skip_locked):
-        """CTE implementation using SQLAlchemy core constructs"""
+    @staticmethod
+    def _touch_collection_update_time_cte(session, dataset_ids, supports_skip_locked):
+        """
+        CTE implementation using SQLAlchemy core constructs, for the collections containing any of
+        ``dataset_ids``, a list of IDs or a select statement returning them.
+        """
 
         # Base case columns
         base_columns = [
@@ -5133,7 +5270,7 @@ class Dataset(Base, StorableObject, Serializable):
                     HistoryDatasetAssociation.__table__, DatasetCollectionElement.hda_id == HistoryDatasetAssociation.id
                 )
             )
-            .where(HistoryDatasetAssociation.dataset_id == self.id)
+            .where(HistoryDatasetAssociation.dataset_id.in_(dataset_ids))
             .union(
                 select(*base_columns)
                 .select_from(
@@ -5142,7 +5279,7 @@ class Dataset(Base, StorableObject, Serializable):
                         DatasetCollectionElement.ldda_id == LibraryDatasetDatasetAssociation.id,
                     )
                 )
-                .where(LibraryDatasetDatasetAssociation.dataset_id == self.id)
+                .where(LibraryDatasetDatasetAssociation.dataset_id.in_(dataset_ids))
             )
         ).subquery()
 
@@ -5180,14 +5317,16 @@ class Dataset(Base, StorableObject, Serializable):
         )
 
         if supports_skip_locked:
-            # Use FOR UPDATE SKIP LOCKED for better concurrency when supported
-            # First select the HDCAs we want to update with FOR UPDATE SKIP LOCKED
+            # First select the HDCAs we want to update with FOR NO KEY UPDATE SKIP LOCKED.
+            # Only update_time changes, and this lock mode is compatible with the FOR KEY SHARE
+            # lock that foreign key checks take, so concurrent inserts of rows referencing these
+            # HDCAs (job inputs, workflow step outputs) proceed while this transaction is open.
             hdca_ids_to_update = (
                 session.execute(
                     select(HistoryDatasetCollectionAssociation.id)
                     .where(HistoryDatasetCollectionAssociation.collection_id.in_(collection_ids_subquery))
                     .order_by(HistoryDatasetCollectionAssociation.id)
-                    .with_for_update(skip_locked=True)
+                    .with_for_update(skip_locked=True, key_share=True)
                 )
                 .scalars()
                 .all()
@@ -6113,6 +6252,7 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, UsesAnnotations, HasNa
     tags: Mapped[list["HistoryDatasetAssociationTagAssociation"]]
     copied_to_history_dataset_associations: Mapped[list["HistoryDatasetAssociation"]]
     history: Mapped[Optional["History"]]
+    _copy_lock_transaction: Optional[SessionTransaction] = None
 
     def __init__(
         self,
@@ -6163,7 +6303,10 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, UsesAnnotations, HasNa
 
             # hist.deleted holds old value(s)
             changes[attr.key] = hist.deleted
-        if changes and self.update_time and self.state == self.states.OK and not self.deleted:
+        # An HDA flushed before it joined its history (a copied MetadataFile needs the HDA's id) has no
+        # earlier version worth keeping.
+        joins_history = any(changes.get(key) and changes[key][0] is None for key in ("history_id", "hid"))
+        if changes and not joins_history and self.update_time and self.state == self.states.OK and not self.deleted:
             # We only record changes to HDAs that exist in the database and have a update_time
             new_values = {}
             new_values["name"] = changes.get("name", self.name)
@@ -6184,8 +6327,7 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, UsesAnnotations, HasNa
         # This deletes the old dataset, so make sure to only call this on new things
         # in the history (e.g. during job finishing).
         old_dataset = self.dataset
-        if include_metadata:
-            self._metadata = other_hda._metadata
+        copies = self._lock_and_load_copies()
         self.metadata_deferred = other_hda.metadata_deferred
         self.info = other_hda.info
         self.blurb = other_hda.blurb
@@ -6199,17 +6341,72 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, UsesAnnotations, HasNa
         if include_tags and self.history:
             self.copy_tags_from(self.user, other_hda)
         self.dataset = new_dataset or other_hda.dataset
+        # A cached job's structured collection output is copied as a job output and again as a collection element.
+        already_copied = (
+            old_dataset is self.dataset
+            and other_hda.id is not None
+            and self.copied_from_history_dataset_association_id == other_hda.id
+        )
+        if include_metadata and not already_copied:
+            # Copy metadata files into rows this HDA owns, as HDA.copy() does: purging other_hda removes
+            # the files its rows name. Copying needs the extension and dataset set above.
+            self.metadata = other_hda.metadata
         self.copied_from_history_dataset_association_id = other_hda.id
-        for copied_hda in self.copied_to_history_dataset_associations:
+        for copied_hda in copies:
+            # A copy made by a database operation tool is usually a hidden collection element.
+            visible, deleted = copied_hda.visible, copied_hda.deleted
             copied_hda.copy_from(self, include_tags=include_tags, include_metadata=include_metadata)
+            copied_hda.visible, copied_hda.deleted = visible, deleted
 
-        if old_dataset:
+        # A cached job's structured collection output reaches the same HDA as both a job output
+        # and a collection element, so the second copy finds the dataset already in place.
+        if old_dataset and old_dataset is not self.dataset:
             old_dataset.full_delete()
+
+    def _lock_and_load_copies(self) -> list["HistoryDatasetAssociation"]:
+        """Lock this HDA's row and return the copies that share its dataset.
+
+        ``copy()`` of an HDA in a swappable state holds a key share lock on the source row from reading
+        the dataset until its transaction ends. Once this lock is held, every such copy has either
+        committed and is returned here, or will read the dataset this transaction commits.
+        """
+        if self.id is not None:
+            session = required_object_session(self)
+            session.execute(
+                select(HistoryDatasetAssociation.id).where(HistoryDatasetAssociation.id == self.id).with_for_update()
+            )
+            # A collection loaded before this lock misses copies committed since.
+            session.expire(self, ["copied_to_history_dataset_associations"])
+        return list(self.copied_to_history_dataset_associations)
+
+    def _lock_source_of_copy(self) -> None:
+        """Pin the dataset a copy of this HDA will share against a concurrent ``copy_from``.
+
+        A late job cache hit swaps the dataset of a queued output and purges the old one. The key
+        share lock makes that swap wait for this transaction, so it finds the copy; if the swap
+        committed first, this HDA is reloaded so the copy shares the new dataset.
+        """
+        session = required_object_session(self)
+        # A held lock lasts until the transaction ends; Galaxy takes no savepoints that could release it.
+        transaction = session.get_transaction()
+        if transaction is not None and transaction is self._copy_lock_transaction:
+            return
+        with session.no_autoflush:
+            dataset_id = session.scalar(
+                select(HistoryDatasetAssociation.dataset_id)
+                .where(HistoryDatasetAssociation.id == self.id)
+                .with_for_update(read=True, key_share=True)
+            )
+            if dataset_id != self.dataset_id:
+                refresh_unmodified(self)
+        self._copy_lock_transaction = session.get_transaction()
 
     def copy(self, parent_id=None, copy_tags=None, flush=True, copy_hid=True, new_name=None):
         """
         Create a copy of this HDA.
         """
+        if self.id is not None and self.state in Dataset.swappable_states:
+            self._lock_source_of_copy()
         hid = None
         if copy_hid:
             hid = self.hid
@@ -8316,6 +8513,10 @@ class HistoryDatasetCollectionAssociation(
             )
         if implicit_input_collections:
             rval["implicit_input_collections"] = implicit_input_collections
+        if self.implicit_collection_jobs:
+            rval["implicit_collection_jobs"] = serialization_options.get_identifier(
+                id_encoder, self.implicit_collection_jobs
+            )
 
         # Handle copied_from_history_dataset_association information...
         copied_from_history_dataset_collection_association_chain = []
@@ -9343,6 +9544,15 @@ class WorkflowStep(Base, RepresentById, UsesCreateAndUpdateTime):
         return default_value
 
     @property
+    def input_defaults(self) -> dict[str, Any]:
+        """Step input defaults by input name."""
+        return {
+            step_input.name: step_input.default_value
+            for step_input in self.inputs
+            if step_input.name and step_input.default_value_set
+        }
+
+    @property
     def input_optional(self):
         tool_state = self.tool_inputs
         return tool_state.get("optional") or False
@@ -9810,13 +10020,12 @@ class StoredWorkflowMenuEntry(Base, RepresentById):
     order_index: Mapped[Optional[int]]
 
     stored_workflow: Mapped[Optional["StoredWorkflow"]] = relationship()
+    # Only the User side filters out deleted workflows. Repeating that filter
+    # here makes the lazy load (e.g. when flushing a removed entry) select from
+    # galaxy_user and stored_workflow without a join between them.
     user: Mapped[Optional["User"]] = relationship(
         back_populates="stored_workflow_menu_entries",
-        primaryjoin=(
-            lambda: (StoredWorkflowMenuEntry.user_id == User.id)
-            & (StoredWorkflowMenuEntry.stored_workflow_id == StoredWorkflow.id)
-            & not_(StoredWorkflow.deleted)
-        ),
+        primaryjoin=lambda: StoredWorkflowMenuEntry.user_id == User.id,
     )
 
 
@@ -11241,33 +11450,45 @@ class MetadataFile(Base, StorableObject, Serializable):
         da = self.history_dataset or self.library_dataset
         return da.dataset if da is not None else None
 
-    def update_from_file(self, file_name):
+    def update_from_file(self, file_name: str | None):
         if not self.dataset:
             raise Exception("Attempted to write MetadataFile, but no DatasetAssociation set")
         if not self.dataset.purged:
-            self.dataset.object_store.update_from_file(
+            object_store, alt_name = self._object_store_and_alt_name()
+            if file_name is None:
+                # The file is already at its object store path. Without a cache sync this is a path lookup.
+                file_name = object_store.get_filename(
+                    self, extra_dir="_metadata_files", extra_dir_at_root=True, alt_name=alt_name, sync_cache=False
+                )
+            # create=True makes the object if it is missing. Asking for the file name first would check for
+            # it twice more, and on a caching object store download the object this call replaces.
+            object_store.update_from_file(
                 self,
                 file_name=file_name,
+                create=True,
                 extra_dir="_metadata_files",
                 extra_dir_at_root=True,
-                alt_name=os.path.basename(self.get_file_name()),
+                alt_name=alt_name,
             )
+
+    def _object_store_and_alt_name(self) -> tuple["BaseObjectStore", str]:
+        da = self.history_dataset or self.library_dataset
+        assert da is not None
+        assert da.dataset is not None
+        if self.object_store_id is None:
+            self.object_store_id = da.dataset.object_store_id
+        object_store = da.dataset.object_store
+        assert object_store is not None
+        store_by = object_store.get_store_by(da.dataset)
+        if store_by == "id" and self.id is None:
+            self.flush()  # type: ignore[unreachable]
+        identifier = getattr(self, store_by)
+        return object_store, f"metadata_{identifier}.dat"
 
     def get_file_name(self, sync_cache: bool = True) -> str:
         # Ensure the directory structure and the metadata file object exist
         try:
-            da = self.history_dataset or self.library_dataset
-            assert da is not None
-            assert da.dataset is not None
-            if self.object_store_id is None:
-                self.object_store_id = da.dataset.object_store_id
-            object_store = da.dataset.object_store
-            assert object_store is not None
-            store_by = object_store.get_store_by(da.dataset)
-            if store_by == "id" and self.id is None:
-                self.flush()  # type: ignore[unreachable]
-            identifier = getattr(self, store_by)
-            alt_name = f"metadata_{identifier}.dat"
+            object_store, alt_name = self._object_store_and_alt_name()
             if not object_store.exists(self, extra_dir="_metadata_files", extra_dir_at_root=True, alt_name=alt_name):
                 object_store.create(self, extra_dir="_metadata_files", extra_dir_at_root=True, alt_name=alt_name)
             path = object_store.get_filename(

@@ -1,9 +1,13 @@
+import json
 import os
 import re
 from datetime import datetime
 from functools import wraps
+from pathlib import Path
 from typing import (
+    Any,
     Callable,
+    Dict,
     List,
     Optional,
     TypeVar,
@@ -34,6 +38,11 @@ def site_down_reason(url: str) -> Optional[str]:
 
 def is_site_up(url: str) -> bool:
     return site_down_reason(url) is None
+
+
+def read_mock_emails(directory: Union[str, Path]) -> List[Dict[str, Any]]:
+    """Emails sent with ``smtp_server`` set to ``mock_emails_to_path://<directory>``, oldest first."""
+    return [json.loads(path.read_text()) for path in sorted(Path(directory).glob("*.json"))]
 
 
 P = ParamSpec("P")
@@ -82,7 +91,9 @@ def skip_if_site_down(
 
 
 def skip_on_network_error(method: Callable[P, T]) -> Callable[P, T]:
-    """Skip the test if it fails because a remote site could not be reached or timed out."""
+    """Skip the test if it fails because a remote site could not be reached, timed out,
+    rate limited the request (HTTP 429) or answered with a server error (HTTP 5xx, which
+    includes Cloudflare's 52x errors)."""
 
     @wraps(method)
     def wrapped_method(*args: P.args, **kwargs: P.kwargs) -> T:
@@ -90,6 +101,10 @@ def skip_on_network_error(method: Callable[P, T]) -> Callable[P, T]:
             return method(*args, **kwargs)
         except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as e:
             raise SkipTest(f"Test depends on a remote site that could not be reached: {e}") from e
+        except requests.exceptions.HTTPError as e:
+            if e.response is not None and (e.response.status_code >= 500 or e.response.status_code == 429):
+                raise SkipTest(f"Test depends on a remote site that is unavailable: {e}") from e
+            raise
 
     return wrapped_method
 
@@ -103,6 +118,11 @@ skip_if_workflowhub_down = skip_if_site_down(
         r"TRS server https://workflowhub\.eu "
         r"(responded with HTTP (403|429|5\d\d)|did not respond in time|could not be reached)"
     ),
+)
+# Quay's homepage can be available while API requests are rate-limited or fail during pagination.
+skip_if_quay_down = skip_if_site_down(
+    "https://quay.io/",
+    unavailable_pattern=r"\b(?:429 Client|5\d\d Server) Error: [^\n]* for url: https://quay\.io/api/",
 )
 
 

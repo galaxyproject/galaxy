@@ -23,9 +23,12 @@ class TestPublishedHistories(SharedStateSeleniumTestCase):
         self._login()
         self.navigate_to_published_histories()
 
-        self.wait_for_and_click_selector('[data-title="Sort by Name ascending"]')
-        self.wait_for_and_click_selector('[data-title="Sort by Name ascending"]')
-        self.sleep_for(self.wait_types.UX_RENDER)
+        histories = self.components.histories
+        # The first click selects name (still descending), the second switches to ascending.
+        histories.sort_button(field="Name", direction="ascending").wait_for_and_click()
+        histories.sort_button(field="Name", direction="ascending").wait_for_and_click()
+        histories.sort_button(field="Name", direction="descending").wait_for_visible()
+        histories.list_loading.wait_for_absent()
 
         sorted_histories = self.get_published_history_names_from_server(sort_by="name")
         self.assert_histories_present(sorted_histories, sort_by_matters=True)
@@ -36,8 +39,10 @@ class TestPublishedHistories(SharedStateSeleniumTestCase):
         self._login()
         self.navigate_to_published_histories()
 
-        self.wait_for_and_click_selector('[data-title="Sort by Update time ascending"]')
-        self.sleep_for(self.wait_types.UX_RENDER)
+        histories = self.components.histories
+        histories.sort_button(field="Update time", direction="ascending").wait_for_and_click()
+        histories.sort_button(field="Update time", direction="descending").wait_for_visible()
+        histories.list_loading.wait_for_absent()
 
         expected_history_names = self.get_published_history_names_from_server(sort_by="update_time")
         self.assert_histories_present(expected_history_names, sort_by_matters=True)

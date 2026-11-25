@@ -12,9 +12,9 @@ from typing import (
     TYPE_CHECKING,
 )
 
-from kombu import (
+from kombu.connection import Connection
+from kombu.entity import (
     binding,
-    Connection,
     Exchange,
     Queue,
 )

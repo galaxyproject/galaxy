@@ -84,6 +84,7 @@ from galaxy.model.index_filter_util import (
 )
 from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.schema.credentials import CredentialsContext
+from galaxy.schema.fetch_data import encode_fetch_request_ids
 from galaxy.schema.schema import (
     JobIndexQueryPayload,
     JobIndexSortByEnum,
@@ -112,6 +113,13 @@ from galaxy.tools import Tool
 from galaxy.tools._types import (
     ToolStateDumpedToJsonInternalT,
     ToolStateJobInstancePopulatedT,
+)
+from galaxy.tools.job_parameters import (
+    CHROM_INFO,
+    DATA_MANAGER_MODE,
+    DBKEY,
+    element_identifier_parameter,
+    is_element_identifier_parameter,
 )
 from galaxy.util import (
     defaultdict,
@@ -485,8 +493,14 @@ class JobSearch:
         job_state: Optional[JobStatesT] = (Job.states.OK,),
         history_id: Union[int, None] = None,
         require_name_match: bool = True,
+        element_identifiers: Optional[dict[str, str]] = None,
     ) -> Union[Job, None]:
-        """Search for jobs producing same results using the 'inputs' part of a tool POST."""
+        """Search for jobs producing same results using the 'inputs' part of a tool POST.
+
+        ``element_identifiers`` maps input names to the element identifiers the request saw, for inputs
+        that ``param`` holds as plain datasets. When given, the job must have seen the same identifiers,
+        even if ``require_name_match`` is False.
+        """
         input_data: dict[Any, list[dict[str, Any]]] = defaultdict(list)
 
         def populate_input_data_input_id(path: tuple, key, value) -> tuple[Any, Any]:
@@ -509,6 +523,8 @@ class JobSearch:
                     if isinstance(current_case, (list, dict)):
                         current_case = current_case[p]
                 identifier = getattr(current_case, "element_identifier", None)
+                if identifier is None and element_identifiers:
+                    identifier = element_identifiers.get(path_key)
                 input_data[path_key].append(
                     {
                         "src": src,
@@ -530,6 +546,7 @@ class JobSearch:
             wildcard_param_dump=wildcard_param_dump,
             history_id=history_id,
             require_name_match=require_name_match,
+            require_identifier_match=require_name_match or element_identifiers is not None,
         )
 
     def __search(
@@ -543,6 +560,7 @@ class JobSearch:
         wildcard_param_dump=None,
         history_id: Union[int, None] = None,
         require_name_match: bool = True,
+        require_identifier_match: bool = True,
     ) -> Union[Job, None]:
         search_timer = ExecutionTimer()
 
@@ -590,6 +608,7 @@ class JobSearch:
                         v,
                         identifier,
                         require_name_match=require_name_match,
+                        require_identifier_match=require_identifier_match,
                         value_index=value_index,
                     )
                 elif t == "ldda":
@@ -632,10 +651,10 @@ class JobSearch:
                     if v == {"__class__": "RuntimeValue"}:
                         # TODO: verify this is always None. e.g. run with runtime input input
                         v = None
-                    elif k.endswith("|__identifier__"):
+                    elif is_element_identifier_parameter(k):
                         # We've taken care of this while constructing the conditions based on ``input_data`` above
                         continue
-                    elif k == "chromInfo" and "?.len" in v:
+                    elif k == CHROM_INFO and "?.len" in v:
                         continue
                     elif k in self.IGNORED_NON_JOB_PARAMETERS:
                         continue
@@ -660,13 +679,13 @@ class JobSearch:
             for parameter in job.parameters:
                 if parameter.name.startswith("__"):
                     continue
-                if parameter.name in {"chromInfo", "dbkey"} or parameter.name.endswith("|__identifier__"):
+                if parameter.name in (CHROM_INFO, DBKEY) or is_element_identifier_parameter(parameter.name):
                     continue
                 n_parameters += 1
             if not n_parameters == sum(
                 1
                 for k in param_dump
-                if not k.startswith("__") and not k.endswith("|__identifier__") and k not in {"chromInfo", "dbkey"}
+                if not k.startswith("__") and not is_element_identifier_parameter(k) and k not in (CHROM_INFO, DBKEY)
             ):
                 continue
             log.info("Found equivalent job %s", search_timer)
@@ -734,10 +753,10 @@ class JobSearch:
             if v == {"__class__": "RuntimeValue"}:
                 # TODO: verify this is always None. e.g. run with runtime input input
                 v = None
-            elif k.endswith("|__identifier__"):
+            elif is_element_identifier_parameter(k):
                 # We've taken care of this while constructing the conditions based on ``input_data`` above
                 continue
-            elif k == "chromInfo" and "?.len" in v:
+            elif k == CHROM_INFO and "?.len" in v:
                 continue
             elif k in self.IGNORED_NON_JOB_PARAMETERS:
                 # TODO: really need to separate this.
@@ -817,6 +836,7 @@ class JobSearch:
         identifier,
         value_index: int,
         require_name_match: bool = True,
+        require_identifier_match: bool = True,
     ) -> "Select[tuple[int]]":
         a = aliased(model.JobToInputDatasetAssociation)
         b = aliased(model.HistoryDatasetAssociation)
@@ -836,17 +856,22 @@ class JobSearch:
             e._metadata == c._metadata,
             e.version == a.dataset_version,
         ]
+        if require_name_match:
+            hda_history_join_conditions.append(e.name == c.name)
+            name_condition.append(b.name == c.name)
+        identifier_key = element_identifier_parameter(k)
         if identifier:
             stmt = stmt.join(d)
             data_conditions.append(
                 and_(
-                    d.name == f"{k}|__identifier__",
+                    d.name == identifier_key,
                     d.value == json.dumps(identifier),
                 )
             )
-        elif require_name_match:
-            hda_history_join_conditions.append(e.name == c.name)
-            name_condition.append(b.name == c.name)
+        elif require_identifier_match:
+            # A job mapped over a collection saw an element identifier instead of the dataset name.
+            f = aliased(model.JobParameter)
+            data_conditions.append(~exists().where(f.job_id == model.Job.id, f.name == identifier_key))
 
         stmt = stmt.outerjoin(e, and_(*hda_history_join_conditions))
         data_conditions.append(
@@ -1565,9 +1590,19 @@ class JobSearch:
             return stmt
 
 
+def encode_job_params(security: IdEncodingHelper, job: Job, job_dict: dict) -> dict:
+    """Encode the database ids the parameters of a job's element view hold decoded."""
+    params = job_dict.get("params", {})
+    if job.tool_id == "__DATA_FETCH__" and "request_json" in params:
+        # Parameter values are stored as JSON, and the request is itself a JSON string.
+        request = json.loads(json.loads(params["request_json"]))
+        params["request_json"] = json.dumps(json.dumps(encode_fetch_request_ids(request, security.encode_id)))
+    return job_dict
+
+
 def view_show_job(trans, job: Job, full: bool) -> dict:
     is_admin = trans.user_is_admin
-    job_dict = job.to_dict("element", system_details=is_admin)
+    job_dict = encode_job_params(trans.security, job, job.to_dict("element", system_details=is_admin))
     if trans.app.config.expose_dataset_path and "command_line" not in job_dict:
         job_dict["command_line"] = job.command_line
     if full:
@@ -2140,6 +2175,12 @@ def summarize_job_parameters(trans: ProvidesUserContext, job: Job) -> dict[str, 
     else:
         has_parameter_errors = True
 
+    if job.tool_id == "__DATA_FETCH__":
+        for parameter in parameters:
+            if parameter["text"] == "request_json" and isinstance(parameter.get("value"), str):
+                request = encode_fetch_request_ids(json.loads(parameter["value"]), trans.security.encode_id)
+                parameter["value"] = json.dumps(request)
+
     return {
         "parameters": parameters,
         "has_parameter_errors": has_parameter_errors,
@@ -2160,13 +2201,32 @@ def get_output_name(tool, output, params):
         pass
 
 
+def _own_output_dataset_collection_instances(
+    job: model.Job,
+) -> list[model.JobToOutputDatasetCollectionAssociation]:
+    """Return the HDCA outputs of ``job``, minus the collections of the map-over it belongs to.
+
+    Map-over execution associates each implicit output collection with every job of the
+    map-over, but each of those jobs produced only one element of it.
+    """
+    icj_association = job.implicit_collection_jobs_association
+    if icj_association is None:
+        return job.output_dataset_collection_instances
+    return [
+        association
+        for association in job.output_dataset_collection_instances
+        if association.dataset_collection_instance.implicit_collection_jobs_id
+        != icj_association.implicit_collection_jobs_id
+    ]
+
+
 def summarize_job_outputs(job: model.Job, tool, params):
     outputs = defaultdict(list)
     output_labels = {}
     possible_outputs = (
         ("hda", "dataset_id", job.output_datasets),
         ("ldda", "ldda_id", job.output_library_datasets),
-        ("hdca", "dataset_collection_id", job.output_dataset_collection_instances),
+        ("hdca", "dataset_collection_id", _own_output_dataset_collection_instances(job)),
     )
     for src, attribute, output_associations in possible_outputs:
         output_associations = cast(list, output_associations)  # during iteration, mypy sees it as object
@@ -2314,7 +2374,7 @@ class JobSubmitter:
                 # and avoid extra and confusing input copies
                 self.hda_manager.materialize(materialize_request, sa_session(), in_place=True)
             if request.data_manager_mode:
-                tool_request.request["__data_manager_mode"] = request.data_manager_mode
+                tool_request.request[DATA_MANAGER_MODE] = request.data_manager_mode
             credentials_context = (
                 CredentialsContext(root=cast(Any, request.credentials_context)) if request.credentials_context else None
             )

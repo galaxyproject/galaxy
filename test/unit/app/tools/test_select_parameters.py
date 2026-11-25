@@ -27,6 +27,15 @@ class TestSelectToolParameter(BaseParameterTestCase):
             self.param.from_json("42", self.trans)
         assert str(exc_info.value) == "Parameter 'my_name': requires a value, but no legal values defined"
 
+    def test_unhashable_list_items_are_invalid_options(self):
+        param = self._parameter_for(
+            xml="""<param name="my_name" type="select" multiple="true"><option value="a">A</option></param>"""
+        )
+        for value in ([{"not": "valid"}], [["a"]]):
+            with pytest.raises(ValueError) as exc_info:
+                param.from_json(value, self.trans)
+            assert "invalid options" in str(exc_info.value)
+
     def test_unvalidated_values(self):
         self.options_xml = """<options><filter type="data_meta" ref="input_bam" key="dbkey"/></options>"""
         self.trans.workflow_building_mode = True

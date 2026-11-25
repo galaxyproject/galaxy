@@ -93,26 +93,26 @@ def test_get_test_from_anaconda():
 def test_find_anaconda_download_url():
     download_url = find_anaconda_download_url("2pg_cartesian", "1.0.0")
     assert download_url is None
+    # anaconda decides the download host and path layout, so only check the scheme and the file
     download_url = find_anaconda_download_url("2pg_cartesian", "1.0.1")
     assert download_url is not None
-    assert download_url.startswith(
-        "https://api.anaconda.org/download/bioconda/2pg_cartesian/1.0.1/linux-64/2pg_cartesian-1.0.1-"
-    )
+    assert download_url.startswith("https://")
+    assert "/linux-64/2pg_cartesian-1.0.1-" in download_url
     download_url = find_anaconda_download_url("2pg_cartesian", "1.0.1", "0")
     assert download_url is not None
-    assert (
-        download_url
-        == "https://api.anaconda.org/download/bioconda/2pg_cartesian/1.0.1/linux-64/2pg_cartesian-1.0.1-0.tar.bz2"
-    )
+    assert download_url.startswith("https://")
+    assert download_url.endswith("/linux-64/2pg_cartesian-1.0.1-0.tar.bz2")
 
 
 @external_dependency_management
+@skip_on_network_error
 def test_open_recipe_file():
     recipe = open_recipe_file("recipes/samtools/1.1/meta.yaml")
     assert b"samtools" in recipe
 
 
 @external_dependency_management
+@skip_on_network_error
 def test_get_alternative_versions():
     local_versions = get_alternative_versions("recipes/my_recipe", "meta.yaml", recipes_path=SCRIPT_DIRECTORY)
     assert local_versions == ["recipes/my_recipe/1.0/meta.yaml"]
@@ -127,6 +127,7 @@ def test_get_alternative_versions():
 
 
 @external_dependency_management
+@skip_on_network_error
 def test_deep_test_search():
     tests = deep_test_search("abundancebin:1.0.1--0")
     assert tests["commands"] == ["command -v abundancebin", 'abundancebin &> /dev/null || [[ "$?" == "255" ]]']
@@ -143,6 +144,7 @@ def test_main_test_search():
 
 
 @external_dependency_management
+@skip_on_network_error
 def test_hashed_test_search():
     tests = hashed_test_search(
         "mulled-v2-0560a8046fc82aa4338588eca29ff18edab2c5aa:c17ce694dd57ab0ac1a2b86bb214e65fedef760e-0"

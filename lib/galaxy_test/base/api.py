@@ -1,4 +1,5 @@
 import os
+import re
 from collections.abc import Iterator
 from contextlib import contextmanager
 from typing import (
@@ -10,6 +11,7 @@ from urllib.parse import (
     urlencode,
     urljoin,
 )
+from uuid import uuid4
 
 import pytest
 import requests
@@ -191,6 +193,33 @@ class UsesApiTestCaseMixin:
     def _get_current_history_id(self) -> str:
         """Return the current session's history ID (works for anonymous users)."""
         return self._get(urljoin(self.url, "history/current_history_json")).json()["id"]
+
+    @contextmanager
+    def _browser_session(self, email: str, password: str = "testpass"):
+        """Yield a ``requests.Session`` logged in as ``email`` via the web login form.
+
+        For legacy controller routes outside /api that reject API keys.
+        """
+        self._setup_user(email, password)
+        with requests.Session() as session:
+            login_page = session.get(urljoin(self.url, "login/start"))
+            csrf_token_match = re.search(r'session_csrf_token = "(.*?)"', login_page.text)
+            assert csrf_token_match, "session_csrf_token not found on login page"
+            login_response = session.post(
+                urljoin(self.url, "user/login"),
+                data={"login": email, "password": password, "session_csrf_token": csrf_token_match.group(1)},
+            )
+            assert_status_code_is(login_response, 200)
+            yield session
+
+    @contextmanager
+    def _different_user_with_address(self, desc: str):
+        """Act as a new user with one address, as tools reading ``$__user__.addresses`` need."""
+        with self._different_user(f"user_{uuid4()}@bx.psu.edu"):
+            user_id = self._get("users/current").json()["id"]
+            response = self._put(f"users/{user_id}/information/inputs", data={"address_0|desc": desc}, json=True)
+            assert_status_code_is_ok(response)
+            yield
 
     def _get(self, *args, **kwds):
         return self.galaxy_interactor.get(*args, **kwds)

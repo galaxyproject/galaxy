@@ -8968,6 +8968,14 @@ export interface components {
              */
             tags?: string[] | null;
         };
+        /** CollectionMetadata */
+        CollectionMetadata: {
+            /**
+             * Name
+             * @description Expected name of the output collection.
+             */
+            name?: string | null;
+        };
         /**
          * CollectionSourceType
          * @enum {string}
@@ -17824,7 +17832,7 @@ export interface components {
             new_history_name?: string | null;
             /**
              * No Add to History
-             * @description Indicates if the workflow invocation should not be added to the history.
+             * @description If true, workflow inputs from other histories or libraries are not copied into the target history.
              * @default false
              */
             no_add_to_history: boolean | null;
@@ -24254,7 +24262,7 @@ export interface components {
             compare?: components["schemas"]["OutputCompareType"] | null;
             /**
              * Decompress
-             * @description If true, decompress files before comparison. Applies to assertions expressed with `assert_contents` or `compare` set to anything but `sim_size`. Useful for testing compressed outputs that are non-deterministic despite having deterministic decompressed contents. By default, only files compressed with bz2, gzip and zip are automatically decompressed.
+             * @description If true, decompress files before comparison. Applies to assertions expressed with `assert_contents`, to `md5` and `checksum`, and to `compare` set to anything but `sim_size`. Useful for testing compressed outputs that are non-deterministic despite having deterministic decompressed contents. By default, only files compressed with bz2, gzip and zip are automatically decompressed. The result of combining `decompress` with `md5` or `checksum` on an archive with more than one member is undefined.
              */
             decompress?: boolean | null;
             /**
@@ -24332,7 +24340,7 @@ export interface components {
             compare?: components["schemas"]["OutputCompareType"] | null;
             /**
              * Decompress
-             * @description If true, decompress files before comparison. Applies to assertions expressed with `assert_contents` or `compare` set to anything but `sim_size`. Useful for testing compressed outputs that are non-deterministic despite having deterministic decompressed contents. By default, only files compressed with bz2, gzip and zip are automatically decompressed.
+             * @description If true, decompress files before comparison. Applies to assertions expressed with `assert_contents`, to `md5` and `checksum`, and to `compare` set to anything but `sim_size`. Useful for testing compressed outputs that are non-deterministic despite having deterministic decompressed contents. By default, only files compressed with bz2, gzip and zip are automatically decompressed. The result of combining `decompress` with `md5` or `checksum` on an archive with more than one member is undefined.
              */
             decompress?: boolean | null;
             /**
@@ -24408,6 +24416,8 @@ export interface components {
                     | components["schemas"]["TestCollectionDatasetElementAssertions-Input"]
                     | components["schemas"]["TestCollectionCollectionElementAssertions-Input"];
             } | null;
+            /** Metadata */
+            metadata?: components["schemas"]["CollectionMetadata"] | null;
         };
         /** TestCollectionOutputAssertions */
         "TestCollectionOutputAssertions-Output": {
@@ -24434,6 +24444,8 @@ export interface components {
                     | components["schemas"]["TestCollectionDatasetElementAssertions-Output"]
                     | components["schemas"]["TestCollectionCollectionElementAssertions-Output"];
             } | null;
+            /** Metadata */
+            metadata?: components["schemas"]["CollectionMetadata"] | null;
         };
         /** TestDataOutputAssertions */
         "TestDataOutputAssertions-Input": {
@@ -24462,7 +24474,7 @@ export interface components {
             compare?: components["schemas"]["OutputCompareType"] | null;
             /**
              * Decompress
-             * @description If true, decompress files before comparison. Applies to assertions expressed with `assert_contents` or `compare` set to anything but `sim_size`. Useful for testing compressed outputs that are non-deterministic despite having deterministic decompressed contents. By default, only files compressed with bz2, gzip and zip are automatically decompressed.
+             * @description If true, decompress files before comparison. Applies to assertions expressed with `assert_contents`, to `md5` and `checksum`, and to `compare` set to anything but `sim_size`. Useful for testing compressed outputs that are non-deterministic despite having deterministic decompressed contents. By default, only files compressed with bz2, gzip and zip are automatically decompressed. The result of combining `decompress` with `md5` or `checksum` on an archive with more than one member is undefined.
              */
             decompress?: boolean | null;
             /**
@@ -24540,7 +24552,7 @@ export interface components {
             compare?: components["schemas"]["OutputCompareType"] | null;
             /**
              * Decompress
-             * @description If true, decompress files before comparison. Applies to assertions expressed with `assert_contents` or `compare` set to anything but `sim_size`. Useful for testing compressed outputs that are non-deterministic despite having deterministic decompressed contents. By default, only files compressed with bz2, gzip and zip are automatically decompressed.
+             * @description If true, decompress files before comparison. Applies to assertions expressed with `assert_contents`, to `md5` and `checksum`, and to `compare` set to anything but `sim_size`. Useful for testing compressed outputs that are non-deterministic despite having deterministic decompressed contents. By default, only files compressed with bz2, gzip and zip are automatically decompressed. The result of combining `decompress` with `md5` or `checksum` on an archive with more than one member is undefined.
              */
             decompress?: boolean | null;
             /**

@@ -129,18 +129,25 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
         # Delete multiple histories
         self.components.histories.bulk_delete_button.wait_for_and_click()
         self.components.confirm_dialog.ok_button.wait_for_and_click()
+        # Histories are deleted one at a time; the selection (and with it the button) is reset after the last one.
+        self.components.histories.bulk_delete_button.wait_for_absent_or_hidden()
+        self.components.histories.list_loading.wait_for_absent()
+        self.assert_histories_in_list([self.history2_name, self.history3_name], False)
 
         # Display deleted histories
         self.components.histories.advanced_search_toggle.wait_for_and_click()
         self.check_advanced_search_filter("deleted")
 
         # Select multiple histories
-        self.sleep_for(self.wait_types.UX_RENDER)
+        self.assert_histories_in_list([self.history2_name, self.history3_name])
         self.toggle_card_selection_in_list("#history-list", [self.history2_name, self.history3_name])
+        assert "Restore (2)" in self.components.histories.bulk_restore_button.wait_for_text()
 
         # Restore multiple histories
         self.components.histories.bulk_restore_button.wait_for_and_click()
         self.components.confirm_dialog.ok_button.wait_for_and_click()
+        self.components.histories.bulk_restore_button.wait_for_absent_or_hidden()
+        self.components.histories.list_loading.wait_for_absent()
 
         # Verify deleted histories have been restored
         self.components.histories.reset_input.wait_for_and_click()
@@ -225,9 +232,12 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
         self._login()
         self.navigate_to_histories_page()
 
-        self.wait_for_and_click_selector('[data-title="Sort by Name ascending"]')
-        self.wait_for_and_click_selector('[data-title="Sort by Name ascending"]')
-        self.sleep_for(self.wait_types.UX_RENDER)
+        histories = self.components.histories
+        # The first click selects name (still descending), the second switches to ascending.
+        histories.sort_button(field="Name", direction="ascending").wait_for_and_click()
+        histories.sort_button(field="Name", direction="ascending").wait_for_and_click()
+        histories.sort_button(field="Name", direction="descending").wait_for_visible()
+        histories.list_loading.wait_for_absent()
 
         expected_histories = [self.history2_name, self.history3_name]
 

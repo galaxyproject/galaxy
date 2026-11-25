@@ -5,6 +5,7 @@ import { computed, nextTick, onMounted, type Ref, ref } from "vue";
 import { useRoute } from "vue-router/composables";
 
 import { useWizard } from "@/components/Common/Wizard/useWizard";
+import { trsImportQuery } from "@/components/Workflow/Import/trsImportQuery";
 import type { TrsSelection } from "@/components/Workflow/Import/types";
 import { validateWorkflowFile } from "@/components/Workflow/Import/workflowValidation";
 import { Services } from "@/components/Workflow/services";
@@ -62,13 +63,7 @@ const { isFileOverDropZone: isFileOverUploadCard } = useFileDrop({
     ignoreChildrenOnLeave: true,
 });
 
-const queryParams = computed(() => ({
-    trsId: route.query.trs_id as string | undefined,
-    trsUrl: route.query.trs_url as string | undefined,
-    trsServer: route.query.trs_server as string | undefined,
-    trsVersionId: route.query.trs_version_id as string | undefined,
-    isRun: route.query.run_form === "true",
-}));
+const queryParams = computed(() => trsImportQuery(route.query));
 
 const services = new Services();
 services.getTrsServers().then((res) => {

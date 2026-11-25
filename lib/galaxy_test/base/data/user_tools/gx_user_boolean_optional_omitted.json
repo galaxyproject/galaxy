@@ -1,0 +1,23 @@
+{
+  "class": "GalaxyUserTool",
+  "id": "gx_user_boolean_optional_omitted",
+  "name": "gx_user_boolean_optional_omitted",
+  "version": "1.0.0",
+  "container": "busybox",
+  "shell_command": "printf '%s\\n' '$({flag: inputs.flag})' > output.json",
+  "inputs": [
+    {
+      "name": "flag",
+      "type": "boolean",
+      "optional": true
+    }
+  ],
+  "outputs": [
+    {
+      "name": "output",
+      "type": "data",
+      "format": "json",
+      "from_work_dir": "output.json"
+    }
+  ]
+}

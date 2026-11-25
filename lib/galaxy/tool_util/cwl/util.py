@@ -281,22 +281,20 @@ def galactic_job_json(
         secondary_files = value.get("secondaryFiles", [])
         secondary_files_tar_path = None
         if secondary_files:
-            tmp = tempfile.NamedTemporaryFile(delete=False)
-            tf = tarfile.open(fileobj=tmp, mode="w:")
             order: List[str] = []
             index_contents = {"order": order}
-            for secondary_file in secondary_files:
-                secondary_file_path = secondary_file.get("location", None) or secondary_file.get("path", None)
-                assert secondary_file_path, f"Invalid secondaryFile entry found [{secondary_file}]"
-                full_secondary_file_path = os.path.join(test_data_directory, secondary_file_path)
-                basename = secondary_file.get("basename") or os.path.basename(secondary_file_path)
-                order.append(unicodify(basename))
-                tf.add(full_secondary_file_path, os.path.join(SECONDARY_FILES_EXTRA_PREFIX, basename))
-            tmp_index = tempfile.NamedTemporaryFile(delete=False, mode="w")
-            json.dump(index_contents, tmp_index)
-            tmp_index.close()
-            tf.add(tmp_index.name, SECONDARY_FILES_INDEX_PATH)
-            tf.close()
+            with tempfile.NamedTemporaryFile(delete=False) as tmp, tarfile.open(fileobj=tmp, mode="w:") as tf:
+                for secondary_file in secondary_files:
+                    secondary_file_path = secondary_file.get("location", None) or secondary_file.get("path", None)
+                    assert secondary_file_path, f"Invalid secondaryFile entry found [{secondary_file}]"
+                    full_secondary_file_path = os.path.join(test_data_directory, secondary_file_path)
+                    basename = secondary_file.get("basename") or os.path.basename(secondary_file_path)
+                    order.append(unicodify(basename))
+                    tf.add(full_secondary_file_path, os.path.join(SECONDARY_FILES_EXTRA_PREFIX, basename))
+                tmp_index = tempfile.NamedTemporaryFile(delete=False, mode="w")
+                json.dump(index_contents, tmp_index)
+                tmp_index.close()
+                tf.add(tmp_index.name, SECONDARY_FILES_INDEX_PATH)
             secondary_files_tar_path = tmp.name
 
         return upload_file(file_path, secondary_files_tar_path, filetype=filetype, **kwd)
@@ -309,10 +307,8 @@ def galactic_job_json(
 
         file_type = value.get("filetype", None) or value.get("format", None) or "directory"
 
-        tmp = tempfile.NamedTemporaryFile(delete=False)
-        tf = tarfile.open(fileobj=tmp, mode="w:")
-        tf.add(file_path, ".")
-        tf.close()
+        with tempfile.NamedTemporaryFile(delete=False) as tmp, tarfile.open(fileobj=tmp, mode="w:") as tf:
+            tf.add(file_path, ".")
 
         return upload_tar(tmp.name, file_type=file_type, name=os.path.basename(file_path))
 

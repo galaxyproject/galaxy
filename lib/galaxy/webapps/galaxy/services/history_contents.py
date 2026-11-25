@@ -1075,9 +1075,8 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
         """Legacy implementation of the `index` action."""
         history = self._get_history(trans, history_id)
         legacy_params_dict = legacy_params.model_dump(exclude_defaults=True)
-        if ids := legacy_params_dict.get("ids"):
-            legacy_params_dict["ids"] = self.decode_ids(ids)
-        else:
+        # The ids are already decoded: they are DecodedDatabaseIdFields.
+        if not legacy_params_dict.get("ids"):
             legacy_params_dict.pop("ids", None)
 
         object_store_ids = None

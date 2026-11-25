@@ -15,6 +15,7 @@ from collections.abc import (
     MutableMapping,
     Sequence,
 )
+from contextlib import nullcontext
 from pathlib import Path
 from typing import (
     Any,
@@ -50,6 +51,7 @@ from galaxy.job_execution.output_collect import (
     MetadataSourceProvider,
     PermissionProvider,
 )
+from galaxy.job_execution.setup import ensure_configs_directory
 from galaxy.managers.credentials import build_credentials_context_response
 from galaxy.metadata import get_metadata_compute_strategy
 from galaxy.model import (
@@ -158,6 +160,10 @@ from galaxy.tool_util_models.tool_source import (
     JavascriptRequirement,
     TemplateConfigFile,
 )
+from galaxy.tool_util_models.untrusted import (
+    is_loading_untrusted_tools,
+    loading_untrusted_tools,
+)
 from galaxy.tools import expressions
 from galaxy.tools.actions import (
     DefaultToolAction,
@@ -170,6 +176,11 @@ from galaxy.tools.evaluation import global_tool_errors
 from galaxy.tools.execution_helpers import ToolExecutionCache
 from galaxy.tools.expressions.labels import render_yaml_tool_label
 from galaxy.tools.imp_exp import JobImportHistoryArchiveWrapper
+from galaxy.tools.job_parameters import (
+    DATA_MANAGER_MODE,
+    EXPORT_TO_URI,
+    TEMPLATE_JOB_PARAMETERS,
+)
 from galaxy.tools.parameters import (
     check_param,
     fill_dynamic_defaults,
@@ -375,6 +386,10 @@ GALAXY_LIB_TOOLS_VERSIONED = {
 REQUIRE_FULL_DIRECTORY = {
     "includes": [{"path": "**", "path_type": "glob"}],
 }
+# Main script at the top level, helper modules imported from utils/
+REQUIRE_PY_SCRIPTS_AND_UTILS = {
+    "includes": [{"path": "*.py", "path_type": "glob"}, {"path": "utils/*", "path_type": "glob"}],
+}
 IMPLICITLY_REQUIRED_TOOL_FILES: dict[str, dict] = {
     "deseq2": {
         "version": parse_version("2.11.40.6"),
@@ -383,21 +398,30 @@ IMPLICITLY_REQUIRED_TOOL_FILES: dict[str, dict] = {
     # minimum example:
     # "foobar": {"required": REQUIRE_FULL_DIRECTORY}
     # if no version is specified, all versions without explicit RequiredFiles will be selected
+    # charts.r sources the module script named by -m from the -w tool directory
+    "charts": {"required": {"includes": [{"path": "*.r", "path_type": "glob"}]}},
     "circos": {"required": REQUIRE_FULL_DIRECTORY},
     "cp_image_math": {"required": {"includes": [{"path": "*.py", "path_type": "glob"}]}},
+    # the script path sits in \'...\' inside a $'...' parallel argument
+    "docking": {"required": {"includes": [{"path": "*.py", "path_type": "glob"}]}},
     "enumerate_charges": {"required": REQUIRE_FULL_DIRECTORY},
-    "fasta_compute_length": {"required": {"includes": [{"path": "utils/*", "path_type": "glob"}]}},
-    "fasta_concatenate0": {"required": {"includes": [{"path": "utils/*", "path_type": "glob"}]}},
+    "fasta_compute_length": {"required": REQUIRE_PY_SCRIPTS_AND_UTILS},
+    "fasta_concatenate0": {"required": REQUIRE_PY_SCRIPTS_AND_UTILS},
     "filter_tabular": {"required": {"includes": [{"path": "*.py", "path_type": "glob"}]}},
-    "flanking_features_1": {"required": {"includes": [{"path": "utils/*", "path_type": "glob"}]}},
-    "gops_intersect_1": {"required": {"includes": [{"path": "utils/*", "path_type": "glob"}]}},
-    "gops_subtract_1": {"required": {"includes": [{"path": "utils/*", "path_type": "glob"}]}},
+    "flanking_features_1": {"required": REQUIRE_PY_SCRIPTS_AND_UTILS},
+    "gops_intersect_1": {"required": REQUIRE_PY_SCRIPTS_AND_UTILS},
+    "gops_subtract_1": {"required": REQUIRE_PY_SCRIPTS_AND_UTILS},
     "maxquant": {"required": {"includes": [{"path": "*.py", "path_type": "glob"}]}},
     "maxquant_mqpar": {"required": {"includes": [{"path": "*.py", "path_type": "glob"}]}},
     "query_tabular": {"required": {"includes": [{"path": "*.py", "path_type": "glob"}]}},
+    # the script path sits in \"...\" inside an Rscript -e argument
+    "seurat": {"required": {"includes": [{"path": "*.R", "path_type": "glob"}]}},
     "shasta": {"required": {"includes": [{"path": "configs/*", "path_type": "glob"}]}},
     "sqlite_to_tabular": {"required": {"includes": [{"path": "*.py", "path_type": "glob"}]}},
     "sucos_max_score": {"required": {"includes": [{"path": "*.py", "path_type": "glob"}]}},
+    # transformation_wrapper.R sources transformation_script.R from its own directory
+    "Transformation": {"required": {"includes": [{"path": "*.R", "path_type": "glob"}]}},
+    "translate_bed": {"required": {"includes": [{"path": "*.py", "path_type": "glob"}]}},
 }
 
 
@@ -941,8 +965,7 @@ class JobContext(BaseJobContext):
     def get_library_folder(self, destination: dict[str, Any]):
         folder_id = destination.get("library_folder_id")
         assert folder_id
-        decoded_folder_id = self.app.security.decode_id(folder_id) if isinstance(folder_id, str) else folder_id
-        library_folder = self.app.library_folder_manager.get(self.work_context, decoded_folder_id)
+        library_folder = self.app.library_folder_manager.get_for_adding(self.work_context, folder_id)
         return library_folder
 
     def get_hdca(self, object_id):
@@ -1049,6 +1072,8 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
     version: str
     uses_tool_provided_metadata: bool
     allows_unnamed_outputs: bool
+    # Job parameters that are not tool inputs and that the tool's templates read.
+    template_job_parameters: frozenset[str] = TEMPLATE_JOB_PARAMETERS
 
     def __init__(
         self,
@@ -1119,8 +1144,6 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
         self.dependencies: list = []
         # populate toolshed repository info, if available
         self.populate_tool_shed_info(tool_shed_repository)
-        # add tool resource parameters
-        self.populate_resource_parameters(tool_source)
         self.tool_errors: Optional[str] = None
         # Parse XML element containing configuration
         self.tool_source = tool_source
@@ -1134,6 +1157,9 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
         self.credentials: Optional[list[CredentialsRequirement]] = None
         self._is_workflow_compatible = None
         self.__tests: Optional[str] = None
+        self.__tests_parsed: bool = False
+        # tests are parsed later, in the same trust context as the tool itself
+        self._loaded_untrusted = is_loading_untrusted_tools()
         self.parameters: Optional[list[ToolParameterT]] = None
         self.template_macro_params: dict = {}
         self._macro_paths: list = []
@@ -1163,6 +1189,11 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
     def version_object(self):
         """Parse version string, handling special Galaxy version format."""
         return parse_tool_version(self.version)
+
+    @property
+    def yaml_origin(self) -> bool:
+        """Whether this is a GalaxyTool/GalaxyUserTool YAML tool, following the canonical parameter contract."""
+        return self.tool_source.is_yaml_origin()
 
     @property
     def sa_session(self):
@@ -1481,6 +1512,8 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
                 tool_classes.append("user_defined")
 
             self.job_tool_configurations = self.app.job_config.get_job_tool_configurations(self_ids, tool_classes)
+            # Adds the job resource conditional to the tool's XML inputs, so it must run before parse_inputs.
+            self.populate_resource_parameters(tool_source)
 
         # Is this a 'hidden' tool (hidden in tool menu)
         self.hidden = tool_source.parse_hidden()
@@ -1492,7 +1525,6 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
 
         if self.app.is_webapp:
             self.raw_help = self._parse_help(tool_source)
-            self.parse_tests()
         self.__parse_legacy_features(tool_source)
 
         # Load any tool specific options (optional)
@@ -1641,16 +1673,44 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
         self.config_files.extend(tool_source.parse_file_sources())
 
     def parse_tests(self):
-        if self.tool_source:
-            test_descriptions = parse_tool_test_descriptions(self.tool_source, self.id, self.parameters)
+        # The parsed flag is set only once ``__tests`` holds the result, so a
+        # concurrent first access parses again instead of reading ``None``
+        # while this parse is still running.
+        source = self.tool_source
+        if source is None:
+            self.__tests_parsed = True
+            return
+        # ``Tool.__init__`` calls ``tool_source.mem_optimize()`` after parsing,
+        # which frees an ``XmlToolSource``'s element tree (``root`` becomes
+        # ``None``). A deferred test parse therefore rebuilds the source from
+        # its retained string — the same round-trip a stored tool source uses.
+        # Non-XML sources have no ``root`` and keep their data, so they parse
+        # directly.
+        if getattr(source, "root", False) is None:
             try:
-                self.__tests = json.dumps([t.to_dict() for t in test_descriptions], indent=None)
+                source = get_tool_source(raw_tool_source=source.to_string(), tool_source_class=type(source).__name__)
             except Exception:
                 self.__tests = None
-                log.exception("Failed to parse tool tests for tool '%s'", self.id)
+                self.__tests_parsed = True
+                log.exception("Failed to rebuild tool source for deferred test parsing of '%s'", self.id)
+                return
+        test_descriptions = parse_tool_test_descriptions(source, self.id, self.parameters)
+        try:
+            self.__tests = json.dumps([t.to_dict() for t in test_descriptions], indent=None)
+        except Exception:
+            self.__tests = None
+            log.exception("Failed to parse tool tests for tool '%s'", self.id)
+        self.__tests_parsed = True
 
     @property
     def tests(self):
+        # Deferred parse: the ``<tests>`` block is only needed by the
+        # test-data, tarball and tour endpoints, so pay the (potentially
+        # seconds-long) validation cost on first access rather than at
+        # construction.
+        if not self.__tests_parsed and self.app.is_webapp:
+            with loading_untrusted_tools() if self._loaded_untrusted else nullcontext():
+                self.parse_tests()
         if self.__tests:
             return [ToolTestDescription(d) for d in json.loads(self.__tests)]
         return None
@@ -1909,9 +1969,12 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
                 page_source = input_source.parse_nested_inputs_source()
                 group_r.inputs = self.parse_input_elem(page_source, enctypes, context)
                 group_r.default = int(input_source.get("default", 0))
-                group_r.min = int(input_source.get("min", 0))
+                # Canonical YAML models serialize an unset min/max as null.
+                min_raw = input_source.get("min")
+                group_r.min = int(min_raw) if min_raw is not None else 0
+                max_raw = input_source.get("max")
                 # Use float instead of int so that math.inf can be used for no max
-                group_r.max = float(input_source.get("max", math.inf))
+                group_r.max = float(max_raw) if max_raw is not None else math.inf
                 assert group_r.min <= group_r.max, ValueError(
                     f"Tool with id '{self.id}': min repeat count must be less-than-or-equal to the max."
                 )
@@ -2043,12 +2106,8 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
 
     def populate_resource_parameters(self, tool_source):
         root = getattr(tool_source, "root", None)
-        if (
-            root is not None
-            and hasattr(self.app, "job_config")
-            and hasattr(self.app.job_config, "get_tool_resource_xml")
-        ):
-            resource_xml = self.app.job_config.get_tool_resource_xml(root.get("id", "").lower(), self.tool_type)
+        if root is not None and hasattr(self.app.job_config, "get_tool_resource_xml"):
+            resource_xml = self.app.job_config.get_tool_resource_xml(self.all_ids, self.tool_type)
             if resource_xml is not None:
                 inputs = root.find("inputs")
                 if inputs is None:
@@ -2097,7 +2156,7 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
         YAML tools, admin and user-defined alike, fill in only parameter references, the
         same ``$(inputs.<name>)`` syntax their commands use. Other tools fill labels as Cheetah.
         """
-        return self.tool_source.parse_class() in ("GalaxyTool", "GalaxyUserTool")
+        return self.yaml_origin
 
     def render_output_label(
         self,
@@ -2165,6 +2224,15 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
             return collection_def.outputs.get(part, None)
         else:
             return self.outputs.get(name, None)
+
+    @property
+    def keeps_undeclared_job_parameters(self) -> bool:
+        """Pass job parameters that are not tool inputs to the templates.
+
+        Tools that do not check their values (data source tools) take the request
+        parameters as they are sent.
+        """
+        return not self.check_values
 
     @property
     def is_workflow_compatible(self):
@@ -2278,8 +2346,12 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
             raise RequestParameterInvalidException(f"Tool {self.id} has no parameters defined")
         parameter_bundle = ToolParameterBundleModel(parameters=self.parameters)
         for expanded_incoming, job_tool_state in zip(expanded_incomings, job_tool_states):
-            expanded_incoming = fill_static_defaults(expanded_incoming, parameter_bundle, self.profile)
-            job_tool_state = fill_static_defaults(job_tool_state, parameter_bundle, self.profile)
+            expanded_incoming = fill_static_defaults(
+                expanded_incoming, parameter_bundle, self.profile, yaml_origin=self.yaml_origin
+            )
+            job_tool_state = fill_static_defaults(
+                job_tool_state, parameter_bundle, self.profile, yaml_origin=self.yaml_origin
+            )
             params, errors = self._populate_async(request_context, expanded_incoming)
             # params have had dynamic defaults requiring like dataset contents expanded out
             # so we can use that backfill job_tool_state
@@ -2427,10 +2499,11 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
         trans,
         use_cached_job: bool,
         all_params: list[ToolStateJobInstancePopulatedT],
+        recorded_job_indexes: Optional[set[int]] = None,
     ) -> dict[int, Optional[Job]]:
         completed_jobs: dict[int, Optional[Job]] = {}
         for i, param in enumerate(all_params):
-            if use_cached_job and trans.user:
+            if use_cached_job and trans.user and not (recorded_job_indexes and i in recorded_job_indexes):
                 tool_id = self.id
                 assert tool_id
                 param_dump: ToolStateDumpedToJsonInternalT = params_to_json_internal(self.inputs, param, self.app)
@@ -3108,8 +3181,8 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
         tool_dict["versions"] = self.tool_versions
         tool_dict["hidden_versions"] = self.hidden_tool_versions
 
-        if self.dynamic_tool:
-            tool_dict["uuid"] = str(self.dynamic_tool.uuid)
+        if self.dynamic_tool_uuid:
+            tool_dict["uuid"] = str(self.dynamic_tool_uuid)
 
         # Fill in ToolShedRepository info
         if hasattr(self, "tool_shed") and self.tool_shed:
@@ -3562,8 +3635,8 @@ class ExpressionTool(Tool):
 
     def exec_before_job(self, app, inp_data: InpDataDictT, out_data: OutDataDictT, param_dict=None):
         super().exec_before_job(app, inp_data, out_data, param_dict=param_dict)
-        local_working_directory = param_dict["__local_working_directory__"]
-        expression_inputs_path = os.path.join(local_working_directory, ExpressionTool.EXPRESSION_INPUTS_NAME)
+        configs_directory = ensure_configs_directory(param_dict["__local_working_directory__"])
+        expression_inputs_path = os.path.join(configs_directory, ExpressionTool.EXPRESSION_INPUTS_NAME)
 
         outputs = []
         for out_name in out_data.keys():
@@ -3589,7 +3662,7 @@ class ExpressionTool(Tool):
             "script": self._expression,
             "outputs": outputs,
         }
-        expressions.write_evalute_script(os.path.join(local_working_directory))
+        expressions.write_evalute_script(configs_directory)
         with open(expression_inputs_path, "w") as f:
             json.dump(expression_inputs, f)
 
@@ -3647,7 +3720,8 @@ class ExpressionTool(Tool):
         environmnt_variables_raw = super().parse_environment_variables(tool_source)
         expression_script_inputs = dict(
             name="GALAXY_EXPRESSION_INPUTS",
-            template=ExpressionTool.EXPRESSION_INPUTS_NAME,
+            # Relative to the job directory, which the expression script runs from.
+            template=f"configs/{ExpressionTool.EXPRESSION_INPUTS_NAME}",
         )
         environmnt_variables_raw.append(expression_script_inputs)
         return environmnt_variables_raw
@@ -3832,6 +3906,7 @@ class SetMetadataTool(Tool):
 
 class ExportHistoryTool(Tool):
     tool_type = "export_history"
+    template_job_parameters = Tool.template_job_parameters | {EXPORT_TO_URI}
 
 
 class ImportHistoryTool(Tool):
@@ -3897,7 +3972,7 @@ class DataManagerTool(OutputParameterJSONTool):
         assert (
             data_manager is not None
         ), f"Invalid data manager ({data_manager_id}) requested. It may have been removed before the job completed."
-        data_manager_mode = param_dict.get("__data_manager_mode", "populate")
+        data_manager_mode = param_dict.get(DATA_MANAGER_MODE, "populate")
         if data_manager_mode == "populate":
             data_manager.process_result(out_data)
         elif data_manager_mode == "dry_run":

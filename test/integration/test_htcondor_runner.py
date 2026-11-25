@@ -1046,6 +1046,66 @@ def _set_job_events(fake_htcondor, cjs, event_names):
             False,
             id="aborted-after-user-stop-finishes",
         ),
+        pytest.param(
+            dict(htcondor_config="/tmp/condor-aborted-user-deleting"),
+            ["JOB_ABORTED"],
+            model.Job.states.DELETING,
+            True,
+            None,
+            model.Job.states.DELETING,
+            False,
+            0,
+            False,
+            id="aborted-while-user-deleting-is-ignored",
+        ),
+        pytest.param(
+            dict(htcondor_config="/tmp/condor-terminated-user-deleting"),
+            ["JOB_TERMINATED"],
+            model.Job.states.DELETING,
+            True,
+            None,
+            model.Job.states.DELETING,
+            False,
+            0,
+            False,
+            id="terminated-while-user-deleting-is-ignored",
+        ),
+        pytest.param(
+            dict(htcondor_config="/tmp/condor-held-user-deleting"),
+            ["JOB_HELD"],
+            model.Job.states.DELETING,
+            True,
+            None,
+            model.Job.states.DELETING,
+            False,
+            1,
+            False,
+            id="held-while-user-deleting-stays-watched",
+        ),
+        pytest.param(
+            dict(htcondor_config="/tmp/condor-aborted-user-stopping"),
+            ["JOB_ABORTED"],
+            model.Job.states.STOPPING,
+            True,
+            None,
+            model.Job.states.STOPPING,
+            False,
+            1,
+            False,
+            id="aborted-while-user-stopping-stays-watched",
+        ),
+        pytest.param(
+            dict(htcondor_config="/tmp/condor-held-user-stopping"),
+            ["JOB_HELD"],
+            model.Job.states.STOPPING,
+            True,
+            None,
+            model.Job.states.STOPPING,
+            False,
+            1,
+            False,
+            id="held-while-user-stopping-stays-watched",
+        ),
     ],
 )
 def test_watch_lifecycle_transitions(
@@ -1089,6 +1149,26 @@ def test_watch_lifecycle_transitions(
         assert runner.watched[0].running is expected_running
     assert job_wrapper.state == expected_wrapper_state
     assert job_wrapper.entry_points_checked is expect_entry_points
+
+
+def test_aborted_while_stopping_finishes_once_stopped(fake_instance, fake_htcondor, runner_factory):
+    runner = runner_factory()
+    job_wrapper = _job_wrapper(
+        fake_instance, 1, dict(htcondor_config="/tmp/condor-aborted-stopping"), state=model.Job.states.STOPPING
+    )
+    cjs = _watch_job(runner, job_wrapper)
+    _write_user_log(cjs)
+    _set_job_events(fake_htcondor, cjs, ["JOB_ABORTED"])
+
+    runner.check_watched_items()
+    assert runner.work_queue.empty()
+    assert runner.watched == [cjs]
+
+    job_wrapper.state = model.Job.states.STOPPED
+    runner.check_watched_items()
+    method, _ = runner.work_queue.get_nowait()
+    assert method == runner.finish_job
+    assert runner.watched == []
 
 
 def test_held_released_then_executes_and_finishes(fake_instance, fake_htcondor, runner_factory):
@@ -1996,12 +2076,11 @@ def test_non_9_signal_termination_finishes_normally(fake_instance, fake_htcondor
     assert method == runner.finish_job
 
 
-def test_sigkill_on_user_stopped_job_finishes_not_oom(fake_instance, fake_htcondor, runner_factory):
-    """SIGKILL on a STOPPED job is not OOM — user stopped it, complete normally."""
+@pytest.mark.parametrize("state", [model.Job.states.STOPPED, model.Job.states.STOPPING], ids=["stopped", "stopping"])
+def test_sigkill_on_user_stopped_job_finishes_not_oom(fake_instance, fake_htcondor, runner_factory, state):
+    """SIGKILL on a STOPPED/STOPPING job is not OOM — user stopped it, complete normally."""
     runner = runner_factory()
-    job_wrapper = _job_wrapper(
-        fake_instance, 1, dict(htcondor_config="/tmp/condor-stopped-sigkill"), state=model.Job.states.STOPPED
-    )
+    job_wrapper = _job_wrapper(fake_instance, 1, dict(htcondor_config="/tmp/condor-stopped-sigkill"), state=state)
     cjs = _watch_job(runner, job_wrapper)
     _write_user_log(cjs)
 

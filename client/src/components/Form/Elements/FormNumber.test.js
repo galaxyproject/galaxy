@@ -79,6 +79,36 @@ describe("FormNumber", () => {
         }
     });
 
+    it("warns about and corrects values beyond a single defined bound", async () => {
+        const checkSingleBound = async (props, number, expectedAlert, expectedValue) => {
+            const wrapper = await mountFormNumber({ value: "", type: "integer", ...props });
+            const input = await getInput(wrapper);
+            await input.setValue(number);
+            await input.trigger("change");
+            const alert = await getAlert(wrapper);
+            expect(alert.text()).toContain(expectedAlert);
+            expect(wrapper.emitted().input.at(-1)).toEqual([expectedValue]);
+            expect((await getInputRange(wrapper)).exists()).toBe(false);
+            wrapper.destroy();
+        };
+
+        await checkSingleBound({ min: null, max: 5 }, 7, "7 is out of range! (7 > 5)", 5);
+        await checkSingleBound({ min: 5, max: null }, 3, "3 is out of range! (3 < 5)", 5);
+    });
+
+    it("lets a bounded field be cleared without snapping to a bound", async () => {
+        // Required fields are left empty too; the form's required-value check reports them instead.
+        for (const optional of [true, false]) {
+            const wrapper = await mountFormNumber({ value: 3, type: "integer", optional, min: 1, max: 5 });
+            const input = await getInput(wrapper);
+            await input.setValue("");
+            await input.trigger("change");
+            expect((await getAlert(wrapper)).exists()).toBe(false);
+            expect(wrapper.emitted().input.at(-1)).toEqual([""]);
+            wrapper.destroy();
+        }
+    });
+
     it("shows a validation alert when entering a decimal for integer type", async () => {
         const checkFractionsAlert = async (key) => {
             const wrapper = await mountFormNumber(props);

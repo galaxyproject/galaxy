@@ -1,6 +1,7 @@
 """Unit tests for shed-side data table install behavior."""
 
 import os
+from dataclasses import dataclass
 from unittest import mock
 
 import pytest
@@ -31,6 +32,11 @@ class _FakeTableRegistry(ToolDataTableManager):
             fh.write(b"<tables/>")
 
 
+@dataclass
+class _RepositoryTool:
+    params_with_missing_data_table_entry: list[str]
+
+
 SAMPLE_TABLE_CONF = """\
 <tables>
     <table name="all_fasta" comment_char="#">
@@ -41,6 +47,15 @@ SAMPLE_TABLE_CONF = """\
 """
 
 LOC_SAMPLE_CONTENT = "# all_fasta.loc sample\n"
+
+CORE_TABLE_CONF = """\
+<tables>
+    <table name="core_table" comment_char="#">
+        <columns>value, path</columns>
+        <file path="tool-data/core_table.loc" />
+    </table>
+</tables>
+"""
 
 
 def _write(path: str, contents: str) -> None:
@@ -268,6 +283,38 @@ def test_merge_skipped_for_non_tabular_table_types(tmp_path):
     assert kept_elems == []
     existing.parse_file_fields.assert_not_called()
     existing.append_entries_with_attribution.assert_not_called()
+
+
+def test_handle_missing_data_table_entry_keeps_registered_tables(tmp_path):
+    stdtm, _, _, _, tool_data_path, _, _ = _make_stdtm(tmp_path)
+    core_conf = tmp_path / "tool_data_table_conf.xml"
+    core_conf.write_text(CORE_TABLE_CONF)
+    stdtm.app.tool_data_tables = ToolDataTableManager(tool_data_path, core_conf)
+    tool = _RepositoryTool(params_with_missing_data_table_entry=["dbkey"])
+
+    stdtm.handle_missing_data_table_entry(str(tmp_path / "repo"), None, [("tool.xml", "guid", tool)])
+
+    assert set(stdtm.app.tool_data_tables.data_tables) == {"core_table", "all_fasta"}
+
+
+def test_conflicting_install_after_missing_data_table_entry_is_refused(tmp_path):
+    stdtm, repo, _, _, tool_data_path, _, _ = _make_stdtm(tmp_path)
+    core_conf = tmp_path / "tool_data_table_conf.xml"
+    core_conf.write_text(CORE_TABLE_CONF)
+    stdtm.app.tool_data_tables = ToolDataTableManager(tool_data_path, core_conf)
+    repo_dir = str(tmp_path / "repo")
+    tool = _RepositoryTool(params_with_missing_data_table_entry=["dbkey"])
+    stdtm.handle_missing_data_table_entry(repo_dir, None, [("tool.xml", "guid", tool)])
+
+    _write(
+        os.path.join(repo_dir, "tool_data_table_conf.xml.sample"),
+        CORE_TABLE_CONF.replace("value, path", "value, dbkey, path"),
+    )
+    with pytest.raises(DataTableColumnMismatch) as exc_info:
+        stdtm.install_tool_data_tables(repo, ["tool_data_table_conf.xml.sample"])
+
+    assert exc_info.value.table_name == "core_table"
+    assert stdtm.app.tool_data_tables["core_table"].columns == {"value": 0, "path": 1}
 
 
 def test_parse_table_columns_matches_parse_column_spec():

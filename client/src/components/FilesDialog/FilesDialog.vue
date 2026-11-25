@@ -2,7 +2,7 @@
 import { faPlus } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert } from "bootstrap-vue";
-import Vue, { computed, onMounted, ref, watch } from "vue";
+import Vue, { computed, nextTick, onMounted, ref, watch } from "vue";
 
 import {
     browseRemoteFiles,
@@ -11,7 +11,7 @@ import {
     type FilterFileSourcesOptions,
     type RemoteEntry,
 } from "@/api/remoteFiles";
-import { fileSourcePluginToItem, isSubPath } from "@/components/FilesDialog/utilities";
+import { fileSourcePluginToItem, isSamePath, isSubPath } from "@/components/FilesDialog/utilities";
 import {
     type ItemsProvider,
     type ItemsProviderContext,
@@ -84,7 +84,13 @@ const hasValue = ref(false);
 const showTime = ref(true);
 const showDetails = ref(true);
 const isBusy = ref(false);
+/** Recursive folder listings still loading; the files they return are not selected yet */
+const pendingListings = ref(0);
+/** Latest recursive listing of each folder still loading; earlier or abandoned listings are ignored */
+const folderListings = new Map<string, symbol>();
 const showFTPHelper = ref(false);
+/** Root URIs of RDM sources, only fetched in directory mode to prevent selecting a repository root */
+const rdmUriRoots = ref<string[]>([]);
 const selectAllIcon = ref<SelectionState>(SELECTION_STATES.UNSELECTED);
 const urlTracker = useUrlTracker<SelectionItem & { parentPage?: number }>({ root: undefined });
 const totalItems = ref(0);
@@ -103,8 +109,26 @@ const fields = computed(() => {
 
 const fileMode = computed(() => props.mode == "file");
 
+/** The rows are one page of a paginated folder, or its filter matches, rather than all of its contents */
+const isPaginated = computed(
+    () => Boolean(itemsProvider.value) && (totalItems.value > items.value.length || Boolean(query.value)),
+);
+
+/** RDM repositories (e.g. Dataverse, Invenio) only hold files inside their records, not at their root */
+const isAtRdmRepositoryRoot = computed(() => {
+    const url = urlTracker.current.value?.url;
+    if (!url) {
+        return false;
+    }
+    return rdmUriRoots.value.some((uriRoot) => isSamePath(url, uriRoot));
+});
+
 const okButtonDisabled = computed(
-    () => (fileMode.value && !hasValue.value) || isBusy.value || (!fileMode.value && urlTracker.isAtRoot.value),
+    () =>
+        (fileMode.value && !hasValue.value) ||
+        isBusy.value ||
+        pendingListings.value > 0 ||
+        (!fileMode.value && (urlTracker.isAtRoot.value || isAtRdmRepositoryRoot.value)),
 );
 
 const canCreateNewFileSource = computed(() => {
@@ -177,15 +201,22 @@ function unselectPath(path: string, unselectOnlyAboveDirectories = false, unsele
 
 function selectDirectoryRecursive(record: SelectionItem) {
     // if directory is `selected` or `mixed` unselect everything
-    if (isDirectorySelected(record.id) || selectionModel.value.pathExists(record.url)) {
+    if (isDirectorySelected(record) || selectionModel.value.pathExists(record.url)) {
         unselectPath(record.url, false, record.id);
+        endFolderListing(record.id);
     } else {
         selectedDirectories.value.push(record);
         // look for subdirectories
         const recursive = true;
-        isBusy.value = true;
+        const listing = Symbol(record.id);
+        endFolderListing(record.id);
+        folderListings.set(record.id, listing);
+        pendingListings.value++;
         browseRemoteFiles(record.url, recursive)
             .then((incoming) => {
+                if (folderListings.get(record.id) !== listing || !isDirectorySelected(record)) {
+                    return;
+                }
                 incoming.entries.forEach((item) => {
                     // construct record
                     const subRecord = entryToRecord(item);
@@ -197,17 +228,29 @@ function selectDirectoryRecursive(record: SelectionItem) {
                         selectedDirectories.value.push(subRecord);
                     }
                 });
-                totalItems.value = incoming.totalMatches;
-                isBusy.value = false;
             })
             .catch((error) => {
+                if (folderListings.get(record.id) !== listing) {
+                    return;
+                }
                 // undo the directory selection made above; formatRows also disables OK again
                 unselectPath(record.url, false, record.id);
                 formatRows();
                 // a toast keeps the folder listed, so files can still be picked one by one
                 toast.error(errorMessageAsString(error));
-                isBusy.value = false;
+            })
+            .finally(() => {
+                if (folderListings.get(record.id) === listing) {
+                    endFolderListing(record.id);
+                }
             });
+    }
+}
+
+/** Stops waiting for the folder's listing, so its files are not selected when it returns */
+function endFolderListing(folderId: string) {
+    if (folderListings.delete(folderId)) {
+        pendingListings.value--;
     }
 }
 
@@ -229,7 +272,7 @@ function formatRows() {
         }
         // if directory
         else if (!item.isLeaf) {
-            _rowVariant = getIcon(isDirectorySelected(item.id), item.url);
+            _rowVariant = getIcon(isDirectorySelected(item), item.url);
         }
         Vue.set(item, "_rowVariant", _rowVariant);
     }
@@ -239,17 +282,33 @@ function formatRows() {
     }
 }
 
-function isDirectorySelected(directoryId: string): boolean {
-    return selectedDirectories.value.some(({ id }) => id === directoryId);
+// below a selected folder too: recursive listings may skip folders, and unselecting below drops that folder
+function isDirectorySelected(directory: SelectionItem): boolean {
+    return (
+        !directory.isLeaf &&
+        selectedDirectories.value.some(({ id, url }) => id === directory.id || isSubPath(url, directory.url))
+    );
+}
+
+/** whether the row, or anything under it, is selected **/
+function isRowSelected(item: SelectionItem): boolean {
+    return (
+        selectionModel.value.exists(item.id) || selectionModel.value.pathExists(item.id) || isDirectorySelected(item)
+    );
 }
 
 /** check if all objects in this folders are selected **/
 function checkIfAllSelected(): boolean {
     const isAllSelected =
         Boolean(items.value.length) &&
-        items.value.every(({ id }) => selectionModel.value.exists(id) || isDirectorySelected(id));
+        items.value.every((item) => selectionModel.value.exists(item.id) || isDirectorySelected(item));
 
-    if (isAllSelected && urlTracker.current.value && !isDirectorySelected(urlTracker.current.value.id)) {
+    if (
+        isAllSelected &&
+        !isPaginated.value &&
+        urlTracker.current.value &&
+        !isDirectorySelected(urlTracker.current.value)
+    ) {
         // if all selected, select current folder
         selectedDirectories.value.push(urlTracker.current.value);
     }
@@ -263,6 +322,19 @@ function open(record: SelectionItem) {
     load();
 }
 
+/** Fetched alongside the root list, so sources created since the dialog was last opened are included */
+async function loadRdmUriRoots() {
+    if (props.mode !== "directory") {
+        return;
+    }
+    try {
+        const rdmFileSources = await fetchFileSources({ include: ["rdm"] });
+        rdmUriRoots.value = rdmFileSources.map((fs) => fs.uri_root);
+    } catch (error) {
+        console.error("Failed to load RDM file sources", error);
+    }
+}
+
 /** Performs server request to retrieve data records **/
 function load() {
     showFTPHelper.value = urlTracker.current.value?.url === "gxftp://";
@@ -274,6 +346,7 @@ function load() {
         itemsProvider.value = undefined;
         errorMessage.value = undefined;
         isBusy.value = true;
+        loadRdmUriRoots();
         fetchFileSources(props.filterOptions)
             .then((results) => {
                 const convertedItems = results
@@ -412,11 +485,15 @@ function onSelectAll() {
     if (!urlTracker.current.value) {
         return;
     }
-    const isUnselectAll = selectionModel.value.pathExists(urlTracker.current.value.url);
+    // a paginated folder shows one page, so select all toggles that page and keeps the other pages' selection
+    const isUnselectAll = isPaginated.value
+        ? items.value.some(isRowSelected)
+        : isDirectorySelected(urlTracker.current.value) ||
+          selectionModel.value.pathExists(urlTracker.current.value.url);
 
     for (const item of items.value) {
         if (isUnselectAll) {
-            if (selectionModel.value.exists(item.id) || selectionModel.value.pathExists(item.id)) {
+            if (isRowSelected(item)) {
                 item.isLeaf ? selectionModel.value.add(item) : selectDirectoryRecursive(item);
             }
         } else {
@@ -424,9 +501,14 @@ function onSelectAll() {
         }
     }
 
-    if (!isUnselectAll && items.value.length !== 0) {
+    if (isPaginated.value) {
+        if (isUnselectAll) {
+            // the folder is no longer selected as a whole, but files on its other pages stay selected
+            unselectPath(urlTracker.current.value.url, true);
+        }
+    } else if (!isUnselectAll && items.value.length !== 0) {
         selectedDirectories.value.push(urlTracker.current.value);
-    } else if (isDirectorySelected(urlTracker.current.value.id)) {
+    } else if (isDirectorySelected(urlTracker.current.value)) {
         selectDirectoryRecursive(urlTracker.current.value);
     }
 
@@ -465,6 +547,17 @@ function onGoBack(record?: SelectionItem) {
     }
 }
 
+// the table drops page and filter changes while busy, so list the current page again once listings finish
+watch(
+    () => pendingListings.value === 0,
+    async (allListed) => {
+        if (allListed && itemsProvider.value) {
+            await nextTick();
+            selectionDialog.value?.refresh();
+        }
+    },
+);
+
 watch(query, () => {
     selectionDialog.value?.resetPagination(1);
 });
@@ -472,6 +565,7 @@ watch(query, () => {
 onMounted(() => {
     if (props.selectedItem) {
         urlTracker.forward(props.selectedItem);
+        loadRdmUriRoots();
     }
     load();
 });
@@ -484,7 +578,7 @@ onMounted(() => {
         :error-message="errorMessage"
         :file-mode="fileMode"
         :fields="fields"
-        :is-busy="isBusy"
+        :is-busy="isBusy || pendingListings > 0"
         :items="items"
         :items-provider="itemsProvider"
         :total-items="totalItems"
@@ -511,6 +605,9 @@ onMounted(() => {
                     <strong>do not have a Galaxy password</strong> please use the reset password option in the login
                     form with your email to create a password for your account.</span
                 >
+            </BAlert>
+            <BAlert v-if="isAtRdmRepositoryRoot" id="rdm-root-helper" variant="info" show>
+                This repository has no files at its top level. Open one of the folders below to select it.
             </BAlert>
         </template>
         <template v-slot:buttons>

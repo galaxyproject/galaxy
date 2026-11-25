@@ -27,6 +27,7 @@ from sqlalchemy.orm import object_session
 from sqlalchemy.orm.attributes import flag_modified
 
 import galaxy.model
+from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.security.object_wrapper import sanitize_lists_to_string
 from galaxy.util import (
     form_builder,
@@ -458,6 +459,31 @@ MetadataParameter sub-classes.
 """
 
 
+class IntParameter(MetadataParameter):
+    @classmethod
+    def marshal(cls, value):
+        # Output metadata actions supply comma-split defaults, including scalar values.
+        if isinstance(value, list) and len(value) == 1:
+            value = value[0]
+        if isinstance(value, bool) or (isinstance(value, float) and not value.is_integer()):
+            raise RequestParameterInvalidException(f"Expected an integer, got {value!r}")
+        if value is None or isinstance(value, int):
+            return value
+        if isinstance(value, str) and not value.strip():
+            return None
+        try:
+            return int(value)
+        except (TypeError, ValueError):
+            raise RequestParameterInvalidException(f"Expected an integer, got {value!r}")
+
+    def wrap(self, value, session):
+        # Values saved by older releases may still be stored as strings.
+        try:
+            return self.marshal(value)
+        except RequestParameterInvalidException:
+            return value
+
+
 class SelectParameter(MetadataParameter):
     def __init__(self, spec):
         MetadataParameter.__init__(self, spec)
@@ -669,13 +695,14 @@ class FileParameter(MetadataParameter):
             # All current datatypes re-generate MetadataFile objects when setting metadata,
             # so this would ultimately get overwritten anyway.
             new_value = galaxy.model.MetadataFile(dataset=target_context.parent, name=self.spec.name)
+            # Set now, so the row is inserted complete instead of get_file_name() updating it after.
+            new_value.object_store_id = target_dataset.object_store_id
             session.add(new_value)
-            try:
-                new_value.update_from_file(value.get_file_name())
-            except AssertionError:
-                tmp_session = session(target_context.parent)
-                tmp_session.commit()
-                new_value.update_from_file(value.get_file_name())
+            if target_dataset.object_store.get_store_by(target_dataset) == "id":
+                # get_file_name() would commit the session to get an id. Only flush when the path needs one:
+                # the target may not be in a history yet (e.g. a job cache hit at submission).
+                session.flush()
+            new_value.update_from_file(value.get_file_name())
             return self.unwrap(new_value)
         return None
 

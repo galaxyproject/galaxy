@@ -4,7 +4,7 @@ import type { MessageException } from "@/api";
 import { GalaxyApi } from "@/api/client";
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 
-import { createRateLimiterMiddleware, DEFAULT_CONFIG } from "./rateLimiter";
+import { createRateLimiterMiddleware, DEFAULT_CONFIG, RETRY_ON_429_HEADER } from "./rateLimiter";
 
 const { server, http } = useServerMock();
 
@@ -130,6 +130,34 @@ describe("Rate Limiter Middleware", () => {
         ensure429AndNoRetries(response, error);
     });
 
+    it("retries an opted-in DELETE, resending its body without the marker header", async () => {
+        const bodies: unknown[] = [];
+        const markers: (string | null)[] = [];
+        server.use(
+            http.delete("/api/jobs/{job_id}", async ({ request, response }) => {
+                bodies.push(await request.json());
+                markers.push(request.headers.get(RETRY_ON_429_HEADER));
+                if (bodies.length === 1) {
+                    return response.untyped(new HttpResponse(null, { status: 429 }));
+                }
+                return response(200).json(true);
+            }),
+        );
+
+        vi.useFakeTimers({ toFake: ["setTimeout"] });
+        const request = GalaxyApi().DELETE("/api/jobs/{job_id}", {
+            params: { path: { job_id: "test" } },
+            body: { message: "maintenance" },
+            headers: { [RETRY_ON_429_HEADER]: "1" },
+        });
+        await vi.runAllTimersAsync();
+        const { response } = await request;
+
+        expect(response.status).toBe(200);
+        expect(bodies).toEqual([{ message: "maintenance" }, { message: "maintenance" }]);
+        expect(markers).toEqual([null, null]);
+    });
+
     it("should not retry 429 PUT responses", async () => {
         // Set up a mock PUT endpoint that always returns 429
         server.use(
@@ -213,6 +241,65 @@ describe("Rate Limiter Middleware retry timing", () => {
 
         expect(responses.map((r) => r.status)).toEqual([200, 200, 200]);
         expect(requestTimes).toEqual(expected);
+    });
+
+    it("holds new requests while a 429 is backed off", async () => {
+        serve(respond429());
+        vi.spyOn(Math, "random").mockReturnValue(1);
+        const send = () => GalaxyApi().GET("/api/histories/{history_id}", { params: { path: { history_id: "test" } } });
+
+        const first = send();
+        // Let the first request's 429 arrive and its backoff start before sending the second.
+        await vi.advanceTimersByTimeAsync(0);
+        const second = send();
+        await vi.runAllTimersAsync();
+
+        expect((await first).response.status).toBe(200);
+        expect((await second).response.status).toBe(200);
+        // The retry and the queued request both go out once the 1s backoff ends.
+        expect(requestTimes).toEqual([0, 1000, 1000]);
+    });
+
+    it("resends the body of an opted-in request whose body the first send consumed", async () => {
+        const bodies: unknown[] = [];
+        server.use(
+            http.delete("/api/jobs/{job_id}", async ({ request, response }) => {
+                bodies.push(await request.json());
+                return response(200).json(true);
+            }),
+        );
+        const middleware = createRateLimiterMiddleware();
+        const onRequest = middleware.onRequest as (params: { request: Request }) => Promise<Request>;
+        const onResponse = middleware.onResponse as (params: {
+            request: Request;
+            response: Response;
+        }) => Promise<Response>;
+
+        const sent = await onRequest({
+            request: new Request(`${window.location.origin}/api/jobs/test`, {
+                method: "DELETE",
+                body: JSON.stringify({ message: "maintenance" }),
+                headers: { [RETRY_ON_429_HEADER]: "1" },
+            }),
+        });
+        // Sending the request consumes its body, as fetch() does. Browsers then refuse to
+        // fetch it again, but this test environment does not, so check what is retried.
+        await sent.text();
+        const originalFetch = globalThis.fetch;
+        const retried: { request: Request; bodyUsed: boolean }[] = [];
+        vi.spyOn(globalThis, "fetch").mockImplementation((input, init) => {
+            const request = input as Request;
+            retried.push({ request, bodyUsed: request.bodyUsed });
+            return originalFetch(input, init);
+        });
+        const result = onResponse({ request: sent, response: respond429() });
+        await vi.runAllTimersAsync();
+
+        expect((await result).status).toBe(200);
+        expect(retried).toHaveLength(1);
+        expect(retried[0]?.request).not.toBe(sent);
+        expect(retried[0]?.bodyUsed).toBe(false);
+        expect(bodies).toEqual([{ message: "maintenance" }]);
     });
 
     it("backs off exponentially between successive retries", async () => {

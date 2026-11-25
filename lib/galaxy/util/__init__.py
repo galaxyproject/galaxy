@@ -164,6 +164,7 @@ from .path import (  # noqa: F401
     safe_relpath,
     StrPath,
 )
+from .renamed_temporary_file import RenamedTemporaryFile
 from .rst_to_html import rst_to_html  # noqa: F401
 
 try:
@@ -1814,7 +1815,11 @@ def send_mail(frm, to, subject, body, config, html=None, reply_to=None):
             "reply_to": reply_to,
         }
         email_json = json.to_json_string(email_dict)
-        with open(path, "w") as f:
+        if os.path.isdir(path):
+            # One file per email, named in sending order, so tests can tell how many were sent.
+            path = os.path.join(path, f"{time.time_ns()}-{uuid.uuid4().hex}.json")
+        # Move the email into place once written, so tests polling for it never read a partial one.
+        with RenamedTemporaryFile(path, mode="w") as f:
             f.write(email_json)
         return
 

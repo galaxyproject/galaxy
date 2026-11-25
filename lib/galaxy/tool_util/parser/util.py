@@ -84,7 +84,7 @@ def parse_tool_version_with_defaults(
 
 def boolean_is_checked(input_source: "InputSource"):
     nullable = input_source.get_bool("optional", False)
-    return input_source.get_bool("checked", None if nullable else False)
+    return input_source.parse_boolean_default(None if nullable else False, allow_none=False)
 
 
 def boolean_true_and_false_values(input_source, profile: Optional[Union[float, str]] = None) -> Tuple[str, str]:

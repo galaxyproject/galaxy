@@ -8,7 +8,7 @@ from typing import (
     TYPE_CHECKING,
 )
 
-from kombu import Connection
+from kombu.connection import Connection
 from typing_extensions import Protocol
 
 from galaxy.auth import AuthManager

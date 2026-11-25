@@ -52,6 +52,8 @@ jobs:
           # Each xdist worker has its own conda prefix, so a tool's first run builds its conda
           # environment on a busy runner.
           GALAXY_TEST_DEFAULT_WAIT: '180'
+          # The per-worker conda prefixes outgrow the per-user quota of the tmpfs /tmp on ubuntu-26.04.
+          TMPDIR: ${{ runner.temp }}
         working-directory: 'galaxy root'
       - uses: codecov/codecov-action@v6
         if: github.event_name != 'pull_request'

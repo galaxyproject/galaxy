@@ -1,0 +1,23 @@
+<tool id="select_from_duplicate_value_table" name="select_from_duplicate_value_table" version="0.1.0">
+    <command><![CDATA[
+        echo '$ref' > '$output'
+    ]]></command>
+    <inputs>
+        <param name="ref" type="select">
+            <options from_data_table="test_duplicate_values"/>
+        </param>
+    </inputs>
+    <outputs>
+        <data name="output" format="txt"/>
+    </outputs>
+    <tests>
+        <test>
+            <param name="ref" value="hg38"/>
+            <output name="output">
+                <assert_contents>
+                    <has_text text="hg38"/>
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+</tool>

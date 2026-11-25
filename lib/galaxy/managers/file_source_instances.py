@@ -224,11 +224,6 @@ class FileSourceInstancesManager:
         user_vault.write_secret(refresh_token_vault_key, refresh_token)
         return f"file_source_templates/{template_id}/new?uuid={new_object_uuid}"
 
-    def _redirect_uri(self, trans: SessionRequestContext) -> str:
-        galaxy_root = trans.request.url_path
-        redirect_uri = f"{galaxy_root}/oauth2_callback"
-        return redirect_uri
-
     def index(self, trans: ProvidesUserContext) -> list[UserFileSourceModel]:
         stores = self._sa_session.query(UserFileSource).filter(UserFileSource.user_id == trans.user.id).all()
         return [self._to_model(trans, s) for s in stores]

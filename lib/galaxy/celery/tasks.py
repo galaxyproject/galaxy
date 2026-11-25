@@ -429,6 +429,7 @@ def setup_fetch_data(
     mini_job_wrapper._pause_job_if_over_quota(job)
     if job.state == model.Job.states.PAUSED:
         sa_session.commit()
+        mini_job_wrapper.run_after_commit_actions()
         return None
     request_json = Path(mini_job_wrapper.working_directory) / "request.json"
     request_json_value = next(iter(p.value for p in job.parameters if p.name == "request_json"))

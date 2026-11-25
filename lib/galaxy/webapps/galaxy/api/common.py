@@ -1,5 +1,6 @@
 """This module contains utility functions shared across the api package."""
 
+import re
 from io import BytesIO
 from typing import (
     Annotated,
@@ -28,8 +29,86 @@ from galaxy.schema.schema import (
     UpdateDatasetPermissionsPayload,
     UpdateDatasetPermissionsPayloadAliases,
 )
+from galaxy.tool_util_models import LiftStatus
 from galaxy.util import listify
 from galaxy.webapps.base.api import GalaxyStreamingResponse
+
+# Header blocks are limited by reverse proxy buffer sizes (nginx defaults to
+# 4k for the whole response header), and lift errors scale with stored tool
+# content -- so anything derived from them must be bounded before it becomes
+# a header value.
+LIFT_HEADER_MAX_ITEMS = 20
+LIFT_HEADER_MAX_BYTES = 1024
+
+# Lift errors embed stored dict keys and pydantic messages, i.e. user
+# content. Control characters would enable header injection (or get the
+# response rejected at the server boundary) and non-ASCII breaks latin-1
+# header encoding, so both are replaced before the value is emitted.
+# ASCII-only output also makes len() the encoded byte length.
+_UNSAFE_HEADER_VALUE_CHARS = re.compile(r"[^\x20-\x7e]")
+
+
+def _sanitize_header_error(error: str) -> str:
+    return _UNSAFE_HEADER_VALUE_CHARS.sub("?", error)
+
+
+def compact_lift_errors(
+    errors: list[str],
+    separator: str,
+    max_items: int = LIFT_HEADER_MAX_ITEMS,
+    max_bytes: int = LIFT_HEADER_MAX_BYTES,
+) -> tuple[str, int]:
+    """Dedupe (order-preserving) and bound a lift error list for header use.
+
+    Returns the bounded, joined string -- suffixed with ``+N more`` when
+    truncated and never longer than ``max_bytes`` -- and the total number of
+    unique errors.
+    """
+    # Dedupe before sanitizing so distinct errors that sanitize alike still count.
+    unique = [_sanitize_header_error(error) for error in dict.fromkeys(errors)]
+    total = len(unique)
+    full = separator.join(unique)
+    if total <= max_items and len(full) <= max_bytes:
+        return full.strip(), total
+    # Reserve room for the worst-case truncation suffix so max_bytes is a
+    # hard bound on the returned string.
+    reserve = len(separator) + len(f"+{total} more")
+    compact = ""
+    kept = 0
+    for error in unique[:max_items]:
+        candidate = f"{compact}{separator}{error}" if compact else error
+        if len(candidate) > max_bytes - reserve:
+            break
+        compact = candidate
+        kept += 1
+    if kept < total:
+        suffix = f"+{total - kept} more"
+        compact = f"{compact}{separator}{suffix}" if compact else suffix
+    # Degenerate caps smaller than the suffix itself still honor the bound.
+    # h11 rejects values with leading or trailing whitespace, which stored
+    # keys can carry.
+    return compact[:max_bytes].strip(), total
+
+
+def lift_headers(status: LiftStatus, errors: list[str]) -> dict[str, str]:
+    """Compute lift-status response headers so consumers can react without
+    parsing the response body. Headers are computed dynamically per request and
+    are intentionally not declared in the OpenAPI schema. The full error list
+    stays in the response body; headers only carry a bounded summary."""
+    if status == "ok" or not errors:
+        return {}
+    if status == "lifted":
+        compact, total = compact_lift_errors(errors, separator=",")
+        return {
+            "X-Galaxy-Deprecated-Fields": compact,
+            "Warning": f'299 - "{total} stored item(s) were dropped or rewritten on read; see X-Galaxy-Deprecated-Fields"',
+        }
+    compact, total = compact_lift_errors(errors, separator="; ")
+    return {
+        "X-Galaxy-Schema-Errors": compact,
+        "Warning": f'299 - "Stored tool no longer satisfies schema ({total} error(s)); see X-Galaxy-Schema-Errors"',
+    }
+
 
 FolderIdPathParam = Annotated[
     LibraryFolderDatabaseIdField,

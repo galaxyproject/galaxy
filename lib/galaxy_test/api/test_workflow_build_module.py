@@ -31,3 +31,16 @@ class TestBuildWorkflowModule(ApiTestCase):
         assert module["errors"]["cond|select"]
         assert module["tool_state"]["cond"]["select"] == "removed_option"
         assert module["tool_state"]["cond"]["input1"] == {"__class__": "RuntimeValue"}
+
+    def test_build_module_flags_inverted_numeric_bounds(self):
+        inputs = {
+            "parameter_definition|parameter_type": "integer",
+            "parameter_definition|optional|optional": "false",
+            "parameter_definition|min": "5",
+            "parameter_definition|max": "1",
+        }
+        module = self.workflow_populator.build_module(step_type="parameter_input", inputs=inputs)
+        assert module["errors"] == "A workflow input has a minimum (5) greater than its maximum (1)."
+        inputs["parameter_definition|max"] = "10"
+        module = self.workflow_populator.build_module(step_type="parameter_input", inputs=inputs)
+        assert module["errors"] is None

@@ -48,6 +48,16 @@ if GoogleDriveFileSystem is not None:
             else:
                 super().connect(method=method)
 
+        def ls(self, path, detail=False, **kwargs):
+            try:
+                return super().ls(path, detail=detail, **kwargs)
+            except FileNotFoundError:
+                # gdrive_fsspec <= 0.4.1 raises for an empty root (fsspec/gdrive-fsspec#64).
+                # With the drive.file scope the root is empty until Galaxy writes a file.
+                if self._strip_protocol(path) == "":
+                    return []
+                raise
+
         def put_file(self, lpath, rpath, *args, **kwargs):
             parent = self._parent(str(rpath))
             if parent not in self.dircache:

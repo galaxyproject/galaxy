@@ -1,5 +1,6 @@
 import os
 import shutil
+import subprocess
 from os import getcwd
 from tempfile import mkdtemp
 
@@ -16,7 +17,15 @@ MOCK_COMMAND_LINE = "/opt/galaxy/tools/bowtie /mnt/galaxyData/files/000/input000
 TEST_METADATA_LINE = "set_metadata_and_stuff.sh"
 TEE_REDIRECT = '> "$__out" 2> "$__err"'
 RETURN_CODE_CAPTURE = "; return_code=$?; echo $return_code > galaxy_1.ec"
-CP_WORK_DIR_OUTPUTS = "; \nif [ -f foo -a -f bar ] ; then cp foo bar ; fi"
+
+
+def _copy_command(source, destination, job_directory):
+    message = f"'Not collecting {source}: it does not resolve to a path inside the job directory'"
+    return (
+        f"\nif [ -f {source} -a -f {destination} ] ; then "
+        f'case "$(realpath {source})" in "$(realpath {job_directory})"/*) cp {source} {destination} ;; '
+        f"*) echo {message} >&2 ; echo {message} >> {job_directory}/rejected_work_dir_outputs ;; esac ; fi"
+    )
 
 
 class TestCommandFactory(TestCase):
@@ -40,6 +49,7 @@ class TestCommandFactory(TestCase):
 
     def tearDown(self):
         shutil.rmtree(self.job_dir)
+        shutil.rmtree(f"{self.job_dir}_outside", ignore_errors=True)
 
     def test_simplest_command(self):
         self.include_work_dir_outputs = False
@@ -122,16 +132,137 @@ class TestCommandFactory(TestCase):
     def test_workdir_outputs(self):
         self.include_work_dir_outputs = True
         self.workdir_outputs = [("foo", "bar")]
-        self._assert_command_is(self._surround_command(MOCK_COMMAND_LINE, CP_WORK_DIR_OUTPUTS))
+        self._assert_command_is(
+            self._surround_command(MOCK_COMMAND_LINE, f"; {_copy_command('foo', 'bar', self.job_dir)}")
+        )
 
     def test_workdir_outputs_with_glob(self):
         self.include_work_dir_outputs = True
         self.workdir_outputs = [("foo*bar", "foo_x_bar")]
         self._assert_command_is(
-            self._surround_command(
-                MOCK_COMMAND_LINE, "; \nif [ -f foo*bar -a -f foo_x_bar ] ; then cp foo*bar foo_x_bar ; fi"
-            )
+            self._surround_command(MOCK_COMMAND_LINE, f"; {_copy_command('foo*bar', 'foo_x_bar', self.job_dir)}")
         )
+
+    def test_workdir_outputs_copy_stays_in_job_directory(self):
+        working = os.path.join(self.job_dir, "working")
+        outputs = os.path.join(self.job_dir, "outputs")
+        os.makedirs(working)
+        os.makedirs(outputs)
+        outside_directory = f"{self.job_dir}_outside"
+        os.makedirs(outside_directory)
+        outside = os.path.join(outside_directory, "outside.txt")
+        _write(outside, "outside")
+        _write(os.path.join(working, "real.txt"), "real")
+        os.symlink("real.txt", os.path.join(working, "linked_inside.txt"))
+        os.symlink(outside, os.path.join(working, "linked_outside.txt"))
+        os.symlink(outside_directory, os.path.join(working, "outside_directory"))
+        _write(os.path.join(working, "globbed_1.txt"), "globbed")
+        os.makedirs(os.path.join(working, "extra"))
+        _write(os.path.join(working, "extra", "file.txt"), "extra")
+        os.symlink(outside_directory, os.path.join(working, "linked_extra"))
+        os.makedirs(os.path.join(outputs, "extra_files"))
+        os.makedirs(os.path.join(outputs, "linked_extra_files"))
+        sources = {
+            "real": "real.txt",
+            "linked_inside": "linked_inside.txt",
+            "linked_outside": "linked_outside.txt",
+            "through_linked_directory": "outside_directory/outside.txt",
+            "globbed": "globbed_*.txt",
+        }
+        self.workdir_outputs = [
+            (os.path.join(working, source), os.path.join(outputs, name)) for name, source in sources.items()
+        ] + [
+            (os.path.join(working, "extra"), os.path.join(outputs, "extra_files")),
+            (os.path.join(working, "linked_extra"), os.path.join(outputs, "linked_extra_files")),
+        ]
+        for name in sources:
+            _write(os.path.join(outputs, name), "")
+
+        self.job_wrapper.command_line = "true"
+        subprocess.run(["/bin/sh", "-c", self.__command()], cwd=self.job_dir, check=True)
+
+        assert _read(os.path.join(outputs, "real")) == "real"
+        assert _read(os.path.join(outputs, "linked_inside")) == "real"
+        assert _read(os.path.join(outputs, "linked_outside")) == ""
+        assert _read(os.path.join(outputs, "through_linked_directory")) == ""
+        assert _read(os.path.join(outputs, "globbed")) == "globbed"
+        assert _read(os.path.join(outputs, "extra_files", "file.txt")) == "extra"
+        assert os.listdir(os.path.join(outputs, "linked_extra_files")) == []
+        assert _read(os.path.join(self.job_dir, "rejected_work_dir_outputs")).count("Not collecting") == 3
+
+    def test_workdir_outputs_refused_copy_without_realpath_is_recorded(self):
+        working = os.path.join(self.job_dir, "working")
+        outputs = os.path.join(self.job_dir, "outputs")
+        os.makedirs(working)
+        os.makedirs(outputs)
+        _write(os.path.join(working, "real.txt"), "real")
+        _write(os.path.join(outputs, "real"), "")
+        self.workdir_outputs = [(os.path.join(working, "real.txt"), os.path.join(outputs, "real"))]
+        self.job_wrapper.command_line = "true"
+        rejected_file = os.path.join(self.job_dir, "rejected_work_dir_outputs")
+
+        subprocess.run(["/bin/sh", "-c", self.__command()], cwd=self.job_dir, check=True)
+        assert _read(os.path.join(outputs, "real")) == "real"
+        assert not os.path.exists(rejected_file)
+
+        _write(os.path.join(outputs, "real"), "")
+        bin_directory = os.path.join(self.job_dir, "bin")
+        os.makedirs(bin_directory)
+        for tool in ("cp", "sh"):
+            tool_path = shutil.which(tool)
+            assert tool_path
+            os.symlink(tool_path, os.path.join(bin_directory, tool))
+        subprocess.run(["/bin/sh", "-c", self.__command()], cwd=self.job_dir, check=True, env={"PATH": bin_directory})
+        assert _read(os.path.join(outputs, "real")) == ""
+        assert os.path.exists(rejected_file)
+
+    def test_work_dir_directory_output_copy_quotes_paths(self):
+        working = os.path.join(self.job_dir, "working")
+        source = os.path.join(working, "out $(touch injected)")
+        os.makedirs(source)
+        os.makedirs(os.path.join(self.job_dir, "outputs"))
+        with open(os.path.join(source, "index.txt"), "w") as f:
+            f.write("index")
+        destination = os.path.join(self.job_dir, "outputs", "dataset_1_files")
+        self.include_metadata = True
+        self.include_work_dir_outputs = False
+        self.job_wrapper.command_line = "true"
+        self.job_wrapper.metadata_line = "true"
+        command = self.__command(
+            remote_command_params=dict(metadata_kwds=dict(work_dir_directory_outputs=[(source, destination, False)]))
+        )
+
+        subprocess.run(["/bin/sh", "-c", command], cwd=self.job_dir)
+
+        assert not os.path.exists(os.path.join(working, "injected"))
+        assert not os.path.exists(os.path.join(self.job_dir, "injected"))
+        with open(os.path.join(destination, "index.txt")) as f:
+            assert f.read() == "index"
+
+    def test_work_dir_directory_output_copy_stays_in_job_directory(self):
+        working = os.path.join(self.job_dir, "working")
+        outputs = os.path.join(self.job_dir, "outputs")
+        os.makedirs(working)
+        os.makedirs(outputs)
+        outside_directory = f"{self.job_dir}_outside"
+        os.makedirs(outside_directory)
+        _write(os.path.join(outside_directory, "outside.txt"), "outside")
+        source = os.path.join(working, "linked_out")
+        os.symlink(outside_directory, source)
+        destination = os.path.join(outputs, "dataset_1_files")
+        self.include_metadata = True
+        self.include_work_dir_outputs = False
+        self.job_wrapper.command_line = "true"
+        self.job_wrapper.metadata_line = "true"
+        command = self.__command(
+            remote_command_params=dict(metadata_kwds=dict(work_dir_directory_outputs=[(source, destination, False)]))
+        )
+
+        subprocess.run(["/bin/sh", "-c", command], cwd=self.job_dir)
+
+        assert not os.path.exists(destination)
+        assert "Not collecting" in _read(os.path.join(outputs, "tool_stderr"))
+        assert _read(os.path.join(self.job_dir, f"galaxy_{self.job_wrapper.job_id}.ec")).strip() == "1"
 
     def test_set_metadata_skipped_if_unneeded(self):
         self.include_metadata = True
@@ -285,3 +416,13 @@ class MockJobWrapper:
     @property
     def is_cwl_job(self):
         return False
+
+
+def _write(path, contents):
+    with open(path, "w") as f:
+        f.write(contents)
+
+
+def _read(path):
+    with open(path) as f:
+        return f.read()

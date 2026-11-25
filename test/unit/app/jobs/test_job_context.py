@@ -136,6 +136,37 @@ def test_job_context_discover_outputs_flushes_once(mocker):
     assert collection.dataset_instances[0].dataset.file_size == 1
 
 
+def test_collection_element_pattern_with_unmatched_ext_group():
+    # Regression test: an optional ``ext`` group that does not participate in
+    # the match (e.g. files without an extension) yields ``ext=None`` in the
+    # groupdict and used to crash ``populate_collection_elements`` with
+    # ``AttributeError: 'NoneType' object has no attribute 'lower'``.
+    job_working_directory = tempfile.mkdtemp()
+    with open(os.path.join(job_working_directory, "yelp"), "w") as out:
+        out.write("no extension")
+    _app, sa_session, job_context, collection = job_context_for_directory(job_working_directory)
+    pattern = r"^(?P<designation>\.*[^\.]+(?:\.(?P<ext>.*))?)$"
+    collection_description = FilePatternDatasetCollectionDescription(pattern=pattern)
+    collection_builder = builder.BoundCollectionBuilder(collection)
+    dataset_collectors = [dataset_collector(collection_description)]
+    output_name = "output"
+    filenames = job_context.find_files(output_name, collection, dataset_collectors)
+    assert len(filenames) == 1
+    assert filenames[0].match.ext == "data"
+    job_context.populate_collection_elements(
+        collection,
+        collection_builder,
+        filenames,
+        name=output_name,
+        metadata_source_name="",
+        final_job_state=job_context.final_job_state,
+    )
+    collection_builder.populate()
+    sa_session.commit()
+    assert len(collection.dataset_instances) == 1
+    assert collection.dataset_instances[0].extension == "data"
+
+
 def test_collection_rejects_tool_provided_extra_files_outside_working_directory():
     with tempfile.TemporaryDirectory() as job_working_directory:
         dataset_path = os.path.join(job_working_directory, "dataset.txt")

@@ -204,6 +204,27 @@ class WorkflowsManager(sharable.SharableModelManager[model.StoredWorkflow], dele
                 step.dynamic_tool = tool_copies[step.dynamic_tool.id]
         return copied_workflow
 
+    def ensure_owns_user_defined_tools(self, user: model.User | None, workflow: model.Workflow) -> None:
+        """Refuse to run ``workflow`` for a user who doesn't own the user-defined tools it uses."""
+        unowned_tool_ids: list[str] = []
+        for step in _tool_steps(workflow):
+            dynamic_tool = step.user_defined_tool
+            if dynamic_tool is None or dynamic_tool.uuid is None:
+                continue
+            self.dynamic_tool_manager.ensure_can_use_unprivileged_tool(user)
+            assert user
+            tool_id = dynamic_tool.tool_id or str(dynamic_tool.uuid)
+            if (
+                not self.dynamic_tool_manager.get_unprivileged_tool_by_uuid(user, dynamic_tool.uuid)
+                and tool_id not in unowned_tool_ids
+            ):
+                unowned_tool_ids.append(tool_id)
+        if unowned_tool_ids:
+            raise exceptions.ItemAccessibilityException(
+                f"This workflow uses user-defined tools owned by another user ({', '.join(unowned_tool_ids)}). "
+                "Import the workflow to run it with your own copy of these tools."
+            )
+
     def index_query(
         self, trans: ProvidesUserContext, payload: WorkflowIndexQueryPayload, include_total_count: bool = False
     ) -> tuple["ScalarResult[model.StoredWorkflow]", Optional[int]]:
@@ -355,9 +376,9 @@ class WorkflowsManager(sharable.SharableModelManager[model.StoredWorkflow], dele
             raise exceptions.ObjectNotFound("No such workflow found.")
         return stored_workflow
 
-    def get_stored_accessible_workflow(self, trans, workflow_id, by_stored_id=True):
-        """Get a stored workflow from a encoded stored workflow id and
-        make sure it accessible to the user.
+    def get_stored_accessible_workflow(self, trans, workflow_id, by_stored_id=True) -> StoredWorkflow:
+        """Get a stored workflow from an encoded id or UUID and
+        make sure it is accessible to the user.
         """
         stored_workflow = self.get_stored_workflow(trans, workflow_id, by_stored_id=by_stored_id)
 
@@ -367,9 +388,15 @@ class WorkflowsManager(sharable.SharableModelManager[model.StoredWorkflow], dele
                 user=trans.user, stored_workflow=stored_workflow
             )
             if get_count(trans.sa_session, stmt) == 0:
-                message = "Workflow is not owned by or shared with current user"
+                message = "Workflow is neither importable, nor owned by or shared with current user"
                 raise exceptions.ItemAccessibilityException(message)
 
+        return stored_workflow
+
+    def get_stored_owned_workflow(self, trans, workflow_id, by_stored_id=True) -> StoredWorkflow:
+        """Get a stored workflow and make sure the user owns it (or is an admin)."""
+        stored_workflow = self.get_stored_workflow(trans, workflow_id, by_stored_id=by_stored_id)
+        self.check_security(trans, stored_workflow, check_ownership=True)
         return stored_workflow
 
     def attach_stored_workflow(self, trans, workflow):
@@ -384,8 +411,8 @@ class WorkflowsManager(sharable.SharableModelManager[model.StoredWorkflow], dele
             return stored_workflow
 
     def get_owned_workflow(self, trans, encoded_workflow_id):
-        """Get a workflow (non-stored) from a encoded workflow id and
-        make sure it accessible to the user.
+        """Get a workflow (non-stored) from an encoded workflow id and
+        make sure it is owned by the user (or the user is an admin).
         """
         workflow_id = decode_id(self.app, encoded_workflow_id)
         workflow = trans.sa_session.get(Workflow, workflow_id)
@@ -448,7 +475,7 @@ class WorkflowsManager(sharable.SharableModelManager[model.StoredWorkflow], dele
         workflow_canvas = WorkflowCanvas()
         for step in workflow.steps:
             # Load from database representation
-            module = module_factory.from_workflow_step(trans, step)
+            module = module_factory.from_workflow_step(trans, step, view_only=True)
             module_name = module.get_name()
             module_data_inputs = module.get_data_inputs()
             module_data_outputs = module.get_data_outputs()
@@ -777,9 +804,12 @@ class WorkflowContentsManager(UsesAnnotations):
         workflow.stored_workflow = stored
         stored.latest_workflow = workflow
         stored.user = trans.user
-        stored.published = workflow_create_options.publish
+        # An update builds embedded subworkflows with WorkflowUpdateOptions, which has no `publish`.
+        stored.published = (
+            isinstance(workflow_create_options, WorkflowCreateOptions) and workflow_create_options.publish
+        )
         stored.hidden = hidden
-        if data["annotation"]:
+        if data.get("annotation"):
             annotation = sanitize_html(data["annotation"])
             self.add_item_annotation(trans.sa_session, stored.user, stored, annotation)
         workflow_tags = data.get("tags", [])
@@ -959,6 +989,10 @@ class WorkflowContentsManager(UsesAnnotations):
                     dry_run=dry_run,
                     resolving_urls=resolving_urls,
                 )
+            if step_dict.get("type") == "tool" and step_dict.get("tool_representation"):
+                # Creating embedded tools commits the session. Resolve them before
+                # outputs or post-job actions add partially built steps to it.
+                step_dict["tool_uuid"] = ToolModule.resolve_tool_uuid(trans, step_dict)
 
         module_kwds = workflow_state_resolution_options.model_dump()
         module_kwds.update(kwds)  # TODO: maybe drop this?
@@ -1082,6 +1116,10 @@ class WorkflowContentsManager(UsesAnnotations):
             )
         else:
             raise exceptions.RequestParameterInvalidException(f"Unknown workflow style {style}")
+        if style == "format2":
+            # The format2 schema has no ``version`` key, and gxformat2 may give that name a
+            # format version, so keep the revision index out of the document itself.
+            return wf_dict
         if version is not None:
             wf_dict["version"] = version
             # If returning a run-form workflow for a specific version, use that version's name
@@ -1149,6 +1187,7 @@ class WorkflowContentsManager(UsesAnnotations):
             raise exceptions.MessageException("Workflow cannot be run because it does not have any steps.")
         if has_cycles(workflow):
             raise exceptions.MessageException("Workflow cannot be run because it contains cycles.")
+        self.app.workflow_manager.ensure_owns_user_defined_tools(trans.user, workflow)
         trans.workflow_building_mode = workflow_building_modes.USE_HISTORY
         module_injector = WorkflowModuleInjector(trans)
         has_upgrade_messages = False
@@ -1348,7 +1387,7 @@ class WorkflowContentsManager(UsesAnnotations):
             return input_dicts
 
         module_injector = WorkflowModuleInjector(trans)
-        module_injector.inject_all(workflow, ignore_tool_missing_exception=True, exact_tools=False)
+        module_injector.inject_all(workflow, ignore_tool_missing_exception=True, exact_tools=False, view_only=True)
         step_dicts = []
         for step in workflow.steps:
             step_dict = {}
@@ -1364,7 +1403,11 @@ class WorkflowContentsManager(UsesAnnotations):
                 continue
             if step.type == "tool":
                 tool_id = step.effective_tool_id
-                tool = trans.app.toolbox.get_tool(tool_id, step.tool_version, tool_uuid=step.tool_uuid, user=trans.user)
+                assert isinstance(step.module, ToolModule)
+                tool = step.module.tool
+                assert (
+                    tool is not None
+                ), f"Tool '{tool_id}' unexpectedly missing after successful runtime state computation"
                 step_dict["tool_id"] = tool_id
                 step_dict["tool_version"] = step.tool_version
                 step_dict["label"] = step.label or tool.name
@@ -1389,6 +1432,12 @@ class WorkflowContentsManager(UsesAnnotations):
     def _workflow_resource_parameters(self, trans, stored, workflow):
         """Get workflow scheduling resource parameters for this user and workflow or None if not configured."""
         return self._resource_mapper_function(trans=trans, stored_workflow=stored, workflow=workflow)
+
+    @staticmethod
+    def _add_step_in(step: model.WorkflowStep, step_dict: dict[str, Any]) -> None:
+        """Serialize step input defaults as the ``in`` block that ``__module_from_dict`` reads back."""
+        if input_defaults := step.input_defaults:
+            step_dict["in"] = {name: {"default": default} for name, default in input_defaults.items()}
 
     def _workflow_to_dict_editor(
         self,
@@ -1422,7 +1471,7 @@ class WorkflowContentsManager(UsesAnnotations):
         # For each step, rebuild the form and encode the state
         for step in workflow.steps:
             # Load from database representation
-            module = module_factory.from_workflow_step(trans, step, exact_tools=False)
+            module = module_factory.from_workflow_step(trans, step, exact_tools=False, view_only=True)
             if not module:
                 raise exceptions.MessageException(f"Unrecognized step type: {step.type}")
             # Load label from state of data input modules, necessary for backward compatibility
@@ -1432,6 +1481,10 @@ class WorkflowContentsManager(UsesAnnotations):
             version_changes = getattr(module, "version_changes", None)
             if version_changes:
                 upgrade_message_dict[module.get_name()] = "\n".join(version_changes)
+            if isinstance(module, ToolModule):
+                # Show the step input defaults that replace the tool state at run time in the tool form.
+                connected_input_names = {conn.input_name for conn in step.input_connections}
+                module.show_step_input_defaults(step.input_defaults, connected_input_names)
             # Get user annotation.
             config_form = module.get_config_form(step=step)
             annotation_str = self.get_item_annotation_str(trans.sa_session, trans.user, step) or ""
@@ -1453,6 +1506,7 @@ class WorkflowContentsManager(UsesAnnotations):
                 "when": step.when_expression,
                 "workflow_outputs": [],
             }
+            self._add_step_in(step, step_dict)
             if tooltip:
                 step_dict["tooltip"] = module.get_tooltip(static_path="/static")
             # Connections
@@ -1690,7 +1744,9 @@ class WorkflowContentsManager(UsesAnnotations):
         # For each step, rebuild the form and encode the state
         for step in workflow.steps:
             # Load from database representation
-            module = module_factory.from_workflow_step(trans, step)
+            # An internal export is rebuilt into a workflow (refactoring), so it resolves tools
+            # as saving does.
+            module = module_factory.from_workflow_step(trans, step, view_only=not internal)
             if not module:
                 raise exceptions.MessageException(f"Unrecognized step type: {step.type}")
             # Get user annotation if it exists, otherwise get owner annotation.
@@ -1813,13 +1869,7 @@ class WorkflowContentsManager(UsesAnnotations):
                 for output in module.get_data_outputs():
                     step_dict["outputs"].append({"name": output["name"], "type": output["extensions"][0]})
 
-            step_in = {}
-            for step_input in step.inputs:
-                if step_input.default_value_set:
-                    step_in[step_input.name] = {"default": step_input.default_value}
-
-            if step_in:
-                step_dict["in"] = step_in
+            self._add_step_in(step, step_dict)
 
             # Connections
             input_connections = step.input_connections
@@ -2112,7 +2162,16 @@ class WorkflowContentsManager(UsesAnnotations):
                     trans.sa_session.add(m)
 
         if "in" in step_dict:
+            changed_in_form: set[str] = set()
+            if kwds.get("from_tool_form") and isinstance(module, ToolModule):
+                # The editor's tool form shows these defaults, a value the user changed there replaces them.
+                defaults = {name: d["default"] for name, d in step_dict["in"].items() if "default" in d}
+                changed_in_form = module.step_input_defaults_changed_in_form(
+                    defaults, step_dict.get("input_connections") or {}
+                )
             for input_name, input_dict in step_dict["in"].items():
+                if input_name in changed_in_form:
+                    continue
                 # This is just a bug in gxformat? I think the input
                 # defaults should be called input to match the input modules's
                 # input parameter name.

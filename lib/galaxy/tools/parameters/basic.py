@@ -59,7 +59,6 @@ from galaxy.tool_util.parser.util import (
     boolean_true_and_false_values,
     multiple_select_value_split,
     ParameterParseException,
-    text_input_is_optional,
 )
 from galaxy.tool_util_models.tool_source import DrillDownOptionsDict
 from galaxy.tool_util_models.untrusted import is_loading_untrusted_tools
@@ -438,7 +437,7 @@ class TextToolParameter(SimpleTextToolParameter):
 
         # why does Integer and Float subclass this :_(
         if self.type == "text":
-            self.optional, self.optionality_inferred = text_input_is_optional(input_source)
+            self.optional, self.optionality_inferred = input_source.parse_text_optional()
         else:
             self.optionality_inferred = False
         self.value = input_source.get("value")
@@ -1103,12 +1102,22 @@ class SelectToolParameter(ToolParameter):
                     self.name,
                     is_dynamic=self.is_dynamic,
                 )
-            if set(value).issubset(legal_values):
+            try:
+                value_set = set(value)
+            except TypeError:
+                # dicts or lists inside the list are unhashable and can never be legal options
+                raise ParameterValueError(
+                    f"invalid options ({value!r}) were selected (valid options: {','.join(iter_to_string(legal_values))})",
+                    self.name,
+                    value,
+                    is_dynamic=self.is_dynamic,
+                ) from None
+            if value_set.issubset(legal_values):
                 return value
-            elif set(value).issubset(set(fallback_values.keys())):
+            elif value_set.issubset(set(fallback_values.keys())):
                 return [fallback_values[v] for v in value]
             else:
-                invalid_options = iter_to_string(set(value) - set(legal_values))
+                invalid_options = iter_to_string(value_set - set(legal_values))
                 raise ParameterValueError(
                     f"invalid options ({','.join(invalid_options)!r}) were selected (valid options: {','.join(iter_to_string(legal_values))})",
                     self.name,
@@ -1219,12 +1228,28 @@ class SelectToolParameter(ToolParameter):
         else:
             return []
 
+    def get_display_options(self, trans, other_values) -> list[ParameterOption]:
+        """Options to offer as choices; data table rows sharing a value collapse to the first."""
+        options = cast(list[ParameterOption], self.get_options(trans, other_values))
+        if not (isinstance(self.options, dynamic_options.DynamicOptions) and self.options.tool_data_table_name):
+            return options
+        # Raw options stay available for validation aliases and ambiguous field lookup warnings.
+        seen_values: set[str] = set()
+        display_options = []
+        for option in options:
+            if option.dataset is None:
+                if option.value in seen_values:
+                    continue
+                seen_values.add(option.value)
+            display_options.append(option)
+        return display_options
+
     def to_dict(self, trans, other_values=None):
         other_values = other_values or {}
         d = super().to_dict(trans, other_values)
 
         # Get options, value.
-        options = cast(list[ParameterOption], self.get_options(trans, other_values))
+        options = self.get_display_options(trans, other_values)
         d["options"] = serialize_options(trans.security, options)
         d["display"] = self.display
         d["multiple"] = self.multiple
@@ -1485,7 +1510,42 @@ class ColumnListParameter(SelectToolParameter):
         if not value and self.accept_default:
             value = self.default_value or "1"
             return [value] if self.multiple else value
+        value = self._labels_to_columns(value, trans, other_values)
+        self._require_column_numbers(value, trans, other_values)
         return super().from_json(value, trans, other_values)
+
+    _column_label = re.compile(r"c([0-9]+): ")
+
+    @staticmethod
+    def _is_column_number(value):
+        return value.isascii() and value.isdigit()
+
+    def _require_column_numbers(self, value, trans, other_values):
+        """
+        Reject values that are not column numbers when the referenced dataset has no
+        columns to check them against, e.g. while it is empty, deferred or not yet created.
+        """
+        if trans.workflow_building_mode or self.data_ref not in other_values:
+            return
+        invalid = [v for v in util.listify(value) if isinstance(v, str) and not self._is_column_number(v)]
+        if invalid and self.is_file_empty(trans, other_values):
+            raise ParameterValueError(
+                f"invalid columns ({','.join(invalid)!r}), only column numbers are accepted while the columns of the dataset are unknown",
+                self.name,
+                value,
+            )
+
+    def _labels_to_columns(self, value, trans, other_values):
+        """
+        Replace option labels ("c2: name") by their column number when the referenced
+        dataset has no columns to match the label against.
+        """
+        values = value if isinstance(value, list) else [value]
+        matches = [self._column_label.match(v) if isinstance(v, str) else None for v in values]
+        if not any(matches) or self.data_ref not in other_values or not self.is_file_empty(trans, other_values):
+            return value
+        columns = [m.group(1) if m else v for m, v in zip(matches, values)]
+        return columns if isinstance(value, list) else columns[0]
 
     @staticmethod
     def _strip_c(column):
@@ -1594,7 +1654,8 @@ class ColumnListParameter(SelectToolParameter):
             # that it is converted into a list, with extra whitespace around items removed.
             value = util.listify(value, do_strip=True)
             if not set(value).issubset(set(legal_values)) and self.is_file_empty(trans, other_values):
-                legal_values.extend(value)
+                # The columns of the referenced dataset are unknown, so any column number is accepted.
+                legal_values.extend(v for v in value if isinstance(v, str) and self._is_column_number(v))
 
         return set(legal_values)
 
