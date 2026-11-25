@@ -997,6 +997,11 @@ class DefaultToolAction(ToolAction):
         for p in job_to_remap.parameters:
             if p.name in input_values:
                 p.value = json.dumps(input_values[p.name])
+        if job_to_remap.tool_state:
+            # Jobs from tool requests are evaluated from this state, which names the inputs by id.
+            job_to_remap.tool_state = update_dataset_ids(
+                job_to_remap.tool_state, {old_dataset_id: new_dataset_id}, src="hda"
+            )
         jtid.dataset = out_data[jtod.name]
         jtid.dataset.hid = jtod.dataset.hid
         log.info(f"Job {job_to_remap.id} input HDA {jtod.dataset.id} remapped to new HDA {jtid.dataset.id}")

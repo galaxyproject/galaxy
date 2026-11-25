@@ -862,6 +862,43 @@ steps:
         dataset_details = self._get(f"histories/{history_id}/contents/{output['id']}").json()
         assert dataset_details["state"] == "ok"
 
+    @requires_new_history
+    @skip_without_tool("job_properties")
+    @skip_without_tool("gx_data_user")
+    def test_rerun_remap_resumes_tool_request_job(self, history_id):
+        # The failing job sleeps, so that the tool request job is created waiting on its output.
+        failing_run = self.dataset_populator.run_tool(
+            tool_id="job_properties",
+            inputs={"thebool": "true", "failbool": "true", "sleepsecs": 5},
+            history_id=history_id,
+        )
+        failed_output = next(o for o in failing_run["outputs"] if o["output_name"] == "out_file1")
+        response = self.dataset_populator.tool_request_raw(
+            tool_id="gx_data_user",
+            inputs={"parameter": {"src": "hda", "id": failed_output["id"]}},
+            history_id=history_id,
+        )
+        response.raise_for_status()
+        tool_request_id = response.json()["tool_request_id"]
+        assert self.dataset_populator.wait_on_tool_request(tool_request_id)
+        dependent_job_id = self.galaxy_interactor.jobs_for_tool_request(tool_request_id)[0]["id"]
+        self.dataset_populator.wait_for_job(failing_run["jobs"][0]["id"], assert_ok=False)
+        self.dataset_populator.wait_for_job(dependent_job_id)
+        assert self.dataset_populator.get_job_details(dependent_job_id).json()["state"] == "paused"
+
+        rerun_response = self.dataset_populator.run_tool(
+            tool_id="job_properties",
+            inputs={"thebool": "true", "failbool": "false", "rerun_remap_job_id": failing_run["jobs"][0]["id"]},
+            history_id=history_id,
+        )
+        rerun_output = next(o for o in rerun_response["outputs"] if o["output_name"] == "out_file1")
+        self.dataset_populator.wait_for_job(dependent_job_id, assert_ok=True)
+        dependent_job = self.dataset_populator.get_job_details(dependent_job_id, full=True).json()
+        assert dependent_job["inputs"]["parameter"]["id"] == rerun_output["id"]
+        output = self.galaxy_interactor.job_outputs(dependent_job_id)[0]
+        content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output["dataset"], wait=False)
+        assert content == "This is a line of text.\n"
+
     def _get_history_item_as_admin(self, history_id, item_id):
         response = self._get(f"histories/{history_id}/contents/{item_id}?view=detailed", admin=True)
         assert_status_code_is_ok(response)
