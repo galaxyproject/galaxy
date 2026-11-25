@@ -7,13 +7,29 @@ import { config } from "@vue/test-utils";
 import { vi } from "vitest";
 import type { ComponentPublicInstance } from "vue";
 
-import { GLOBAL_COMPAT_CONFIG } from "@/compat-config";
 import { vNoSanitizeHtml } from "@/directives/vNoSanitizeHtml";
 import { LEGACY_COMPAT_CONFIG } from "@/legacy-libraries";
 
 // Straight from the file: the galaxy-ui index would load every component here,
 // before test files can mock their dependencies (@floating-ui/dom).
 import { vSanitizeHtml } from "../../packages/ui/src/directives/vSanitizeHtml";
+
+// Loading compat-config evaluates bootstrap-vue, whose Vue.extend calls and
+// modal manager log compat deprecations before any test runs, so
+// vitest-fail-on-console never sees them. Hold its warnings while it loads;
+// those that aren't enabled compat deprecations are printed below.
+const importWarnings: unknown[][] = [];
+const consoleWarn = console.warn;
+console.warn = (...args: unknown[]) => importWarnings.push(args);
+const { GLOBAL_COMPAT_CONFIG } = await import("@/compat-config")
+    .catch((error) => {
+        // Everything logged before the failure may explain it, so print it all.
+        importWarnings.forEach((args) => consoleWarn(...args));
+        throw error;
+    })
+    .finally(() => {
+        console.warn = consoleWarn;
+    });
 
 // Mock g-tooltip directive globally so components don't trigger
 // "Failed to resolve directive" warnings during tests.
@@ -155,6 +171,11 @@ function isEnabledCompatDeprecation(message: string) {
 // that name. For read-only ones (`prefix`, `attributes`) the assignment fails.
 // Only the stub's own element is involved, never a real component's.
 const STUB_DOM_PROP = /^\[Vue warn\]: Failed setting prop "[^"]+" on <[a-z0-9-]+-stub>/;
+
+// Print the module-load warnings that aren't enabled compat deprecations.
+importWarnings
+    .filter(([message]) => !isEnabledCompatDeprecation(String(message)))
+    .forEach((args) => console.warn(...args));
 
 // Fail tests that log console errors or warnings, except for the messages
 // silenceMessage lets through. Anything else, including every other Vue or
