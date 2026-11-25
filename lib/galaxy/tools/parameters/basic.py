@@ -1599,6 +1599,26 @@ class ColumnListParameter(SelectToolParameter):
                 column_list = [c for c in column_list if c in this_column_list]
         return column_list
 
+    def _first_dataset(self, other_values):
+        """
+        The dataset whose header names the columns.
+
+        The value of the data reference can be a single dataset or -- for a data
+        parameter with multiple="true" -- a list of them.  get_column_list() keeps
+        the intersection of the columns of all of them, so the header of any of them
+        names the same columns; the first one is the primary input of the tool.
+        """
+        datasets = util.listify(other_values.get(self.data_ref))
+        if not datasets:
+            return None
+        dataset = datasets[0]
+        # Use representative dataset if a dataset collection is parsed
+        if isinstance(dataset, HistoryDatasetCollectionAssociation):
+            dataset = dataset.to_hda_representative()
+        if isinstance(dataset, DatasetCollectionElement):
+            dataset = dataset.first_dataset_instance()
+        return dataset
+
     def get_options(self, trans, other_values) -> Sequence[ParameterOption]:
         """
         Show column labels rather than c1..cn if use_header_names=True
@@ -1613,11 +1633,7 @@ class ColumnListParameter(SelectToolParameter):
         # if available use column_names metadata for option names
         # otherwise read first row - assume is a header with tab separated names
         if self.usecolnames:
-            dataset = other_values.get(self.data_ref, None)
-            if isinstance(dataset, HistoryDatasetCollectionAssociation):
-                dataset = dataset.to_hda_representative()
-            if isinstance(dataset, DatasetCollectionElement):
-                dataset = dataset.first_dataset_instance()
+            dataset = self._first_dataset(other_values)
             column_names = getattr(dataset, "metadata", None) and dataset.metadata.get_if_set("column_names")
             if column_names:
                 try:
@@ -1625,7 +1641,7 @@ class ColumnListParameter(SelectToolParameter):
                 except IndexError:
                     # ignore and rely on fallback
                     pass
-            else:
+            elif dataset is not None:
                 try:
                     with open(dataset.get_file_name()) as f:
                         head = f.readline()

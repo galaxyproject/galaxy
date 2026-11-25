@@ -2,6 +2,8 @@
 test_select_parameters.py.
 """
 
+import tempfile
+
 import pytest
 
 from galaxy import model
@@ -125,6 +127,60 @@ class TestDataColumnParameter(BaseParameterTestCase):
         options = self.param.get_options(self.trans, {"input_tsv": self.build_ready_hdca()})
         assert len(options) > 0
 
+    def test_get_options_with_usecolnames(self):
+        self.other_attributes = 'use_header_names="true"'
+        options = self.param.get_options(self.trans, {"input_tsv": self.build_hda_with_header()})
+        assert [option.name for option in options] == ["c1: a", "c2: b", "c3: c"]
+
+    def test_get_options_with_usecolnames_from_column_names_metadata(self):
+        hda = self.build_ready_hda()
+        hda.metadata.columns = 3
+        hda.metadata.column_names = ["a", "b", "c"]
+        self.other_attributes = 'use_header_names="true"'
+        options = self.param.get_options(self.trans, {"input_tsv": hda})
+        assert [option.name for option in options] == ["c1: a", "c2: b", "c3: c"]
+
+    def test_get_options_without_usecolnames(self):
+        options = self.param.get_options(self.trans, {"input_tsv": self.build_hda_with_header()})
+        assert [option.name for option in options] == ["Column: 1", "Column: 2", "Column: 3"]
+
+    def test_get_options_with_usecolnames_from_list_of_datasets(self):
+        # the data reference of a data parameter with multiple="true" is a list
+        self.multiple = True
+        self.other_attributes = 'use_header_names="true"'
+        options = self.param.get_options(self.trans, {"input_tsv": [self.build_hda_with_header()]})
+        assert [option.name for option in options] == ["c1: a", "c2: b", "c3: c"]
+
+    def test_get_options_with_usecolnames_from_column_names_metadata_of_a_list(self):
+        self.multiple = True
+        hda = self.build_ready_hda()
+        hda.metadata.columns = 3
+        hda.metadata.column_names = ["a", "b", "c"]
+        self.other_attributes = 'use_header_names="true"'
+        options = self.param.get_options(self.trans, {"input_tsv": [hda]})
+        assert [option.name for option in options] == ["c1: a", "c2: b", "c3: c"]
+
+    def test_get_options_with_usecolnames_of_a_list_names_the_first_datasets_columns(self):
+        self.multiple = True
+        self.other_attributes = 'use_header_names="true"'
+        first = self.build_hda_with_header(["a", "b", "c"])
+        second = self.build_hda_with_header(["x", "y", "z"])
+        options = self.param.get_options(self.trans, {"input_tsv": [first, second]})
+        assert [option.name for option in options] == ["c1: a", "c2: b", "c3: c"]
+
+    def test_get_options_with_usecolnames_falls_back_without_a_header(self):
+        hda = self.build_ready_hda()
+        # the file of the dataset is empty, so there is no first row to read
+        hda.metadata.columns = 3
+        self.other_attributes = 'use_header_names="true"'
+        options = self.param.get_options(self.trans, {"input_tsv": [hda]})
+        assert [option.name for option in options] == ["Column: 1", "Column: 2", "Column: 3"]
+
+    def test_get_options_with_usecolnames_without_a_dataset(self):
+        self.multiple = True
+        self.other_attributes = 'use_header_names="true"'
+        assert self.param.get_options(self.trans, {"input_tsv": []}) == []
+
     def setUp(self):
         super().setUp()
         self.test_history = model.History()
@@ -156,6 +212,16 @@ class TestDataColumnParameter(BaseParameterTestCase):
             model.HistoryDatasetAssociation(extension=extension, create_dataset=True, sa_session=self.app.model.context)
         )
         hda.state = state
+        return hda
+
+    def build_hda_with_header(self, names=("a", "b", "c")):
+        """A ready dataset whose first line is a header row, with known columns."""
+        hda = self.build_ready_hda()
+        with tempfile.NamedTemporaryFile("w", suffix=".interval", delete=False) as f:
+            f.write("\t".join(names) + "\n")
+            f.write("\t".join("1" for _ in names) + "\n")
+        hda.dataset.external_filename = f.name
+        hda.metadata.columns = len(names)
         return hda
 
     def build_ready_hdca(self):
