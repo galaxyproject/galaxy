@@ -251,6 +251,12 @@ class RenameDatasetAction(DefaultJobAction):
             if has_collection and hasattr(has_collection, "name"):
                 input_names[input_assoc.name] = has_collection.name
 
+        # An input that is one element of a collection (e.g. one pair of a list:paired the
+        # step is mapped over) is named by its element identifier.
+        for input_assoc in job.input_dataset_collection_elements:
+            if input_assoc.dataset_collection_element:
+                input_names[input_assoc.name] = input_assoc.dataset_collection_element.element_identifier
+
         if new_name := cls._gen_new_name(action, input_names, replacement_dict):
             for dataset_assoc in job.output_datasets:
                 if action.output_name == "" or dataset_assoc.name == action.output_name:

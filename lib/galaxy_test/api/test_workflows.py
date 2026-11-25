@@ -7526,6 +7526,57 @@ input1:
             assert details1["name"] == "my new name", details1
             assert details1["history_content_type"] == "dataset_collection"
 
+    @skip_without_tool("collection_two_paired")
+    def test_run_rename_based_on_paired_input_mapped_over_list_of_pairs(self):
+        with self.dataset_populator.test_history() as history_id:
+            summary = self._run_workflow(
+                """
+class: GalaxyWorkflow
+inputs:
+  pairs:
+    type: collection
+    collection_type: "list:paired"
+  pair2:
+    type: collection
+    collection_type: paired
+steps:
+  two_paired:
+    tool_id: collection_two_paired
+    state:
+      kind:
+        collection_type: paired
+    in:
+      kind|f1: pairs
+      kind|f2: pair2
+    outputs:
+      out1:
+        rename: "#{kind.f1} #{f1} and #{kind.f2}"
+""",
+                test_data="""
+pairs:
+  collection_type: "list:paired"
+  name: the_pairs
+pair2:
+  collection_type: paired
+  name: the_pair2
+  elements:
+    - identifier: forward
+      value: 1.fastq
+      type: File
+    - identifier: reverse
+      value: 1.fastq
+      type: File
+""",
+                history_id=history_id,
+            )
+            # Each job gets one element of the list:paired, named by its element identifier.
+            (job,) = summary.jobs_for_tool("collection_two_paired")
+            job_details = self.dataset_populator.get_job_details(job["id"], full=True).json()
+            output = self.dataset_populator.get_history_dataset_details(
+                history_id, dataset_id=job_details["outputs"]["out1"]["id"]
+            )
+            assert output["name"] == "test0 test0 and the_pair2", output["name"]
+
     @skip_without_tool("__BUILD_LIST__")
     def test_run_build_list_hide_collection_output(self):
         with self.dataset_populator.test_history() as history_id:
