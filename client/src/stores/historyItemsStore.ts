@@ -25,7 +25,7 @@ const queue = new LastQueue<typeof urlData>(1000, true);
 export const useHistoryItemsStore = defineStore("historyItemsStore", () => {
     const items = ref<Record<string, ExtendedHistoryItem[]>>({});
     const itemKey = ref("hid");
-    const totalMatchesCount = ref<number | undefined>(undefined);
+    const totalMatchesCounts = ref<Record<string, number>>({});
     const lastCheckedTime = ref(new Date());
     const lastUpdateTime = ref(new Date());
     const relatedItems = ref<Record<string, boolean>>({});
@@ -66,6 +66,10 @@ export const useHistoryItemsStore = defineStore("historyItemsStore", () => {
         };
     });
 
+    const getTotalMatchesCount = computed(() => {
+        return (historyId: string): number | undefined => totalMatchesCounts.value[historyId];
+    });
+
     async function fetchHistoryItems(historyId: string, filterText: string, offset: number) {
         const queryString = HistoryFilters.getQueryString(filterText);
         const params = `v=dev&order=hid&offset=${offset}&limit=${limit}`;
@@ -75,7 +79,8 @@ export const useHistoryItemsStore = defineStore("historyItemsStore", () => {
         try {
             const data = await queue.enqueue(urlData, { url, headers, errorSimplify: false }, historyId);
             const stats = (data as ExpectedReturn).stats;
-            totalMatchesCount.value = stats.total_matches;
+            // replace the object so new keys stay reactive
+            totalMatchesCounts.value = { ...totalMatchesCounts.value, [historyId]: stats.total_matches };
             const payload = (data as ExpectedReturn).contents;
             const relatedHid = HistoryFilters.getFilterValue(filterText, "related");
             saveHistoryItems(historyId, payload, relatedHid);
@@ -104,7 +109,8 @@ export const useHistoryItemsStore = defineStore("historyItemsStore", () => {
     }
 
     return {
-        totalMatchesCount,
+        /** Returns the total match count of the last query loaded for the provided `historyId`. */
+        getTotalMatchesCount,
         lastCheckedTime,
         lastUpdateTime,
         isWatching,

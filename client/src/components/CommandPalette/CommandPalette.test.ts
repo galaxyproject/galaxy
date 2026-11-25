@@ -62,9 +62,9 @@ function countScopedSearches(provider: CommandPaletteProvider): SearchCounter {
             provider.searchScoped = original;
         },
     };
-    provider.searchScoped = (scope, searchQuery, ctx) => {
+    provider.searchScoped = (scope, searchQuery, ctx, options) => {
         counter.calls++;
-        return original!(scope, searchQuery, ctx);
+        return original!(scope, searchQuery, ctx, options);
     };
     return counter;
 }
@@ -1440,6 +1440,104 @@ describe("CommandPalette", () => {
         expect(useCommandPalette().isPaletteOpen.value).toBe(false);
     });
 
+    describe("scoped searches that reach the backend", () => {
+        function seedHistories() {
+            useUserStore().currentUser = { id: "u1", email: "user@galaxy.org", username: "user" } as never;
+            const store = useHistoryStore();
+            store.storedHistories = {
+                local: { id: "local", name: "RNA local", tags: [], update_time: "2026-01-01T10:00:00" },
+            } as never;
+            // the backend search merges what it finds into the own histories
+            vi.mocked(store.fetchOwnHistories).mockImplementation(async (options = {}) => {
+                if (options.search) {
+                    store.storedHistories = {
+                        ...store.storedHistories,
+                        remote: { id: "remote", name: "RNA remote", tags: [], update_time: "2026-01-02T10:00:00" },
+                    } as never;
+                }
+            });
+            return store;
+        }
+
+        function backendSearches(store: ReturnType<typeof useHistoryStore>) {
+            return vi.mocked(store.fetchOwnHistories).mock.calls.filter(([options]) => options?.search);
+        }
+
+        function optionTexts() {
+            return wrapper.findAll("[role='option']").map((option) => option.text());
+        }
+
+        it("renders the cached rows before the pause ends and adds the backend rows after it", async () => {
+            const store = seedHistories();
+
+            await type("h: rna");
+            expect(optionTexts().some((text) => text.includes("RNA local"))).toBe(true);
+            expect(optionTexts().some((text) => text.includes("RNA remote"))).toBe(false);
+            expect(backendSearches(store)).toHaveLength(0);
+
+            await settle(PALETTE_LIMITS.backendSettle);
+            expect(optionTexts().some((text) => text.includes("RNA local"))).toBe(true);
+            expect(optionTexts().some((text) => text.includes("RNA remote"))).toBe(true);
+            expect(backendSearches(store)).toHaveLength(1);
+        });
+
+        it("never searches the backend for a query replaced inside the pause", async () => {
+            const store = seedHistories();
+
+            await type("h: rn");
+            await type("rna", BACKEND_WAIT);
+
+            expect(backendSearches(store)).toHaveLength(1);
+            expect(optionTexts().some((text) => text.includes("RNA remote"))).toBe(true);
+        });
+
+        it("drops the cached rows of a query replaced while the list was still loading", async () => {
+            const store = seedHistories();
+            store.storedHistories = {
+                ...store.storedHistories,
+                draft: { id: "draft", name: "RN draft", tags: [], update_time: "2026-01-03T10:00:00" },
+            } as never;
+            const withBackendRows = vi.mocked(store.fetchOwnHistories).getMockImplementation();
+            // each search holds its own hydration, so the test lets the newer one land first
+            const hydrations: (() => void)[] = [];
+            vi.mocked(store.fetchOwnHistories).mockImplementation(async (options = {}) => {
+                if (options.search) {
+                    return withBackendRows?.(options);
+                }
+                await new Promise<void>((resolve) => hydrations.push(resolve));
+            });
+
+            await type("h: rn");
+            await type("rna");
+            expect(hydrations).toHaveLength(2);
+
+            hydrations[1]?.();
+            await flushPromises();
+            expect(optionTexts().some((text) => text.includes("RNA local"))).toBe(true);
+
+            hydrations[0]?.();
+            await flushPromises();
+            expect(optionTexts().some((text) => text.includes("RN draft"))).toBe(false);
+            expect(optionTexts().some((text) => text.includes("RNA local"))).toBe(true);
+        });
+
+        it("keeps a selection placed on the cached rows when the backend rows merge", async () => {
+            const store = seedHistories();
+            store.storedHistories = {
+                ...store.storedHistories,
+                other: { id: "other", name: "RNA other", tags: [], update_time: "2025-12-01T10:00:00" },
+            } as never;
+
+            await type("h: rna");
+            await pressNow("ArrowDown");
+            const selected = wrapper.find("[role='option'][aria-selected='true']").text();
+
+            await settle(PALETTE_LIMITS.backendSettle);
+            expect(optionTexts().some((text) => text.includes("RNA remote"))).toBe(true);
+            expect(wrapper.find("[role='option'][aria-selected='true']").text()).toBe(selected);
+        });
+    });
+
     it("reports a synchronous action failure", async () => {
         useUserStore().currentUser = { id: "u1", email: "user@galaxy.org", username: "user" } as never;
         vi.mocked(useHistoryStore().createNewHistory).mockImplementation(() => {
@@ -1453,6 +1551,11 @@ describe("CommandPalette", () => {
             expect.stringContaining("Create new history"),
         );
         expect(useCommandPalette().isPaletteOpen.value).toBe(false);
+    });
+
+    it("ignores a keydown without a key, as browser autofill dispatches", () => {
+        // autofilling a login form fires a bare `Event`, not a `KeyboardEvent`
+        expect(() => window.dispatchEvent(new Event("keydown"))).not.toThrow();
     });
 
     it("ignores plain 'k' without the platform modifier", () => {

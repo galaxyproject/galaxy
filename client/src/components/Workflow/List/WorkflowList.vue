@@ -60,6 +60,7 @@ const filterText = ref("");
 const totalWorkflows = ref(0);
 const showAdvanced = ref(false);
 const listHeader = ref<any>(null);
+const workflowCardList = ref<InstanceType<typeof WorkflowCardList> | null>(null);
 const showBulkAddTagsModal = ref(false);
 const bulkTagsLoading = ref(false);
 const bulkDeleteOrRestoreLoading = ref(false);
@@ -242,6 +243,8 @@ async function load(overlayLoading = false, silent = false) {
 async function onPageChange(page: number) {
     offset.value = (page - 1) * limit.value;
     await load(true);
+    // the card list keeps its scroll position across pages otherwise
+    workflowCardList.value?.scrollToTop();
 }
 
 function validatedFilterText() {
@@ -452,6 +455,8 @@ watch([filterText, sortBy, sortDesc], async () => {
     resetSelection();
 
     await load(true);
+
+    workflowCardList.value?.scrollToTop();
 });
 
 onMounted(() => {
@@ -566,6 +571,7 @@ onMounted(() => {
         </span>
         <GOverlay v-else id="workflow-cards" :show="overlay" class="cards-list">
             <WorkflowCardList
+                ref="workflowCardList"
                 :workflows="workflowsLoaded"
                 :published-view="published"
                 :shared-with-me-view="sharedWithMe"

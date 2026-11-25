@@ -57,7 +57,10 @@ from galaxy.job_execution.output_collect import (
     MetadataSourceProvider,
     PermissionProvider,
 )
-from galaxy.job_execution.setup import JobWorkingDirectory
+from galaxy.job_execution.setup import (
+    ensure_configs_directory,
+    JobWorkingDirectory,
+)
 from galaxy.managers.credentials import build_credentials_context_response
 from galaxy.metadata import get_metadata_compute_strategy
 from galaxy.model import (
@@ -3492,7 +3495,8 @@ class ExpressionTool(Tool):
     tool_type = "expression"
     tool_type_local = True
     EXPRESSION_INPUTS_NAME = "_expression_inputs_.json"
-    job_directory_files = (expressions.EXPRESSION_SCRIPT_NAME, EXPRESSION_INPUTS_NAME)
+    # Written to configs/ by exec_before_job.
+    job_directory_files = (f"configs/{expressions.EXPRESSION_SCRIPT_NAME}", f"configs/{EXPRESSION_INPUTS_NAME}")
 
     def parse(self, tool_source: ToolSource, guid: str | None = None, dynamic: bool = False) -> None:
         super().parse(tool_source, guid, dynamic)
@@ -3520,8 +3524,8 @@ class ExpressionTool(Tool):
 
     def exec_before_job(self, app, inp_data: InpDataDictT, out_data: OutDataDictT, param_dict=None):
         super().exec_before_job(app, inp_data, out_data, param_dict=param_dict)
-        local_working_directory = param_dict["__local_working_directory__"]
-        expression_inputs_path = os.path.join(local_working_directory, ExpressionTool.EXPRESSION_INPUTS_NAME)
+        configs_directory = ensure_configs_directory(param_dict["__local_working_directory__"])
+        expression_inputs_path = os.path.join(configs_directory, ExpressionTool.EXPRESSION_INPUTS_NAME)
 
         outputs = []
         for out_name in out_data.keys():
@@ -3547,7 +3551,7 @@ class ExpressionTool(Tool):
             "script": self._expression,
             "outputs": outputs,
         }
-        expressions.write_evalute_script(os.path.join(local_working_directory))
+        expressions.write_evalute_script(configs_directory)
         with open(expression_inputs_path, "w") as f:
             json.dump(expression_inputs, f)
 
@@ -3605,7 +3609,8 @@ class ExpressionTool(Tool):
         environmnt_variables_raw = super().parse_environment_variables(tool_source)
         expression_script_inputs = dict(
             name="GALAXY_EXPRESSION_INPUTS",
-            template=ExpressionTool.EXPRESSION_INPUTS_NAME,
+            # Relative to the job directory, which the expression script runs from.
+            template=f"configs/{ExpressionTool.EXPRESSION_INPUTS_NAME}",
         )
         environmnt_variables_raw.append(expression_script_inputs)
         return environmnt_variables_raw

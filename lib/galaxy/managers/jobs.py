@@ -120,6 +120,7 @@ from galaxy.tools._types import (
 )
 from galaxy.tools.job_parameters import (
     CHROM_INFO,
+    DATA_MANAGER_MODE,
     DBKEY,
     element_identifier_parameter,
     is_element_identifier_parameter,
@@ -2208,13 +2209,32 @@ def get_output_name(tool, output, params):
         pass
 
 
+def _own_output_dataset_collection_instances(
+    job: model.Job,
+) -> list[model.JobToOutputDatasetCollectionAssociation]:
+    """Return the HDCA outputs of ``job``, minus the collections of the map-over it belongs to.
+
+    Map-over execution associates each implicit output collection with every job of the
+    map-over, but each of those jobs produced only one element of it.
+    """
+    icj_association = job.implicit_collection_jobs_association
+    if icj_association is None:
+        return job.output_dataset_collection_instances
+    return [
+        association
+        for association in job.output_dataset_collection_instances
+        if association.dataset_collection_instance.implicit_collection_jobs_id
+        != icj_association.implicit_collection_jobs_id
+    ]
+
+
 def summarize_job_outputs(job: model.Job, tool, params):
     outputs = defaultdict(list)
     output_labels = {}
     possible_outputs = (
         ("hda", "dataset_id", job.output_datasets),
         ("ldda", "ldda_id", job.output_library_datasets),
-        ("hdca", "dataset_collection_id", job.output_dataset_collection_instances),
+        ("hdca", "dataset_collection_id", _own_output_dataset_collection_instances(job)),
     )
     for src, attribute, output_associations in possible_outputs:
         output_associations = cast(list, output_associations)  # during iteration, mypy sees it as object
@@ -2368,7 +2388,7 @@ class JobSubmitter:
                         f"Failed to fetch dataset from '{to_materialize.request.url}'"
                     )
             if request.data_manager_mode:
-                tool_request.request["__data_manager_mode"] = request.data_manager_mode
+                tool_request.request[DATA_MANAGER_MODE] = request.data_manager_mode
             credentials_context = (
                 CredentialsContext(root=cast(Any, request.credentials_context)) if request.credentials_context else None
             )

@@ -9,7 +9,7 @@ import { categoryProviderId, type PaletteCategory } from "./providers/categories
 import { isPaletteFetchError } from "./providers/errors";
 import { PALETTE_LIMITS } from "./providers/limits";
 import { isProviderAvailable, type ScopeDefinition } from "./providers/scopes";
-import type { CommandPaletteProvider, PaletteContext, PaletteItem, ResultSection } from "./types";
+import type { CommandPaletteProvider, PaletteContext, PaletteItem, ResultSection, ScopedSection } from "./types";
 import { type PaletteMode, paletteModeIdentity, paletteModeSubject } from "./usePaletteMachine";
 import { isScopeTokenLike, scorePaletteItems } from "./utilities";
 
@@ -156,6 +156,21 @@ export function usePaletteSearch(options: PaletteSearchOptions) {
     }
 
     /**
+     * Renders the answer of a search the fan-out does not own. The selection starts on
+     * the first row, unless the user already placed it on rows this search rendered
+     * early (the cached rows of a scoped search), where it follows its row.
+     */
+    function renderAnswer(results: ResultSection[], keepCategoryRow: boolean) {
+        const next = results.filter((section) => section.items.length > 0);
+        if (selectionTouched) {
+            assignSections(next, categoryRowSelected.value, true);
+            return;
+        }
+        sections.value = next;
+        selectedIndex.value = keepCategoryRow && showCategoryRow.value ? CATEGORY_ROW_INDEX : 0;
+    }
+
+    /**
      * Unscoped search: every provider contributes a section, rendered the moment it
      * answers rather than once the slowest one has — until then the rows it answered
      * the previous keystroke with hold its place, and a placeholder does where there
@@ -261,8 +276,23 @@ export function usePaletteSearch(options: PaletteSearchOptions) {
         ctx: PaletteContext,
     ): Promise<ResultSection[]> {
         if (scope && provider.searchScoped) {
-            const scoped = await withoutFailing(provider.id, () => provider.searchScoped!(scope, query.value, ctx), []);
-            return scoped.map((section) => ({ ...section, id: `${provider.id}:${section.id}` }));
+            const signal = searchController.signal;
+            const withIds = (list: ScopedSection[]) =>
+                list.map((section) => ({ ...section, id: `${provider.id}:${section.id}` }));
+            let answered = false;
+            // the cached rows render while the backend search waits for the input to settle
+            const onLocal = (local: ScopedSection[]) => {
+                if (!answered && !signal.aborted) {
+                    renderAnswer(withIds(local), categoryRowSelected.value);
+                }
+            };
+            const scoped = await withoutFailing(
+                provider.id,
+                () => provider.searchScoped!(scope, query.value, ctx, { onLocal, signal }),
+                [],
+            );
+            answered = true;
+            return withIds(scoped);
         }
         return [{ id: provider.id, items: await providerItems(provider.id, ctx), title: provider.title }];
     }
@@ -347,8 +377,7 @@ export function usePaletteSearch(options: PaletteSearchOptions) {
         try {
             const results = await modeSections(mode.value, ctx);
             if (epoch === searchEpoch) {
-                sections.value = results.filter((section) => section.items.length > 0);
-                selectedIndex.value = keepCategoryRow && showCategoryRow.value ? CATEGORY_ROW_INDEX : 0;
+                renderAnswer(results, keepCategoryRow);
             }
         } catch (error) {
             // only a scope that could not be loaded at all reaches this, everything

@@ -1,0 +1,125 @@
+import { createTestingPinia } from "@pinia/testing";
+import { getLocalVue, nth, withPlugins } from "@tests/vitest/helpers";
+import { mount, type VueWrapper } from "@vue/test-utils";
+import { describe, expect, it, vi } from "vitest";
+
+import { type Step, useWorkflowStepStore } from "@/stores/workflowStepStore";
+
+import FormConditional from "./FormConditional.vue";
+import MissingToolForm from "./MissingToolForm.vue";
+
+const localVue = getLocalVue();
+
+const TOOL_ID = "toolshed.g2.bx.psu.edu/repos/iuc/missing_tool/missing_tool/1.0.0";
+
+function makeStep(overrides: Partial<Step> = {}): Step {
+    return {
+        id: 3,
+        type: "tool",
+        name: TOOL_ID,
+        content_id: TOOL_ID,
+        label: "my label",
+        annotation: "my annotation",
+        config_form: undefined,
+        errors: "Tool is not installed" as unknown as string[],
+        input_connections: {},
+        inputs: [],
+        outputs: [],
+        tool_state: {},
+        post_job_actions: {},
+        ...overrides,
+    };
+}
+
+function mountTarget(
+    step: Step = makeStep(),
+    otherStep: Partial<Step> = {},
+    error = "Tool is not installed",
+): VueWrapper {
+    const pinia = createTestingPinia({ createSpy: vi.fn });
+    useWorkflowStepStore("mock-workflow").steps = {
+        "1": makeStep({ id: 1, label: "other step", ...otherStep }),
+        [step.id]: step,
+    };
+    return mount(MissingToolForm as object, {
+        props: { step, error },
+        global: { ...withPlugins(localVue, pinia), provide: { workflowId: "mock-workflow" } },
+    });
+}
+
+describe("MissingToolForm", () => {
+    it("explains that the tool is not installed and names it", () => {
+        const wrapper = mountTarget();
+        const alert = wrapper.find("[data-description='missing tool alert']");
+        expect(alert.exists()).toBe(true);
+        expect(alert.classes()).toContain("alert-warning");
+        expect(alert.text()).toContain("Tool is not installed");
+        expect(alert.text()).toContain(TOOL_ID);
+        expect(alert.text()).toContain("Version: 1.0.0");
+        expect(alert.text()).toContain("until the tool is installed on this Galaxy");
+        expect(wrapper.find(".portlet-title-text").text()).toBe("missing_tool");
+    });
+
+    it("reports a failed request to load an installed tool as a loading problem", () => {
+        const wrapper = mountTarget(makeStep({ errors: null }), {}, "Request failed with status code 500");
+        const alert = wrapper.find("[data-description='missing tool alert']");
+        expect(alert.text()).toContain("Request failed with status code 500");
+        expect(alert.text()).toContain("The tool could not be loaded");
+        expect(alert.text()).not.toContain("installed on this Galaxy");
+    });
+
+    it("prefers the step's tool version", () => {
+        const wrapper = mountTarget(makeStep({ tool_version: "2.0" }));
+        expect(wrapper.find("[data-description='missing tool alert']").text()).toContain("Version: 2.0");
+    });
+
+    it("names local tools by their id and omits an unknown version", () => {
+        const wrapper = mountTarget(makeStep({ content_id: "cat_missing", name: "cat_missing" }));
+        expect(wrapper.find(".portlet-title-text").text()).toBe("cat_missing");
+        expect(wrapper.find("[data-description='missing tool alert']").text()).not.toContain("Version");
+    });
+
+    it("emits label and annotation edits", async () => {
+        const wrapper = mountTarget();
+
+        const label = wrapper.find("input#__label");
+        expect((label.element as HTMLInputElement).value).toBe("my label");
+        await label.setValue("new label");
+        expect(nth(wrapper.emitted("onLabel"), -1)).toEqual([3, "new label"]);
+
+        const annotation = wrapper.find("textarea#__annotation");
+        expect((annotation.element as HTMLTextAreaElement).value).toBe("my annotation");
+        await annotation.setValue("new annotation");
+        expect(nth(wrapper.emitted("onAnnotation"), -1)).toEqual([3, "new annotation"]);
+    });
+
+    it("flags a label that another step already uses", () => {
+        const wrapper = mountTarget(makeStep(), { label: "my label" });
+        expect(wrapper.text()).toContain("Duplicate label my label. Please fix this before saving the workflow.");
+    });
+
+    it("updates the duplicate label error when the label changes", async () => {
+        const wrapper = mountTarget(makeStep(), { label: "used label" });
+        expect(wrapper.text()).not.toContain("Duplicate label");
+        await wrapper.setProps({ step: makeStep({ label: "used label" }) });
+        expect(wrapper.text()).toContain("Duplicate label used label.");
+        await wrapper.setProps({ step: makeStep({ label: "fixed label" }) });
+        expect(wrapper.text()).not.toContain("Duplicate label");
+    });
+
+    it("accepts a label that matches a workflow output label", () => {
+        const ownOutput = { workflow_outputs: [{ label: "my label", output_name: "out_file1" }] };
+        const wrapper = mountTarget(makeStep(ownOutput), {
+            workflow_outputs: [{ label: "my label", output_name: "out" }],
+        });
+        expect(wrapper.text()).not.toContain("Duplicate label");
+    });
+
+    it("forwards conditional step updates", () => {
+        const wrapper = mountTarget();
+        const conditional = wrapper.findComponent(FormConditional);
+        expect(conditional.exists()).toBe(true);
+        conditional.vm.$emit("onUpdateStep", 3, { when: undefined });
+        expect(nth(wrapper.emitted("onUpdateStep"), 0)).toEqual([3, { when: undefined }]);
+    });
+});

@@ -1510,13 +1510,21 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
             destination_to_output = {
                 (o.false_path if outputs_to_working_directory else o.real_path): copy.copy(o) for o in outputs
             }
+            # Extended metadata reads from_work_dir outputs in place, Pulsar doesn't collect them (see
+            # __client_outputs). So the directory of a precreate_directory output, which get_work_dir_outputs
+            # pairs with the extra files path, must be copied next to the output path metadata sees.
+            extended_metadata = job_wrapper.get_destination_configuration("metadata_strategy", None) == "extended"
+            extra_files_path_to_output = {o.false_extra_files_path: o for o in destination_to_output.values()}
             rewritten_outputs = []
+            directory_outputs = []
             for pulsar_workdir_path, destination in work_dir_outputs:
                 work_dir_output = destination_to_output.pop(destination, None)
                 if work_dir_output:
                     work_dir_output.fallback_path = remote_output_path(work_dir_output)
                     work_dir_output.false_path = pulsar_workdir_path
                     rewritten_outputs.append(work_dir_output)
+                elif extended_metadata and (directory_output := extra_files_path_to_output.get(destination)):
+                    directory_outputs.append((pulsar_workdir_path, directory_output))
 
             for output in destination_to_output.values():
                 if compute_environment:
@@ -1524,6 +1532,14 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
                 rewritten_outputs.append(output)
 
             metadata_kwds["output_fnames"] = rewritten_outputs
+            # After the loop above, which rewrites the output paths to the ones metadata sees.
+            work_dir_directory_outputs = []
+            for pulsar_workdir_path, output in directory_outputs:
+                extra_files_path = dataset_path_to_extra_path(str(output))
+                # get_work_dir_outputs precreated this directory, so if it's missing the output was purged.
+                precreated = extra_files_path == output.false_extra_files_path
+                work_dir_directory_outputs.append((pulsar_workdir_path, extra_files_path, precreated))
+            metadata_kwds["work_dir_directory_outputs"] = work_dir_directory_outputs
             remote_system_properties = remote_job_config.get("system_properties", {})
             remote_galaxy_home = remote_system_properties.get("galaxy_home")
             if not job_wrapper.use_metadata_binary:

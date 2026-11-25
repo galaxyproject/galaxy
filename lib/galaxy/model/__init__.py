@@ -465,6 +465,11 @@ def set_datatypes_registry(d_registry):
     _datatypes_registry = d_registry
 
 
+def tag_strings(tags: Iterable["ItemTagAssociation"]) -> list[str]:
+    """Render each tag as ``name`` or ``name:value``."""
+    return [f"{tag.user_tname}" if tag.value is None else f"{tag.user_tname}:{tag.user_value}" for tag in tags]
+
+
 class HasTags(Dictifiable):
     dict_collection_visible_keys = ["tags"]
     dict_element_visible_keys = ["tags"]
@@ -475,14 +480,7 @@ class HasTags(Dictifiable):
         return rval
 
     def make_tag_string_list(self):
-        # add tags string list
-        tags_str_list = []
-        for tag in self.tags:
-            tag_str = tag.user_tname
-            if tag.value is not None:
-                tag_str += f":{tag.user_value}"
-            tags_str_list.append(tag_str)
-        return tags_str_list
+        return tag_strings(self.tags)
 
     def copy_tags_from(self, target_user, source):
         existing = {(t.tag_id, t.value) for t in self.tags}
@@ -8840,6 +8838,10 @@ class HistoryDatasetCollectionAssociation(
             )
         if implicit_input_collections:
             rval["implicit_input_collections"] = implicit_input_collections
+        if self.implicit_collection_jobs:
+            rval["implicit_collection_jobs"] = serialization_options.get_identifier(
+                id_encoder, self.implicit_collection_jobs
+            )
 
         # Handle copied_from_history_dataset_association information...
         copied_from_history_dataset_collection_association_chain = []
@@ -9162,7 +9164,8 @@ class DatasetCollectionElement(Base, Dictifiable, Serializable):
     def first_dataset_instance(self):
         element_object = self.element_object
         if isinstance(element_object, DatasetCollection):
-            return element_object.dataset_instances[0]
+            dataset_instances = element_object.dataset_instances
+            return dataset_instances[0] if dataset_instances else None
         else:
             return element_object
 
@@ -9871,6 +9874,15 @@ class WorkflowStep(Base, RepresentById, UsesCreateAndUpdateTime):
             step_input.name: {"default": step_input.default_value}
             for step_input in self.inputs
             if step_input.name is not None and step_input.default_value_set
+        }
+
+    @property
+    def input_defaults(self) -> dict[str, Any]:
+        """Step input defaults by input name."""
+        return {
+            step_input.name: step_input.default_value
+            for step_input in self.inputs
+            if step_input.name and step_input.default_value_set
         }
 
     @property

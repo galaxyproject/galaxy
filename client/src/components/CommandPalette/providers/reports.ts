@@ -138,23 +138,30 @@ export const reportsProvider: CommandPaletteProvider = {
      * Published pages are public, so `rp:` serves anonymous visitors too; only
      * the own listing needs an account to hold anything.
      */
-    async searchScoped(scope: ScopeDefinition, query: string) {
+    async searchScoped(scope: ScopeDefinition, query: string, _ctx: PaletteContext, options) {
         const variant = variantOf(scope);
         const recent = variant === "my" ? recentItems(query, PALETTE_LIMITS.section) : [];
         const recentIds = new Set(recent.map((item) => item.id));
-        const listed = (await storeFirstItems(reportList(variant), query, PALETTE_LIMITS.section + recentIds.size))
-            .filter((item) => !recentIds.has(item.id))
-            .slice(0, PALETTE_LIMITS.section);
 
-        const sections: ScopedSection[] = [];
-        if (recent.length) {
-            sections.push({ id: "recent", title: "Recent", items: recent });
+        function sectionsOf(found: PaletteItem[]): ScopedSection[] {
+            const listed = found.filter((item) => !recentIds.has(item.id)).slice(0, PALETTE_LIMITS.section);
+            const sections: ScopedSection[] = [];
+            if (recent.length) {
+                sections.push({ id: "recent", title: "Recent", items: recent });
+            }
+            sections.push({
+                id: variant === "published" ? "published" : "latest",
+                title: query ? scope.label : "Latest",
+                items: listed,
+            });
+            return sections;
         }
-        sections.push({
-            id: variant === "published" ? "published" : "latest",
-            title: query ? scope.label : "Latest",
-            items: listed,
+
+        const onLocal = options?.onLocal;
+        const found = await storeFirstItems(reportList(variant), query, PALETTE_LIMITS.section + recentIds.size, {
+            onLocal: onLocal && ((items) => onLocal(sectionsOf(items))),
+            signal: options?.signal,
         });
-        return sections;
+        return sectionsOf(found);
     },
 };
