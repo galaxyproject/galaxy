@@ -42,7 +42,7 @@
                 </template>
 
                 <template v-slot:head(selected)="">
-                    <BFormCheckbox v-model="toggleState" @change="toggleSelectAll" />
+                    <BFormCheckbox v-model="toggleState" :disabled="!items.length" @change="toggleSelectAll" />
                 </template>
 
                 <template v-slot:cell(requirement)="row">
@@ -223,6 +223,10 @@ export default {
         },
     },
     watch: {
+        items() {
+            // Rebuilt rows all start unticked, so the header must too
+            this.toggleState = false;
+        },
         resolverType: function (val) {
             this.load();
         },
