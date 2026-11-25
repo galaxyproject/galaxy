@@ -8,6 +8,7 @@ import logging
 import re
 from urllib.parse import unquote_plus
 
+from galaxy.exceptions import MalformedContents
 from . import (
     base,
     line,
@@ -40,9 +41,13 @@ class CSVRecordDataProvider(base.DataProvider):
 
     def __iter__(self):
         record: list[str] = []
-        for _ in csv.reader(self.collect_lines(super().__iter__(), record), self.dialect):
-            yield "".join(record)
-            record.clear()
+        reader = csv.reader(self.collect_lines(super().__iter__(), record), self.dialect)
+        try:
+            for _ in reader:
+                yield "".join(record)
+                record.clear()
+        except csv.Error as e:
+            raise MalformedContents(f"CSV reader error - line {reader.line_num}: {e}")
 
     def collect_lines(self, lines, record):
         for source_line in lines:

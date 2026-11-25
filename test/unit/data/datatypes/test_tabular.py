@@ -13,7 +13,10 @@ from galaxy.datatypes.tabular import (
     Tabular,
     TSV,
 )
-from galaxy.exceptions import RequestParameterInvalidException
+from galaxy.exceptions import (
+    MalformedContents,
+    RequestParameterInvalidException,
+)
 from .util import MockDataset
 
 
@@ -100,6 +103,20 @@ def test_delimited_dataprovider_keeps_quoted_newlines_in_their_record(tmp_path, 
     assert rows == [["name", None], ["first\nnext", 1], ["second", 2]]
     rows = list(datatype.dataset_column_dataprovider(dataset, indeces=[0, 1], offset=1, limit=1))
     assert rows == [["first\nnext", 1]]
+
+
+@pytest.mark.parametrize("datatype", [CSV(), TSV()], ids=["csv", "tsv"])
+def test_delimited_dataprovider_rejects_unclosed_quote(tmp_path, datatype):
+    source = tmp_path / f"input.{datatype.file_ext}"
+    delimiter = datatype.dialect.delimiter
+    source.write_text(f'name{delimiter}count\n"first{delimiter}1\n' + f"row{delimiter}2\n" * 30000)
+    dataset = MockDataset(id=1)
+    dataset.set_file_name(str(source))
+    cast(Any, dataset).datatype = datatype
+    dataset.metadata.delimiter = delimiter
+    dataset.metadata.column_types = ["str", "int"]
+    with pytest.raises(MalformedContents, match="CSV reader error - line"):
+        list(datatype.dataset_column_dataprovider(dataset, indeces=[0, 1], limit=2))
 
 
 def test_tabular_dataprovider_ignores_quotes(tmp_path):
