@@ -3,9 +3,11 @@
 import datetime
 import errno
 import json
+import logging
 import os
 import traceback
 import unittest
+from contextlib import contextmanager
 from functools import (
     partial,
     wraps,
@@ -72,6 +74,8 @@ try:
     from galaxy_test.driver.driver_util import GalaxyTestDriver
 except ImportError:
     GalaxyTestDriver = None  # type: ignore[assignment, misc, unused-ignore]
+
+logger = logging.getLogger(__name__)
 
 
 def _load_config_file() -> None:
@@ -406,6 +410,9 @@ class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin, Use
     # GALAXY_TEST_SELENIUM_ADMIN_USER_PASSWORD
     run_as_admin = False
 
+    # Set once a driver is allocated and cleared by tear_down_driver.
+    _driver_allocated = False
+
     # where we pull axe from if enabled
     axe_script_url = GALAXY_TEST_AXE_SCRIPT_URL
 
@@ -434,6 +441,22 @@ class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin, Use
             self._setup_interactor()
             self._setup_user(GALAXY_TEST_SELENIUM_ADMIN_USER_EMAIL)
         self._try_setup_with_driver()
+
+    @contextmanager
+    def _tear_down_driver_on_error(self):
+        # Once the driver is allocated, any subsequent failure must still
+        # tear it down: pytest does not call tearDown when setUp raises, so
+        # without this the Playwright asyncio loop would stay registered as
+        # "running" on the main thread and cascade every subsequent test's
+        # setUp with "Sync API inside the asyncio loop".
+        try:
+            yield
+        except BaseException:
+            try:
+                self.tear_down_driver()
+            except Exception:
+                logger.exception("Error tearing down driver after setup failure")
+            raise
 
     def _try_setup_with_driver(self):
         try:
@@ -503,13 +526,23 @@ class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin, Use
         self.tear_down_driver()
         self.target_url_from_selenium = self._target_url_from_selenium()
         self.setup_driver_and_session()
-        self._try_setup_with_driver()
+        with self._tear_down_driver_on_error():
+            self._try_setup_with_driver()
 
     def setup_driver_and_session(self):
         virtual_display_enabled = use_virtual_display()
         self.display = driver_factory.virtual_display_if_enabled(virtual_display_enabled)
-        self.configured_driver = get_configured_driver()
-        self._setup_galaxy_logging()
+        try:
+            self.configured_driver = get_configured_driver()
+        except BaseException:
+            try:
+                self.display.stop()
+            except Exception:
+                logger.exception("Error stopping virtual display after driver allocation failure")
+            raise
+        self._driver_allocated = True
+        with self._tear_down_driver_on_error():
+            self._setup_galaxy_logging()
 
     def _setup_galaxy_logging(self):
         self.home()
@@ -530,6 +563,10 @@ class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin, Use
             self.register()
 
     def tear_down_driver(self):
+        # A setup failure already tore the driver down; tearDown must not quit it again.
+        if not self._driver_allocated:
+            return
+        self._driver_allocated = False
         exception = None
         if self.backend_type == "playwright":
             try:
@@ -605,6 +642,12 @@ class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin, Use
 
 class SeleniumTestCase(FunctionalTestCase, TestWithSeleniumMixin):
     galaxy_driver_class = GalaxyTestDriver
+
+    def setup_method(self):
+        # pytest skips teardown_method when setup_method raises, so tear the
+        # driver down here when a subclass setUp fails after allocating it.
+        with self._tear_down_driver_on_error():
+            super().setup_method()
 
     def setUp(self):
         super().setUp()
