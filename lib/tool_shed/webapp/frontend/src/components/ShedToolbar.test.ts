@@ -65,7 +65,13 @@ describe("ShedToolbar", () => {
     })
 
     it("does not redirect back to the auth pages", async () => {
-        for (const path of ["/login?redirect=%2Fhelp", "/register", "/login_success"]) {
+        for (const path of [
+            "/login?redirect=%2Fhelp",
+            "/register",
+            "/login_success",
+            "/user/forgot_password",
+            "/user/reset_password?token=abc",
+        ]) {
             const { wrapper } = await mountToolbar(null, path)
 
             expect(wrapper.get(".toolbar-login").attributes("href")).toBe("/login")

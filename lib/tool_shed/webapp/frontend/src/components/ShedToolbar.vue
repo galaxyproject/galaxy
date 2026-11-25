@@ -20,7 +20,17 @@ void authStore.setup()
 const admin = computed(() => authStore.user && authStore.user.is_admin)
 
 // Come back here after logging in, unless "here" is already an auth or post-auth page
-const NO_RETURN_PATHS = ["/", "/login", "/register", "/login_success", "/logout_success", "/registration_success"]
+const NO_RETURN_PATHS = [
+    "/",
+    "/login",
+    "/register",
+    "/login_success",
+    "/logout_success",
+    "/registration_success",
+    "/user/forgot_password",
+    "/user/reset_password",
+    "/user/change_password_success",
+]
 const route = useRoute()
 const loginTo = computed(() => withRedirect("/login", NO_RETURN_PATHS.includes(route.path) ? null : route.fullPath))
 </script>
