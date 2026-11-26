@@ -829,6 +829,11 @@ TESTS_PARAM_MULTIPLE_SELECT_COMMA_OPTIONS = """
         <param name="dup" type="select" multiple="true">
             <option value="x,1">X</option>
         </param>
+        <param name="ambiguous" type="select" multiple="true">
+            <option value="a,1">A1</option>
+            <option value="a">A</option>
+            <option value="1">One</option>
+        </param>
         <section name="other">
             <param name="dup" type="select">
                 <option value="a,1">A</option>
@@ -864,6 +869,15 @@ TESTS_PARAM_MULTIPLE_SELECT_COMMA_OPTIONS = """
         <test>
             <param name="multi" value="c,d"/>
             <param name="other|dup" value="a,1"/>
+            <output name="out" value="out.txt"/>
+        </test>
+        <test>
+            <param name="ambiguous" value="a,1"/>
+            <output name="out" value="out.txt"/>
+        </test>
+        <test>
+            <param name="ambiguous" value="1,a"/>
+            <param name="multi" value="typo"/>
             <output name="out" value="out.txt"/>
         </test>
     </tests>
@@ -2066,6 +2080,7 @@ def test_tests_param_multiple_select_comma_options(lint_ctx):
         "Test 1: Test param multi_true value is split on commas but its option values contain commas, use value_json",
         "Test 4: Test param multi_true value is split on commas but its option values contain commas, use value_json",
         "Test 4: Test param multi value is split on commas but its option values contain commas, use value_json",
+        "Test 6: Test param ambiguous value is split on commas but its option values contain commas, use value_json",
     ]
 
 

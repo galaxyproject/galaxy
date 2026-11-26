@@ -288,24 +288,31 @@ class TestsParamMultipleSelectCommaOptions(Linter):
         input_params = list(_iter_param(tool_xml))
         # test params are matched by short name, so skip names shared by several inputs
         name_counts = Counter(name for _, name in input_params)
-        comma_selects: Dict[str, Set[str]] = {}
+        # name -> (valid option values and labels, option values containing commas)
+        comma_selects: Dict[str, Tuple[Set[str], Set[str]]] = {}
         for param, name in input_params:
             if param.attrib.get("type") != "select" or name_counts[name] != 1:
                 continue
             if not string_as_bool(param.attrib.get("multiple", "false")):
                 continue
             options = param.findall("option")
-            if any("," in option.attrib.get("value", "") for option in options):
-                comma_selects[name] = {option.attrib.get("value", "") for option in options} | {
-                    option.text or "" for option in options
-                }
+            option_values = {option.attrib.get("value", "") for option in options}
+            comma_values = {value for value in option_values if "," in value}
+            if comma_values:
+                comma_selects[name] = (option_values | {option.text or "" for option in options}, comma_values)
         if not comma_selects:
             return
         for test_idx, test in enumerate(tool_xml.findall("./tests/test"), start=1):
             for param in test.findall(".//param[@value]"):
                 name = param.attrib.get("name", "").split("|")[-1]
-                parts = {part for part in param.attrib["value"].split(",") if part}
-                if name in comma_selects and not parts <= comma_selects[name]:
+                value = param.attrib["value"]
+                if name not in comma_selects or "," not in value:
+                    continue
+                valid, comma_values = comma_selects[name]
+                parts = {part for part in value.split(",") if part}
+                # consecutive parts that join to a comma-containing option value make the selection ambiguous
+                ambiguous = any(f",{option}," in f",{value}," for option in comma_values)
+                if ambiguous or not parts <= valid:
                     lint_ctx.warn(
                         f"Test {test_idx}: Test param {name} value is split on commas but its option values contain commas, use value_json",
                         linter=cls.name(),
