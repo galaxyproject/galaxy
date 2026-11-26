@@ -54,9 +54,14 @@ def _tar(manifest_md5=None):
     return buffer.getvalue()
 
 
-def _fake_radar(tar, ranges="exact", total=1):
+def _fake_radar(tar, ranges="exact", total=1, technical=None):
     archive = {"size": len(tar), "checksum": hashlib.md5(tar).hexdigest()}
-    record = {"id": DATASET, "descriptiveMetadata": {"title": "Run 1"}, "archive": archive}
+    record = {
+        "id": DATASET,
+        "descriptiveMetadata": {"title": "Run 1"},
+        "archive": archive,
+        "technicalMetadata": technical,
+    }
 
     def datasets(request):
         query = dict(parse_qsl(urlsplit(request.url).query))["query"]
@@ -187,6 +192,14 @@ def test_only_published_datasets_and_their_data_files_are_found():
     # names are matched exactly against the files below data/dataset, so .. cannot reach data/readme.txt
     with pytest.raises(ObjectNotFound, match="not a file"):
         realize_to_temp_file(file_sources, f"gxfiles://radar/{DATASET}/../readme.txt")
+
+
+@responses.activate
+def test_a_blocked_dataset_says_why_without_reading_its_tar():
+    _fake_radar(_tar(), technical={"blocked": True, "blockMessage": ":New DOI is 10.1/x"})
+    with pytest.raises(MessageException, match="RADAR blocks downloads of dataset AbCdEfGhIjKlMnOp: New DOI is 10.1/x"):
+        _source()[1].list(f"/{DATASET}")
+    assert not any(call.request.url == CONTENT for call in responses.calls)
 
 
 def test_recursive_listing_is_invalid():

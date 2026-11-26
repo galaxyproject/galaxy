@@ -230,6 +230,11 @@ class RadarFilesSource(BaseFilesSource[RadarFileSourceTemplateConfiguration, Rad
         size = archive.get("size")
         if not isinstance(size, int):
             raise ObjectNotFound(f"There is no published RADAR dataset {dataset_id} at {config.base_url}.")
+        technical = found[0].get("technicalMetadata") or {}
+        if technical.get("blocked"):
+            # an operator can block a published dataset, e.g. when it was replaced; RADAR then refuses its download
+            reason = str(technical.get("blockMessage") or "").lstrip(": ").strip()
+            raise MessageException(f"RADAR blocks downloads of dataset {dataset_id}{f': {reason}' if reason else '.'}")
         # the archive's MD5 changes with its content, so a cached file list is never stale
         key = (self._download_url(config, dataset_id), str(archive.get("checksum") or size))
         with _index_lock:
