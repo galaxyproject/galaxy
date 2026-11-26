@@ -1,4 +1,5 @@
 import csv
+import json
 import tempfile
 from typing import (
     Any,
@@ -7,6 +8,10 @@ from typing import (
 
 import pytest
 
+from galaxy.datatypes.interval import (
+    Bed,
+    Interval,
+)
 from galaxy.datatypes.tabular import (
     column_index_header_cell,
     CSV,
@@ -181,6 +186,42 @@ def test_tabular_display_peek_header_includes_metadata_column_names():
 
     assert column_index_header_cell("1", "GeneID") + column_index_header_cell("2", "Base mean") in html
     assert "<td>FBgn0026562</td>" in html
+
+
+def _dataset_with_metadata(tmp_path, datatype, text):
+    source = tmp_path / f"input.{datatype.file_ext}"
+    source.write_text(text)
+    dataset = MockDataset(id=1)
+    dataset.set_file_name(str(source))
+    metadata = cast(Any, dataset.metadata)
+    metadata.spec = datatype.metadata_spec
+    metadata.column_names = datatype.metadata_spec.column_names.no_value
+    datatype.set_meta(dataset)
+    cast(Any, dataset).peek = text
+    return dataset
+
+
+def test_bed_preview_chunk_and_peek_name_the_same_columns(tmp_path):
+    bed = Bed()
+    dataset = _dataset_with_metadata(tmp_path, bed, "chr1\t100\t200\tfeature\t0\t+\n")
+
+    chunk = json.loads(bed.get_chunk(None, dataset, 0, 1024))
+    html = bed.display_peek(dataset)
+
+    assert chunk["column_names"] == ["Chrom", "Start", "End", "Name", "Score", "Strand"]
+    peek_cells = "".join(column_index_header_cell(str(i + 1), name) for i, name in enumerate(chunk["column_names"]))
+    assert f"<tr>{peek_cells}</tr>" in html
+
+
+def test_interval_preview_chunk_names_column_parameters(tmp_path):
+    interval = Interval()
+    dataset = _dataset_with_metadata(tmp_path, interval, "feature\tchr1\t100\t200\t+\n")
+    metadata = cast(Any, dataset.metadata)
+    metadata.chromCol, metadata.startCol, metadata.endCol, metadata.strandCol = 2, 3, 4, 5
+
+    chunk = json.loads(interval.get_chunk(None, dataset, 0, 1024))
+
+    assert chunk["column_names"] == [None, "Chrom", "Start", "End", "Strand"]
 
 
 def test_column_index_header_cell_escapes_name():

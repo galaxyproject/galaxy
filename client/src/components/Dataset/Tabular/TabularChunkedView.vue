@@ -14,6 +14,7 @@ interface TabularChunk {
     ck_data: string;
     offset: number;
     data_line_offset: number;
+    column_names?: (string | null)[];
 }
 
 interface TabularDataset extends HDADetailed {
@@ -37,14 +38,15 @@ const tabularData = reactive<{ rows: string[][] }>({
     rows: [],
 });
 
+// Column names from the server, the same ones the dataset peek shows. Every chunk carries them.
+const chunkColumnNames = ref<(string | null)[]>();
+
 const columns = computed(() => {
     const columns = Array(props.options.metadata_columns);
-    // for each column_name, inject header
-    if (props.options.metadata_column_names && props.options.metadata_column_names?.length > 0) {
-        props.options.metadata_column_names.forEach((column_name, index) => {
-            columns[index] = column_name;
-        });
-    }
+    const columnNames = chunkColumnNames.value ?? props.options.metadata_column_names ?? [];
+    columnNames.forEach((columnName, index) => {
+        columns[index] = columnName ?? undefined;
+    });
     return columns;
 });
 
@@ -115,6 +117,9 @@ watch(y, (newY) => {
 });
 
 function processChunk(chunk: TabularChunk) {
+    if (chunk.column_names) {
+        chunkColumnNames.value = chunk.column_names;
+    }
     // parsedChunk is a 2d array of strings
     let parsedChunk = [];
     try {

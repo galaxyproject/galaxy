@@ -104,6 +104,9 @@ class TabularData(Text):
     CHUNKABLE = True
     data_line_offset = 0
     max_peek_columns = 50
+    # Column index names for column parameter metadata, e.g. ``{"chromCol": "Chrom"}``.
+    # A column parameter without an alias is shown by its metadata name.
+    column_parameter_alias: dict[str, str] = {}
 
     MetadataElement(
         name="comment_lines",
@@ -164,13 +167,14 @@ class TabularData(Text):
         except Exception:
             return False
 
-    def get_chunk(self, trans, dataset: HasFileName, offset: int = 0, ck_size: Optional[int] = None) -> str:
+    def get_chunk(self, trans, dataset: DatasetProtocol, offset: int = 0, ck_size: Optional[int] = None) -> str:
         ck_data, last_read = self._read_chunk(trans, dataset, offset, ck_size)
         return dumps(
             {
                 "ck_data": util.unicodify(ck_data),
                 "offset": last_read,
                 "data_line_offset": self.data_line_offset,
+                "column_names": self.column_headers(dataset),
             }
         )
 
@@ -247,6 +251,37 @@ class TabularData(Text):
         except Exception as exc:
             return f"Can't create peek: {util.unicodify(exc)}"
 
+    def column_headers(
+        self,
+        dataset: DatasetProtocol,
+        column_names: Optional[list] = None,
+        column_parameter_alias: Optional[dict] = None,
+    ) -> list[Optional[str]]:
+        """Name of each column in the column index of peeks and previews, ``None`` where no name is known.
+
+        Names come from ``column_names``, else the dataset's ``column_names`` metadata, else the
+        datatype's own ``column_names``. Column parameter metadata (e.g. ``chromCol``) names the
+        columns that are still unnamed.
+        """
+        if column_parameter_alias is None:
+            column_parameter_alias = self.column_parameter_alias
+        column_names = column_names or dataset.metadata.column_names or getattr(self, "column_names", None) or []
+        columns = dataset.metadata.columns
+        if columns is None:
+            columns = dataset.metadata.spec.columns.no_value
+        headers: list[Optional[str]] = [None] * columns
+        for i in range(min(columns, len(column_names))):
+            headers[i] = column_names[i]
+        for name, spec in dataset.metadata.spec.items():
+            if isinstance(spec.param, metadata.ColumnParameter):
+                try:
+                    i = int(getattr(dataset.metadata, name)) - 1
+                except Exception:
+                    i = -1
+                if 0 <= i < columns and headers[i] is None:
+                    headers[i] = column_parameter_alias.get(name, name)
+        return headers
+
     def make_html_peek_header(
         self,
         dataset: DatasetProtocol,
@@ -256,47 +291,15 @@ class TabularData(Text):
         column_parameter_alias: Optional[dict] = None,
         **kwargs,
     ) -> str:
-        if skipchars is None:
-            skipchars = []
-        if column_names is None:
-            column_names = []
-        if column_parameter_alias is None:
-            column_parameter_alias = {}
-        out = []
         try:
-            if not column_names and dataset.metadata.column_names:
-                column_names = dataset.metadata.column_names
-
-            columns = dataset.metadata.columns
-            if columns is None:
-                columns = dataset.metadata.spec.columns.no_value
-            columns = min(columns, self.max_peek_columns)
-            column_headers = [None] * columns
-
-            # fill in empty headers with data from column_names
-            assert column_names is not None
-            for i in range(min(columns, len(column_names))):
-                if column_headers[i] is None and column_names[i] is not None:
-                    column_headers[i] = column_names[i]
-
-            # fill in empty headers from ColumnParameters set in the metadata
-            for name, spec in dataset.metadata.spec.items():
-                if isinstance(spec.param, metadata.ColumnParameter):
-                    try:
-                        i = int(getattr(dataset.metadata, name)) - 1
-                    except Exception:
-                        i = -1
-                    if 0 <= i < columns and column_headers[i] is None:
-                        column_headers[i] = column_parameter_alias.get(name, name)
-
-            out.append("<tr>")
-            for i, header in enumerate(column_headers):
-                out.append(column_index_header_cell(column_number_format % str(i + 1), header))
-            out.append("</tr>")
+            headers = self.column_headers(dataset, column_names, column_parameter_alias)[: self.max_peek_columns]
+            cells = [
+                column_index_header_cell(column_number_format % str(i + 1), header) for i, header in enumerate(headers)
+            ]
+            return f"<tr>{''.join(cells)}</tr>"
         except Exception as exc:
             log.exception("make_html_peek_header failed on HDA %s", dataset.id)
             raise Exception(f"Can't create peek header: {util.unicodify(exc)}")
-        return "".join(out)
 
     def make_html_peek_rows(self, dataset: DatasetProtocol, skipchars: Optional[list] = None, **kwargs) -> str:
         if skipchars is None:
@@ -1641,7 +1644,7 @@ class ConnectivityTable(Tabular):
                 i += 1
         return False
 
-    def get_chunk(self, trans, dataset: HasFileName, offset: int = 0, ck_size: Optional[int] = None) -> str:
+    def get_chunk(self, trans, dataset: DatasetProtocol, offset: int = 0, ck_size: Optional[int] = None) -> str:
         ck_data, last_read = self._read_chunk(trans, dataset, offset, ck_size)
         try:
             # The ConnectivityTable format has several derivatives of which one is delimited by (multiple) spaces.
@@ -1659,6 +1662,7 @@ class ConnectivityTable(Tabular):
                 "ck_data": util.unicodify(ck_data),
                 "offset": last_read,
                 "data_line_offset": self.data_line_offset,
+                "column_names": self.column_headers(dataset),
             }
         )
 
