@@ -75,10 +75,16 @@ interface Props {
      * Can be "my", "shared", "published", or "archived".
      */
     activeList?: "my" | "shared" | "published" | "archived";
+    /**
+     * Username to filter the list by when it first loads
+     * (set from the `f-username` query by the router).
+     */
+    username?: string;
 }
 
 const props = withDefaults(defineProps<Props>(), {
     activeList: "my",
+    username: undefined,
 });
 
 const breadcrumbItems = [{ title: "Histories", to: "/histories/list" }];
@@ -92,6 +98,7 @@ const limit = ref(24);
 const offset = ref(0);
 const loading = ref(true);
 const overlay = ref(false);
+let loadGeneration = 0;
 const filterText = ref("");
 const totalHistories = ref(0);
 const showAdvanced = ref(false);
@@ -218,6 +225,8 @@ function onToggleDeleted() {
  * @param {boolean} silent - Whether to skip loading indicators
  */
 async function load(overlayLoading: boolean = false, silent: boolean = false) {
+    const thisGeneration = ++loadGeneration;
+
     if (!silent) {
         if (overlayLoading) {
             overlay.value = true;
@@ -241,32 +250,37 @@ async function load(overlayLoading: boolean = false, silent: boolean = false) {
     };
 
     try {
+        let data;
+        let total;
+
         if (myView.value) {
-            const { data, total } = await getMyHistories(options);
-
-            historiesLoaded.value = data;
-            totalHistories.value = total;
+            ({ data, total } = await getMyHistories(options));
         } else if (sharedView.value) {
-            const { data, total } = await getSharedHistories(options);
-
-            historiesLoaded.value = data;
-            totalHistories.value = total;
+            ({ data, total } = await getSharedHistories(options));
         } else if (publishedView.value) {
-            const { data, total } = await getPublishedHistories(options);
-
-            historiesLoaded.value = data;
-            totalHistories.value = total;
+            ({ data, total } = await getPublishedHistories(options));
         } else if (archivedView.value) {
-            const { data, total } = await getArchivedHistories(options);
+            ({ data, total } = await getArchivedHistories(options));
+        }
 
+        if (thisGeneration !== loadGeneration) {
+            return;
+        }
+
+        if (data !== undefined) {
             historiesLoaded.value = data;
-            totalHistories.value = total;
+            totalHistories.value = total!;
         }
     } catch (error) {
+        if (thisGeneration !== loadGeneration) {
+            return;
+        }
         Toast.error(`Failed to load histories: ${errorMessageAsString(error)}`);
     } finally {
-        loading.value = false;
-        overlay.value = false;
+        if (thisGeneration === loadGeneration) {
+            loading.value = false;
+            overlay.value = false;
+        }
     }
 }
 
@@ -470,8 +484,9 @@ watch([filterText, sortBy, sortDesc], async () => {
 });
 
 onMounted(async () => {
-    if (router.currentRoute.query.owner) {
-        updateFilterValue("user", `'${router.currentRoute.query.owner}'`);
+    const owner = router.currentRoute.query.owner || props.username;
+    if (owner) {
+        updateFilterValue("user", `'${owner}'`);
     }
 
     await load();

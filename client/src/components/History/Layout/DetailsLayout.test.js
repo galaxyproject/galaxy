@@ -7,7 +7,7 @@ import DetailsLayout from "./DetailsLayout";
 
 const localVue = getLocalVue();
 
-async function createWrapper(component, localVue, userData, unwritable = false) {
+async function createWrapper(component, localVue, userData, unwritable = false, propsData = {}) {
     const pinia = createPinia();
     const wrapper = mount(component, {
         localVue,
@@ -15,6 +15,7 @@ async function createWrapper(component, localVue, userData, unwritable = false) 
         propsData: {
             writeable: !unwritable,
             renameable: !unwritable,
+            ...propsData,
         },
     });
     const userStore = useUserStore();
@@ -57,5 +58,34 @@ describe("DetailsLayout", () => {
 
         expect(wrapper.find(".edit-button").attributes("title")).toContain("Not Editable");
         expect(wrapper.find(".click-to-edit-label").exists()).toBe(false);
+    });
+
+    it("saves only the fields edited in the editor", async () => {
+        const wrapper = await createWrapper(DetailsLayout, localVue, { id: "user.id", email: "user.email" }, false, {
+            name: "history name",
+            annotation: "",
+            tags: [],
+        });
+
+        await wrapper.find("[data-description='editor toggle']").trigger("click");
+        // A tag save that was still in flight when the editor opened lands now.
+        await wrapper.setProps({ tags: ["saved_tag"] });
+        await wrapper.find("[data-description='annotation input']").setValue("new annotation");
+        await wrapper.find("[data-description='editor save button']").trigger("click");
+
+        expect(wrapper.emitted("save")).toEqual([[{ annotation: "new annotation" }]]);
+    });
+
+    it("does not emit a save when nothing was edited", async () => {
+        const wrapper = await createWrapper(DetailsLayout, localVue, { id: "user.id", email: "user.email" }, false, {
+            name: "history name",
+            annotation: "annotation",
+            tags: ["tag"],
+        });
+
+        await wrapper.find("[data-description='editor toggle']").trigger("click");
+        await wrapper.find("[data-description='editor save button']").trigger("click");
+
+        expect(wrapper.emitted("save")).toBeUndefined();
     });
 });

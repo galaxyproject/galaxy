@@ -14,6 +14,7 @@
   <tool file="test_data_source.xml" />
   <tool file="simple_constructs.xml" />
   <tool file="color_param.xml" />
+  <tool file="color_param_string_method.xml" />
   <tool file="inheritance_simple.xml" />
   <tool file="boolean_conditional.xml" />
   <tool file="composite.xml" />
@@ -74,6 +75,7 @@
   <tool file="unicode_stream.xml" />
   <tool file="vcf_bgzip.xml" />
   <tool file="metadata.xml" />
+  <tool file="metadata_defaults.xml" />
   <tool file="metadata_bam.xml" />
   <tool file="discover_metadata_files.xml" />
   <tool file="metadata_bcf.xml" />
@@ -122,6 +124,7 @@
   <tool file="output_empty_work_dir.xml" />
   <tool file="output_filter_with_input.xml" />
   <tool file="output_filter_with_input_optional.xml" />
+  <tool file="output_filter_all_by_param.xml" />
   <tool file="output_filter_exception_1.xml" />
   <tool file="output_collection_filter.xml" />
   <tool file="output_auto_format.xml" />
@@ -147,6 +150,7 @@
   <tool file="hidden_param.xml" />
   <tool file="special_params.xml" />
   <tool file="section.xml" />
+  <tool file="cache_dunder_section.xml" />
   <tool file="sam_to_unsorted_bam.xml" />
   <tool file="top_level_data.xml" />
   <tool file="validation_hdf5.xml" />
@@ -171,6 +175,7 @@
   <tool file="explicit_conversion.xml" />
   <tool file="identifier_source.xml" />
   <tool file="identifier_single.xml" />
+  <tool file="template_macro_undeclared_name.xml" />
   <tool file="identifier_single_in_repeat.xml" />
   <tool file="identifier_in_conditional.xml" />
   <tool file="identifier_multiple.xml" />
@@ -287,6 +292,7 @@
   <tool file="for_workflows/create_input_collection.xml" />
   <tool file="for_workflows/randomlines.xml" />
   <tool file="create_directory_index.xml" />
+  <tool file="create_directory_index_unreadable.xml" />
   <tool file="use_directory_index.xml" />
 
   <tool_dir dir="parameters/" />

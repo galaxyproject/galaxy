@@ -265,6 +265,8 @@ history_panel:
       show_button: '.show-history-content-selectors-btn'
       action_button: '.history-contents-list-action-menu-btn'
       action_menu: '.list-action-menu .dropdown-menu'
+      selected_content_menu: '[data-description="selected content menu"]'
+      item_selector: '.content-item .selector'
 
     labels:
       build_pair: "Build Dataset Pair"
@@ -503,6 +505,8 @@ histories:
     bulk_delete_confirm: '#bulk-delete-histories .btn.btn-danger'
     bulk_restore_button: 'button[id="history-list-footer-bulk-restore-button"]'
     bulk_restore_confirm: '#bulk-restore-histories .btn.btn-primary'
+    sort_button: '[data-title="Sort by ${field} ${direction}"]'
+    list_loading: '#history-list-overlay[aria-busy="true"]'
   sharing:
     selectors:
       unshare_user_button: '.share_with_view .multiselect__tag-icon'
@@ -594,13 +598,28 @@ pages:
   view:
     selectors:
       history_link: '[data-description="history import link"][data-history-id="${history_id}"]'
+      history_imported:
+        type: xpath
+        selector: '//div[contains(@class, "text-success")][contains(., "Successfully Imported History")]'
 
 login:
   selectors:
     form: 'form#login'
+    reset_password_link:
+      type: xpath
+      selector: "//form[@id='login']//a[contains(., 'Click here to reset your password.')]"
+    alert: '.login-form .alert'
     submit:
       type: xpath
       selector: "//button[@name='login']"
+
+change_password:
+  selectors:
+    form: 'form[data-description="change password"]'
+    current: '[data-description="current password"]'
+    password: '[data-description="new password"]'
+    confirm: '[data-description="confirm password"]'
+    save: 'form[data-description="change password"] button[type="submit"]'
 
 registration:
   selectors:

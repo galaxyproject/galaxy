@@ -7,11 +7,15 @@ import logging
 import math
 import re
 from collections import defaultdict
-from collections.abc import Iterable
+from collections.abc import (
+    Collection,
+    Iterable,
+)
 from typing import (
     Any,
     cast,
     get_args,
+    NamedTuple,
     Optional,
     TYPE_CHECKING,
     Union,
@@ -82,9 +86,13 @@ from galaxy.tools.expressions import (
     do_eval,
     resolve_isolation_command,
 )
+from galaxy.tools.job_parameters import DATA_MANAGER_MODE
 from galaxy.tools.parameters import (
     check_param,
+    params_from_strings,
     params_to_incoming,
+    params_to_strings,
+    ToolInputsT,
     visit_input_values,
 )
 from galaxy.tools.parameters.basic import (
@@ -99,6 +107,7 @@ from galaxy.tools.parameters.basic import (
     raw_to_galaxy,
     SelectToolParameter,
     TextToolParameter,
+    ToolParameter,
 )
 from galaxy.tools.parameters.grouping import (
     Conditional,
@@ -669,7 +678,7 @@ class WorkflowModule:
             for step_input in step.inputs:
                 step_input_name = step_input.name
                 input_in_execution_state = step_input_name not in known_input_names
-                if input_in_execution_state:
+                if input_in_execution_state and step_input_name in step.input_connections_by_name:
                     maybe_collection = progress.replacement_for_connection(
                         step.input_connections_by_name[step_input_name][0]
                     )
@@ -837,7 +846,12 @@ class SubWorkflowModule(WorkflowModule):
         inputs, etc...
         """
         step = invocation_step.workflow_step
-        all_inputs = self.get_all_inputs()
+        # The subworkflow invocation receives only connected inputs, so only those can be mapped over.
+        # Evaluating an unconnected input would materialize its data default into the history on every
+        # scheduling pass while this step is delayed.
+        all_inputs = [
+            input_dict for input_dict in self.get_all_inputs() if input_dict["name"] in step.input_connections_by_name
+        ]
         collection_info = self.compute_collection_info(progress, step, all_inputs)
 
         if collection_info:
@@ -1928,6 +1942,64 @@ class PauseModule(WorkflowModule):
         return bool(action)
 
 
+class StepInputFormDefault(NamedTuple):
+    """A step input default that the editor's tool form shows as a parameter value."""
+
+    name: str
+    param: ToolParameter
+    parent: dict[str, Any]
+    value: Any
+
+
+def step_input_form_defaults(
+    inputs: ToolInputsT,
+    state_inputs: dict[str, Any],
+    defaults: dict[str, Any],
+    connected_input_names: Collection[str],
+    app,
+) -> list[StepInputFormDefault]:
+    """Find the step input defaults that the editor's tool form shows as parameter values.
+
+    These are defaults on parameters that are not data inputs, are not connected, do not change
+    other inputs (as conditional test parameters do) and are not set to a runtime value, and that
+    the parameter can convert. ``value`` is the default as the saved form state decodes it.
+    """
+    form_defaults: list[StepInputFormDefault] = []
+    if not defaults:
+        return form_defaults
+
+    def collect(input, prefixed_name, parent, value, **kwargs):
+        if (
+            prefixed_name not in defaults
+            or prefixed_name in connected_input_names
+            or isinstance(input, BaseDataToolParameter)
+            or input.refresh_on_change
+            or is_runtime_value(value)
+        ):
+            return
+        try:
+            # Round trip like the tool state, so a text or select default of 7 matches the form's "7".
+            param = {input.name: input}
+            saved = params_to_strings(param, {input.name: defaults[prefixed_name]}, app)
+            default = params_from_strings(param, saved, app)[input.name]
+        except Exception:
+            return
+        form_defaults.append(StepInputFormDefault(prefixed_name, input, parent, default))
+
+    visit_input_values(inputs, state_inputs, collect)
+    return form_defaults
+
+
+def same_form_value(form_value: Any, default: Any) -> bool:
+    """Compare a tool form value with a step input default, both decoded as the saved tool state.
+
+    An empty value (``None`` or ``""``) matches the other empty value, as the form may submit either.
+    """
+    if form_value in (None, "") and default in (None, ""):
+        return True
+    return form_value == default
+
+
 class ToolModule(WorkflowModule):
     type = "tool"
     name = "Tool"
@@ -2055,7 +2127,7 @@ class ToolModule(WorkflowModule):
         if tool_uuid := getattr(self, "tool_uuid", None):
             tool = self.trans.app.toolbox.get_tool(tool_uuid=tool_uuid, user=self.trans.user)
             if tool:
-                step.dynamic_tool_id = tool.dynamic_tool.id
+                step.dynamic_tool_id = tool.dynamic_tool_id
         if not detached:
             for k, v in self.post_job_actions.items():
                 pja = self.__to_pja(k, v, step)
@@ -2333,6 +2405,29 @@ class ToolModule(WorkflowModule):
     def get_runtime_inputs(self, step, connections: Optional[Iterable[WorkflowStepConnection]] = None):
         return self.get_inputs()
 
+    def show_step_input_defaults(self, defaults: dict[str, Any], connected_input_names: Collection[str]) -> None:
+        """Write the step input defaults that replace the tool state at run time into the tool form state."""
+        if self.tool is None:
+            return
+        for form_default in step_input_form_defaults(
+            self.tool.inputs, self.state.inputs, defaults, connected_input_names, self.trans.app
+        ):
+            form_default.parent[form_default.param.name] = form_default.value
+
+    def step_input_defaults_changed_in_form(
+        self, defaults: dict[str, Any], connected_input_names: Collection[str]
+    ) -> set[str]:
+        """Return the names of the step input defaults whose tool form value the user changed."""
+        if self.tool is None:
+            return set()
+        return {
+            form_default.name
+            for form_default in step_input_form_defaults(
+                self.tool.inputs, self.state.inputs, defaults, connected_input_names, self.trans.app
+            )
+            if not same_form_value(form_default.parent.get(form_default.param.name), form_default.value)
+        }
+
     def compute_runtime_state(self, trans, step=None, step_updates=None, replace_default_values=False):
         # Warning: This method destructively modifies existing step state.
         if self.tool:
@@ -2382,6 +2477,12 @@ class ToolModule(WorkflowModule):
             # TODO: why do we even create an invocation, seems like something we could check on submit?
             message = f"Specified tool [{tool.id}] in step {step.order_index + 1} is not workflow-compatible."
             raise exceptions.MessageException(message)
+        if any(step_input.default_value_set for step_input in step.inputs):
+            # Replacing default values creates a history dataset for each data default. A delayed step
+            # runs again on the next scheduling pass, so delay before that while connected inputs are not ready.
+            for input_dict in self.get_all_inputs():
+                if input_dict["name"] in step.input_connections_by_name:
+                    progress.replacement_for_input(trans, step, input_dict)
         self.state, _ = self.compute_runtime_state(
             trans, step, step_updates=progress.param_map.get(step.id), replace_default_values=True
         )
@@ -2389,10 +2490,12 @@ class ToolModule(WorkflowModule):
         tool_state = step.state
         assert tool_state is not None
         tool_inputs = tool.inputs.copy()
-        # Not strictly needed - but keep Tool state clean by stripping runtime
-        # metadata parameters from it.
-        if RUNTIME_STEP_META_STATE_KEY in tool_state.inputs:
-            del tool_state.inputs[RUNTIME_STEP_META_STATE_KEY]
+        # Only tool inputs and the data manager mode become job parameters. The stored step
+        # state can hold other keys, e.g. inputs of another version of the tool, and the
+        # runtime step metadata.
+        tool_state.inputs = {
+            name: value for name, value in tool_state.inputs.items() if name in tool_inputs or name == DATA_MANAGER_MODE
+        }
 
         all_inputs = self.get_all_inputs()
 
@@ -2500,10 +2603,17 @@ class ToolModule(WorkflowModule):
             param_combinations.append(execution_state.inputs)
 
         complete = False
+        # A step resumed after a capped scheduling iteration skips the jobs it already created.
+        recorded_job_indexes: set[int] = set()
+        if collection_info and not invocation_step.is_new:
+            implicit_collection_jobs = invocation_step.implicit_collection_jobs
+            if implicit_collection_jobs is not None:
+                recorded_job_indexes = implicit_collection_jobs.recorded_order_indexes()
         completed_jobs: dict[int, Optional[Job]] = tool.completed_jobs(
             trans,
             use_cached_job,
             param_combinations,
+            recorded_job_indexes=recorded_job_indexes,
         )
         try:
             mapping_params = MappingParameters(tool_state.inputs, param_combinations)
@@ -2531,6 +2641,7 @@ class ToolModule(WorkflowModule):
                     step, job, progress.effective_replacement_dict()
                 ),
                 completed_jobs=completed_jobs,
+                recorded_job_indexes=recorded_job_indexes,
                 workflow_resource_parameters=resource_parameters,
                 credentials_context=credentials_context,
             )

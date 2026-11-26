@@ -103,6 +103,11 @@ from galaxy.tools.evaluation import (
     ToolEvaluator,
     UserToolEvaluator,
 )
+from galaxy.tools.job_parameters import (
+    DBKEY,
+    ELEMENT_IDENTIFIER_SUFFIX,
+    is_element_identifier_parameter,
+)
 from galaxy.tools.parameters import params_to_json_internal
 from galaxy.util import (
     parse_xml_string,
@@ -1103,6 +1108,13 @@ class MinimalJobWrapper(HasResourceParameters):
             tool_dir = os.path.abspath(tool_dir)
         return tool_dir
 
+    def _check_can_add_to_library_folders(self, job: model.Job, import_model_store: store.ModelImportStore) -> None:
+        # The import adds datasets to existing library folders by id, check the job's user may add to them.
+        work_request = WorkRequestContext(self.app, user=job.user, galaxy_session=job.galaxy_session)
+        for library_attrs in import_model_store.library_properties():
+            if library_attrs["model_class"] == "LibraryFolder" and library_attrs.get("id"):
+                self.app.library_folder_manager.get_for_adding(work_request, library_attrs["id"])
+
     @property
     def job_io(self) -> JobIO:
         if self._job_io is None:
@@ -1306,10 +1318,21 @@ class MinimalJobWrapper(HasResourceParameters):
         ) = tool_evaluator.build()
         if tool_evaluator.use_cached_job and job.user and job.tool_id and not tool_evaluator.consumes_names:
             # search again, now we know tool doesn't require name match
-            param_dump = {p.name: p.value for p in job.parameters if not p.name.startswith("__")}
             assert self.tool
+            # Some wrappers (e.g. QIIME2) declare __-prefixed input sections.
+            # Keep these scientific parameters while excluding internal state.
+            param_dump = {
+                p.name: p.value for p in job.parameters if p.name in self.tool.inputs or not p.name.startswith("__")
+            }
             params = self.tool.params_from_strings(param_dump)
             json_internal = params_to_json_internal(self.tool.inputs, params, self.app)
+            element_identifiers = None
+            if tool_evaluator.consumes_identifiers:
+                element_identifiers = {
+                    name.removesuffix(ELEMENT_IDENTIFIER_SUFFIX): json.loads(value)
+                    for name, value in param_dump.items()
+                    if is_element_identifier_parameter(name)
+                }
             job_to_copy = self.app.job_search.by_tool_input(
                 job.user,
                 job.tool_id,
@@ -1317,9 +1340,16 @@ class MinimalJobWrapper(HasResourceParameters):
                 param=params,
                 param_dump=json_internal,
                 require_name_match=False,
+                element_identifiers=element_identifiers,
             )
             if job_to_copy and isinstance(job_to_copy, model.Job):
                 job.copy_from_job(job_to_copy, copy_outputs=True)
+                # The copied job never reaches finish(), so run its post job actions here.
+                for pjaa in job.post_job_actions:
+                    if pjaa.post_job_action.action_type not in ActionBox.immediate_actions:
+                        ActionBox.execute(
+                            self.app, self.sa_session, pjaa.post_job_action, job, final_job_state=job.state
+                        )
                 self.sa_session.commit()
                 return False
         job.command_line = self.command_line
@@ -2186,14 +2216,22 @@ class MinimalJobWrapper(HasResourceParameters):
         job_context = ExpressionContext(dict(stdout=tool_stdout, stderr=tool_stderr))
         if extended_metadata:
             try:
-                import_options = store.ImportOptions(allow_dataset_object_edit=True, allow_edit=True)
+                metadata_directory = os.path.join(self.working_directory, "metadata")
+                import_options = store.ImportOptions(
+                    allow_dataset_object_edit=True,
+                    allow_edit=True,
+                    datasets_attrs_at_job_setup=store.load_datasets_attrs_by_id(
+                        os.path.join(metadata_directory, "outputs_new")
+                    ),
+                )
                 import_model_store = store.get_import_model_store_for_directory(
-                    os.path.join(self.working_directory, "metadata", "outputs_populated"),
+                    os.path.join(metadata_directory, "outputs_populated"),
                     app=self.app,
                     import_options=import_options,
                     user=job.user,
                     tag_handler=self.app.tag_handler.create_tag_handler_session(job.galaxy_session),
                 )
+                self._check_can_add_to_library_folders(job, import_model_store)
                 object_import_tracker = import_model_store.perform_import(history=job.history, job=job)
                 # Datasets discovered by the job are created by the import, without permissions.
                 # Precreated outputs (hdas_by_id) got their permissions when the job was created.
@@ -2390,7 +2428,7 @@ class MinimalJobWrapper(HasResourceParameters):
         # before persisting them.
         input_params = job.raw_param_dict()
         input_ext = input_params.get("__input_ext")
-        input_dbkey = input_params.get("dbkey")
+        input_dbkey = input_params.get(DBKEY)
         if input_ext is not None:
             input_ext = loads(input_ext)
             input_dbkey = loads(input_dbkey)

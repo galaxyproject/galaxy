@@ -1,8 +1,5 @@
 import os
-from typing import (
-    cast,
-    TYPE_CHECKING,
-)
+from typing import cast
 
 from galaxy.app_unittest_utils.tools_support import UsesApp
 from galaxy.job_execution.compute_environment import SimpleComputeEnvironment
@@ -18,6 +15,7 @@ from galaxy.model import (
 )
 from galaxy.tool_util.parser.output_objects import ToolOutput
 from galaxy.tool_util_models.tool_source import XmlTemplateConfigFile
+from galaxy.tools import Tool
 from galaxy.tools.evaluation import ToolEvaluator
 
 # For MockTool
@@ -31,14 +29,12 @@ from galaxy.tools.parameters.grouping import (
     Conditional,
     ConditionalWhen,
     Repeat,
+    Section,
 )
 from galaxy.tools.parameters.options import ParameterOption
 from galaxy.util import XML
 from galaxy.util.bunch import Bunch
 from galaxy.util.unittest import TestCase
-
-if TYPE_CHECKING:
-    from galaxy.tools import Tool
 
 # To Test:
 # - param_file handling.
@@ -90,16 +86,7 @@ class TestToolEvaluator(TestCase, UsesApp):
         assert command_line == f"prog1 '{self.app.security.encode_id(42)}'"
 
     def test_conditional_evaluation(self):
-        select_xml = XML("""<param name="always_true" type="select"><option value="true">True</option></param>""")
-        parameter = SelectToolParameter(cast("Tool", self.tool), select_xml)
-
-        conditional = Conditional("c")
-        conditional.test_param = parameter
-        when = ConditionalWhen()
-        when.inputs = {"thresh": self.tool.test_thresh_param()}
-        when.value = "true"
-        conditional.cases = [when]
-        self.tool.set_params({"c": conditional})
+        self.tool.set_params({"c": self._conditional()})
         self.job.parameters = [
             JobParameter(name="c", value="""{"thresh": 4, "always_true": "true", "__current_case__": 0}""")
         ]
@@ -107,6 +94,83 @@ class TestToolEvaluator(TestCase, UsesApp):
         self._set_compute_environment()
         command_line = self.evaluator.build()[0]
         assert command_line == "prog1 --thresh=4 --test_param=true"
+
+    def test_job_parameter_does_not_replace_template_macro(self):
+        # A tool that does not check its values keeps every job parameter.
+        self.tool.check_values = False
+        self.tool._template_macro_params = {"macro_text": "text from the template macro"}
+        self.job.parameters.append(JobParameter(name="macro_text", value='"marker"'))
+        self.tool._command_line = "prog1 '$macro_text'"
+        self._set_compute_environment()
+        command_line = self.evaluator.build()[0]
+        assert command_line == "prog1 'text from the template macro'"
+
+    def test_job_parameter_not_tool_input_not_in_template(self):
+        self.job.parameters.append(JobParameter(name="undeclared", value='"marker"'))
+        self.tool._command_line = "prog1 $thresh $varExists('undeclared')"
+        self._set_compute_environment()
+        command_line = self.evaluator.build()[0]
+        assert command_line == "prog1 4 False"
+        assert "undeclared" not in self.evaluator.param_dict
+
+    def test_job_parameter_not_tool_input_inside_group_not_in_template(self):
+        section = Section("s")
+        section.inputs = {"thresh": self.tool.test_thresh_param()}
+        repeat = Repeat("r")
+        repeat.inputs = {"thresh": self.tool.test_thresh_param()}
+        self.tool.set_params({"c": self._conditional(), "s": section, "r": repeat})
+        self.job.parameters = [
+            JobParameter(
+                name="c", value='{"thresh": 4, "always_true": "true", "__current_case__": 0, "undeclared": "marker"}'
+            ),
+            JobParameter(name="s", value='{"thresh": 5, "undeclared": "marker"}'),
+            JobParameter(name="r", value='[{"thresh": 6, "__index__": 0, "undeclared": "marker"}]'),
+            JobParameter(name="c|thresh", value='"marker"'),
+        ]
+        self.tool._command_line = (
+            "prog1 ${c.thresh} ${s.thresh} #for $r_i in $r#${r_i.thresh}#end for#"
+            " #echo 'undeclared' in $c# #echo 'undeclared' in $s# #echo 'undeclared' in $r[0]#"
+            " $varExists('c|thresh')"
+        )
+        self._set_compute_environment()
+        command_line = self.evaluator.build()[0]
+        assert command_line == "prog1 4 5 6 False False False False"
+
+    def test_template_job_parameters_in_template(self):
+        self.job.parameters.extend(
+            [
+                JobParameter(name="dbkey", value='"hg19"'),
+                JobParameter(name="chromInfo", value='"/path/to/hg19.len"'),
+                JobParameter(name="input1|__identifier__", value='"element1"'),
+                JobParameter(name="__target_datatype__", value='"txt"'),
+            ]
+        )
+        self.tool._command_line = "prog1 $dbkey $chromInfo $getVar('input1|__identifier__') $__target_datatype__"
+        self._set_compute_environment()
+        command_line = self.evaluator.build()[0]
+        assert command_line == "prog1 hg19 /path/to/hg19.len element1 txt"
+
+    def test_job_parameters_galaxy_reads_from_job_not_in_template(self):
+        self.job.parameters.extend(
+            [
+                JobParameter(name="__use_cached_job__", value="true"),
+                JobParameter(name="__workflow_invocation_uuid__", value='"marker"'),
+                JobParameter(name="__workflow_resource_params__", value='{"cores": "marker"}'),
+            ]
+        )
+        self._set_compute_environment()
+        assert self.evaluator.use_cached_job
+        assert not {"__use_cached_job__", "__workflow_invocation_uuid__", "__workflow_resource_params__"} & set(
+            self.evaluator.param_dict
+        )
+
+    def test_undeclared_job_parameter_in_template_if_tool_does_not_check_values(self):
+        self.tool.check_values = False
+        self.job.parameters.append(JobParameter(name="undeclared", value='"marker"'))
+        self.tool._command_line = "prog1 $undeclared"
+        self._set_compute_environment()
+        command_line = self.evaluator.build()[0]
+        assert command_line == "prog1 marker"
 
     def test_evaluation_of_optional_datasets(self):
         # Make sure optional dataset don't cause evaluation to break and
@@ -218,6 +282,16 @@ class TestToolEvaluator(TestCase, UsesApp):
         config_filename = extra_filenames[0]
         assert open(config_filename).read() == value
 
+    def _conditional(self):
+        select_xml = XML("""<param name="always_true" type="select"><option value="true">True</option></param>""")
+        conditional = Conditional("c")
+        conditional.test_param = SelectToolParameter(cast("Tool", self.tool), select_xml)
+        when = ConditionalWhen()
+        when.inputs = {"thresh": self.tool.test_thresh_param()}
+        when.value = "true"
+        conditional.cases = [when]
+        return conditional
+
     def _set_compute_environment(self, **kwds):
         if "working_directory" not in kwds:
             kwds["working_directory"] = self.test_directory
@@ -305,6 +379,8 @@ class ComputeEnvironment(SimpleComputeEnvironment):
 
 
 class MockTool:
+    keeps_undeclared_job_parameters = Tool.keeps_undeclared_job_parameters
+
     def __init__(self, app):
         self.id = "mock_tool"
         self.version = "1.0.0"
@@ -315,6 +391,8 @@ class MockTool:
         self.hooks_called = []
         self.environment_variables = []
         self._config_files = []
+        self._template_macro_params = {}
+        self.template_job_parameters = Tool.template_job_parameters
         self._command_line = "bwa --thresh=$thresh --in=$input1 --out=$output1"
         self._params = {"thresh": self.test_thresh_param()}
         self.options = Bunch(sanitize=False)
@@ -336,7 +414,7 @@ class MockTool:
 
     @property
     def template_macro_params(self):
-        return {}
+        return self._template_macro_params
 
     @property
     def inputs(self):

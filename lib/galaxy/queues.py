@@ -7,8 +7,8 @@ All message queues used by Galaxy
 import socket
 from typing import Optional
 
-from kombu import (
-    Connection,
+from kombu.connection import Connection
+from kombu.entity import (
     Exchange,
     Queue,
 )

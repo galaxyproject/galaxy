@@ -22,7 +22,10 @@ from typing import (
 from conda_package_streaming.package_streaming import stream_conda_info
 from conda_package_streaming.url import stream_conda_info as stream_conda_info_from_url
 from packaging.version import Version
-from requests import Session
+from requests import (
+    Response,
+    Session,
+)
 
 from galaxy.tool_util.deps.conda_util import (
     CondaContext,
@@ -433,23 +436,24 @@ def get_files_from_conda_package(url: str, filepaths: Iterable[str]) -> Dict[str
     found in it.
     Return a dictionary mapping each found filepath to the corresponding content
     (as bytes).
-
-    >>> content_dict = get_files_from_conda_package("https://anaconda.org/conda-forge/chopin2/1.0.6/download/noarch/chopin2-1.0.6-pyhd8ed1ab_0.tar.bz2", ["info/recipe/meta.yaml"])
-    >>> assert "info/recipe/meta.yaml" in content_dict, content_dict
-    >>> assert isinstance(content_dict["info/recipe/meta.yaml"], bytes)
-    >>> content_dict = get_files_from_conda_package("https://anaconda.org/conda-forge/chopin2/1.0.7/download/noarch/chopin2-1.0.7-pyhd8ed1ab_1.conda", ["info/about.json", "info/recipe/meta.yaml", "foo/bar"])
-    >>> assert sorted(content_dict.keys()) == ["info/about.json", "info/recipe/meta.yaml"], content_dict
     """
+    with requests.session() as session:
+        # conda_package_streaming does not check the status of .tar.bz2 downloads,
+        # so it would read an HTTP error page as a broken package.
+        session.hooks["response"].append(_raise_for_status)
+        try:
+            stream = stream_conda_info(url)
+        except FileNotFoundError:
+            stream = stream_conda_info_from_url(url, session=session)
+        ret = {}
+        for tar, member in stream:
+            if member.name in filepaths:
+                ret[member.name] = tar.extractfile(member).read()
+        return ret
 
-    try:
-        stream = stream_conda_info(url)
-    except FileNotFoundError:
-        stream = stream_conda_info_from_url(url)
-    ret = {}
-    for tar, member in stream:
-        if member.name in filepaths:
-            ret[member.name] = tar.extractfile(member).read()
-    return ret
+
+def _raise_for_status(response: Response, *args: Any, **kwargs: Any) -> None:
+    response.raise_for_status()
 
 
 def split_container_name(name: str) -> List[str]:

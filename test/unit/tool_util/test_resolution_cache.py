@@ -11,25 +11,41 @@ from galaxy.tool_util.deps.mulled.util import (
     _namespace_has_repo_name,
     mulled_tags_for,
     NAMESPACE_HAS_REPO_NAME_KEY,
+    QUAY_VERSIONS_CACHE_EXPIRY,
     TAG_CACHE_KEY,
 )
 
 
-@pytest.fixture()
-def resolution_cache(tmpdir):
+def _resolution_cache(tmpdir, expire=None):
     resolution_cache = ResolutionCache()
     cache_opts = {
         "cache.type": "file",
         "cache.data_dir": str(tmpdir / "data"),
         "cache.lock_dir": str(tmpdir / "lock"),
-        "cache.expire": "1",
     }
+    if expire is not None:
+        cache_opts["cache.expire"] = expire
     cm = CacheManager(**parse_cache_config_options(cache_opts)).get_cache("mulled_resolution")
     resolution_cache.mulled_resolution_cache = cm
     return resolution_cache
 
 
-def test_resolution_cache_namespace_missing():
+@pytest.fixture()
+def resolution_cache(tmpdir):
+    return _resolution_cache(tmpdir)
+
+
+@pytest.fixture(autouse=True)
+def no_quay_requests(monkeypatch):
+    def fail(*args, **kwargs):
+        pytest.fail("resolution cache miss triggered a Quay request")
+
+    monkeypatch.setattr("galaxy.tool_util.deps.mulled.util.quay_repositories", fail)
+    monkeypatch.setattr("galaxy.tool_util.deps.mulled.util.quay_versions", fail)
+
+
+def test_resolution_cache_namespace_missing(monkeypatch):
+    monkeypatch.setattr("galaxy.tool_util.deps.mulled.util.quay_repositories", lambda *args, **kwargs: ["othertool"])
     resolution_cache = ResolutionCache()
     resolution_cache.mulled_resolution_cache = {"a": "b"}
     assert not _namespace_has_repo_name("bioconda", "mytool3000", resolution_cache=resolution_cache)
@@ -40,7 +56,8 @@ def test_resolution_cache_namepace_has_repo_name(resolution_cache):
     assert _namespace_has_repo_name("bioconda", "mytool3000", resolution_cache=resolution_cache)
 
 
-def test_resolution_cache_expires(resolution_cache):
+def test_resolution_cache_expires(tmpdir):
+    resolution_cache = _resolution_cache(tmpdir, expire="1")
     resolution_cache.mulled_resolution_cache[NAMESPACE_HAS_REPO_NAME_KEY] = ["mytool3000"]
     assert NAMESPACE_HAS_REPO_NAME_KEY in resolution_cache.mulled_resolution_cache
     time.sleep(1.2)
@@ -49,7 +66,9 @@ def test_resolution_cache_expires(resolution_cache):
 
 def test_targets_to_mulled_name(resolution_cache):
     resolution_cache.mulled_resolution_cache[NAMESPACE_HAS_REPO_NAME_KEY] = ["mytool3000"]
-    cache = resolution_cache.mulled_resolution_cache._get_cache("mulled_tag_cache", {"expire": 1})
+    cache = resolution_cache.mulled_resolution_cache._get_cache(
+        "mulled_tag_cache", {"expire": QUAY_VERSIONS_CACHE_EXPIRY}
+    )
     cache[TAG_CACHE_KEY] = {"bioconda": {"mytool3000": ["1.0", "1.1"]}}
     tags = mulled_tags_for(namespace="bioconda", image="mytool3000", resolution_cache=resolution_cache)
     assert tags == ["1.1", "1.0"]

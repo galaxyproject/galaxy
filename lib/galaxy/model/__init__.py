@@ -128,7 +128,10 @@ from sqlalchemy.orm import (
 )
 from sqlalchemy.orm.attributes import flag_modified
 from sqlalchemy.orm.collections import attribute_keyed_dict
-from sqlalchemy.orm.session import Session
+from sqlalchemy.orm.session import (
+    Session,
+    SessionTransaction,
+)
 from sqlalchemy.sql.expression import FromClause
 from typing_extensions import (
     deprecated,
@@ -170,6 +173,7 @@ from galaxy.objectstore.templates import (
     ObjectStoreTemplate,
     template_to_configuration as object_store_template_to_configuration,
 )
+from galaxy.schema.fetch_data import encode_fetch_request_ids
 from galaxy.schema.invocation import (
     InvocationCancellationUserRequest,
     InvocationState,
@@ -254,6 +258,22 @@ def required_object_session(obj) -> Session:
     if not session:
         raise Exception("Object not attached to a session")
     return session
+
+
+def refresh_unmodified(obj) -> None:
+    """Reload ``obj`` from the database, keeping attributes with pending changes in its session.
+
+    Unmodified columns are refreshed and unmodified relationships are expired, so they load
+    again on next access, following the refreshed foreign keys.
+    """
+    state = inspect(obj)
+    session = required_object_session(obj)
+    unmodified = [key for key, attr in state.attrs.items() if not attr.history.has_changes()]
+    # An empty attribute_names list refreshes or expires every attribute, so skip the call instead.
+    if columns := [key for key in unmodified if key in state.mapper.column_attrs]:
+        session.refresh(obj, attribute_names=columns)
+    if relationships := [key for key in unmodified if key in state.mapper.relationships]:
+        session.expire(obj, relationships)
 
 
 class ConfigurationTemplateEnvironmentSecret(TypedDict):
@@ -1737,13 +1757,28 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
             requires_addition_to_history = False
             outputs_to_copy = job.io_dicts(exclude_implicit_outputs=True)
             self_io = self.io_dicts(exclude_implicit_outputs=True)
+            # HistoryDatasetAssociation.copy_from locks each output; take those locks in id order.
+            output_hda_ids = [
+                output.id for output in self_io.out_data.values() if isinstance(output, HistoryDatasetAssociation)
+            ]
+            if output_hda_ids:
+                required_object_session(self).execute(
+                    select(HistoryDatasetAssociation.id)
+                    .where(HistoryDatasetAssociation.id.in_(output_hda_ids))
+                    .order_by(HistoryDatasetAssociation.id)
+                    .with_for_update()
+                )
             for output_name, out_data in outputs_to_copy.out_data.items():
                 if output_name in self_io.out_data:
                     self_output = self_io.out_data[output_name]
                     if isinstance(self_output, HistoryDatasetAssociation) and isinstance(
                         out_data, HistoryDatasetAssociation
                     ):
+                        # A map-over element job hides its outputs, a plain job shows them. The late job
+                        # cache search pairs either kind with either kind, so keep this job's visibility.
+                        visible = self_output.visible
                         self_output.copy_from(out_data, include_metadata=True)
+                        self_output.visible = visible
                 else:
                     assert output_name.startswith("__") and isinstance(out_data, HistoryDatasetAssociation)
                     if output_name.startswith("__new_primary_file_"):
@@ -1765,29 +1800,23 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
                     self.add_output_dataset(output_name, copied_output)
             for output_name, out_collection in outputs_to_copy.out_collections.items():
                 self_out_collection = self_io.out_collections[output_name]
-                if isinstance(self_out_collection, DatasetCollection) and isinstance(out_collection, DatasetCollection):
-                    # In the context of the job cache this should be unreachable.
-                    # If we have DatasetCollection here, the output was created as part of a map-over job.
-                    # If it is a map-over job, then we were working with element_identifiers instead of names.
-                    # So when we relax the name requirement in the job cache we won't find any additional jobs to consider,
-                    # and we will never get here.
-                    self_out_collection.copy_from(out_collection, history=self.history)
-                    requires_addition_to_history = True
-                elif isinstance(self_out_collection, HistoryDatasetCollectionAssociation) and isinstance(
-                    out_collection, HistoryDatasetCollectionAssociation
+                # A map-over element job records its part of the implicit output collection as a
+                # DatasetCollection, any other job the HDCA it created. The late job cache search
+                # pairs either kind with either kind.
+                if isinstance(self_out_collection, HistoryDatasetCollectionAssociation):
+                    self_out_collection = self_out_collection.collection
+                if isinstance(out_collection, HistoryDatasetCollectionAssociation):
+                    out_collection = out_collection.collection
+                if not isinstance(self_out_collection, DatasetCollection) or not isinstance(
+                    out_collection, DatasetCollection
                 ):
-                    self_out_collection.collection.copy_from(
-                        out_collection.collection,
-                        history=self.history,
-                    )
-                    requires_addition_to_history = True
-                else:
                     raise NotImplementedError(
                         f"Don't know how to copy {type(out_collection)} to {type(self_out_collection)}"
                     )
+                self_out_collection.copy_from(out_collection, history=self.history)
+                requires_addition_to_history = True
             if requires_addition_to_history:
-                assert job.history
-                job.history.add_pending_items()
+                self.history.add_pending_items()
 
     def io_dicts(self, exclude_implicit_outputs=False) -> IoDicts:
         inp_data: dict[str, Optional[DatasetInstance]] = {da.name: da.dataset for da in self.input_datasets}
@@ -2198,6 +2227,12 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
             return (k, obj)
 
         params_objects = remap(params_objects, remap_objects)
+        if self.tool_id == "__DATA_FETCH__" and isinstance(params_objects.get("request_json"), str):
+            request = encode_fetch_request_ids(
+                json.loads(params_objects["request_json"]),
+                lambda obj_id: serialization_options.get_identifier_for_id(id_encoder, obj_id),
+            )
+            params_objects["request_json"] = json.dumps(request)
 
         params_dict = {}
         for name, value in params_objects.items():
@@ -2868,6 +2903,23 @@ class ImplicitCollectionJobs(Base, Serializable):
         )
         return session.execute(stmt)
 
+    def job_attribute_by_order_index(self, attribute: str) -> dict[int, Any]:
+        """Return a job column's value for each recorded job, keyed by order index."""
+        stmt = (
+            select(ImplicitCollectionJobsJobAssociation.order_index, getattr(Job.table.columns, attribute))
+            .select_from(Job)
+            .join(ImplicitCollectionJobsJobAssociation, Job.id == ImplicitCollectionJobsJobAssociation.job_id)
+            .where(ImplicitCollectionJobsJobAssociation.implicit_collection_jobs_id == self.id)
+        )
+        return dict(required_object_session(self).execute(stmt).tuples().all())
+
+    def recorded_order_indexes(self) -> set[int]:
+        """Return the order indexes of the jobs already recorded for this map-over."""
+        stmt = select(ImplicitCollectionJobsJobAssociation.order_index).where(
+            ImplicitCollectionJobsJobAssociation.implicit_collection_jobs_id == self.id
+        )
+        return set(required_object_session(self).scalars(stmt))
+
     def _serialize(self, id_encoder, serialization_options):
         rval = dict_for(
             self,
@@ -3312,8 +3364,9 @@ class Notification(Base, Dictifiable, RepresentById):
     publication_time: Mapped[Optional[datetime]] = mapped_column(
         default=now
     )  # The date of publication, can be a future date to allow scheduling
+    # A callable, so the expiry date is computed for each new notification.
     expiration_time: Mapped[Optional[datetime]] = mapped_column(
-        default=now() + timedelta(days=30 * 6)
+        default=lambda: now() + timedelta(days=30 * 6)
     )  # The expiration date, expired notifications will be permanently removed from DB regularly
     source: Mapped[str] = mapped_column(
         String(32), index=True, nullable=True
@@ -3986,7 +4039,6 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
             # else ignoring object_store_ids on HDCAs...
 
         if "ids" in kwds:
-            assert "object_store_ids" not in kwds
             ids = kwds["ids"]
             max_in_filter_length = kwds.get("max_in_filter_length", MAX_IN_FILTER_LENGTH)
             if len(ids) < max_in_filter_length:
@@ -4445,6 +4497,8 @@ class Dataset(Base, StorableObject, Serializable):
 
     non_ready_states = (states.NEW, states.UPLOAD, states.QUEUED, states.RUNNING, states.SETTING_METADATA)
     ready_states = tuple(set(states.__members__.values()) - set(non_ready_states))
+    # States in which a late job cache hit can still replace the dataset (a paused job may be resumed).
+    swappable_states = (*non_ready_states, states.PAUSED)
     valid_input_states = tuple(
         set(states.__members__.values()) - {states.ERROR, states.DISCARDED, states.FAILED_METADATA}
     )
@@ -5771,6 +5825,7 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
     hidden_beneath_collection_instance: Mapped[Optional["HistoryDatasetCollectionAssociation"]]
     tags: Mapped[list["HistoryDatasetAssociationTagAssociation"]]
     copied_to_history_dataset_associations: Mapped[list["HistoryDatasetAssociation"]]
+    _copy_lock_transaction: Optional[SessionTransaction] = None
 
     def __init__(
         self,
@@ -5821,7 +5876,10 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
 
             # hist.deleted holds old value(s)
             changes[attr.key] = hist.deleted
-        if changes and self.update_time and self.state == self.states.OK and not self.deleted:
+        # An HDA flushed before it joined its history (a copied MetadataFile needs the HDA's id) has no
+        # earlier version worth keeping.
+        joins_history = any(changes.get(key) and changes[key][0] is None for key in ("history_id", "hid"))
+        if changes and not joins_history and self.update_time and self.state == self.states.OK and not self.deleted:
             # We only record changes to HDAs that exist in the database and have a update_time
             new_values = {}
             new_values["name"] = changes.get("name", self.name)
@@ -5842,8 +5900,7 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
         # This deletes the old dataset, so make sure to only call this on new things
         # in the history (e.g. during job finishing).
         old_dataset = self.dataset
-        if include_metadata:
-            self._metadata = other_hda._metadata
+        copies = self._lock_and_load_copies()
         self.metadata_deferred = other_hda.metadata_deferred
         self.info = other_hda.info
         self.blurb = other_hda.blurb
@@ -5857,17 +5914,72 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
         if include_tags and self.history:
             self.copy_tags_from(self.user, other_hda)
         self.dataset = new_dataset or other_hda.dataset
+        # A cached job's structured collection output is copied as a job output and again as a collection element.
+        already_copied = (
+            old_dataset is self.dataset
+            and other_hda.id is not None
+            and self.copied_from_history_dataset_association_id == other_hda.id
+        )
+        if include_metadata and not already_copied:
+            # Copy metadata files into rows this HDA owns, as HDA.copy() does: purging other_hda removes
+            # the files its rows name. Copying needs the extension and dataset set above.
+            self.metadata = other_hda.metadata
         self.copied_from_history_dataset_association_id = other_hda.id
-        for copied_hda in self.copied_to_history_dataset_associations:
+        for copied_hda in copies:
+            # A copy made by a database operation tool is usually a hidden collection element.
+            visible, deleted = copied_hda.visible, copied_hda.deleted
             copied_hda.copy_from(self, include_tags=include_tags, include_metadata=include_metadata)
+            copied_hda.visible, copied_hda.deleted = visible, deleted
 
-        if old_dataset:
+        # A cached job's structured collection output reaches the same HDA as both a job output
+        # and a collection element, so the second copy finds the dataset already in place.
+        if old_dataset and old_dataset is not self.dataset:
             old_dataset.full_delete()
+
+    def _lock_and_load_copies(self) -> list["HistoryDatasetAssociation"]:
+        """Lock this HDA's row and return the copies that share its dataset.
+
+        ``copy()`` of an HDA in a swappable state holds a key share lock on the source row from reading
+        the dataset until its transaction ends. Once this lock is held, every such copy has either
+        committed and is returned here, or will read the dataset this transaction commits.
+        """
+        if self.id is not None:
+            session = required_object_session(self)
+            session.execute(
+                select(HistoryDatasetAssociation.id).where(HistoryDatasetAssociation.id == self.id).with_for_update()
+            )
+            # A collection loaded before this lock misses copies committed since.
+            session.expire(self, ["copied_to_history_dataset_associations"])
+        return list(self.copied_to_history_dataset_associations)
+
+    def _lock_source_of_copy(self) -> None:
+        """Pin the dataset a copy of this HDA will share against a concurrent ``copy_from``.
+
+        A late job cache hit swaps the dataset of a queued output and purges the old one. The key
+        share lock makes that swap wait for this transaction, so it finds the copy; if the swap
+        committed first, this HDA is reloaded so the copy shares the new dataset.
+        """
+        session = required_object_session(self)
+        # A held lock lasts until the transaction ends; Galaxy takes no savepoints that could release it.
+        transaction = session.get_transaction()
+        if transaction is not None and transaction is self._copy_lock_transaction:
+            return
+        with session.no_autoflush:
+            dataset_id = session.scalar(
+                select(HistoryDatasetAssociation.dataset_id)
+                .where(HistoryDatasetAssociation.id == self.id)
+                .with_for_update(read=True, key_share=True)
+            )
+            if dataset_id != self.dataset_id:
+                refresh_unmodified(self)
+        self._copy_lock_transaction = session.get_transaction()
 
     def copy(self, parent_id=None, copy_tags=None, flush=True, copy_hid=True, new_name=None):
         """
         Create a copy of this HDA.
         """
+        if self.id is not None and self.state in Dataset.swappable_states:
+            self._lock_source_of_copy()
         hid = None
         if copy_hid:
             hid = self.hid
@@ -8819,6 +8931,15 @@ class WorkflowStep(Base, RepresentById, UsesCreateAndUpdateTime):
         return default_value
 
     @property
+    def input_defaults(self) -> dict[str, Any]:
+        """Step input defaults by input name."""
+        return {
+            step_input.name: step_input.default_value
+            for step_input in self.inputs
+            if step_input.name and step_input.default_value_set
+        }
+
+    @property
     def input_optional(self):
         tool_state = self.tool_inputs
         return tool_state.get("optional") or False
@@ -10574,31 +10695,43 @@ class MetadataFile(Base, StorableObject, Serializable):
         da = self.history_dataset or self.library_dataset
         return da and da.dataset
 
-    def update_from_file(self, file_name):
+    def update_from_file(self, file_name: Optional[str]):
         if not self.dataset:
             raise Exception("Attempted to write MetadataFile, but no DatasetAssociation set")
         if not self.dataset.purged:
-            self.dataset.object_store.update_from_file(
+            object_store, alt_name = self._object_store_and_alt_name()
+            if file_name is None:
+                # The file is already at its object store path. Without a cache sync this is a path lookup.
+                file_name = object_store.get_filename(
+                    self, extra_dir="_metadata_files", extra_dir_at_root=True, alt_name=alt_name, sync_cache=False
+                )
+            # create=True makes the object if it is missing. Asking for the file name first would check for
+            # it twice more, and on a caching object store download the object this call replaces.
+            object_store.update_from_file(
                 self,
                 file_name=file_name,
+                create=True,
                 extra_dir="_metadata_files",
                 extra_dir_at_root=True,
-                alt_name=os.path.basename(self.get_file_name()),
+                alt_name=alt_name,
             )
+
+    def _object_store_and_alt_name(self) -> tuple["BaseObjectStore", str]:
+        da = self.history_dataset or self.library_dataset
+        assert da is not None
+        if self.object_store_id is None:
+            self.object_store_id = da.dataset.object_store_id
+        object_store = da.dataset.object_store
+        store_by = object_store.get_store_by(da.dataset)
+        if store_by == "id" and self.id is None:
+            self.flush()  # type:ignore[unreachable]
+        identifier = getattr(self, store_by)
+        return object_store, f"metadata_{identifier}.dat"
 
     def get_file_name(self, sync_cache: bool = True) -> str:
         # Ensure the directory structure and the metadata file object exist
         try:
-            da = self.history_dataset or self.library_dataset
-            assert da is not None
-            if self.object_store_id is None:
-                self.object_store_id = da.dataset.object_store_id
-            object_store = da.dataset.object_store
-            store_by = object_store.get_store_by(da.dataset)
-            if store_by == "id" and self.id is None:
-                self.flush()  # type:ignore[unreachable]
-            identifier = getattr(self, store_by)
-            alt_name = f"metadata_{identifier}.dat"
+            object_store, alt_name = self._object_store_and_alt_name()
             if not object_store.exists(self, extra_dir="_metadata_files", extra_dir_at_root=True, alt_name=alt_name):
                 object_store.create(self, extra_dir="_metadata_files", extra_dir_at_root=True, alt_name=alt_name)
             path = object_store.get_filename(

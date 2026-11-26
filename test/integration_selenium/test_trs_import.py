@@ -1,5 +1,8 @@
 import os
+from functools import wraps
 
+from galaxy.util.unittest_utils import skip_if_workflowhub_down
+from galaxy.workflow.trs_proxy import TRS_REQUEST_TIMEOUT
 from .framework import SeleniumIntegrationTestCase
 
 TRS_API_URL_DOCKSTORE = "https://dockstore.org/api"
@@ -31,6 +34,24 @@ TRS_URL_WORKFLOWHUB = (
 )
 
 
+def with_page_errors(method):
+    # A failed TRS request shows up only as an alert in the page while the test times out
+    # waiting for something else, so put the alert text into the failure.
+    @wraps(method)
+    def wrapped_method(self, *args, **kwargs):
+        try:
+            return method(self, *args, **kwargs)
+        except Exception as e:
+            alerts = self.driver.execute_script(
+                "return Array.from(document.querySelectorAll('.alert-danger'), el => el.innerText);"
+            )
+            if alerts:
+                raise AssertionError(f"{e}\nErrors shown on page: {alerts}") from e
+            raise
+
+    return wrapped_method
+
+
 class TestTrsImport(SeleniumIntegrationTestCase):
     ensure_registered = True
 
@@ -48,10 +69,16 @@ class TestTrsImport(SeleniumIntegrationTestCase):
     def trs_config_dir(cls):
         return cls.temp_config_dir("trs")
 
-    def _wait_for_import_redirect(self):
+    def _trs_response_timeout(self, trs_requests=1):
+        # The page waits for the Galaxy server to make ``trs_requests`` requests to the remote TRS
+        # server, one after another. Wait longer than the server's timeout for each of them, so that
+        # a slow TRS server makes the page show an error instead of the test timing out first.
+        return trs_requests * sum(TRS_REQUEST_TIMEOUT) + 20
+
+    def _wait_for_import_redirect(self, trs_requests=1):
         # The client redirects to the workflow list only once the import request returns,
         # which includes the server fetching the workflow from the remote TRS server.
-        self.components.workflows.workflows_list.wait_for_visible(wait_type=self.wait_types.SHED_SEARCH)
+        self.components.workflows.workflows_list.wait_for_visible(timeout=self._trs_response_timeout(trs_requests))
 
     def assert_workflow_imported(self, name):
         # surround name with quotes to consider case where name contains colons
@@ -60,15 +87,19 @@ class TestTrsImport(SeleniumIntegrationTestCase):
 
     def test_import_workflow_by_url_dockstore(self):
         import_url = f"workflows/trs_import?trs_server=dockstore.org&trs_version={TRS_VERSION_DOCKSTORE}&trs_id=%23{TRS_ID_DOCKSTORE}"
-        self._import_workflow_by_url(import_url)
+        self._import_workflow_by_url(import_url, trs_requests=2)
 
+    @skip_if_workflowhub_down
+    @with_page_errors
     def test_import_workflow_by_url_workflowhub(self):
         import_url = f"workflows/trs_import?trs_server=workflowhub&trs_version={TRS_VERSION_WORKFLOWHUB}&trs_id={TRS_ID_WORKFLOWHUB}"
-        self._import_workflow_by_url(import_url)
+        self._import_workflow_by_url(import_url, trs_requests=2)
 
-    def _import_workflow_by_url(self, import_url):
+    def _import_workflow_by_url(self, import_url, trs_requests=1):
+        # Importing by TRS id fetches the tool and then its descriptor, importing by TRS URL only the descriptor.
         full_url = self.build_url(import_url)
         self.driver.get(full_url)
+        self._wait_for_import_redirect(trs_requests)
         self.components.workflows.workflow_cards.wait_for_visible()
         self.assert_workflow_imported(WORKFLOW_NAME)
 
@@ -94,12 +125,16 @@ class TestTrsImport(SeleniumIntegrationTestCase):
         self.components.workflows.trs_icon.wait_for_visible()
         self.screenshot("workflow_imported_via_dockstore_search")
 
+    @skip_if_workflowhub_down
+    @with_page_errors
     def test_import_by_search_workflowhub(self):
         self.go_to_trs_search()
         self.components.trs_search.select_server_button.wait_for_and_click()
         self.components.trs_search.select_server(server="workflowhub").wait_for_and_click()
         self.components.trs_search.search.wait_for_and_send_keys(WORKFLOW_NAME)
-        self.components.trs_search.search_result(workflow_name=WORKFLOW_NAME).wait_for_and_click()
+        search_result = self.components.trs_search.search_result(workflow_name=WORKFLOW_NAME)
+        search_result.wait_for_clickable(timeout=self._trs_response_timeout())
+        search_result.wait_for_and_click()
         self.components.trs_search.import_button.wait_for_and_click()
         self._wait_for_import_redirect()
         self.workflow_index_open()
@@ -108,12 +143,16 @@ class TestTrsImport(SeleniumIntegrationTestCase):
     def test_import_by_id_dockstore(self):
         self._import_by_id(f"#{TRS_ID_DOCKSTORE}", server="dockstore")
 
+    @skip_if_workflowhub_down
+    @with_page_errors
     def test_import_by_id_workflowhub(self):
         self._import_by_id(TRS_ID_WORKFLOWHUB, server="workflowhub")
 
     def test_import_by_trs_url_dockstore(self):
         self._import_by_trs_url(TRS_URL_DOCKSTORE)
 
+    @skip_if_workflowhub_down
+    @with_page_errors
     def test_import_by_trs_url_workflowhub(self):
         self._import_by_trs_url(TRS_URL_WORKFLOWHUB)
 
@@ -121,6 +160,8 @@ class TestTrsImport(SeleniumIntegrationTestCase):
         import_url = f"workflows/trs_import?trs_url={TRS_URL_DOCKSTORE}"
         self._import_workflow_by_url(import_url)
 
+    @skip_if_workflowhub_down
+    @with_page_errors
     def test_auto_import_by_trs_url_workflowhub(self):
         import_url = f"workflows/trs_import?trs_url={TRS_URL_WORKFLOWHUB}"
         self._import_workflow_by_url(import_url)
@@ -130,7 +171,9 @@ class TestTrsImport(SeleniumIntegrationTestCase):
         self.components.trs_import.select_server_button.wait_for_and_click()
         self.components.trs_import.select_server(server=server).wait_for_and_click()
         self.components.trs_import.input.wait_for_and_send_keys(trs_id)
-        self.components.trs_import.import_version(version="v0.4").wait_for_and_click()
+        import_version = self.components.trs_import.import_version(version="v0.4")
+        import_version.wait_for_clickable(timeout=self._trs_response_timeout())
+        import_version.wait_for_and_click()
         self._wait_for_import_redirect()
         self.workflow_index_open()
         self.assert_workflow_imported(WORKFLOW_NAME)

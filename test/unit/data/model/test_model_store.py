@@ -24,6 +24,7 @@ from rocrate_validator import (
 from sqlalchemy import select
 
 from galaxy import model
+from galaxy.exceptions import MalformedContents
 from galaxy.model import store
 from galaxy.model.metadata import MetadataTempFile
 from galaxy.model.scoped_session import galaxy_scoped_session as scoped_session
@@ -425,6 +426,30 @@ def test_import_library_require_permissions():
         error_caught = True
 
     assert error_caught
+
+
+def test_serialize_fetch_job_encodes_request_ids():
+    app = _mock_app()
+    job = model.Job()
+    job.tool_id = "__DATA_FETCH__"
+    request = {
+        "targets": [
+            {
+                "destination": {"type": "library_folder", "library_folder_id": 3},
+                "elements": [{"src": "pasted", "paste_content": "1 2 3", "object_id": 7}],
+            }
+        ]
+    }
+    job.add_parameter("request_json", json.dumps(json.dumps(request)))
+    app.add_and_commit(job)
+
+    exported = job.serialize(app.security, model.SerializationOptions(for_edit=False))
+    target = json.loads(exported["params"]["request_json"])["targets"][0]
+    assert target["destination"]["library_folder_id"] == app.security.encode_id(3, kind="model_export")
+    assert target["elements"][0]["object_id"] == app.security.encode_id(7, kind="model_export")
+
+    for_edit = job.serialize(app.security, model.SerializationOptions(for_edit=True))
+    assert json.loads(for_edit["params"]["request_json"]) == request
 
 
 def test_import_export_library(tmp_path):
@@ -962,6 +987,44 @@ def test_import_export_composite_datasets(tmp_path):
     )
 
 
+def _outside_absolute(outside_dir, export_dir):
+    return str(outside_dir)
+
+
+def _outside_relative(outside_dir, export_dir):
+    return os.path.relpath(outside_dir, export_dir)
+
+
+def _outside_symlink(outside_dir, export_dir):
+    os.symlink(outside_dir, export_dir / "linked_files")
+    return "linked_files"
+
+
+@pytest.mark.parametrize("extra_files_path", [_outside_absolute, _outside_relative, _outside_symlink])
+def test_import_refuses_extra_files_outside_archive(tmp_path, extra_files_path):
+    outside_dir = tmp_path / "outside"
+    outside_dir.mkdir()
+    (outside_dir / "not_in_archive").write_text("not in archive")
+    export_dir = tmp_path / "export"
+    app = _mock_app()
+    u = model.User(email="collection@example.com", password="password")
+    h = model.History(name="Test History", user=u)
+    d1 = _create_datasets(app.model.context, h, 1)[0]
+    app.add_and_commit(h, d1)
+    app.write_primary_file(d1, "cool primary file")
+    with store.DirectoryModelExportStore(export_dir, app=app, export_files="copy") as export_store:
+        export_store.add_dataset(d1)
+    attrs_path = export_dir / store.ATTRS_FILENAME_DATASETS
+    datasets_attrs = json.loads(attrs_path.read_text())
+    datasets_attrs[0]["extra_files_path"] = extra_files_path(outside_dir, export_dir)
+    attrs_path.write_text(json.dumps(datasets_attrs))
+
+    import_history = model.History(name="Test History for Import", user=u)
+    app.add_and_commit(import_history)
+    with pytest.raises(MalformedContents, match="Invalid dataset path"):
+        _perform_import_from_directory(export_dir, app, u, import_history)
+
+
 def _assert_extra_files_has_parent_directory_with_single_file_containing(
     dataset, expected_file_name, expected_contents
 ):
@@ -1019,17 +1082,75 @@ def test_sessionless_import_edit_datasets():
 
 def test_import_job_with_output_copy():
     app, h, temp_directory, import_history = _setup_simple_export({"for_edit": True})
+    _edit_exported_dataset_attrs(temp_directory, lambda attrs: attrs[1]["metadata"].update(data_lines=42))
     hda = h.active_datasets[-1]
     # Simulate a copy being made of an output hda
     copy = hda.copy(new_name="output copy")
     # set extension to auto, should be changed to real extension when finalizing job
     copy.extension = "auto"
     app.add_and_commit(copy)
-    import_model_store = store.get_import_model_store_for_directory(
-        temp_directory, import_options=store.ImportOptions(allow_dataset_object_edit=True, allow_edit=True), app=app
-    )
-    import_model_store.perform_import()
+    _perform_edit_import(temp_directory, app)
     assert copy.extension == "txt"
+    # data_lines is not part of the "auto" datatype's metadata spec, it must still be copied
+    assert copy.metadata.data_lines == 42
+
+
+def test_import_job_output_keeps_visibility_set_while_job_ran():
+    app, h, temp_directory, import_history = _setup_simple_export({"for_edit": True})
+    hda = h.active_datasets[-1]
+    # e.g. hidden by building a collection from it while the job was running
+    hda.visible = False
+    app.commit()
+    _perform_edit_import(temp_directory, app)
+    assert hda.visible is False
+
+
+def test_import_errored_job_output_is_unhidden():
+    app, h, temp_directory, import_history = _setup_simple_export({"for_edit": True})
+    _edit_exported_dataset_attrs(temp_directory, lambda attrs: attrs[1]["dataset"].update(state="error"))
+    hda = h.active_datasets[-1]
+    hda.visible = False
+    app.commit()
+    _perform_edit_import(temp_directory, app)
+    assert hda.state == "error"
+    assert hda.visible is True
+
+
+@pytest.mark.parametrize(
+    "info_from_job, expected_info",
+    [
+        pytest.param("", "my note", id="no_stdout"),
+        # the job appends its stdout to the info it got at job setup
+        pytest.param("\nhello from stdout", "my note\nhello from stdout", id="stdout_appended"),
+    ],
+)
+def test_import_job_output_keeps_name_and_info_edited_while_job_ran(info_from_job, expected_info):
+    app, h, temp_directory, import_history = _setup_simple_export({"for_edit": True})
+    attrs_at_job_setup = store.load_datasets_attrs_by_id(temp_directory)
+    _edit_exported_dataset_attrs(temp_directory, lambda attrs: attrs[1].update(info=info_from_job))
+    hda = h.active_datasets[-1]
+    hda.name = "renamed while running"
+    hda.info = "my note"
+    app.commit()
+    _perform_edit_import(temp_directory, app, attrs_at_job_setup)
+    assert hda.name == "renamed while running"
+    assert hda.info == expected_info
+
+
+def test_import_job_output_takes_name_and_info_set_by_job():
+    app, h, temp_directory, import_history = _setup_simple_export({"for_edit": True})
+    attrs_at_job_setup = store.load_datasets_attrs_by_id(temp_directory)
+    # e.g. provided by the tool in galaxy.json
+    _edit_exported_dataset_attrs(
+        temp_directory, lambda attrs: attrs[1].update(name="my dynamic name", info="my dynamic info")
+    )
+    hda = h.active_datasets[-1]
+    hda.name = "renamed while running"
+    hda.info = "my note"
+    app.commit()
+    _perform_edit_import(temp_directory, app, attrs_at_job_setup)
+    assert hda.name == "my dynamic name"
+    assert hda.info == "my dynamic info"
 
 
 def test_import_existing_job_reports_state_without_applying_it():
@@ -1074,6 +1195,27 @@ def _setup_simple_export(export_kwds):
         export_store.add_dataset(d2)
 
     return app, h, temp_directory, import_history
+
+
+def _edit_exported_dataset_attrs(temp_directory, edit):
+    datasets_attrs_path = os.path.join(temp_directory, store.ATTRS_FILENAME_DATASETS)
+    with open(datasets_attrs_path) as f:
+        datasets_attrs = json.load(f)
+    edit(datasets_attrs)
+    with open(datasets_attrs_path, "w") as f:
+        json.dump(datasets_attrs, f)
+
+
+def _perform_edit_import(temp_directory, app, datasets_attrs_at_job_setup=None):
+    import_options = store.ImportOptions(
+        allow_dataset_object_edit=True,
+        allow_edit=True,
+        datasets_attrs_at_job_setup=datasets_attrs_at_job_setup,
+    )
+    import_model_store = store.get_import_model_store_for_directory(
+        temp_directory, import_options=import_options, app=app
+    )
+    import_model_store.perform_import()
 
 
 def _assert_simple_cat_job_imported(imported_history, state="ok"):

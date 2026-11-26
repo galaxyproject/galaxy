@@ -1,3 +1,8 @@
+from kombu.serialization import (
+    dumps,
+    loads,
+)
+
 from galaxy.celery import (
     celery_app,
     DEFAULT_TASK_QUEUE,
@@ -6,6 +11,7 @@ from galaxy.celery import (
     TASKS_MODULES,
 )
 from galaxy.config import GalaxyAppConfiguration
+from galaxy.schema.tasks import PurgeDatasetsTaskRequest
 
 
 def test_default_configuration():
@@ -36,3 +42,12 @@ def test_galaxycelery_trim_module_name():
     assert gc.trim_module_name("galaxy.notcelery.tasks") == "galaxy.notcelery.tasks"
     assert gc.trim_module_name("galaxy.celery.tasks") == "galaxy"
     assert gc.trim_module_name("galaxy.celery.tasks.nextlevel") == "galaxy.nextlevel"
+
+
+def test_control_replies_encode_pydantic_task_arguments():
+    # Workers echo task arguments in inspect active/scheduled replies, encoded with the control mailbox serializer.
+    request = PurgeDatasetsTaskRequest(dataset_ids=[1, 2])
+    reply = {"worker@host": [{"request": {"kwargs": {"request": request}}}]}
+    content_type, content_encoding, body = dumps(reply, serializer=celery_app.control.mailbox.serializer)
+    decoded = loads(body, content_type, content_encoding)
+    assert decoded["worker@host"][0]["request"]["kwargs"]["request"] == request

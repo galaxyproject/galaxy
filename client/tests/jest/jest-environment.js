@@ -7,6 +7,7 @@ class MockObserver {
 
     observe(...args) {}
     unobserve(...args) {}
+    disconnect() {}
 }
 
 export default class CustomJSDOMEnvironment extends JSDOMEnvironment {

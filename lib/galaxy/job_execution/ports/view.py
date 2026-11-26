@@ -19,7 +19,7 @@ class JobPortsView:
     def register_container_information(self, job_id, **kwd):
         job = self.__authorize_job_access(job_id, **kwd)
         container_runtime = kwd.get("container_runtime")
-        log.info(kwd)
+        log.info("Registering container information for job %s with runtime %s", job.id, container_runtime)
         self._app.interactivetool_manager.configure_entry_points(job, container_runtime)
         return {"message": "ok"}
 

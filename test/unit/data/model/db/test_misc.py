@@ -224,6 +224,11 @@ def test_history_contents(session, make_history, make_hda):
     assert contents_iter_names(ids=[d1.id, d2.id, d3.id, d4.id]) == ["1", "2", "3", "4"]
     assert contents_iter_names(ids=[d1.id, d2.id, d3.id, d4.id], max_in_filter_length=1) == ["1", "2", "3", "4"]
     assert contents_iter_names(ids=[d1.id, d3.id]) == ["1", "3"]
+    assert contents_iter_names(ids=[d1.id, d2.id, d3.id], object_store_ids=["foobar", "three_store"]) == ["2", "3"]
+    assert contents_iter_names(
+        ids=[d1.id, d2.id, d3.id], object_store_ids=["foobar", "three_store"], max_in_filter_length=1
+    ) == ["2", "3"]
+    assert contents_iter_names(ids=[d1.id], object_store_ids=["foobar"]) == []
 
 
 def test_current_galaxy_session(make_user, make_galaxy_session):

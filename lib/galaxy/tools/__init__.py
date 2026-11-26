@@ -46,6 +46,7 @@ from galaxy.job_execution.output_collect import (
     MetadataSourceProvider,
     PermissionProvider,
 )
+from galaxy.job_execution.setup import ensure_configs_directory
 from galaxy.managers.credentials import build_credentials_context_response
 from galaxy.metadata import get_metadata_compute_strategy
 from galaxy.model import (
@@ -81,7 +82,7 @@ from galaxy.tool_util.ontologies.ontology_data import (
 from galaxy.tool_util.output_checker import DETECTED_JOB_STATE
 from galaxy.tool_util.parameters import (
     input_models_for_pages,
-    ToolParameterBundle,
+    ToolParameterT,
 )
 from galaxy.tool_util.parser import (
     get_tool_source,
@@ -136,6 +137,11 @@ from galaxy.tools.actions.model_operations import ModelOperationToolAction
 from galaxy.tools.evaluation import global_tool_errors
 from galaxy.tools.execution_helpers import ToolExecutionCache
 from galaxy.tools.imp_exp import JobImportHistoryArchiveWrapper
+from galaxy.tools.job_parameters import (
+    DATA_MANAGER_MODE,
+    EXPORT_TO_URI,
+    TEMPLATE_JOB_PARAMETERS,
+)
 from galaxy.tools.parameters import (
     check_param,
     params_from_strings,
@@ -336,6 +342,10 @@ GALAXY_LIB_TOOLS_VERSIONED = {
 REQUIRE_FULL_DIRECTORY = {
     "includes": [{"path": "**", "path_type": "glob"}],
 }
+# Main script at the top level, helper modules imported from utils/
+REQUIRE_PY_SCRIPTS_AND_UTILS = {
+    "includes": [{"path": "*.py", "path_type": "glob"}, {"path": "utils/*", "path_type": "glob"}],
+}
 IMPLICITLY_REQUIRED_TOOL_FILES: dict[str, dict] = {
     "deseq2": {
         "version": parse_version("2.11.40.6"),
@@ -344,21 +354,30 @@ IMPLICITLY_REQUIRED_TOOL_FILES: dict[str, dict] = {
     # minimum example:
     # "foobar": {"required": REQUIRE_FULL_DIRECTORY}
     # if no version is specified, all versions without explicit RequiredFiles will be selected
+    # charts.r sources the module script named by -m from the -w tool directory
+    "charts": {"required": {"includes": [{"path": "*.r", "path_type": "glob"}]}},
     "circos": {"required": REQUIRE_FULL_DIRECTORY},
     "cp_image_math": {"required": {"includes": [{"path": "*.py", "path_type": "glob"}]}},
+    # the script path sits in \'...\' inside a $'...' parallel argument
+    "docking": {"required": {"includes": [{"path": "*.py", "path_type": "glob"}]}},
     "enumerate_charges": {"required": REQUIRE_FULL_DIRECTORY},
-    "fasta_compute_length": {"required": {"includes": [{"path": "utils/*", "path_type": "glob"}]}},
-    "fasta_concatenate0": {"required": {"includes": [{"path": "utils/*", "path_type": "glob"}]}},
+    "fasta_compute_length": {"required": REQUIRE_PY_SCRIPTS_AND_UTILS},
+    "fasta_concatenate0": {"required": REQUIRE_PY_SCRIPTS_AND_UTILS},
     "filter_tabular": {"required": {"includes": [{"path": "*.py", "path_type": "glob"}]}},
-    "flanking_features_1": {"required": {"includes": [{"path": "utils/*", "path_type": "glob"}]}},
-    "gops_intersect_1": {"required": {"includes": [{"path": "utils/*", "path_type": "glob"}]}},
-    "gops_subtract_1": {"required": {"includes": [{"path": "utils/*", "path_type": "glob"}]}},
+    "flanking_features_1": {"required": REQUIRE_PY_SCRIPTS_AND_UTILS},
+    "gops_intersect_1": {"required": REQUIRE_PY_SCRIPTS_AND_UTILS},
+    "gops_subtract_1": {"required": REQUIRE_PY_SCRIPTS_AND_UTILS},
     "maxquant": {"required": {"includes": [{"path": "*.py", "path_type": "glob"}]}},
     "maxquant_mqpar": {"required": {"includes": [{"path": "*.py", "path_type": "glob"}]}},
     "query_tabular": {"required": {"includes": [{"path": "*.py", "path_type": "glob"}]}},
+    # the script path sits in \"...\" inside an Rscript -e argument
+    "seurat": {"required": {"includes": [{"path": "*.R", "path_type": "glob"}]}},
     "shasta": {"required": {"includes": [{"path": "configs/*", "path_type": "glob"}]}},
     "sqlite_to_tabular": {"required": {"includes": [{"path": "*.py", "path_type": "glob"}]}},
     "sucos_max_score": {"required": {"includes": [{"path": "*.py", "path_type": "glob"}]}},
+    # transformation_wrapper.R sources transformation_script.R from its own directory
+    "Transformation": {"required": {"includes": [{"path": "*.R", "path_type": "glob"}]}},
+    "translate_bed": {"required": {"includes": [{"path": "*.py", "path_type": "glob"}]}},
 }
 
 
@@ -640,6 +659,10 @@ class ToolBox(AbstractToolBox):
             raise Exception(f"Unknown tool representation format [{tool_format}].")
         tool = create_tool_from_source(self.app, tool_source=tool_source, tool_dir=None, dynamic=True)
         tool.dynamic_tool = dynamic_tool
+        # Snapshot while the ORM row is session-attached; later reads would raise
+        # DetachedInstanceError.
+        tool.dynamic_tool_id = dynamic_tool.id
+        tool.dynamic_tool_uuid = dynamic_tool.uuid if isinstance(dynamic_tool.uuid, UUID) else None
         return tool
 
     def tool_for_job(
@@ -906,8 +929,7 @@ class JobContext(BaseJobContext):
     def get_library_folder(self, destination: dict[str, Any]):
         folder_id = destination.get("library_folder_id")
         assert folder_id
-        decoded_folder_id = self.app.security.decode_id(folder_id) if isinstance(folder_id, str) else folder_id
-        library_folder = self.app.library_folder_manager.get(self.work_context, decoded_folder_id)
+        library_folder = self.app.library_folder_manager.get_for_adding(self.work_context, folder_id)
         return library_folder
 
     def get_hdca(self, object_id):
@@ -996,7 +1018,7 @@ class JobContext(BaseJobContext):
         return self.job.implicit_collection_jobs_association and self.job.implicit_collection_jobs_association.id
 
 
-class Tool(UsesDictVisibleKeys, ToolParameterBundle):
+class Tool(UsesDictVisibleKeys):
     """
     Represents a computational tool that can be executed through Galaxy.
     """
@@ -1011,6 +1033,8 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
     dict_collection_visible_keys = ["id", "name", "version", "description", "labels"]
     job_search: "JobSearch"
     version: str
+    # Job parameters that are not tool inputs and that the tool's templates read.
+    template_job_parameters: frozenset[str] = TEMPLATE_JOB_PARAMETERS
 
     def __init__(
         self,
@@ -1051,6 +1075,10 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
         self.rerun = False
         # This will be non-None for tools loaded from the database (DynamicTool objects).
         self.dynamic_tool: Optional[DynamicTool] = None
+        # Primitives snapshotted from DynamicTool so readers of this cached tool never
+        # touch a possibly-detached ORM row.
+        self.dynamic_tool_id: Optional[int] = None
+        self.dynamic_tool_uuid: Optional[UUID] = None
         # Define a place to keep track of all input   These
         # differ from the inputs dictionary in that inputs can be page
         # elements like conditionals, but input_params are basic form
@@ -1088,6 +1116,8 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
         self.credentials: Optional[list[CredentialsRequirement]] = None
         self._is_workflow_compatible = None
         self.__tests: Optional[str] = None
+        # Input models, None if the tool's inputs can't be modeled yet.
+        self.parameters: Optional[list[ToolParameterT]] = None
         try:
             self.parse(tool_source, guid=guid, dynamic=dynamic)
         except Exception as e:
@@ -2024,6 +2054,15 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
             return self.outputs.get(name, None)
 
     @property
+    def keeps_undeclared_job_parameters(self) -> bool:
+        """Pass job parameters that are not tool inputs to the templates.
+
+        Tools that do not check their values (data source tools) take the request
+        parameters as they are sent.
+        """
+        return not self.check_values
+
+    @property
     def is_workflow_compatible(self):
         return self._is_workflow_compatible
 
@@ -2194,10 +2233,11 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
         trans,
         use_cached_job: bool,
         all_params: list[ToolStateJobInstancePopulatedT],
+        recorded_job_indexes: Optional[set[int]] = None,
     ) -> dict[int, Optional[Job]]:
         completed_jobs: dict[int, Optional[Job]] = {}
         for i, param in enumerate(all_params):
-            if use_cached_job and trans.user:
+            if use_cached_job and trans.user and not (recorded_job_indexes and i in recorded_job_indexes):
                 tool_id = self.id
                 assert tool_id
                 param_dump: ToolStateDumpedToJsonInternalT = params_to_json_internal(self.inputs, param, self.app)
@@ -2263,6 +2303,9 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
                 tag_handler.apply_item_tags(user=trans.user, item=hda, tags_str=",".join(tags), flush=False)
 
             for _, hdca in execution_tracker.output_collections:
+                tag_handler.apply_item_tags(user=trans.user, item=hdca, tags_str=",".join(tags), flush=False)
+
+            for hdca in execution_tracker.implicit_collections.values():
                 tag_handler.apply_item_tags(user=trans.user, item=hdca, tags_str=",".join(tags), flush=False)
             trans.sa_session.commit()
 
@@ -2839,8 +2882,8 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
         tool_dict["is_workflow_compatible"] = self.is_workflow_compatible
         tool_dict["xrefs"] = self.xrefs
 
-        if self.dynamic_tool:
-            tool_dict["uuid"] = str(self.dynamic_tool.uuid)
+        if self.dynamic_tool_uuid:
+            tool_dict["uuid"] = str(self.dynamic_tool_uuid)
 
         # Fill in ToolShedRepository info
         if hasattr(self, "tool_shed") and self.tool_shed:
@@ -3249,8 +3292,8 @@ class ExpressionTool(Tool):
 
     def exec_before_job(self, app, inp_data, out_data, param_dict=None):
         super().exec_before_job(app, inp_data, out_data, param_dict=param_dict)
-        local_working_directory = param_dict["__local_working_directory__"]
-        expression_inputs_path = os.path.join(local_working_directory, ExpressionTool.EXPRESSION_INPUTS_NAME)
+        configs_directory = ensure_configs_directory(param_dict["__local_working_directory__"])
+        expression_inputs_path = os.path.join(configs_directory, ExpressionTool.EXPRESSION_INPUTS_NAME)
 
         outputs = []
         for out_name in out_data.keys():
@@ -3276,7 +3319,7 @@ class ExpressionTool(Tool):
             "script": self._expression,
             "outputs": outputs,
         }
-        expressions.write_evalute_script(os.path.join(local_working_directory))
+        expressions.write_evalute_script(configs_directory)
         with open(expression_inputs_path, "w") as f:
             json.dump(expression_inputs, f)
 
@@ -3334,7 +3377,8 @@ class ExpressionTool(Tool):
         environmnt_variables_raw = super().parse_environment_variables(tool_source)
         expression_script_inputs = dict(
             name="GALAXY_EXPRESSION_INPUTS",
-            template=ExpressionTool.EXPRESSION_INPUTS_NAME,
+            # Relative to the job directory, which the expression script runs from.
+            template=f"configs/{ExpressionTool.EXPRESSION_INPUTS_NAME}",
         )
         environmnt_variables_raw.append(expression_script_inputs)
         return environmnt_variables_raw
@@ -3513,6 +3557,7 @@ class SetMetadataTool(Tool):
 
 class ExportHistoryTool(Tool):
     tool_type = "export_history"
+    template_job_parameters = Tool.template_job_parameters | {EXPORT_TO_URI}
 
 
 class ImportHistoryTool(Tool):
@@ -3575,7 +3620,7 @@ class DataManagerTool(OutputParameterJSONTool):
         assert (
             data_manager is not None
         ), f"Invalid data manager ({data_manager_id}) requested. It may have been removed before the job completed."
-        data_manager_mode = param_dict.get("__data_manager_mode", "populate")
+        data_manager_mode = param_dict.get(DATA_MANAGER_MODE, "populate")
         if data_manager_mode == "populate":
             data_manager.process_result(out_data)
         elif data_manager_mode == "dry_run":

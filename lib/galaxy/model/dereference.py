@@ -205,6 +205,8 @@ def get_replacement_dataset(
             Dataset.state == Dataset.states.OK,
             HistoryDatasetAssociation.extension == extension,
             HistoryDatasetAssociation._state == null(),
+            # A purged HDA's metadata files may already be removed, even while its Dataset lives on.
+            HistoryDatasetAssociation.purged == false(),
             History.user_id == user.id,
         )
     )

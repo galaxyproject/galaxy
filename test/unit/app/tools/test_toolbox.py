@@ -1,17 +1,22 @@
 import logging
 import time
+from uuid import UUID
 
 import pytest
 import routes
 
 from galaxy import model
 from galaxy.app import UniverseApplication
+from galaxy.app_unittest_utils.galaxy_mock import MockTrans
 from galaxy.app_unittest_utils.toolbox_support import BaseToolBoxTestCase
+from galaxy.managers.tools import DynamicToolManager
 from galaxy.tool_util.unittest_utils import mock_trans
 from galaxy.tool_util.unittest_utils.sample_data import (
     SIMPLE_MACRO,
     SIMPLE_TOOL_WITH_MACRO,
 )
+from galaxy.tool_util_models.dynamic_tool_models import DynamicToolCreatePayload
+from galaxy.workflow import modules
 
 log = logging.getLogger(__name__)
 
@@ -167,6 +172,36 @@ class TestToolBox(BaseToolBoxTestCase):
         self.toolbox.get_tool("test_tool").allow_user_access = allow_user_access
         as_dict = self.toolbox.to_dict(mock_trans(), in_panel=False)
         assert len(as_dict) == 0, as_dict
+
+    def _create_detached_dynamic_tool(self) -> tuple[UUID, int]:
+        assert self.toolbox
+        self.app.config.enable_beta_tool_formats = True
+        payload = DynamicToolCreatePayload(
+            representation={"class": "GalaxyTool", "version": "0.1", "command": "echo 42"}
+        )
+        dynamic_tool = DynamicToolManager(self.app).create_tool(payload)
+        assert isinstance(dynamic_tool.uuid, UUID)
+        tool_uuid, dynamic_tool_id = dynamic_tool.uuid, dynamic_tool.id
+        # End of request: the commit expires the row, removing the scoped session detaches it.
+        session = self.app.model.context
+        session.commit()
+        session.remove()
+        return tool_uuid, dynamic_tool_id
+
+    def test_to_dict_with_detached_dynamic_tool(self):
+        tool_uuid, _ = self._create_detached_dynamic_tool()
+        tool = self.toolbox.get_tool(tool_uuid=tool_uuid)
+        assert tool.to_dict(mock_trans())["uuid"] == str(tool_uuid)
+        as_dict = self.toolbox.to_dict(mock_trans(), in_panel=False)
+        assert str(tool_uuid) in [t.get("uuid") for t in as_dict]
+
+    def test_save_to_step_with_detached_dynamic_tool(self):
+        tool_uuid, dynamic_tool_id = self._create_detached_dynamic_tool()
+        trans = MockTrans(app=self.app)
+        module = modules.module_factory.from_dict(trans, {"type": "tool", "tool_uuid": str(tool_uuid)})
+        step = model.WorkflowStep()
+        module.save_to_step(step, detached=True)
+        assert step.dynamic_tool_id == dynamic_tool_id
 
     def _find_section(self, as_dict, section_id):
         for elem in as_dict:

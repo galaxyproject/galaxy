@@ -83,12 +83,18 @@ export const useCollectionBuilderItemsStore = defineStore("collectionBuilderItem
  */
 export const useCollectionBuilderItemSelection = defineStore("collectionBuilderItemSelection", () => {
     const selectedItems = ref<HistoryItemSummary[]>([]);
+    /** Bumped each time a builder creates a collection from `selectedItems`. */
+    const collectionsCreated = ref(0);
 
     function setSelectedItems(newSelectedItems: HistoryItemSummary[]) {
         selectedItems.value = newSelectedItems;
     }
 
-    return { selectedItems, setSelectedItems };
+    function markCollectionCreated() {
+        collectionsCreated.value++;
+    }
+
+    return { selectedItems, collectionsCreated, setSelectedItems, markCollectionCreated };
 });
 
 export const usePairingDatasetTargetsStore = defineStore("pairingDatasetTargets", {

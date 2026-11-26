@@ -288,7 +288,10 @@ class DatasetSerializer(base.ModelSerializer[DatasetManager], deletable.Purgable
         # expensive: allow config option due to cost of operation
         if is_admin or self.app.config.expose_dataset_path:
             if not dataset.purged:
-                return dataset.get_file_name(sync_cache=False)
+                try:
+                    return dataset.get_file_name(sync_cache=False)
+                except exceptions.ObjectNotFound:
+                    return None
         self.skip()
 
     def serialize_extra_files_path(self, item, key, user=None, **context):
@@ -723,7 +726,7 @@ class _UnflattenedMetadataDatasetAssociationSerializer(base.ModelSerializer[T], 
             # NOTE: no files
             if isinstance(val, model.MetadataFile):
                 # only when explicitly set: fetching filepaths can be expensive
-                if not self.app.config.expose_dataset_path:
+                if not self.app.config.expose_dataset_path or dataset_assoc.purged:
                     continue
                 val = val.get_file_name()
             # TODO:? possibly split this off?

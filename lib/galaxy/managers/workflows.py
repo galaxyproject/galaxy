@@ -309,9 +309,9 @@ class WorkflowsManager(sharable.SharableModelManager[model.StoredWorkflow], dele
             raise exceptions.ObjectNotFound("No such workflow found.")
         return stored_workflow
 
-    def get_stored_accessible_workflow(self, trans, workflow_id, by_stored_id=True):
-        """Get a stored workflow from a encoded stored workflow id and
-        make sure it accessible to the user.
+    def get_stored_accessible_workflow(self, trans, workflow_id, by_stored_id=True) -> StoredWorkflow:
+        """Get a stored workflow from an encoded id or UUID and
+        make sure it is accessible to the user.
         """
         stored_workflow = self.get_stored_workflow(trans, workflow_id, by_stored_id=by_stored_id)
 
@@ -321,9 +321,15 @@ class WorkflowsManager(sharable.SharableModelManager[model.StoredWorkflow], dele
                 user=trans.user, stored_workflow=stored_workflow
             )
             if get_count(trans.sa_session, stmt) == 0:
-                message = "Workflow is not owned by or shared with current user"
+                message = "Workflow is neither importable, nor owned by or shared with current user"
                 raise exceptions.ItemAccessibilityException(message)
 
+        return stored_workflow
+
+    def get_stored_owned_workflow(self, trans, workflow_id, by_stored_id=True) -> StoredWorkflow:
+        """Get a stored workflow and make sure the user owns it (or is an admin)."""
+        stored_workflow = self.get_stored_workflow(trans, workflow_id, by_stored_id=by_stored_id)
+        self.check_security(trans, stored_workflow, check_ownership=True)
         return stored_workflow
 
     def attach_stored_workflow(self, trans, workflow):
@@ -338,8 +344,8 @@ class WorkflowsManager(sharable.SharableModelManager[model.StoredWorkflow], dele
             return stored_workflow
 
     def get_owned_workflow(self, trans, encoded_workflow_id):
-        """Get a workflow (non-stored) from a encoded workflow id and
-        make sure it accessible to the user.
+        """Get a workflow (non-stored) from an encoded workflow id and
+        make sure it is owned by the user (or the user is an admin).
         """
         workflow_id = decode_id(self.app, encoded_workflow_id)
         workflow = trans.sa_session.get(Workflow, workflow_id)
@@ -1242,6 +1248,12 @@ class WorkflowContentsManager(UsesAnnotations):
         """Get workflow scheduling resource parameters for this user and workflow or None if not configured."""
         return self._resource_mapper_function(trans=trans, stored_workflow=stored, workflow=workflow)
 
+    @staticmethod
+    def _add_step_in(step: model.WorkflowStep, step_dict: dict[str, Any]) -> None:
+        """Serialize step input defaults as the ``in`` block that ``__module_from_dict`` reads back."""
+        if input_defaults := step.input_defaults:
+            step_dict["in"] = {name: {"default": default} for name, default in input_defaults.items()}
+
     def _workflow_to_dict_editor(
         self,
         trans,
@@ -1284,6 +1296,10 @@ class WorkflowContentsManager(UsesAnnotations):
             version_changes = getattr(module, "version_changes", None)
             if version_changes:
                 upgrade_message_dict[module.get_name()] = "\n".join(version_changes)
+            if isinstance(module, ToolModule):
+                # Show the step input defaults that replace the tool state at run time in the tool form.
+                connected_input_names = {conn.input_name for conn in step.input_connections}
+                module.show_step_input_defaults(step.input_defaults, connected_input_names)
             # Get user annotation.
             config_form = module.get_config_form(step=step)
             annotation_str = self.get_item_annotation_str(trans.sa_session, trans.user, step) or ""
@@ -1305,6 +1321,7 @@ class WorkflowContentsManager(UsesAnnotations):
                 "when": step.when_expression,
                 "workflow_outputs": [],
             }
+            self._add_step_in(step, step_dict)
             if tooltip:
                 step_dict["tooltip"] = module.get_tooltip(static_path="/static")
             # Connections
@@ -1639,13 +1656,7 @@ class WorkflowContentsManager(UsesAnnotations):
                 for output in module.get_data_outputs():
                     step_dict["outputs"].append({"name": output["name"], "type": output["extensions"][0]})
 
-            step_in = {}
-            for step_input in step.inputs:
-                if step_input.default_value_set:
-                    step_in[step_input.name] = {"default": step_input.default_value}
-
-            if step_in:
-                step_dict["in"] = step_in
+            self._add_step_in(step, step_dict)
 
             # Connections
             input_connections = step.input_connections
@@ -1917,7 +1928,16 @@ class WorkflowContentsManager(UsesAnnotations):
                     trans.sa_session.add(m)
 
         if "in" in step_dict:
+            changed_in_form: set[str] = set()
+            if kwds.get("from_tool_form") and isinstance(module, ToolModule):
+                # The editor's tool form shows these defaults, a value the user changed there replaces them.
+                defaults = {name: d["default"] for name, d in step_dict["in"].items() if "default" in d}
+                changed_in_form = module.step_input_defaults_changed_in_form(
+                    defaults, step_dict.get("input_connections") or {}
+                )
             for input_name, input_dict in step_dict["in"].items():
+                if input_name in changed_in_form:
+                    continue
                 # This is just a bug in gxformat? I think the input
                 # defaults should be called input to match the input modules's
                 # input parameter name.

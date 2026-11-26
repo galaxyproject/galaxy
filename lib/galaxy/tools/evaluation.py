@@ -46,11 +46,16 @@ from galaxy.tool_util_models.tool_source import (
 )
 from galaxy.tools.actions import determine_output_format
 from galaxy.tools.expressions import do_eval
+from galaxy.tools.job_parameters import (
+    CHROM_INFO,
+    is_element_identifier_parameter,
+)
 from galaxy.tools.parameters import (
     visit_input_values,
     wrapped_json,
 )
 from galaxy.tools.parameters.basic import (
+    ColumnListParameter,
     DataCollectionToolParameter,
     DataToolParameter,
     SelectToolParameter,
@@ -153,6 +158,7 @@ class ToolEvaluator:
         self.command_line: Optional[str] = None
         self.interactivetools: list[dict[str, Any]] = []
         self.consumes_names = False
+        self.consumes_identifiers = False
         self.use_cached_job = False
 
     def set_compute_environment(self, compute_environment: ComputeEnvironment, get_special: Optional[Callable] = None):
@@ -167,6 +173,7 @@ class ToolEvaluator:
         incoming = self.tool.params_from_strings(incoming)
         if "__use_cached_job__" in incoming:
             self.use_cached_job = bool(incoming["__use_cached_job__"])
+        incoming = self._template_job_parameters(incoming)
 
         self.file_sources_dict = compute_environment.get_file_sources_dict()
 
@@ -216,6 +223,28 @@ class ToolEvaluator:
                 output_collections=out_collections,
             )
 
+    def _template_job_parameters(self, incoming: dict) -> dict:
+        """Keep the job parameters that are tool inputs or that the tool's templates read."""
+        tool = self.tool
+        if tool.keeps_undeclared_job_parameters:
+            return incoming
+        # Job parameters are keyed by top-level input name. params_from_strings rebuilt the
+        # values of conditionals, sections and repeats from their declared inputs.
+        template_parameters = {}
+        other_parameters = []
+        for name, value in incoming.items():
+            if name in tool.inputs or name in tool.template_job_parameters or is_element_identifier_parameter(name):
+                template_parameters[name] = value
+            else:
+                other_parameters.append(name)
+        if other_parameters:
+            log.debug(
+                "Job parameters %s of tool '%s' are not tool inputs, not passing them to the templates.",
+                other_parameters,
+                tool.id,
+            )
+        return template_parameters
+
     def execute_tool_hooks(self, inp_data, out_data, incoming):
         # Certain tools require tasks to be completed prior to job execution
         # ( this used to be performed in the "exec_before_job" hook, but hooks are deprecated ).
@@ -244,9 +273,10 @@ class ToolEvaluator:
         if self._history:
             param_dict["__history_id__"] = self.app.security.encode_id(self._history.id)
         param_dict["__galaxy_url__"] = self.compute_environment.galaxy_url()
-        param_dict.update(self.tool.template_macro_params)
         # All parameters go into the param_dict
         param_dict.update(incoming)
+        # Template macros are tool text that is not sanitized, so they take precedence over job parameters.
+        param_dict.update(self.tool.template_macro_params)
 
         self.__populate_wrappers(param_dict, input_datasets, job_working_directory)
         self.__populate_input_dataset_wrappers(param_dict, input_datasets)
@@ -369,6 +399,9 @@ class ToolEvaluator:
         def validate_inputs(input, value, context, **kwargs):
             value = input.from_json(value, request_context, context)
             input.validate(value, request_context)
+            if isinstance(input, ColumnListParameter):
+                # A column selected by its option label is evaluated as the column number.
+                return value
 
         visit_input_values(self.tool.inputs, incoming, validate_inputs)
 
@@ -559,6 +592,7 @@ class ToolEvaluator:
                     tool=self.tool,
                     name=name,
                     compute_environment=self.compute_environment,
+                    tool_evaluator=self,
                 )
 
     def __populate_output_collection_wrappers(self, param_dict, output_collections, job_working_directory):
@@ -698,7 +732,7 @@ class ToolEvaluator:
         Note: this method follows the style of the similar populate calls, in that param_dict is modified in-place.
         """
         # chromInfo is a filename, do not sanitize it.
-        skip = ["chromInfo"] + list(self.tool.template_macro_params.keys())
+        skip = [CHROM_INFO] + list(self.tool.template_macro_params.keys())
         if not self.tool or not self.tool.options or self.tool.options.sanitize:
             for key, value in list(param_dict.items()):
                 if key not in skip:

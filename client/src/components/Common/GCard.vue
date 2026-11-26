@@ -263,6 +263,17 @@ const emit = defineEmits<{
 
 const bookmarkLoading = ref(false);
 
+// Track open state of the extra-actions dropdown so the card can raise its
+// stacking context while open. Without this, the open menu can visually drop
+// over the next card row but get pixel-intercepted by that card's primary
+// action buttons (see issue surfaced by Selenium test_delete_and_undelete_history).
+const extraActionsOpen = ref(false);
+
+function onExtraDropdown(open: boolean) {
+    extraActionsOpen.value = open;
+    emit("dropdown", open);
+}
+
 /**
  * Toggles bookmark status with loading state
  */
@@ -310,6 +321,7 @@ function onKeyDown(event: KeyboardEvent) {
             { 'g-card-current': current },
             { 'g-card-published': published },
             { 'g-card-clickable': props.clickable },
+            { 'g-card-dropdown-open': extraActionsOpen },
             containerClass,
         ]"
         :tabindex="props.clickable ? 0 : undefined"
@@ -459,8 +471,8 @@ function onKeyDown(event: KeyboardEvent) {
                                         title="More options"
                                         toggle-class="inline-icon-button"
                                         variant="link"
-                                        @show="() => emit('dropdown', true)"
-                                        @hide="() => emit('dropdown', false)">
+                                        @show="() => onExtraDropdown(true)"
+                                        @hide="() => onExtraDropdown(false)">
                                         <template v-slot:button-content>
                                             <FontAwesomeIcon :icon="faCaretDown" fixed-width />
                                         </template>
@@ -687,6 +699,14 @@ function onKeyDown(event: KeyboardEvent) {
 .g-card {
     container: g-card / inline-size;
     width: 100%;
+
+    // While the extra-actions dropdown is open, raise this card above its
+    // siblings so the menu does not get pixel-intercepted by a neighboring
+    // card's primary action buttons drawn at the same screen coordinates.
+    &.g-card-dropdown-open {
+        position: relative;
+        z-index: 2;
+    }
 
     &.g-card-grid-view {
         width: calc(100% / 3);

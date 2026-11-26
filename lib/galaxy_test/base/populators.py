@@ -874,6 +874,9 @@ class BaseDatasetPopulator(BasePopulator):
 
         def _wait_for_purge():
             dataset_response = self._get(dataset_url)
+            # Accept 404 as an intermediate state - dataset will return 200 with purged=True later
+            if dataset_response.status_code == 404:
+                return None
             dataset_response.raise_for_status()
             dataset = dataset_response.json()
             return dataset.get("purged") or None
@@ -2554,10 +2557,14 @@ class BaseWorkflowPopulator(BasePopulator):
         response.raise_for_status()
 
     def update_workflow(self, workflow_id: str, workflow_object: dict) -> Response:
-        data = dict(workflow=workflow_object)
-        raw_url = f"workflows/{workflow_id}"
-        put_response = self._put(raw_url, data, json=True)
-        return put_response
+        return self.update_workflow_fields(workflow_id, {"workflow": workflow_object})
+
+    def update_workflow_fields(self, workflow_id: str, fields: dict, admin: bool = False) -> Response:
+        """PUT ``fields`` as top-level payload keys, the shape the client sends."""
+        return self._put(f"workflows/{workflow_id}", fields, admin=admin, json=True)
+
+    def set_workflow_menu(self, workflow_ids: list[str]) -> Response:
+        return self._put("workflows/menu", {"workflow_ids": workflow_ids}, json=True)
 
     def refactor_workflow(
         self, workflow_id: str, actions: list, dry_run: Optional[bool] = None, style: Optional[str] = None
@@ -3404,9 +3411,14 @@ class LibraryPopulator:
     def setup_fetch_to_folder(self, test_name):
         history_id = self.dataset_populator.new_history()
         library = self.new_private_library(test_name)
-        folder_id = library["root_folder_id"][1:]
-        destination = {"type": "library_folder", "library_folder_id": folder_id}
+        destination = self.fetch_destination_for_library(library)
         return history_id, library, destination
+
+    def fetch_destination_for_library(self, library: dict[str, Any]) -> dict[str, Any]:
+        root_folder_id = library["root_folder_id"]
+        # The libraries API prefixes folder ids with "F", fetch destinations take the bare encoded id.
+        assert root_folder_id.startswith("F"), root_folder_id
+        return {"type": "library_folder", "library_folder_id": root_folder_id[1:]}
 
 
 class BaseDatasetCollectionPopulator:
