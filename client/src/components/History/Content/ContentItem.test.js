@@ -67,7 +67,7 @@ describe("ContentItem", () => {
             },
             localVue,
             stubs: {
-                DatasetDetails: true,
+                DatasetDetails: { template: '<pre class="dataset-peek">chr1\t100</pre>' },
                 vueTagsInput: false,
             },
             provide: {
@@ -133,5 +133,15 @@ describe("ContentItem", () => {
         expect(wrapper.emitted()["update:selected"][1][0]).toBe(false);
         expect(wrapper.classes()).toEqual(expect.arrayContaining(["alert-info"]));
         expect(selector.attributes("data-icon")).toBe("check-square");
+    });
+
+    it("lets the peek text be selected instead of dragging the item", async () => {
+        expect(wrapper.attributes("draggable")).toBe("true");
+
+        await wrapper.find(".dataset-peek").trigger("pointerover");
+        expect(wrapper.attributes("draggable")).toBe("false");
+
+        await wrapper.trigger("pointerleave");
+        expect(wrapper.attributes("draggable")).toBe("true");
     });
 });
