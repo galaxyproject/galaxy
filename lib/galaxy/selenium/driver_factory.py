@@ -37,6 +37,8 @@ from .has_playwright_driver import (
 logger = logging.getLogger("selenium.webdriver.remote.remote_connection")
 logger.setLevel(logging.WARNING)
 
+log = logging.getLogger(__name__)
+
 DEFAULT_BROWSER = "auto"
 DEFAULT_DOWNLOAD_PATH = "/tmp/"
 LOGGING_PREFS = {
@@ -287,11 +289,21 @@ def get_playwright_driver(browser: str = DEFAULT_BROWSER, headless: bool = False
     else:
         browser_type = playwright.chromium
 
-    # Launch browser with headless setting
-    browser_instance = browser_type.launch(headless=headless)
+    # A started Playwright instance keeps its asyncio loop registered as running
+    # on this thread until it is stopped, and the next sync_playwright().start()
+    # then fails, so stop it when the browser or page cannot be created.
+    try:
+        # Launch browser with headless setting
+        browser_instance = browser_type.launch(headless=headless)
 
-    # Create page with viewport size matching Selenium's window size
-    page = browser_instance.new_page(viewport={"width": DEFAULT_WINDOW_WIDTH, "height": DEFAULT_WINDOW_HEIGHT})
+        # Create page with viewport size matching Selenium's window size
+        page = browser_instance.new_page(viewport={"width": DEFAULT_WINDOW_WIDTH, "height": DEFAULT_WINDOW_HEIGHT})
+    except BaseException:
+        try:
+            playwright.stop()
+        except Exception:
+            log.exception("Error stopping Playwright after browser launch failure")
+        raise
 
     return PlaywrightResources(
         playwright=playwright,

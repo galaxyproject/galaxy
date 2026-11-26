@@ -50,6 +50,18 @@ class ComputeEnvironment(metaclass=ABCMeta):
     def output_extra_files_rewrite(self, dataset):
         """Output extra files path rewrite for specified dataset."""
 
+    def input_extra_files_path(self, dataset) -> str | None:
+        """Where the tool finds an input's extra files folder, or ``None`` if the input has none.
+
+        Rewriting the path makes Pulsar stage the folder and fail the job if it is missing,
+        so the rewrite is only requested for a folder that exists.
+        """
+        extra_files_path: str = dataset.extra_files_path
+        if not os.path.exists(extra_files_path):
+            return None
+        rewrite: str | None = self.input_extra_files_rewrite(dataset)
+        return rewrite or extra_files_path
+
     @abstractmethod
     def input_metadata_rewrite(self, dataset, metadata_name: str, metadata_file: MetadataFile) -> str | None:
         """Path rewrite for the input dataset's metadata file of this name."""
@@ -231,6 +243,10 @@ class RemoteComputeEnvironment(SharedComputeEnvironment):
         if path is None:
             return super().input_extra_files_rewrite(dataset)
         return path
+
+    def input_extra_files_path(self, dataset) -> str | None:
+        # Galaxy recorded the folders that exist, there is no object store to look them up in.
+        return self.paths["extra_files"].get(str(dataset.dataset.id))
 
     def input_metadata_rewrite(self, dataset, metadata_name: str, metadata_file: MetadataFile) -> str | None:
         return self.paths["metadata_files"].get(metadata_file_key(dataset, metadata_name))

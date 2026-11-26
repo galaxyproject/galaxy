@@ -9,6 +9,10 @@ from galaxy.job_execution.setup import JobWorkingDirectory
 from galaxy.model import Job
 from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver import integration_util
+from .test_remote_tool_evaluation_directory_metadata import (
+    run_user_defined_tool,
+    USER_TOOL_APIS,
+)
 
 SCRIPT_DIRECTORY = os.path.dirname(__file__)
 TOOL_IDS = [
@@ -100,6 +104,18 @@ class TestPulsarRemoteToolEvaluation(integration_util.IntegrationTestCase):
             assert job.command_line
             assert galaxy_job_directory not in job.command_line
             assert populator.get_history_dataset_details(history_id, dataset_id=dataset["id"])["state"] == "deferred"
+
+    @pytest.mark.parametrize("api", USER_TOOL_APIS)
+    def test_user_defined_tool(self, api):
+        job = run_user_defined_tool(self._app, DatasetPopulator(self.galaxy_interactor), api)
+        input_hda = job.input_datasets[0].dataset
+        assert input_hda and input_hda.dataset
+        pulsar_job_directory = os.path.join(self._app.config.data_dir, "pulsar_staging", str(job.id))
+        with open(os.path.join(pulsar_job_directory, "metadata", "outputs_new", "compute_environment.json")) as fh:
+            staged_path = json.load(fh)["datasets"][str(input_hda.dataset.id)]
+        assert job.command_line
+        # Extended metadata records all of tool_script.sh, which ends with the tool command.
+        assert job.command_line.splitlines()[-1] == f"cat '{staged_path}' > output.txt && echo '2' >> output.txt"
 
     def _run_input_size_job(self) -> Job:
         populator = DatasetPopulator(self.galaxy_interactor)

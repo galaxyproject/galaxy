@@ -1641,7 +1641,7 @@ class MinimalJobWrapper(HasResourceParameters):
     def _get_tool_evaluator(self, job):
         if self.remote_command_line:
             klass = PartialToolEvaluator
-        elif self.tool.base_command or self.tool.shell_command:
+        elif self.tool.uses_user_tool_evaluator:
             klass = UserToolEvaluator
         else:
             klass = ToolEvaluator

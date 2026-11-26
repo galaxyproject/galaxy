@@ -1818,6 +1818,11 @@ When the test fails, the error message is modified to indicate this is a known
 transient failure linked to a specific issue, helping CI reviewers quickly
 identify non-blocking failures.
 
+When running with ``--skip_flakey_fails`` (which sets
+``GALAXY_TEST_SKIP_FLAKEY_TESTS_ON_ERROR``), the failure is reported as a skip
+instead, with the issue number and the original error in the skip reason. The
+API, Selenium and Playwright workflows run this way.
+
 ### Tracking Potential Fixes
 
 When you implement a potential fix for a transient failure, update the decorator
@@ -1831,7 +1836,8 @@ def test_delete_job_with_message(self, history_id):
 
 If the test fails after this flag is set, the error message will ask reviewers
 to report the failure on the tracking issue with a timestamp. This helps
-determine if fixes are effective and when issues can be closed.
+determine if fixes are effective and when issues can be closed. These tests
+fail even with ``--skip_flakey_fails``, so that the failure gets reported.
 
 ### Workflow
 
@@ -1845,8 +1851,9 @@ determine if fixes are effective and when issues can be closed.
 
 The older ``@flakey`` decorator from ``galaxy_test.base.populators`` is still
 present in some tests. Unlike ``@transient_failure``, it doesn't link to tracking
-issues. When running with ``--skip_flakey_fails``, failures are converted to skips.
-New flaky tests should use ``@transient_failure`` instead for better tracking.
+issues. When running with ``--skip_flakey_fails``, its failures are converted to
+skips without the original error. New flaky tests should use
+``@transient_failure`` instead for better tracking.
 
 {#running_tests}
 ## Running Python Tests
