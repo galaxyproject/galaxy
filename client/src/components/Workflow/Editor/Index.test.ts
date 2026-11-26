@@ -24,10 +24,11 @@ import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
 import { useWorkflowStepStore } from "@/stores/workflowStepStore";
 
 import { getModule, getVersions, saveWorkflow } from "./modules/services";
-import { getStateUpgradeMessages } from "./modules/utilities";
+import { getFilledDefaults, getStateUpgradeMessages } from "./modules/utilities";
 
 import Index from "./Index.vue";
 import SaveChangesModal from "./SaveChangesModal.vue";
+import StateUpgradeModal from "./StateUpgradeModal.vue";
 import ActivityBar from "@/components/ActivityBar/ActivityBar.vue";
 import GFormInput from "@/components/BaseComponents/Form/GFormInput.vue";
 import GAlert from "@/components/BaseComponents/GAlert.vue";
@@ -119,6 +120,7 @@ const { server, http } = useServerMock();
 
 const mockGetAppRoot = vi.mocked(getAppRoot);
 const mockGetStateUpgradeMessages = vi.mocked(getStateUpgradeMessages);
+const mockGetFilledDefaults = vi.mocked(getFilledDefaults);
 const mockLoadWorkflow = vi.mocked(getWorkflowFull);
 const mockGetVersions = vi.mocked(getVersions);
 const mockSaveWorkflow = vi.mocked(saveWorkflow);
@@ -141,6 +143,7 @@ describe("Index", () => {
         mockLoadWorkflow.mockResolvedValue({ steps: {}, comments: [], tags: [] });
         mockGetVersions.mockResolvedValue([]);
         mockGetStateUpgradeMessages.mockImplementation(() => []);
+        mockGetFilledDefaults.mockImplementation(() => []);
         mockGetAppRoot.mockImplementation(() => GET_APP_ROOT_PREFIX);
         mockUnprivilegedToolsRequest(server, http);
     });
@@ -636,6 +639,81 @@ describe("Index", () => {
             } finally {
                 vi.useRealTimers();
             }
+        });
+    });
+
+    describe("while the workflow loads", () => {
+        let stateStore: ReturnType<typeof useWorkflowStateStore>;
+        let resolveVersions: (versions: never[]) => void;
+
+        /** Mounts the editor and lets loading run up to the (held) versions request. */
+        async function mountWithPendingVersions() {
+            mockLoadWorkflow.mockResolvedValue({
+                name: "loaded name",
+                annotation: "loaded annotation",
+                steps: {},
+                comments: [],
+                tags: [],
+            });
+            mockGetVersions.mockReturnValue(new Promise((resolve) => (resolveVersions = resolve)));
+
+            const testingPinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
+            setActivePinia(testingPinia);
+            useDatatypesMapperStore().datatypesMapper = testDatatypesMapper;
+            stateStore = useWorkflowStateStore("workflow_id");
+            const wrapper = shallowMount(Index as object, {
+                propsData: { workflowId: "workflow_id", initialVersion: 1, workflows: [], toolbox: [] },
+                global: localVue,
+                pinia: testingPinia,
+                stubs: editorStubs(),
+            });
+            await flushPromises();
+            expect(wrapper.findComponent(WorkflowAttributes).props("name")).toBe("loaded name");
+            return wrapper;
+        }
+
+        it("does not mark loaded attributes as unsaved changes", async () => {
+            const wrapper = await mountWithPendingVersions();
+
+            expect(stateStore.hasChanges).toBe(false);
+            wrapper.findComponent(activityBarStub).vm.$emit("activityClicked", "exit");
+            await flushPromises();
+            expect(wrapper.findComponent(SaveChangesModal).props("showModal")).toBe(false);
+            expect(mockPush).toHaveBeenCalledWith("/workflows/list");
+
+            resolveVersions([]);
+            await flushPromises();
+            expect(stateStore.hasChanges).toBe(false);
+        });
+
+        it("keeps a workflow upgraded on load marked as changed", async () => {
+            mockGetStateUpgradeMessages.mockImplementation(() => [
+                { stepIndex: "0", name: "cat1", details: ["upgraded"], iconType: "tool", label: "" },
+            ]);
+            await mountWithPendingVersions();
+
+            expect(stateStore.hasChanges).toBe(true);
+
+            resolveVersions([]);
+            await flushPromises();
+            expect(stateStore.hasChanges).toBe(true);
+        });
+
+        it("shows filled defaults once loading settles, so accepting them isn't reset", async () => {
+            const filled = [{ stepIndex: "0", name: "cat1", details: ["filled"], iconType: "tool", label: "" }];
+            mockGetFilledDefaults.mockImplementation(() => filled);
+            const wrapper = await mountWithPendingVersions();
+            const modal = wrapper.findComponent(StateUpgradeModal);
+            expect(modal.props("filledDefaults")).toEqual([]);
+
+            resolveVersions([]);
+            await flushPromises();
+            expect(modal.props("filledDefaults")).toEqual(filled);
+            expect(stateStore.hasChanges).toBe(false);
+
+            modal.vm.$emit("accept");
+            await flushPromises();
+            expect(stateStore.hasChanges).toBe(true);
         });
     });
 

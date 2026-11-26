@@ -11,6 +11,7 @@ import { getRedirectOnImportPath } from "@/components/Workflow/redirectPath";
 import { Services } from "@/components/Workflow/services";
 import { useMarkdown } from "@/composables/markdown";
 import { withPrefix } from "@/utils/redirect";
+import { errorMessageAsString } from "@/utils/simple-error";
 
 import type { TrsSelection, TrsTool as TrsSearchData } from "./types";
 
@@ -70,32 +71,48 @@ const itemsComputed = computed(() => {
 
 const services = new Services();
 
-watch(query, async () => {
-    if (query.value == "") {
+let searchCount = 0;
+
+// A query typed before the TRS server list has loaded is searched once a server is selected.
+watch([query, trsServer], async () => {
+    const searchId = ++searchCount;
+    if (query.value == "" || trsServer.value == "") {
         results.value = [];
+        loading.value = false;
         // Reset selection state when search is cleared
         selectedTool.value = null;
         selectedVersion.value = undefined;
-    } else {
-        loading.value = true;
+        return;
+    }
 
-        try {
-            const response = await axios.get(
-                withPrefix(`/api/trs_search?query=${query.value}&trs_server=${trsServer.value}`),
-            );
+    loading.value = true;
+
+    try {
+        const params = new URLSearchParams({ query: query.value, trs_server: trsServer.value });
+        const response = await axios.get(withPrefix(`/api/trs_search?${params}`));
+        // ignore responses to searches that a newer search has replaced
+        if (searchId === searchCount) {
             results.value = response.data;
-        } catch (e) {
-            errorMessage.value = e as string;
         }
+    } catch (e) {
+        if (searchId === searchCount) {
+            errorMessage.value = errorMessageAsString(e);
+        }
+    }
 
+    if (searchId === searchCount) {
         loading.value = false;
     }
 });
 
 function onTrsSelection(selection: TrsSelection) {
+    // Only clear the query when switching servers, not when the initial selection arrives
+    // while the user may already be typing.
+    if (trsServer.value && trsServer.value !== selection.id) {
+        query.value = "";
+    }
     trsSelection.value = selection;
     trsServer.value = selection.id;
-    query.value = "";
 }
 
 function onTrsSelectionError(message: string) {

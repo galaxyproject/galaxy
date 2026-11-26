@@ -142,12 +142,14 @@ function citationsToBibtexAsText() {
                 <template v-slot:header>
                     <BNav card-header tabs>
                         <BNavItem
+                            data-description="citations apa tab"
                             :active="outputFormat === outputFormats.CITATION"
                             @click="outputFormat = outputFormats.CITATION">
                             References (APA)
                         </BNavItem>
 
                         <BNavItem
+                            data-description="citations bibtex tab"
                             :active="outputFormat === outputFormats.BIBTEX"
                             @click="outputFormat = outputFormats.BIBTEX">
                             BibTeX

@@ -24,6 +24,7 @@ from galaxy_test.base.workflow_fixtures import (
     parameter_input_workflow,
     WORKFLOW_NESTED_SIMPLE,
     WORKFLOW_OPTIONAL_TRUE_INPUT_COLLECTION,
+    WORKFLOW_RENAME_ON_REPLACEMENT_PARAM,
     WORKFLOW_SELECT_FROM_OPTIONAL_DATASET,
     WORKFLOW_SIMPLE_CAT_TWICE,
     WORKFLOW_SIMPLE_MAPPING,
@@ -62,6 +63,18 @@ CHIPSEQ_COLUMNS = [
         optional=True,
     ),
 ]
+
+
+WORKFLOW_WITH_MISSING_DEFAULTS = """
+class: GalaxyWorkflow
+inputs:
+  input1: data
+steps:
+  lines:
+    tool_id: random_lines1
+    in:
+      input: input1
+"""
 
 
 class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows, UsesWorkflowAssertions):
@@ -104,6 +117,20 @@ class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows, UsesWorkflowAssertions
         self.assert_workflow_has_changes_and_save()
         self.workflow_index_open_with_name(name)
         self.assert_wf_annotation_is(new_annotation)
+
+    @selenium_test
+    def test_edit_tags(self):
+        name = self.create_and_wait_for_new_workflow_in_editor()
+        self.workflow_editor_add_tags(["editortag"])
+        self.screenshot("workflow_editor_tags")
+        # The editor saves tags without blocking; leave only once the server has them.
+        self._wait_on(
+            lambda: [w["tags"] for w in self.api_get("workflows") if w["name"].endswith(name)] == [["editortag"]],
+            "tag save to finish",
+        )
+        self.workflow_index_open()
+        self.workflow_index_search_for(name)
+        self._wait_on(lambda: self.workflow_index_tags() == ["editortag"], "saved workflow to show its tag")
 
     @selenium_test
     def test_edit_name(self):
@@ -420,6 +447,39 @@ steps:
         self.workflow_editor_remove_node("input1")
         self.sleep_for(self.wait_types.UX_RENDER)
         self.screenshot("workflow_editor_parameter_input_deleted")
+
+    @selenium_test
+    def test_step_input_default_survives_save_until_form_changes_it(self):
+        name = self._get_random_name()
+        workflow_id = self.workflow_populator.upload_yaml_workflow(
+            """
+class: GalaxyWorkflow
+steps:
+  int_step:
+    tool_id: gx_int
+    in:
+      parameter:
+        default: 7
+""",
+            name=name,
+        )
+        self.workflow_index_open()
+        self.workflow_index_open_with_name(name)
+        parameter_input = self.components.tool_form.parameter_input(parameter="parameter")
+
+        self.workflow_editor_set_node_annotation("unrelated edit", node="int_step")
+        self.assert_workflow_has_changes_and_save()
+        step = self.workflow_populator.download_workflow(workflow_id)["steps"]["0"]
+        assert step["annotation"] == "unrelated edit"
+        assert step.get("in") == {"parameter": {"default": 7}}
+        assert parameter_input.wait_for_value() == "7"
+
+        parameter_input.wait_for_and_clear_and_send_keys("3")
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.assert_workflow_has_changes_and_save()
+        step = self.workflow_populator.download_workflow(workflow_id)["steps"]["0"]
+        assert step.get("in") is None
+        assert json.loads(step["tool_state"])["parameter"] == "3"
 
     @selenium_test
     def test_non_data_connections(self):
@@ -961,10 +1021,9 @@ steps:
         annotation = "best_practices_input_label"
         self.workflow_create_new(annotation=annotation)
         self.workflow_editor_add_input(item_name="data_input")
-        editor.tool_bar.best_practices.wait_for_and_click()
+        assert self.workflow_editor_best_practices()["input metadata"] == "warning"
+        self.screenshot("workflow_editor_best_practices_input_metadata")
         best_practices = editor.best_practices
-        section_element = best_practices.section_input_metadata.wait_for_present()
-        assert section_element.get_attribute("data-lint-status") == "warning"
         item = best_practices.item_input_metadata(index=0)
         element = item.wait_for_present()
         assert element.get_attribute("data-missing-label") == "true"
@@ -973,7 +1032,6 @@ steps:
         item.wait_for_and_click()
         self.workflow_editor_set_node_label("best practice input")
 
-        # editor.tool_bar.best_practices.wait_for_and_click()
         element = item.wait_for_present()
         assert element.get_attribute("data-missing-label") == "false"
         assert element.get_attribute("data-missing-annotation") == "true"
@@ -991,7 +1049,7 @@ steps:
     def test_best_practices_dangling_conditional_gate(self):
         editor = self.components.workflow_editor
         self.open_in_workflow_editor(WORKFLOW_WHEN_NOT_CONNECTED)
-        editor.tool_bar.best_practices.wait_for_and_click()
+        self.workflow_editor_open_best_practices()
         best_practices = editor.best_practices
         section_element = best_practices.section_conditional_gates.wait_for_present()
         assert section_element.get_attribute("data-lint-status") == "warning"
@@ -1008,6 +1066,33 @@ steps:
             assert section_element.get_attribute("data-lint-status") == "ok"
 
         assert_linting_conditional_gates_okay()
+
+    @selenium_test
+    def test_best_practices_extract_untyped_rename_parameter(self):
+        editor = self.components.workflow_editor
+        # No auto layout: it marks the workflow changed and the refactor would add a save-first confirm.
+        self.open_in_workflow_editor(WORKFLOW_RENAME_ON_REPLACEMENT_PARAM, auto_layout=False)
+        # Refactors are silently dropped while the workflow is still loading.
+        editor.canvas_loading.wait_for_absent()
+        self.workflow_editor_open_best_practices()
+        best_practices = editor.best_practices
+        section_element = best_practices.section_formal_inputs.wait_for_present()
+        assert section_element.get_attribute("data-lint-status") == "warning"
+        item = best_practices.item_formal_input(index=0)
+        assert "replaceme" in item.wait_for_present().text
+        self.screenshot("workflow_editor_best_practices_untyped_parameter")
+
+        item.wait_for_and_click()
+        self.components.confirm_dialog.ok_button.wait_for_and_click()
+        editor.node._(label="replaceme").wait_for_present()
+
+        @retry_assertion_during_transitions
+        def assert_linting_formal_inputs_okay():
+            section_element = best_practices.section_formal_inputs.wait_for_present()
+            assert section_element.get_attribute("data-lint-status") == "ok"
+
+        assert_linting_formal_inputs_okay()
+        self.screenshot("workflow_editor_best_practices_untyped_parameter_extracted")
 
     @selenium_test
     def test_rendering_rules_workflow_1(self):
@@ -1697,10 +1782,10 @@ steps:
         editor.configure_output(output="output").wait_for_visible()
         editor.email_notification.assert_absent()
         editor.output_cleanup.assert_absent()
-        # A tool step does run a job, so it still gets both.
+        # Tool steps still offer cleanup, but email actions have been retired.
         editor.node._(label="branch_a").wait_for_and_click()
-        editor.email_notification.wait_for_visible()
         editor.output_cleanup.wait_for_visible()
+        editor.email_notification.assert_absent()
 
     @selenium_test
     def test_pick_value_compact_on_disconnect(self):
@@ -1811,7 +1896,7 @@ steps:
         # Make sure the when input is still shown
         conditional_node.input_terminal(name="when").wait_for_present()
         # Best practices flag the gate that reads nothing
-        editor.tool_bar.best_practices.wait_for_and_click()
+        self.workflow_editor_open_best_practices()
         section_element = editor.best_practices.section_conditional_gates.wait_for_present()
         assert section_element.get_attribute("data-lint-status") == "warning"
 
@@ -1848,6 +1933,34 @@ steps:
         self.assert_modal_has_text("Using default: '1'")
         self.screenshot("workflow_editor_invalid_state")
         self.workflow_editor_dismiss_state_upgrade_modal()
+
+    @selenium_test
+    def test_editor_filled_defaults_note(self):
+        self._open_workflow_with_missing_defaults()
+        editor = self.components.workflow_editor
+        self.assert_modal_has_text("Galaxy filled in")
+        editor.state_upgrade_filled_defaults_toggle.wait_for_and_click()
+        self.assert_modal_has_text("Default for 'Randomly select': '1'.")
+        self.screenshot("workflow_editor_filled_defaults")
+        # the note alone is not a change to save
+        editor.save_button.wait_for_present()
+        assert editor.save_button.has_class("g-disabled")
+        editor.state_upgrade_modal_ok.wait_for_and_click()
+        editor.state_upgrade_modal.wait_for_absent_or_hidden()
+        self.assert_workflow_has_changes_and_save()
+        # the saved workflow stores the defaults, so reopening it shows no note
+        self.workflow_index_open()
+        self.components.workflows.edit_button.wait_for_and_click()
+        editor.canvas_body.wait_for_visible()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        editor.state_upgrade_modal.assert_absent_or_hidden()
+
+    def _open_workflow_with_missing_defaults(self):
+        self.workflow_populator.upload_yaml_workflow(
+            WORKFLOW_WITH_MISSING_DEFAULTS, client_convert=False, fill_defaults=False
+        )
+        self.workflow_index_open()
+        self.components.workflows.edit_button.wait_for_and_click()
 
     @selenium_test
     def test_missing_tools(self):

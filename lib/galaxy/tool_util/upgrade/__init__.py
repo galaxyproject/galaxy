@@ -13,10 +13,10 @@ from typing import (
     Any,
     cast,
     Literal,
+    NotRequired,
 )
 
 from typing_extensions import (
-    NotRequired,
     TypedDict,
 )
 

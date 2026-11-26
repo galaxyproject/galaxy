@@ -82,6 +82,7 @@ from .state_handler_factory import build_state_handlers
 
 if TYPE_CHECKING:
     from galaxy.app import GalaxyManagerApplication
+    from galaxy.job_execution.compute_environment import ComputeEnvironment
     from galaxy.jobs import (
         JobWrapper,
         MinimalJobWrapper,
@@ -103,6 +104,10 @@ GALAXY_LIB_ADJUST_TEMPLATE = """GALAXY_LIB="%s"; if [ "$GALAXY_LIB" != "None" ];
 GALAXY_VENV_TEMPLATE = """GALAXY_VIRTUAL_ENV="%s"; if [ "$GALAXY_VIRTUAL_ENV" != "None" -a -z "$VIRTUAL_ENV" -a -f "$GALAXY_VIRTUAL_ENV/bin/activate" ]; then . "$GALAXY_VIRTUAL_ENV/bin/activate"; fi;"""
 
 
+class ContainerRequiredException(Exception):
+    """No container was found for a job that requires one."""
+
+
 class RunnerParams(ParamsWithSpecs):
     def _param_unknown_error(self, name):
         raise Exception(JOB_RUNNER_PARAMETER_UNKNOWN_MESSAGE % name)
@@ -112,6 +117,15 @@ class RunnerParams(ParamsWithSpecs):
 
     def _param_vaildation_error(self, name, value):
         raise Exception(JOB_RUNNER_PARAMETER_VALIDATION_FAILED_MESSAGE % name)
+
+
+def _tool_environment_sets_home(job_wrapper: "MinimalJobWrapper") -> bool:
+    """Whether the tool or a destination ``tool_env`` entry exports HOME into the container."""
+    tool = job_wrapper.tool
+    assert tool
+    return "HOME" in job_wrapper.job_destination.tool_env_names or any(
+        variable.get("name") == "HOME" for variable in tool.environment_variables
+    )
 
 
 class BaseJobRunner:
@@ -262,11 +276,18 @@ class BaseJobRunner:
 
     def shutdown(self):
         """Attempts to gracefully shut down the worker threads"""
+        self._stop_worker_threads()
+        self._join_worker_threads()
+
+    def _stop_worker_threads(self) -> None:
+        """Tell the worker threads to stop once their current work item is done."""
         log.info("%s: Sending stop signal to %s job worker threads", self.runner_name, len(self.work_threads))
         self._should_stop = True
         for _ in range(len(self.work_threads)):
             self.work_queue.put((STOP_SIGNAL, None))
 
+    def _join_worker_threads(self) -> None:
+        """Wait up to ``monitor_thread_join_timeout`` seconds for the worker threads to exit."""
         if (join_timeout := self.app.config.monitor_thread_join_timeout) > 0:
             log.info("Waiting up to %d seconds for job worker threads to shutdown...", join_timeout)
             start = time.time()
@@ -423,8 +444,6 @@ class BaseJobRunner:
         stream_stdout_stderr=False,
     ):
         container = self._find_container(job_wrapper)
-        if not container and job_wrapper.requires_containerization:
-            raise Exception("Failed to find a container when required, contact Galaxy admin.")
         metadata_container = self._get_metadata_container(job_wrapper)
         return build_command(
             self,
@@ -631,6 +650,7 @@ class BaseJobRunner:
         compute_tool_directory: str | None = None,
         compute_job_directory: str | None = None,
         compute_tmp_directory: str | None = None,
+        compute_environment: "ComputeEnvironment | None" = None,
     ):
         job_directory_type: Literal["galaxy", "pulsar"] = "galaxy" if compute_working_directory is None else "pulsar"
         if not compute_working_directory:
@@ -646,6 +666,10 @@ class BaseJobRunner:
 
         if not compute_tmp_directory:
             compute_tmp_directory = job_wrapper.tmp_directory()
+
+        # The job script exports HOME from the compute environment's home directory,
+        # containers must use the same directory.
+        home_directory = (compute_environment or job_wrapper).home_directory()
 
         guest_ports = job_wrapper.guest_ports
         tool_info = ToolInfo(
@@ -663,7 +687,8 @@ class BaseJobRunner:
             tool_directory=compute_tool_directory,
             job_directory=compute_job_directory,
             tmp_directory=compute_tmp_directory,
-            home_directory=job_wrapper.home_directory(),
+            home_directory=home_directory,
+            tool_environment_sets_home=_tool_environment_sets_home(job_wrapper),
             job_directory_type=job_directory_type,
             output_paths=get_disk_paths(self.app.object_store) if job_directory_type == "galaxy" else set(),
         )
@@ -672,6 +697,10 @@ class BaseJobRunner:
         container = self.app.container_finder.find_container(tool_info, destination_info, job_info)
         if container:
             job_wrapper.set_container(container)
+        elif job_wrapper.requires_containerization:
+            # Checked here rather than in build_command_line so that runners building
+            # their own command lines (e.g. Pulsar) enforce it too.
+            raise ContainerRequiredException("Failed to find a container when required, contact Galaxy admin.")
         return container
 
     def _get_metadata_container(
@@ -743,12 +772,21 @@ class BaseJobRunner:
             # full_status currently only passed in pulsar runner,
             # but might be useful for other runners in the future.
             full_status = full_status or {}
-            tool_stdout = full_status.get("stdout")
-            tool_stderr = full_status.get("stderr")
             fail_message = getattr(job_state, "fail_message", message)
             job_state.job_wrapper.fail(
-                fail_message, tool_stdout=tool_stdout, tool_stderr=tool_stderr, exception=exception
+                fail_message,
+                tool_stdout=full_status.get("stdout"),
+                tool_stderr=full_status.get("stderr"),
+                exit_code=full_status.get("returncode"),
+                job_stdout=full_status.get("job_stdout"),
+                job_stderr=full_status.get("job_stderr"),
+                exception=exception,
+                job_metrics_directory=self._fail_job_metrics_directory(job_state.job_wrapper),
             )
+
+    def _fail_job_metrics_directory(self, job_wrapper: "MinimalJobWrapper") -> str | None:
+        """Where a failed job's metrics are collected from, ``None`` for the job's working directory."""
+        return None
 
     def mark_as_resubmitted(self, job_state: "JobState", info: str | None = None):
         job_state.job_wrapper.mark_as_resubmitted(info=info)
@@ -775,6 +813,18 @@ class BaseJobRunner:
         except Exception:
             log.exception("(%s) Failed to read remote tool evaluation error", job_wrapper.get_id_tag())
             return None
+
+    def _resubmit_for_detected_state(self, job_state: "JobState", check_output_detected_state: str) -> bool:
+        """Offer a job whose tool output indicates failure to the resubmit handler, returns whether it handled the job."""
+        if check_output_detected_state == DETECTED_JOB_STATE.OK:
+            return False
+        job_state.runner_state = (
+            JobState.runner_states.MEMORY_LIMIT_REACHED
+            if check_output_detected_state == DETECTED_JOB_STATE.OUT_OF_MEMORY_ERROR
+            else JobState.runner_states.TOOL_DETECT_ERROR
+        )
+        self._handle_runner_state("failure", job_state)
+        return job_state.runner_state_handled
 
     def _finish_or_resubmit_job(self, job_state: "JobState", job_stdout, job_stderr, job_id=None, external_job_id=None):
         job_wrapper = job_state.job_wrapper
@@ -848,15 +898,9 @@ class BaseJobRunner:
             self.sa_session.add(job)
             self.sa_session.commit()
 
-            if not job_ok:
-                job_runner_state = JobState.runner_states.TOOL_DETECT_ERROR
-                if check_output_detected_state == DETECTED_JOB_STATE.OUT_OF_MEMORY_ERROR:
-                    job_runner_state = JobState.runner_states.MEMORY_LIMIT_REACHED
-                job_state.runner_state = job_runner_state
-                self._handle_runner_state("failure", job_state)
+            if self._resubmit_for_detected_state(job_state, check_output_detected_state):
                 # Was resubmitted or something - I think we are done with it.
-                if job_state.runner_state_handled:
-                    return
+                return
 
             if stdio_errors:
                 # Finishing may require metadata that was never produced. Fail with the

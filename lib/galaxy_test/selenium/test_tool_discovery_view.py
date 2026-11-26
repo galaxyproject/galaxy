@@ -1,3 +1,8 @@
+from urllib.parse import (
+    parse_qs,
+    urlparse,
+)
+
 from galaxy.util.unittest_utils import transient_failure
 from .framework import (
     playwright_only,
@@ -80,6 +85,51 @@ class TestToolDiscoveryViewAnonymous(SeleniumTestCase):
         tools_list._.wait_for_absent()
         self.screenshot("tools_list_navigated_to_tool")
 
+    @selenium_test
+    def test_tool_discovery_tag_picker_filters_results(self):
+        tools_list = self._open_tools_list_with_filter_failed()
+        filter_failed_card = tools_list.tool_card(tool_id=self.FILTER_FAILED_TOOL_ID)
+
+        self._pick_tool_tag(tools_list, "Collection Operations")
+        tools_list.tag_chip_remove(tag="Collection Operations").wait_for_visible()
+        assert tools_list.search_input.wait_for_value() == 'filter failed tag:"Collection Operations"'
+        filter_failed_card.wait_for_visible()
+        self.screenshot("tools_list_tag_picker_selected")
+
+        self._pick_tool_tag(tools_list, "Get Data")
+        tools_list.tag_chip_remove(tag="Get Data").wait_for_visible()
+        filter_failed_card.wait_for_absent()
+
+        tools_list.tag_chip_remove(tag="Get Data").wait_for_and_click()
+        tools_list.tag_chip_remove(tag="Get Data").wait_for_absent()
+        filter_failed_card.wait_for_visible()
+
+        tools_list.tag_chip_remove(tag="Collection Operations").wait_for_and_click()
+        tools_list.tag_chip_remove(tag="Collection Operations").wait_for_absent()
+        assert tools_list.search_input.wait_for_value() == "filter failed"
+
+    @selenium_test
+    def test_tool_discovery_tag_picker_disabled_for_boolean_search(self):
+        self.home()
+        self.components.tool_panel.discover_tools_link.wait_for_and_click()
+        tools_list = self.components.tools_list
+        tools_list._.wait_for_visible()
+        tools_list.search_input.wait_for_and_send_keys('tag:"Get Data" OR tag:"Collection Operations"')
+        toggle = tools_list.tag_picker_toggle
+        self._wait_on(
+            lambda: toggle.wait_for_present().get_attribute("disabled") is not None,
+            "tag picker to be disabled for a boolean search",
+        )
+        self.screenshot("tools_list_tag_picker_disabled")
+
+    def _pick_tool_tag(self, tools_list, tag):
+        toggle = tools_list.tag_picker_toggle.wait_for_visible()
+        # The picker stays open after a pick, and clicking its toggle again would close it
+        if toggle.get_attribute("aria-expanded") != "true":
+            toggle.click()
+        tools_list.tag_picker_search.wait_for_and_clear_and_send_keys(tag)
+        tools_list.tag_picker_option(tag=tag).wait_for_and_click()
+
     @playwright_only("Validates /tools/list tag autocomplete behavior with Playwright backend.")
     @selenium_test
     def test_tools_list_tag_autocomplete_search(self):
@@ -102,7 +152,13 @@ class TestToolDiscoveryViewAnonymous(SeleniumTestCase):
                 break
 
         assert matching_index is not None, "Expected Get Data autocomplete suggestion to be present."
-        suggestions.nth(matching_index).click()
+        # The unfiltered list starts with the Get Data section, so the checks below compare
+        # the rendered cards with the hits of the search the pick triggers.
+        with self.page.expect_response(is_get_data_tag_search) as response_info:
+            suggestions.nth(matching_index).click()
+        response = response_info.value
+        assert response.ok, f"Tag search failed: {response.status} {response.text()}"
+        hit_ids = response.json()
 
         search_input = self.page.locator('.tools-list [data-description="filter text input"]')
         self._wait_on(
@@ -110,7 +166,31 @@ class TestToolDiscoveryViewAnonymous(SeleniumTestCase):
             'tools/list search input to contain tag:"Get Data"',
         )
 
-        tools_list.tool_card(tool_id="upload1").wait_for_visible()
+        # Hits for a tag-only query all score the same, so their order is the order the
+        # server indexed them in, which changes between server processes. The list renders
+        # only its first few cards, so check the cards it does render rather than one tool:
+        # they are hits of the search, in the order of the hits, and tagged Get Data.
+        tool_cards = self.page.locator('.tools-list [id^="g-card-content-"]')
+
+        def search_hits_rendered():
+            cards = tool_cards.evaluate_all("""cards => cards.map(card => ({
+                    id: card.id.slice("g-card-content-".length),
+                    tags: [...card.querySelectorAll(".curated-tag")].map(tag => tag.textContent.trim()),
+                }))""")
+            remaining_hit_ids = iter(hit_ids)
+            return (
+                bool(cards)
+                and all(card["id"] in remaining_hit_ids for card in cards)
+                and all("Get Data" in card["tags"] for card in cards)
+            )
+
+        self._wait_on(search_hits_rendered, "tools/list to render the Get Data tag search hits")
+
+
+def is_get_data_tag_search(response) -> bool:
+    url = urlparse(response.url)
+    queries = parse_qs(url.query).get("q", [])
+    return url.path.endswith("/api/tools") and any('tool_tags:("get data")' in query for query in queries)
 
 
 class TestToolDiscoveryViewLoggedIn(SeleniumTestCase):

@@ -22,12 +22,9 @@ from boltons.iterutils import remap
 from packaging.version import Version
 
 from galaxy import model
-from galaxy.exceptions import (
-    ToolInputsNotOKException,
-    ToolInputsNotReadyException,
-)
+from galaxy.exceptions import ToolInputsNotOKException
 from galaxy.model import (
-    PostJobAction,
+    RunNotificationRequest,
     ToolRequest,
 )
 from galaxy.model.dataset_collections.matching import MatchingCollections
@@ -47,12 +44,17 @@ from galaxy.tools.execution_helpers import (
     on_text_for_dataset_and_collections,
     ToolExecutionCache,
 )
+from galaxy.tools.job_parameters import DATA_MANAGER_MODE
 from galaxy.tools.parameters import visit_input_values
 from galaxy.tools.parameters.workflow_utils import (
     is_runtime_value,
     NO_REPLACEMENT,
 )
 from galaxy.util.json import swap_inf_nan
+from galaxy.workflow.scheduling_dependencies import (
+    ToolInputsNotReadyWithDependencies,
+    unpopulated_collection_dependencies,
+)
 from ._types import (
     ToolRequestT,
     ToolStateJobInstancePopulatedT,
@@ -107,7 +109,7 @@ class MappingParameters(NamedTuple):
         produces zero jobs (e.g. mapping over an empty collection),
         falls back to a resolved copy of ``param_template``: batch
         wrappers and raw ``{"src", "id"}`` refs are replaced with
-        HDCA/DCE ORM objects. Raises :class:`ToolInputsNotReadyException`
+        HDCA/DCE ORM objects. Raises :class:`~galaxy.exceptions.ToolInputsNotReadyException`
         if a referenced collection exists but is not populated yet, so
         the scheduler retries instead of surfacing the cryptic
         "Referenced input parameter is not a collection." error.
@@ -156,13 +158,19 @@ def _resolve_collection_ref(
         if hdca is None:
             return raw_fallback
         if not hdca.collection.populated_optimized:
-            raise ToolInputsNotReadyException("An input collection is not populated.")
+            raise ToolInputsNotReadyWithDependencies(
+                "An input collection is not populated.",
+                dependencies=unpopulated_collection_dependencies(hdca.collection),
+            )
         return hdca
     dce = sa_session.get(model.DatasetCollectionElement, decoded)
     if dce is None or dce.child_collection is None:
         return raw_fallback
     if not dce.child_collection.populated_optimized:
-        raise ToolInputsNotReadyException("An input collection is not populated.")
+        raise ToolInputsNotReadyWithDependencies(
+            "An input collection is not populated.",
+            dependencies=unpopulated_collection_dependencies(dce.child_collection),
+        )
     return dce
 
 
@@ -222,6 +230,7 @@ def execute(
     max_num_jobs: int | None = None,
     job_callback: JobCallbackT | None = DEFAULT_JOB_CALLBACK,
     completed_jobs: CompletedJobsT | None = None,
+    recorded_job_indexes: set[int] | None = None,
     workflow_resource_parameters: WorkflowResourceParametersT | None = None,
     validate_outputs: bool = False,
 ) -> "ExecutionTracker":
@@ -247,6 +256,7 @@ def execute(
         completed_jobs,
         workflow_resource_parameters,
         validate_outputs,
+        recorded_job_indexes,
     )
 
 
@@ -267,6 +277,7 @@ def _execute(
     completed_jobs: dict[int, model.Job | None],
     workflow_resource_parameters: dict[str, Any] | None,
     validate_outputs: bool,
+    recorded_job_indexes: set[int] | None = None,
 ) -> "ExecutionTracker":
     if max_num_jobs is not None:
         assert invocation_step is not None
@@ -283,7 +294,13 @@ def _execute(
         )
     else:
         execution_tracker = WorkflowStepExecutionTracker(
-            trans, tool, mapping_params, collection_info, invocation_step, completed_jobs=completed_jobs
+            trans,
+            tool,
+            mapping_params,
+            collection_info,
+            invocation_step,
+            completed_jobs=completed_jobs,
+            recorded_job_indexes=recorded_job_indexes,
         )
     execution_cache = ToolExecutionCache(trans)
 
@@ -293,8 +310,8 @@ def _execute(
         )
         params = execution_slice.param_combination
         request_state = mapping_params.param_template
-        if "__data_manager_mode" in request_state:
-            params["__data_manager_mode"] = request_state["__data_manager_mode"]
+        if DATA_MANAGER_MODE in request_state:
+            params[DATA_MANAGER_MODE] = request_state[DATA_MANAGER_MODE]
         if "__use_cached_job__" in request_state:
             params["__use_cached_job__"] = request_state["__use_cached_job__"]
         if workflow_invocation_uuid:
@@ -366,7 +383,7 @@ def _execute(
     execution_slice = None
     job_datasets: dict[str, list[model.DatasetInstance]] = {}  # job: list of dataset instances created by job
 
-    for i, execution_slice in enumerate(execution_tracker.new_execution_slices()):
+    for execution_slice in execution_tracker.new_execution_slices():
         if max_num_jobs is not None and jobs_executed >= max_num_jobs:
             has_remaining_jobs = True
             break
@@ -376,7 +393,8 @@ def _execute(
                 slice_params = slice_params.input_state
 
             skip = slice_params.pop("__when_value__", None) is False
-            execute_single_job(execution_slice, completed_jobs[i], skip=skip)
+            # Slices skipped by the tracker make the loop position differ from job_index.
+            execute_single_job(execution_slice, completed_jobs.get(execution_slice.job_index), skip=skip)
             history = execution_slice.history or history
             jobs_executed += 1
 
@@ -493,6 +511,9 @@ class ExecutionTracker:
         self.output_collections = []
 
         self.implicit_collections = {}
+        # Tracked separately from the implicit collections, a step whose
+        # outputs are all filtered out has none but still records its jobs.
+        self._implicit_collection_jobs: model.ImplicitCollectionJobs | None = None
 
     @property
     def param_combinations(self) -> list[ToolStateJobInstancePopulatedT]:
@@ -525,12 +546,26 @@ class ExecutionTracker:
             tag_handler.apply_item_tags(user=user, item=hda, tags_str=tags_str, flush=False)
         for _, hdca in self.output_collections:
             tag_handler.apply_item_tags(user=user, item=hdca, tags_str=tags_str, flush=False)
+        for hdca in self.implicit_collections.values():
+            tag_handler.apply_item_tags(user=user, item=hdca, tags_str=tags_str, flush=False)
 
-    def apply_email_action(self, user) -> None:
+    def request_completion_notification(self, user, history) -> None:
+        if not (self.trans.app.config.enable_notification_system or self.trans.app.config.smtp_server):
+            return
         if user is None:
-            raise Exception("Anonymously run jobs cannot send an email notification.")
-        for job in self.successful_jobs:
-            job.add_post_job_action(PostJobAction("EmailAction"))
+            raise Exception("Anonymously run jobs cannot request completion notifications.")
+        collection_jobs = self.implicit_collection_jobs
+        if collection_jobs is not None:
+            self.trans.sa_session.add(
+                RunNotificationRequest(
+                    user=user,
+                    history=history,
+                    implicit_collection_jobs=collection_jobs,
+                )
+            )
+        else:
+            for job in self.successful_jobs:
+                self.trans.sa_session.add(RunNotificationRequest(user=user, history=job.history, job=job))
 
     @staticmethod
     def _collection_info_to_collection_hids_element_ids(
@@ -732,18 +767,49 @@ class ExecutionTracker:
                 assoc.output_name = output_name
                 tool_request.implicit_collections.append(assoc)
             trans.sa_session.add(collection_instance)
+        trans.sa_session.add(implicit_collection_jobs)
         # Needed to flush the association created just above with
         # job.add_output_dataset_collection.
         trans.sa_session.commit()
         self.implicit_collections = collection_instances
+        self._implicit_collection_jobs = implicit_collection_jobs
 
     @property
-    def implicit_collection_jobs(self):
-        # TODO: refactor to track this properly maybe?
+    def implicit_collection_jobs(self) -> model.ImplicitCollectionJobs | None:
+        if self._implicit_collection_jobs is not None:
+            return self._implicit_collection_jobs
         if self.implicit_collections:
-            return next(iter(self.implicit_collections.values())).implicit_collection_jobs
-        else:
-            return None
+            first_collection = next(iter(self.implicit_collections.values()))
+            implicit_collection_jobs: model.ImplicitCollectionJobs | None = first_collection.implicit_collection_jobs
+            return implicit_collection_jobs
+        return None
+
+    def _copied_from_implicit_collections(self, trans) -> dict[str, model.HistoryDatasetCollectionAssociation]:
+        """Return the implicit collections this map-over copied, by output name.
+
+        Each job must be copied from the same-order-index job of one earlier map-over.
+        """
+        implicit_collection_jobs = self.implicit_collection_jobs
+        if implicit_collection_jobs is None or not self.mapping_params.param_template.get("__use_cached_job__"):
+            return {}
+        copied_from_job_ids = implicit_collection_jobs.job_attribute_by_order_index("copied_from_job_id")
+        if not copied_from_job_ids or None in copied_from_job_ids.values():
+            return {}
+        source_job = trans.sa_session.get(model.Job, next(iter(copied_from_job_ids.values())))
+        if source_job is None:
+            return {}
+        source_collections = {
+            assoc.name: assoc.dataset_collection_instance for assoc in source_job.output_dataset_collection_instances
+        }
+        source_implicit_collection_jobs = {hdca.implicit_collection_jobs for hdca in source_collections.values()}
+        if len(source_implicit_collection_jobs) != 1:
+            return {}
+        source_icj = source_implicit_collection_jobs.pop()
+        if source_icj is None:
+            return {}
+        if source_icj.job_attribute_by_order_index("id") != copied_from_job_ids:
+            return {}
+        return source_collections
 
     def finalize_dataset_collections(self, trans: "ProvidesHistoryContext"):
         # TODO: this probably needs to be reworked some, we should have the collection methods
@@ -751,44 +817,26 @@ class ExecutionTracker:
         # be finalizing collections to a depth of self.collection_info.structure. So for instance
         # if you are mapping a list over a tool that dynamically generates lists - we won't actually
         # know the structure of the inner list until after its job is complete.
+        implicit_collection_jobs = self.implicit_collection_jobs
         if self.failed_jobs > 0:
-            for i, implicit_collection in enumerate(self.implicit_collections.values()):
-                if i == 0:
-                    implicit_collection_jobs = implicit_collection.implicit_collection_jobs
-                    implicit_collection_jobs.populated_state = "failed"
-                    trans.sa_session.add(implicit_collection_jobs)
+            if implicit_collection_jobs is not None:
+                implicit_collection_jobs.populated_state = "failed"
+                trans.sa_session.add(implicit_collection_jobs)
+            for implicit_collection in self.implicit_collections.values():
                 implicit_collection.collection.handle_population_failed(
                     "One or more jobs failed during dataset initialization."
                 )
                 trans.sa_session.add(implicit_collection.collection)
         else:
-            completed_collections = {}
-            if (
-                self.completed_jobs
-                and self.completed_jobs[0]
-                and self.implicit_collection_jobs
-                and len(self.completed_jobs) == len(self.successful_jobs)
-            ):
-                # If the same number of implicit collection jobs went into
-                # creating the collection and those jobs are all cached
-                # the HDCA has effectively been copied.
-                # We mark this here so that the job cache query in subsequent
-                # jobs considers this to be a valid cached input.
-                completed_job_ids = {job.id for job in self.completed_jobs.values() if job}
-                completed_implicit_jobs_copied_from = set(
-                    self.implicit_collection_jobs.get_job_attributes(["copied_from_job_id"]).all()
-                )
-                if completed_implicit_jobs_copied_from <= completed_job_ids:
-                    completed_collections = {
-                        jtodca.name: jtodca.dataset_collection_instance
-                        for jtodca in self.completed_jobs[0].output_dataset_collection_instances
-                    }
-            implicit_collection = None
-            for i, implicit_collection in enumerate(self.implicit_collections.values()):
-                if i == 0:
-                    implicit_collection_jobs = implicit_collection.implicit_collection_jobs
-                    implicit_collection_jobs.populated_state = "ok"
-                    trans.sa_session.add(implicit_collection_jobs)
+            if implicit_collection_jobs is not None:
+                implicit_collection_jobs.populated_state = "ok"
+                trans.sa_session.add(implicit_collection_jobs)
+            # If every job of this map-over was copied from the jobs of an
+            # earlier map-over, the HDCA has effectively been copied. The jobs
+            # may have been created over several scheduling iterations, so this
+            # looks at all recorded jobs rather than the ones created here.
+            completed_collections = self._copied_from_implicit_collections(trans)
+            for implicit_collection in self.implicit_collections.values():
                 collection_info = self.collection_info
                 assert collection_info
                 implicit_collection.collection.finalize(
@@ -843,13 +891,9 @@ class ExecutionTracker:
         self.output_datasets.extend(outputs)
         for job_output in job.output_dataset_collection_instances:
             self.output_collections.append((job_output.name, job_output.dataset_collection_instance))
-        if self.implicit_collections:
-            implicit_collection_jobs = None
-            for output_name, collection_instance in self.implicit_collections.items():
-                job.add_output_dataset_collection(output_name, collection_instance)
-                if implicit_collection_jobs is None:
-                    implicit_collection_jobs = collection_instance.implicit_collection_jobs
-
+        for output_name, collection_instance in self.implicit_collections.items():
+            job.add_output_dataset_collection(output_name, collection_instance)
+        if (implicit_collection_jobs := self.implicit_collection_jobs) is not None:
             job_assoc = model.ImplicitCollectionJobsJobAssociation()
             job_assoc.order_index = execution_slice.job_index
             job_assoc.implicit_collection_jobs = implicit_collection_jobs
@@ -917,9 +961,11 @@ class WorkflowStepExecutionTracker(ExecutionTracker):
         collection_info: MatchingCollections | None,
         invocation_step: model.WorkflowInvocationStep,
         completed_jobs: CompletedJobsT | None = None,
+        recorded_job_indexes: set[int] | None = None,
     ):
         super().__init__(trans, tool, mapping_params, collection_info, completed_jobs=completed_jobs)
         self.invocation_step = invocation_step
+        self.recorded_job_indexes = recorded_job_indexes or set()
 
     def record_success(self, execution_slice, job, outputs):
         super().record_success(execution_slice, job, outputs)
@@ -929,6 +975,11 @@ class WorkflowStepExecutionTracker(ExecutionTracker):
             self.invocation_step.job = job
 
     def new_collection_execution_slices(self):
+        # A scheduling iteration capped by max_num_jobs leaves the remaining
+        # slices for later iterations. Skip the slices that earlier iterations
+        # already turned into jobs. Their output elements are populated, but a
+        # job cache hit would otherwise yield them again, so a capped
+        # iteration would never get past the first batch.
         for job_index, (
             param_combination,
             validated_param_combination,
@@ -936,6 +987,8 @@ class WorkflowStepExecutionTracker(ExecutionTracker):
         ) in enumerate(
             zip(self.param_combinations, self.validated_param_combinations, self.walk_implicit_collections())
         ):
+            if job_index in self.recorded_job_indexes:
+                continue
             completed_job = self.completed_jobs and self.completed_jobs[job_index]
             if not completed_job:
                 found_result = False
@@ -964,6 +1017,7 @@ class WorkflowStepExecutionTracker(ExecutionTracker):
                 assert hasattr(implicit_collection, "history_content_type")  # make sure it is an HDCA and not a DC
                 collections[output_assoc.output_name] = output_assoc.dataset_collection
             self.implicit_collections = collections
+            self._implicit_collection_jobs = self.invocation_step.implicit_collection_jobs
         self.invocation_step.implicit_collection_jobs = self.implicit_collection_jobs
 
 

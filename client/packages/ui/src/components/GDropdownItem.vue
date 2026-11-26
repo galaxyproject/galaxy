@@ -21,6 +21,8 @@ const props = withDefaults(
         variant?: string;
         /** Title/tooltip text */
         title?: string;
+        /** Leave the menu open after a click, for menus where several items are picked in a row */
+        keepOpen?: boolean;
     }>(),
     {
         to: undefined,
@@ -30,6 +32,7 @@ const props = withDefaults(
         disabled: false,
         variant: undefined,
         title: undefined,
+        keepOpen: false,
     },
 );
 
@@ -56,7 +59,9 @@ function onClick(event: MouseEvent) {
         event.preventDefault();
     }
     emit("click", event);
-    hideDropdown();
+    if (!props.keepOpen) {
+        hideDropdown();
+    }
 }
 </script>
 

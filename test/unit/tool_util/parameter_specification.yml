@@ -1987,6 +1987,33 @@ gx_conditional_boolean:
     - conditional_parameter:
         boolean_parameter: true
 
+gx_conditional_boolean_implicit:
+  # The XML boolean has checked="false" but only a <when value="true"> branch.
+  # The runtime loader supplies an empty false branch, which is also the default.
+  request_internal_valid:
+    - &implicit_boolean_false
+      input: {src: hda, id: 13}
+      conditional_parameter:
+        test_parameter: false
+    - input: {src: hda, id: 13}
+      conditional_parameter:
+        test_parameter: true
+        integer_parameter: 1
+    - input: {src: hda, id: 13}
+      conditional_parameter: {}
+    - input: {src: hda, id: 13}
+  request_internal_invalid:
+    # The explicit and default false branch cannot accept true-branch fields.
+    - input: {src: hda, id: 13}
+      conditional_parameter:
+        test_parameter: false
+        integer_parameter: 1
+    - input: {src: hda, id: 13}
+      conditional_parameter:
+        integer_parameter: 1
+  job_internal_valid:
+    - *implicit_boolean_false
+
 gx_conditional_boolean_checked:
   request_valid:
     # if no test parameter is defined, the default is 'checked' so the test

@@ -17,6 +17,8 @@ from galaxy.model import (
     WorkflowInvocationStep,
 )
 from galaxy.model.base import ensure_object_added_to_session
+from galaxy.model.dataset_collections.readiness import dataset_readiness
+from galaxy.model.orm.now import now
 from galaxy.schema.invocation import (
     CancelReason,
     FAILURE_REASONS_EXPECTED,
@@ -44,6 +46,12 @@ from galaxy.workflow.run_request import (
     workflow_run_config_to_request,
     WorkflowRunConfig,
 )
+from galaxy.workflow.scheduling_dependencies import (
+    DependencyType,
+    SchedulingDependencies,
+    SchedulingDependency,
+    unpopulated_collection_dependencies,
+)
 
 if TYPE_CHECKING:
     from galaxy.managers.context import ProvidesHistoryContext
@@ -67,7 +75,7 @@ def schedule(
     workflow: "Workflow",
     workflow_run_config: WorkflowRunConfig,
     workflow_invocation: WorkflowInvocation,
-) -> modules.SchedulingDependencies:
+) -> SchedulingDependencies:
     _outputs, _workflow_invocation, scheduling_dependencies = __invoke(
         trans, workflow, workflow_run_config, workflow_invocation
     )
@@ -80,7 +88,7 @@ def __invoke(
     workflow_run_config: WorkflowRunConfig,
     workflow_invocation: WorkflowInvocation | None = None,
     populate_state: bool = False,
-) -> tuple[WorkflowOutputsType, WorkflowInvocation, modules.SchedulingDependencies]:
+) -> tuple[WorkflowOutputsType, WorkflowInvocation, SchedulingDependencies]:
     """Run the supplied workflow in the supplied target_history."""
     if populate_state:
         modules.populate_module_and_state(
@@ -148,6 +156,8 @@ def queue_invoke(
         )
     workflow_invocation = workflow_run_config_to_request(trans, workflow_run_config, workflow)
     workflow_invocation.workflow = workflow
+    if trans.app.config.enable_notification_system or trans.app.config.smtp_server:
+        workflow_invocation.request_notifications()
     initial_state = model.WorkflowInvocation.states.NEW
     if workflow_run_config.requires_materialization:
         initial_state = model.WorkflowInvocation.states.REQUIRES_MATERIALIZATION
@@ -255,10 +265,18 @@ class WorkflowInvoker:
 
                     workflow_invocation.steps.append(workflow_invocation_step)
 
+                jobs_scheduled_before_step = self.progress.jobs_scheduled_this_iteration
                 incomplete_or_none = self._invoke_step(workflow_invocation_step)
                 if incomplete_or_none is False:
                     step_delayed = delayed_steps = True
                     workflow_invocation_step.state = "ready"
+                    if self.progress.jobs_scheduled_this_iteration > jobs_scheduled_before_step:
+                        # The step created jobs but hit the per-iteration cap.
+                        # The scheduler only revisits an invocation promptly
+                        # when its history or steps changed, and jobs whose
+                        # outputs are all filtered out add nothing to the
+                        # history, so record the progress on the step.
+                        workflow_invocation_step.update_time = now()
                     self.progress.mark_step_outputs_delayed(step, why="Not all jobs scheduled for state.")
                     self.progress.more_work = True
                 else:
@@ -359,7 +377,7 @@ class WorkflowInvoker:
                 )
                 raise modules.DelayedWorkflowEvaluation(
                     why=delayed_why,
-                    dependencies=[modules.SchedulingDependency(modules.DependencyType.JOB, job.id)],
+                    dependencies=[SchedulingDependency(DependencyType.JOB, job.id)],
                 )
 
             if job.state != job.states.OK:
@@ -414,7 +432,7 @@ class WorkflowProgress:
         when_values=None,
     ) -> None:
         self.outputs: dict[int, Any] = {}
-        self.tracked_dependencies: set[modules.SchedulingDependency] = set()
+        self.tracked_dependencies: set[SchedulingDependency] = set()
         self.untracked_delays: list[str] = []
         self.more_work = False
         self.module_injector = module_injector
@@ -572,7 +590,7 @@ class WorkflowProgress:
                 delayed_why = f"dependent collection [{replacement.id}] not yet populated with datasets"
                 raise modules.DelayedWorkflowEvaluation(
                     why=delayed_why,
-                    dependencies=modules.unpopulated_collection_dependencies(replacement.collection),
+                    dependencies=unpopulated_collection_dependencies(replacement.collection),
                 )
 
         if isinstance(replacement, model.DatasetCollection):
@@ -589,7 +607,9 @@ class WorkflowProgress:
             if isinstance(replacement, model.HistoryDatasetAssociation):
                 if not_yet_available(replacement):
                     raise modules.DelayedWorkflowEvaluation(
-                        dependencies=[modules.SchedulingDependency(modules.DependencyType.HDA, replacement.id)]
+                        dependencies=[
+                            SchedulingDependency(DependencyType.HDA, replacement.id, dataset_readiness(replacement))
+                        ]
                     )
                 if not is_data and not replacement.is_ok:
                     raise modules.FailWorkflowEvaluation(
@@ -603,7 +623,7 @@ class WorkflowProgress:
             else:
                 if not replacement.collection.populated:
                     raise modules.DelayedWorkflowEvaluation(
-                        dependencies=modules.unpopulated_collection_dependencies(replacement.collection)
+                        dependencies=unpopulated_collection_dependencies(replacement.collection)
                     )
                 pending = False
                 pending_dataset_instance = None
@@ -624,7 +644,11 @@ class WorkflowProgress:
                     assert pending_dataset_instance is not None
                     raise modules.DelayedWorkflowEvaluation(
                         dependencies=[
-                            modules.SchedulingDependency(modules.DependencyType.HDA, pending_dataset_instance.id)
+                            SchedulingDependency(
+                                DependencyType.HDA,
+                                pending_dataset_instance.id,
+                                dataset_readiness(pending_dataset_instance),
+                            )
                         ]
                     )
 
@@ -675,7 +699,7 @@ class WorkflowProgress:
         if step.label and step.type == "parameter_input" and "output" in outputs:
             output_value = outputs["output"]
             if output_value is not NO_REPLACEMENT:
-                self.runtime_replacements[step.label] = str(output_value)
+                self.runtime_replacements[step.label] = str(modules.replace_expression_json_dataset(output_value, step))
         invocation = invocation_step.workflow_invocation
         if not invocation.has_input_for_step(step.id):
             content = outputs.get("output", NO_REPLACEMENT)
@@ -812,50 +836,33 @@ class WorkflowProgress:
         when_values=None,
     ) -> "WorkflowProgress":
         subworkflow = subworkflow_invocation.workflow
+        if disconnected_input_steps := modules.disconnected_required_subworkflow_inputs(step, subworkflow):
+            raise modules.FailWorkflowEvaluation(
+                InvocationUnexpectedFailure(
+                    reason=FailureReason.unexpected_failure,
+                    workflow_step_id=step.id,
+                    details=modules.disconnected_subworkflow_inputs_message(disconnected_input_steps),
+                )
+            )
         subworkflow_inputs = {}
         for input_subworkflow_step in subworkflow.input_steps:
-            connection_found = False
             subworkflow_step_id = input_subworkflow_step.id
             input_connections = step.input_connections
             for input_connection in input_connections:
                 if input_connection.input_subworkflow_step_id == subworkflow_step_id:
-                    is_data = input_connection.output_step.type != "parameter_input"
+                    is_parameter = input_subworkflow_step.type == "parameter_input"
+                    is_data = input_connection.output_step.type != "parameter_input" and not is_parameter
                     replacement = self.replacement_for_connection(
                         input_connection,
                         is_data=is_data,
                     )
+                    if is_parameter and input_subworkflow_step.label:
+                        # Read expression.json now so an unreadable file delays this step,
+                        # not just the inner input step while other inner steps run. The
+                        # value is discarded; the labeled inner input step stores it.
+                        modules.replace_expression_json_dataset(replacement, step)
                     subworkflow_inputs[subworkflow_step_id] = replacement
-                    connection_found = True
                     break
-
-            if not input_subworkflow_step.input_optional and not connection_found:
-                # Check if input has a default value (matching pattern from run_request.py).
-                # A required input can be disconnected if it has a default value.
-                # Use sentinel object to distinguish "no default" from "default is None/empty".
-                default_not_set = object()
-                default_value = input_subworkflow_step.get_input_default_value(default_not_set)
-                has_default = default_value is not default_not_set
-
-                # Only raise error if there's no default value
-                if not has_default:
-                    if not input_connections:
-                        # TODO: Prevent this on import / runtime !
-                        raise modules.FailWorkflowEvaluation(
-                            InvocationUnexpectedFailure(
-                                reason=FailureReason.unexpected_failure,
-                                workflow_step_id=step.id,
-                                details="Subworkflow has disconnected required input.",
-                            )
-                        )
-
-                    raise modules.FailWorkflowEvaluation(
-                        InvocationFailureOutputNotFound(
-                            reason=FailureReason.output_not_found,
-                            workflow_step_id=step.id,
-                            output_name=input_connection.output_name,
-                            dependent_workflow_step_id=input_connection.output_step.id,
-                        )
-                    )
 
         return WorkflowProgress(
             subworkflow_invocation,
@@ -892,8 +899,8 @@ class WorkflowProgress:
         self.untracked_delays.extend(subworkflow_progress.untracked_delays)
         self.more_work = self.more_work or subworkflow_progress.more_work
 
-    def scheduling_dependencies(self) -> modules.SchedulingDependencies:
-        return modules.SchedulingDependencies(
+    def scheduling_dependencies(self) -> SchedulingDependencies:
+        return SchedulingDependencies(
             tracked=frozenset(self.tracked_dependencies),
             untracked=tuple(self.untracked_delays),
             more_work=self.more_work,

@@ -6,15 +6,20 @@ import { withPrefix } from "@/utils/redirect";
 import { errorMessageAsString } from "@/utils/simple-error";
 import { addSearchParams } from "@/utils/url";
 
+// Send logout_all only when true: unpatched servers treat any value, even "false", as true.
+function logoutAllParams(logoutAll) {
+    return logoutAll === true ? { logout_all: "true" } : {};
+}
+
 function userLogoutUrl(sessionCsrfToken, logoutAll) {
     return addSearchParams(withPrefix("/user/logout"), {
         session_csrf_token: sessionCsrfToken,
-        logout_all: String(logoutAll),
+        ...logoutAllParams(logoutAll),
     });
 }
 
-function authnzLogoutUrl(provider, logoutAll) {
-    const params = { logout_all: String(logoutAll) };
+function authnzLogoutUrl(sessionCsrfToken, provider, logoutAll) {
+    const params = { session_csrf_token: sessionCsrfToken, ...logoutAllParams(logoutAll) };
     if (provider) {
         params.provider = provider;
     }
@@ -35,7 +40,7 @@ export function userLogout(logoutAll = false) {
     const session_csrf_token = Galaxy.session_csrf_token;
     const provider = localStorage.getItem("galaxy-provider");
     const logoutRequest = Galaxy.config.enable_oidc
-        ? axios.get(authnzLogoutUrl(provider, logoutAll)).then((response) => {
+        ? axios.get(authnzLogoutUrl(session_csrf_token, provider, logoutAll)).then((response) => {
               if (hasAuthnzLogoutResponse(response)) {
                   return response;
               }

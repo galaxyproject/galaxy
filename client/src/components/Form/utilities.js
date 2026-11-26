@@ -387,6 +387,13 @@ function runValidator(validator, value) {
     return { isValid: true, message: null };
 }
 
+/** Whether a select input defaults to an empty string option
+ * @param{object} inputDef - Input definition; select options are [label, value, selected] tuples
+ */
+function defaultsToEmptyOption(inputDef) {
+    return inputDef.type == "select" && (inputDef.options ?? []).some((option) => option[1] === "" && option[2]);
+}
+
 /** Validates input parameters to identify issues before submitting a server request, where comprehensive validation is performed.
  * @param{dict}   index     - Index of input elements
  * @param{dict}   values    - Dictionary of parameter values
@@ -406,7 +413,7 @@ export function validateInputs(index, values, rejectEmptyRequiredInputs = false)
         if (isRequired && inputDef.type != "hidden") {
             if (
                 !isDefined(inputValue) ||
-                (rejectEmptyRequiredInputs && inputValue === "") ||
+                (rejectEmptyRequiredInputs && inputValue === "" && !defaultsToEmptyOption(inputDef)) ||
                 (Array.isArray(inputValue) && inputValue.length === 0)
             ) {
                 return [inputId, "Please provide a value for this option."];

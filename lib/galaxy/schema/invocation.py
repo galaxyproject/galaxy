@@ -1,5 +1,5 @@
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 from typing import (
     Annotated,
     Any,
@@ -78,11 +78,11 @@ InvocationIdField: EncodedDatabaseIdField = Field(
 )
 
 
-class WarningReason(str, Enum):
+class WarningReason(StrEnum):
     workflow_output_not_found = "workflow_output_not_found"
 
 
-class FailureReason(str, Enum):
+class FailureReason(StrEnum):
     dataset_failed = "dataset_failed"
     collection_failed = "collection_failed"
     job_failed = "job_failed"
@@ -107,10 +107,11 @@ FAILURE_REASONS_EXPECTED = (
     FailureReason.output_not_found,
     FailureReason.when_not_boolean,
     FailureReason.step_input_deleted,
+    FailureReason.workflow_parameter_invalid,
 )
 
 
-class CancelReason(str, Enum):
+class CancelReason(StrEnum):
     """Possible reasons for a cancelled workflow."""
 
     history_deleted = "history_deleted"
@@ -156,7 +157,11 @@ class GenericInvocationFailureDatasetFailed(InvocationFailureMessageBase[Databas
     hda_id: DatabaseIdT = Field(
         ..., title="HistoryDatasetAssociation ID", description="HistoryDatasetAssociation ID that relates to failure."
     )
-    dependent_workflow_step_id: int | None = Field(None, description="Workflow step id of step that caused failure.")
+    dependent_workflow_step_id: int | None = Field(
+        None,
+        description="Workflow step id of step that caused failure.",
+        validation_alias="dependent_workflow_step_index",
+    )
 
 
 class GenericInvocationFailureCollectionFailed(InvocationFailureMessageBase[DatabaseIdT], Generic[DatabaseIdT]):
@@ -717,7 +722,7 @@ class CreateInvocationFromStore(StoreContentSource):
     )
 
 
-class InvocationSerializationView(str, Enum):
+class InvocationSerializationView(StrEnum):
     element = "element"
     collection = "collection"
 

@@ -1,5 +1,5 @@
 import json
-from enum import Enum
+from enum import StrEnum
 from typing import (
     Annotated,
     Any,
@@ -211,7 +211,7 @@ class InvokeWorkflowPayload(GetTargetHistoryPayload):
     no_add_to_history: bool | None = Field(
         False,
         title="No Add to History",
-        description="Indicates if the workflow invocation should not be added to the history.",
+        description="If true, workflow inputs from other histories or libraries are not copied into the target history.",
     )
     legacy: bool | None = Field(
         False,
@@ -391,7 +391,7 @@ class StepLabelHint(Model):
     )
 
 
-class InvalidWorkflowExtractionJobReason(str, Enum):
+class InvalidWorkflowExtractionJobReason(StrEnum):
     """Reasons a workflow extraction job may be invalid and disabled for extraction."""
 
     TOOL_MISSING_OR_INACCESSIBLE = "tool_missing_or_inaccessible"

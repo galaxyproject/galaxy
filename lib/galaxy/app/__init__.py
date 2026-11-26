@@ -38,6 +38,7 @@ from galaxy.config import GalaxyAppConfiguration
 from galaxy.config_watchers import ConfigWatchers
 from galaxy.datatypes.registry import Registry
 from galaxy.di import Container
+from galaxy.exceptions import ConfigurationError
 from galaxy.files import (
     ConfiguredFileSources,
     ConfiguredFileSourcesConf,
@@ -70,6 +71,7 @@ from galaxy.managers.library_datasets import LibraryDatasetsManager
 from galaxy.managers.notification import NotificationManager
 from galaxy.managers.object_store_instances import UserObjectStoreResolverImpl
 from galaxy.managers.roles import RoleManager
+from galaxy.managers.run_notifications import RunNotificationMonitor
 from galaxy.managers.session import GalaxySessionManager
 from galaxy.managers.sse import (
     SSEConnectionGaugeEmitter,
@@ -162,6 +164,7 @@ from galaxy.tool_shed.galaxy_install.update_repository_manager import (
     UpdateRepositoryManager,
 )
 from galaxy.tool_util.data import (
+    DataTableColumnMismatch,
     tool_data_table_config_sources,
     ToolDataTableManager as BaseToolDataTableManager,
 )
@@ -216,6 +219,22 @@ from galaxy.workflow.trs_proxy import TrsProxy
 
 log = logging.getLogger(__name__)
 app = None
+
+
+def data_table_conflict_message(e: DataTableColumnMismatch, shed_tool_data_table_config: str) -> str:
+    # Point at the shed definition even when admin-ordered sources load the shed config first.
+    remove_from = e.config_filename
+    if e.repository_info is None:
+        shed_identity = os.path.realpath(shed_tool_data_table_config)
+        remove_from = next(
+            (f for f in e.existing_config_filenames if os.path.realpath(f) == shed_identity),
+            remove_from,
+        )
+    return (
+        f"{e} To start Galaxy, remove the <table name=\"{e.table_name}\"> element from '{remove_from}' "
+        f"or remove the other definition of {e.table_name!r}; tools that rely on the removed definition will "
+        "not work until the conflict is resolved."
+    )
 
 
 class HaltableContainer(Container):
@@ -579,12 +598,15 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
             from_shed_config=from_shed_config,
             managed_optional=not self.config.is_set("shed_tool_data_table_config"),
         )
-        self._tool_data_tables = ToolDataTableManager(
-            tool_data_path=self.config.tool_data_path,
-            config_sources=sources,
-            other_config_dict=self.config,
-            on_registration=self._tool_data_tables_registered,
-        )
+        try:
+            self._tool_data_tables = ToolDataTableManager(
+                tool_data_path=self.config.tool_data_path,
+                config_sources=sources,
+                other_config_dict=self.config,
+                on_registration=self._tool_data_tables_registered,
+            )
+        except DataTableColumnMismatch as e:
+            raise ConfigurationError(data_table_conflict_message(e, self.config.shed_tool_data_table_config)) from e
 
     def _tool_data_tables_registered(self, table_names: list[str]) -> None:
         if isinstance(self, StructuredApp):
@@ -1010,6 +1032,7 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication, InstallationT
             ("queue worker", self._shutdown_queue_worker),
             ("file watcher", self._shutdown_watcher),
             ("database heartbeat", self._shutdown_database_heartbeat),
+            ("run notification monitor", self._shutdown_run_notification_monitor),
             ("SSE connection gauge emitter", self._shutdown_sse_connection_gauge_emitter),
             ("history audit monitor", self._shutdown_history_audit_monitor),
             ("workflow scheduler", self._shutdown_scheduling_manager),
@@ -1134,8 +1157,7 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication, InstallationT
             scheduling_manager.WorkflowSchedulingManager, scheduling_manager.WorkflowSchedulingManager(self)
         )
 
-        # Initialize workflow completion monitoring (manager is always available,
-        # but monitor only runs on workflow scheduler processes)
+        # Monitor workflow completion on workflow handlers.
         self.workflow_completion_manager = WorkflowCompletionManager(self)
         self.workflow_completion_hook_registry = self._register_singleton(
             WorkflowCompletionHookRegistry, WorkflowCompletionHookRegistry(self)
@@ -1174,6 +1196,9 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication, InstallationT
         )
         self.database_heartbeat.add_change_callback(self.watchers.change_state)
         self.database_heartbeat.add_change_callback(self._on_config_watcher_change)
+        if self.is_webapp and (self.config.enable_notification_system or self.config.smtp_server):
+            run_notification_monitor = self._register_singleton(RunNotificationMonitor)
+            self.database_heartbeat.add_change_callback(run_notification_monitor.on_role_change)
         self.application_stack.register_postfork_function(self.database_heartbeat.start)
 
         # History audit monitor for SSE-based history updates. The monitor only
@@ -1257,6 +1282,10 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication, InstallationT
 
     def _shutdown_database_heartbeat(self):
         self.database_heartbeat.shutdown()
+
+    def _shutdown_run_notification_monitor(self):
+        if self.is_webapp and (self.config.enable_notification_system or self.config.smtp_server):
+            self[RunNotificationMonitor].shutdown()
 
     def _shutdown_sse_connection_gauge_emitter(self):
         if self.sse_connection_gauge_emitter is not None:

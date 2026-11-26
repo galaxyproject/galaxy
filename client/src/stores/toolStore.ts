@@ -116,14 +116,47 @@ const MY_PANEL_VIEW: Panel = {
 
 const DEFAULT_PANEL_VIEW_ID = "default";
 
+const NO_TOOL_TAGS: string[] = [];
+
 export const useToolStore = defineStore("toolStore", () => {
     const currentPanelView: Ref<string> = useUserLocalStorage("tool-store-view", "");
     const defaultPanelView: Ref<string> = ref("");
     const loading = ref(false);
     const panels = ref<Record<string, Panel>>({});
     const searchWorker = ref<Worker | undefined>(undefined);
-    const toolTagsLoaded = ref(false);
-    const toolsById = shallowRef<Record<string, Tool>>({});
+    const toolTagsById = shallowRef<Record<string, string[]> | null>(null);
+    const toolTagsLoaded = computed(() => toolTagsById.value !== null);
+    const rawToolsById = shallowRef<Record<string, Tool>>({});
+    // Tool definitions and curated tags are independent resources. Decorate on read,
+    // so replacing the mapping also removes tags that no longer exist. Decorated tools
+    // are reused while their definition and tags are unchanged, so saving one tool
+    // doesn't hand every consumer a new object for every other tool.
+    const decoratedTools = new WeakMap<Tool, Tool>();
+    const toolsById = computed((): Record<string, Tool> => {
+        const mapping = toolTagsById.value;
+        if (mapping === null) {
+            return rawToolsById.value;
+        }
+        const decorated: Record<string, Tool> = {};
+        for (const [id, tool] of Object.entries(rawToolsById.value)) {
+            const tags = mapping[id] ?? NO_TOOL_TAGS;
+            let decoratedTool = decoratedTools.get(tool);
+            if (decoratedTool?.tool_tags !== tags) {
+                decoratedTool = { ...tool, tool_tags: tags };
+                decoratedTools.set(tool, decoratedTool);
+            }
+            decorated[id] = decoratedTool;
+        }
+        return decorated;
+    });
+    const toolTagNames = computed(() => {
+        const tagLists =
+            toolTagsById.value === null
+                ? Object.values(rawToolsById.value).map((tool) => tool.tool_tags ?? [])
+                : Object.values(toolTagsById.value);
+        return [...new Set(tagLists.flat())].sort((left, right) => left.localeCompare(right));
+    });
+    let toolTagsRequest: Promise<void> | null = null;
     const toolResults = ref<Record<string, string[]>>({});
     const toolSections = ref<Record<string, Record<string, ToolPanelItem>>>({});
     const fetchedHelpIds = ref<Map<string, Promise<void>>>(new Map());
@@ -287,30 +320,27 @@ export const useToolStore = defineStore("toolStore", () => {
     }
 
     /**
-     * Fetch the curated `{tool_id: [tag, ...]}` mapping from `/api/tags/tool_tags`
-     * and merge it into `toolsById`. Idempotent: subsequent calls are no-ops
-     * once the mapping has been loaded for the current toolbox.
-     *
-     * Kept separate from `fetchTools` so the bulk `/api/tools` payload doesn't
-     * carry per-tool `tool_tags` — the mapping is only consumed by the My
-     * Tools panel, while every tool-list consumer pays the bandwidth cost.
+     * Load the curated mapping independently of tool definitions. Cached and in-flight
+     * requests are shared; `force` explicitly refreshes an already-loaded catalog.
      */
-    async function fetchToolTagsMapping() {
-        if (toolTagsLoaded.value) {
+    async function fetchToolTagsMapping(force = false) {
+        if (toolTagsLoaded.value && !force) {
             return;
         }
-        try {
-            const { data } = await axios.get(`${getAppRoot()}api/tags/tool_tags`);
-            const mapping = (data ?? {}) as Record<string, string[]>;
-            const merged: Record<string, Tool> = {};
-            for (const [id, tool] of Object.entries(toolsById.value)) {
-                merged[id] = { ...tool, tool_tags: mapping[id] ?? tool.tool_tags ?? [] };
-            }
-            toolsById.value = merged;
-            toolTagsLoaded.value = true;
-        } catch (e) {
-            rethrowSimple(e);
+        if (toolTagsRequest) {
+            return toolTagsRequest;
         }
+        toolTagsRequest = (async () => {
+            try {
+                const { data } = await axios.get(`${getAppRoot()}api/tags/tool_tags`);
+                toolTagsById.value = (data ?? {}) as Record<string, string[]>;
+            } catch (e) {
+                rethrowSimple(e);
+            } finally {
+                toolTagsRequest = null;
+            }
+        })();
+        return toolTagsRequest;
     }
 
     async function fetchHelpForId(toolId: string) {
@@ -361,16 +391,13 @@ export const useToolStore = defineStore("toolStore", () => {
     }
 
     function saveAllTools(toolsData: Tool[]) {
-        toolsById.value = toolsData.reduce(
+        rawToolsById.value = toolsData.reduce(
             (acc, item) => {
                 acc[item.id] = item;
                 return acc;
             },
             {} as Record<string, Tool>,
         );
-        // The bulk /api/tools payload doesn't carry tool_tags; reset the loaded
-        // flag so the next mount of the My Tools panel re-fetches the mapping.
-        toolTagsLoaded.value = false;
     }
 
     function saveToolSections(panelView: string, newPanel: { [id: string]: ToolPanelItem }) {
@@ -378,8 +405,8 @@ export const useToolStore = defineStore("toolStore", () => {
     }
 
     function saveToolForId(toolId: string, toolData: Tool) {
-        // `toolsById` is a `shallowRef`, so only reassigning `.value` notifies watchers.
-        toolsById.value = { ...toolsById.value, [toolId]: toolData };
+        // Definitions use a shallowRef, so replace the map to notify consumers.
+        rawToolsById.value = { ...rawToolsById.value, [toolId]: toolData };
     }
 
     function saveToolResults(whooshQuery: string, toolsData: Array<string>) {
@@ -436,6 +463,9 @@ export const useToolStore = defineStore("toolStore", () => {
         sectionDatalist,
         setPanel,
         toolTagsLoaded,
+        toolTagsById,
+        toolTagNames,
+        rawToolsById,
         toolsById,
         toolSections,
     };

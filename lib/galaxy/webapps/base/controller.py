@@ -632,7 +632,7 @@ class UsesStoredWorkflowMixin(SharableItemSecurityMixin, UsesAnnotations):
         """Restores states for a stored workflow's steps."""
         module_injector = WorkflowModuleInjector(trans)
         workflow = stored_workflow.latest_workflow
-        module_injector.inject_all(workflow, exact_tools=False, ignore_tool_missing_exception=True)
+        module_injector.inject_all(workflow, exact_tools=False, ignore_tool_missing_exception=True, view_only=True)
         for step in workflow.steps:
             try:
                 module_injector.compute_runtime_state(step)

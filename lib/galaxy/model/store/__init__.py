@@ -11,6 +11,7 @@ from collections.abc import (
     Callable,
     Iterable,
     Iterator,
+    Sequence,
 )
 from dataclasses import dataclass
 from enum import Enum
@@ -30,6 +31,7 @@ from typing import (
     TYPE_CHECKING,
     Union,
 )
+from uuid import UUID
 
 from bdbag import bdbag_api as bdb
 from boltons.iterutils import remap
@@ -212,12 +214,111 @@ class DatasetAttributeImportModel(BaseModel):
 
 DEFAULT_DISCARDED_DATA_TYPE = ImportDiscardedDataType.FORBID
 
+# Dataset instance attributes keyed by (model_class, id)
+DatasetsAttrsById = dict[tuple[str, int], dict[str, Any]]
+
+
+class EditableObjects:
+    """The existing objects an import may edit, which are the outputs of the job that wrote the model store.
+
+    An import with ``allow_edit`` names the objects it edits by database id, so a model store written by a job
+    could otherwise edit any dataset, collection or job.
+    """
+
+    def __init__(
+        self,
+        job: model.Job,
+        allow_dataset_file_edit: bool = True,
+        can_add_to_library_folder: Callable[[int], bool] | None = None,
+    ) -> None:
+        # Pointing a dataset at a server file with ``external_filename``, or at another object store.
+        self.allow_dataset_file_edit = allow_dataset_file_edit
+        # Data fetch jobs add datasets to the library folder they were asked to fill, which they name by id.
+        self._can_add_to_library_folder = can_add_to_library_folder
+        self._ids: dict[type, set[int]] = defaultdict(set)
+        self._object_store_ids: set[str] = set()
+        self._add(model.Job, job)
+        if job.object_store_id:
+            self._object_store_ids.add(job.object_store_id)
+        self._object_store_ids.update(filter(None, (job.object_store_id_overrides or {}).values()))
+        # The outputs Galaxy exported to the job's metadata directory.
+        _, out_data, out_collections = job.io_dicts(exclude_implicit_outputs=True)
+        for dataset_instance in out_data.values():
+            self._add_dataset_instance(dataset_instance)
+        for collection in out_collections.values():
+            if isinstance(collection, model.HistoryDatasetCollectionAssociation):
+                self._add(model.HistoryDatasetCollectionAssociation, collection)
+                self._add_collection(collection.collection)
+            elif isinstance(collection, model.DatasetCollection):
+                self._add_collection(collection)
+
+    def _add(self, model_class: type, obj) -> None:
+        self._ids[model_class].add(obj.id)
+
+    def _add_dataset_instance(self, dataset_instance: model.DatasetInstance) -> None:
+        dataset = dataset_instance.dataset
+        assert dataset
+        self._add(type(dataset_instance), dataset_instance)
+        self._add(model.Dataset, dataset)
+        if dataset.object_store_id:
+            self._object_store_ids.add(dataset.object_store_id)
+
+    def _add_collection(self, collection: model.DatasetCollection) -> None:
+        self._add(model.DatasetCollection, collection)
+        for element in collection.elements:
+            if element.child_collection:
+                self._add_collection(element.child_collection)
+            elif dataset_instance := element.hda or element.ldda:
+                self._add_dataset_instance(dataset_instance)
+
+    def assert_editable(self, model_class: type, object_id: Any) -> None:
+        # Stores written without a database session carry ids as strings.
+        if str(object_id).isdigit():
+            object_id = int(object_id)
+            if object_id in self._ids[model_class]:
+                return
+            if model_class is model.LibraryFolder and self._can_add_to_library_folder:
+                if self._can_add_to_library_folder(object_id):
+                    return
+        raise MalformedContents(f"Model store may not edit {model_class.__name__} {object_id}.")
+
+    def assert_metadata_file_editable(self, metadata_files: Sequence[model.MetadataFile]) -> None:
+        """Refuse a metadata file uuid that belongs to datasets other than these, which would share their file."""
+        if metadata_files and not any(
+            instance.id in self._ids[type(instance)]
+            for metadata_file in metadata_files
+            for instance in (metadata_file.history_dataset, metadata_file.library_dataset)
+            if instance
+        ):
+            raise MalformedContents(f"Model store may not reuse metadata file {metadata_files[0].uuid}.")
+
+    def assert_dataset_attributes_editable(self, dataset: model.Dataset, attributes: dict[str, Any]) -> None:
+        if self.allow_dataset_file_edit:
+            return
+        external_filename = attributes.get("external_filename")
+        if external_filename and external_filename != dataset.external_filename:
+            raise MalformedContents("Model store may not link a dataset to an external file.")
+        object_store_id = attributes.get("object_store_id")
+        if dataset.id is not None:
+            # With ``object_store_store_by = uuid`` the uuid picks the dataset's file too.
+            new_uuid = attributes.get("uuid")
+            if new_uuid is not None and (dataset.uuid is None or UUID(str(new_uuid)) != UUID(str(dataset.uuid))):
+                raise MalformedContents("Model store may not change the uuid of an existing dataset.")
+            changed = object_store_id is not None and object_store_id != dataset.object_store_id
+        else:
+            # Galaxy assigns the job its object stores before it runs, and new datasets use them.
+            changed = object_store_id is not None and object_store_id not in self._object_store_ids
+        if changed:
+            raise MalformedContents(f"Model store may not move a dataset to object store {object_store_id}.")
+
 
 class ImportOptions:
     allow_edit: bool
     allow_library_creation: bool
     allow_dataset_object_edit: bool
     discarded_data: ImportDiscardedDataType
+    editable_objects: EditableObjects | None
+    datasets_attrs_at_job_setup: DatasetsAttrsById
 
     def __init__(
         self,
@@ -225,7 +326,13 @@ class ImportOptions:
         allow_library_creation: bool = False,
         allow_dataset_object_edit: bool | None = None,
         discarded_data: ImportDiscardedDataType = DEFAULT_DISCARDED_DATA_TYPE,
+        editable_objects: EditableObjects | None = None,
+        datasets_attrs_at_job_setup: DatasetsAttrsById | None = None,
     ) -> None:
+        """
+        :param datasets_attrs_at_job_setup: when editing a job's outputs, their attributes as exported at job
+            setup (see :func:`load_datasets_attrs_by_id`), so edits made while the job ran are kept.
+        """
         self.allow_edit = allow_edit
         self.allow_library_creation = allow_library_creation
         if allow_dataset_object_edit is None:
@@ -233,6 +340,9 @@ class ImportOptions:
         else:
             self.allow_dataset_object_edit = allow_dataset_object_edit
         self.discarded_data = discarded_data
+        # Restricts editing to these objects; every existing object is editable without it.
+        self.editable_objects = editable_objects
+        self.datasets_attrs_at_job_setup = datasets_attrs_at_job_setup or {}
 
 
 class SessionlessContext:
@@ -275,17 +385,21 @@ def replace_metadata_file(
     metadata: dict[str, Any],
     dataset_instance: model.DatasetInstance,
     sa_session: SessionlessContext | scoped_session,
+    editable_objects: EditableObjects | None = None,
 ) -> dict[str, Any]:
     def remap_objects(p, k, obj):
         if isinstance(obj, dict) and "model_class" in obj and obj["model_class"] == "MetadataFile":
             metadata_file = None
             if not isinstance(sa_session, SessionlessContext):
+                metadata_files = sa_session.scalars(
+                    select(model.MetadataFile).filter_by(uuid=obj["uuid"]).order_by(model.MetadataFile.id)
+                ).all()
+                if editable_objects:
+                    editable_objects.assert_metadata_file_editable(metadata_files)
                 # Setting metadata on a dataset that already has metadata files (e.g. a set metadata job)
                 # updates those files in place and exports them with their existing uuid. Metadata files
                 # are looked up by uuid, so reuse the dataset's own row instead of inserting a duplicate.
-                metadata_file = sa_session.scalars(
-                    select(model.MetadataFile).filter_by(uuid=obj["uuid"]).order_by(model.MetadataFile.id).limit(1)
-                ).first()
+                metadata_file = metadata_files[0] if metadata_files else None
                 if metadata_file is not None and dataset_instance not in (
                     metadata_file.history_dataset,
                     metadata_file.library_dataset,
@@ -301,6 +415,17 @@ def replace_metadata_file(
         return (k, obj)
 
     return remap(metadata, remap_objects)
+
+
+def _path_in_archive(archive_root: str, path: str) -> str:
+    """Resolve a path the model store names relative to its archive, refusing links and paths outside it."""
+    archive_path = os.path.abspath(os.path.join(archive_root, path))
+    if os.path.islink(archive_path):
+        raise MalformedContents(f"Invalid dataset path: {archive_path}")
+    real_path = os.path.realpath(archive_path)
+    if not in_directory(real_path, archive_root):
+        raise MalformedContents(f"Invalid dataset path: {real_path}")
+    return real_path
 
 
 class ModelImportStore(metaclass=abc.ABCMeta):
@@ -461,9 +586,14 @@ class ModelImportStore(metaclass=abc.ABCMeta):
         self._reassign_hids(object_import_tracker, history)
         self._import_jobs(object_import_tracker, history)
         self._import_implicit_collection_jobs(object_import_tracker)
+        self._import_collection_implicit_collection_jobs(object_import_tracker, collections_attrs)
         self._import_workflow_invocations(object_import_tracker, history)
         self._flush()
         return object_import_tracker
+
+    def _assert_editable(self, model_class: type, object_id: Any) -> None:
+        if self.import_options.editable_objects:
+            self.import_options.editable_objects.assert_editable(model_class, object_id)
 
     def _attach_dataset_hashes(
         self,
@@ -528,6 +658,10 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                 dataset_attributes = DatasetAttributeImportModel(**dataset_attrs["dataset"]).model_dump(
                     exclude_unset=True,
                 )
+                if self.import_options.editable_objects and not self.sessionless:
+                    self.import_options.editable_objects.assert_dataset_attributes_editable(
+                        dataset_instance.dataset, dataset_attributes
+                    )
                 for attribute, value in dataset_attributes.items():
                     setattr(dataset_instance.dataset, attribute, value)
                 if dataset_instance.dataset.purged:
@@ -535,11 +669,11 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                 self._attach_dataset_hashes(dataset_attrs["dataset"], dataset_instance)
                 self._attach_dataset_sources(dataset_attrs["dataset"], dataset_instance)
                 if "id" in dataset_attrs["dataset"] and self.import_options.allow_edit:
+                    self._assert_editable(model.Dataset, dataset_attrs["dataset"]["id"])
                     dataset_instance.dataset.id = dataset_attrs["dataset"]["id"]
                     for dataset_association in dataset_instance.dataset.history_associations:
-                        if (
-                            dataset_association is not dataset_instance
-                            and dataset_association.extension == dataset_instance.extension
+                        if dataset_association is not dataset_instance and (
+                            dataset_association.extension == dataset_instance.extension
                             or dataset_association.extension == "auto"
                         ):
                             copy_dataset_instance_metadata_attributes(
@@ -554,8 +688,12 @@ class ModelImportStore(metaclass=abc.ABCMeta):
 
             if "id" in dataset_attrs and self.import_options.allow_edit and not self.sessionless:
                 model_class = getattr(model, dataset_attrs["model_class"])
+                self._assert_editable(model_class, dataset_attrs["id"])
                 dataset_instance = self.sa_session.get(model_class, dataset_attrs["id"])
                 assert isinstance(dataset_instance, model.DatasetInstance)
+                attrs_at_job_setup = self.import_options.datasets_attrs_at_job_setup.get(
+                    (dataset_attrs["model_class"], dataset_attrs["id"]), {}
+                )
                 attributes = [
                     "name",
                     "extension",
@@ -563,7 +701,6 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                     "blurb",
                     "peek",
                     "designation",
-                    "visible",
                     "metadata",
                     "tool_version",
                     "validated_state",
@@ -573,12 +710,25 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                     if attribute in dataset_attrs:
                         value = dataset_attrs[attribute]
                         if attribute == "metadata":
-                            value = replace_metadata_file(value, dataset_instance, self.sa_session)
+                            value = replace_metadata_file(
+                                value, dataset_instance, self.sa_session, self.import_options.editable_objects
+                            )
                         elif attribute == "extension":
                             value = self._registered_extension(value)
+                        elif attribute in ("name", "info") and attribute in attrs_at_job_setup:
+                            value = _keep_edits_made_while_job_ran(
+                                current=getattr(dataset_instance, attribute),
+                                at_job_setup=attrs_at_job_setup[attribute],
+                                from_job=value,
+                                keep_appended_text=attribute == "info",
+                            )
                         setattr(dataset_instance, attribute, value)
 
                 handle_dataset_object_edit(dataset_instance, dataset_attrs)
+                # Keep the server's visibility, which may have changed while the job ran (e.g. hidden when
+                # building a collection). The job only unhides outputs that failed.
+                if dataset_attrs.get("visible") and dataset_instance.state == dataset_instance.states.ERROR:
+                    dataset_instance.visible = True
             else:
                 metadata_deferred = dataset_attrs.get("metadata_deferred", False)
                 metadata = dataset_attrs.get("metadata")
@@ -641,7 +791,9 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                     )
                 else:
                     raise Exception("Unknown dataset instance type encountered")
-                metadata = replace_metadata_file(metadata, dataset_instance, self.sa_session)
+                metadata = replace_metadata_file(
+                    metadata, dataset_instance, self.sa_session, self.import_options.editable_objects
+                )
                 if self.sessionless:
                     dataset_instance._metadata_collection = MetadataCollection(
                         dataset_instance, session=self.sa_session
@@ -687,15 +839,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                     file_name = dataset_attrs.get("file_name")
                     if file_name:
                         assert file_source_root
-                        # Do security check and move/copy dataset data.
-                        archive_path = os.path.abspath(os.path.join(file_source_root, file_name))
-                        if os.path.islink(archive_path):
-                            raise MalformedContents(f"Invalid dataset path: {archive_path}")
-
-                        temp_dataset_file_name = os.path.realpath(archive_path)
-
-                        if not in_directory(temp_dataset_file_name, file_source_root):
-                            raise MalformedContents(f"Invalid dataset path: {temp_dataset_file_name}")
+                        temp_dataset_file_name = _path_in_archive(file_source_root, file_name)
 
                     has_good_source = False
                     file_metadata = dataset_attrs.get("file_metadata") or {}
@@ -744,7 +888,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                             dataset_extra_files_path = dataset_attrs.get("extra_files_path", None)
                             if dataset_extra_files_path:
                                 assert file_source_root
-                                dataset_extra_files_path = os.path.join(file_source_root, dataset_extra_files_path)
+                                dataset_extra_files_path = _path_in_archive(file_source_root, dataset_extra_files_path)
                                 persist_extra_files(self.object_store, dataset_extra_files_path, dataset_instance)
                             # Only trust file size if the dataset is purged. If we keep the data we should check the file size.
                             dataset_instance.dataset.file_size = None
@@ -870,7 +1014,11 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                 and not self.sessionless
                 and self.import_options.allow_edit
             ):
-                library_folder = self.sa_session.get(model.LibraryFolder, library_attrs["id"])
+                folder_id = library_attrs["id"]
+                self._assert_editable(model.LibraryFolder, folder_id)
+                library_folder = self.sa_session.get(model.LibraryFolder, folder_id)
+                if library_folder is None:
+                    raise ObjectNotFound("Failed to find library folder")
                 import_folder(library_attrs, root_folder=library_folder)
             else:
                 assert self.import_options.allow_library_creation
@@ -934,6 +1082,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                 dc.element_count = len(elements_attrs)
 
             if "id" in collection_attrs and self.import_options.allow_edit and not self.sessionless:
+                self._assert_editable(model.DatasetCollection, collection_attrs["id"])
                 dc = self.sa_session.get(model.DatasetCollection, collection_attrs["id"])
                 attributes = [
                     "collection_type",
@@ -968,6 +1117,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
             if "collection" in collection_attrs:
                 dc = import_collection(collection_attrs["collection"])
                 if "id" in collection_attrs and self.import_options.allow_edit and not self.sessionless:
+                    self._assert_editable(model.HistoryDatasetCollectionAssociation, collection_attrs["id"])
                     hdca = self.sa_session.get(model.HistoryDatasetCollectionAssociation, collection_attrs["id"])
                     assert hdca is not None
                     # TODO: edit attributes...
@@ -1388,6 +1538,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                 # only thing we allow editing currently is associations for incoming jobs.
                 assert self.import_options.allow_edit
                 job_id = job_attrs["id"]
+                self._assert_editable(model.Job, job_id)
                 job = self.sa_session.get(model.Job, job_id)
                 self._connect_job_io(job, job_attrs, _find_hda, _find_hdca, _find_dce)  # type: ignore[attr-defined]
                 self._set_job_attributes(job, job_attrs)  # type: ignore[attr-defined]
@@ -1481,6 +1632,21 @@ class ModelImportStore(metaclass=abc.ABCMeta):
 
             self._session_add(icj)
 
+    def _import_collection_implicit_collection_jobs(
+        self, object_import_tracker: "ObjectImportTracker", collections_attrs: list[dict[str, Any]]
+    ) -> None:
+        """Link imported implicit collections to the imported jobs that populate them."""
+        object_key = self.object_key
+        for collection_attrs in collections_attrs:
+            icj_key = collection_attrs.get("implicit_collection_jobs")
+            if icj_key is None or object_key not in collection_attrs:
+                continue
+            # The ICJ is only in the store if the jobs it groups were exported.
+            icj = object_import_tracker.implicit_collection_jobs_by_key.get(icj_key)
+            hdca = object_import_tracker.hdcas_by_key.get(collection_attrs[object_key])
+            if icj is not None and hdca is not None:
+                hdca.implicit_collection_jobs = icj
+
     def _session_add(self, obj: model.RepresentById) -> None:
         self.sa_session.add(obj)
 
@@ -1561,6 +1727,12 @@ class ObjectImportTracker:
         self.copy_hid_for = []
 
         self.new_history: model.History | None = None
+
+    def charge_imported_datasets(self, history: model.History | None) -> None:
+        """Increase the disk usage of the user of the history the datasets were imported into."""
+        if history:
+            history.charge_added_datasets([*self.hdas_by_key.values(), *self.hdas_by_id.values()])
+            get_object_session(history).commit()
 
     def find_hda(self, input_key: ObjectKeyType, hda_id: int | None = None) -> model.HistoryDatasetAssociation | None:
         hda = None
@@ -2196,7 +2368,9 @@ class DirectoryModelExportStore(ModelExportStore):
         for dataset in self.included_datasets:
             for metadata_element in dataset.metadata.values():
                 if isinstance(metadata_element, model.MetadataFile):
-                    metadata_element.update_from_file(metadata_element.get_file_name())
+                    # The file is already at its object store path; get_file_name() would check for the
+                    # object again only to hand that path back.
+                    metadata_element.update_from_file(None)
 
     def export_job(self, job: model.Job, tool=None, include_job_data=True):
         self.export_jobs([job], include_job_data=include_job_data)
@@ -3235,8 +3409,7 @@ def source_to_import_store(
     else:
         source_uri: str = str(source)
         delete = False
-        if source_uri.startswith("file://"):
-            source_uri = source_uri[len("file://") :]
+        source_uri = source_uri.removeprefix("file://")
         if "://" in source_uri:
             user_context = ProvidesFileSourcesUserContext(user_context)
             source_uri = stream_url_to_file(
@@ -3296,10 +3469,38 @@ def payload_to_source_uri(payload) -> str:
     return source_uri
 
 
+def load_datasets_attrs_by_id(directory: str) -> DatasetsAttrsById:
+    """Load the attributes of the dataset instances exported for edit to ``directory``."""
+    datasets_attrs_path = os.path.join(directory, ATTRS_FILENAME_DATASETS)
+    if not os.path.exists(datasets_attrs_path):
+        return {}
+    with open(datasets_attrs_path) as f:
+        datasets_attrs = load(f)
+    return {(attrs["model_class"], attrs["id"]): attrs for attrs in datasets_attrs}
+
+
+def _keep_edits_made_while_job_ran(current: Any, at_job_setup: Any, from_job: Any, keep_appended_text: bool) -> Any:
+    """Return the value of an output attribute the job reports, keeping edits made while the job ran.
+
+    The current value is kept if the job didn't change the value it got at job setup (``None`` and ``""`` count
+    as the same). With ``keep_appended_text``, lines the job appended to it are appended to the current value;
+    this matches how the job side adds stdout to ``info`` (``f"{info.rstrip()}\n{stdout}"``).
+    """
+    at_job_setup = at_job_setup or ""
+    if (from_job or "") == at_job_setup:
+        return current
+    if keep_appended_text and from_job:
+        setup_text = at_job_setup.rstrip()
+        if from_job.startswith(f"{setup_text}\n"):
+            return f"{(current or '').rstrip()}{from_job[len(setup_text):]}"
+    return from_job
+
+
 def copy_dataset_instance_metadata_attributes(source: model.DatasetInstance, target: model.DatasetInstance) -> None:
+    # The metadata setter only keeps keys in the target's current datatype spec, so set the extension first.
+    target.extension = source.extension
     target.metadata = source.metadata
     target.blurb = source.blurb
     target.peek = source.peek
     target.info = source.info
     target.tool_version = source.tool_version
-    target.extension = source.extension

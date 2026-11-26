@@ -6,6 +6,8 @@ import abc
 import copy
 import datetime
 import errno
+import functools
+import glob
 import json
 import logging
 import os
@@ -15,6 +17,7 @@ import shutil
 import sys
 import time
 import traceback
+from collections import defaultdict
 from collections.abc import (
     Callable,
     Iterable,
@@ -52,17 +55,24 @@ from galaxy import (
 )
 from galaxy.datatypes import sniff
 from galaxy.exceptions import (
+    InsufficientPermissionsException,
     MessageException,
     ObjectInvalid,
     ObjectNotFound,
 )
 from galaxy.files import ProvidesFileSourcesUserContext
 from galaxy.job_execution.actions.post import ActionBox
-from galaxy.job_execution.compute_environment import SharedComputeEnvironment
+from galaxy.job_execution.compute_environment import (
+    remote_evaluation_paths,
+    SharedComputeEnvironment,
+)
+from galaxy.job_execution.datasets import DatasetPath
 from galaxy.job_execution.output_collect import (
     collect_extra_files,
     collect_shrinked_content_from_path,
+    escape_preserving_wildcards,
     PermissionProvider,
+    rejected_work_dir_outputs_file,
 )
 from galaxy.job_execution.setup import (
     ensure_configs_directory,
@@ -87,7 +97,11 @@ from galaxy.jobs.runners import (
     BaseJobRunner,
     JobState,
 )
-from galaxy.metadata import get_metadata_compute_strategy
+from galaxy.metadata import (
+    get_metadata_compute_strategy,
+    job_metadata_directory,
+    REMOTE_COMMAND_LINE_FILE,
+)
 from galaxy.model import (
     Dataset,
     Job,
@@ -96,8 +110,10 @@ from galaxy.model import (
     store,
     Task,
 )
+from galaxy.model.metadata import MetadataTempFilePathError
 from galaxy.model.store import copy_dataset_instance_metadata_attributes
 from galaxy.model.store.discover import (
+    ensure_job_path_in_job_directory,
     MaxDiscoveredFilesExceededError,
     OutputCollectionSecurityError,
 )
@@ -109,6 +125,7 @@ from galaxy.objectstore import (
 from galaxy.schema.tasks import ComputeDatasetHashTaskRequest
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.tool_util.deps import requirements
+from galaxy.tool_util.deps.container_classes import JOB_DIRECTORY_CONTAINER_SUBDIRECTORIES
 from galaxy.tool_util.output_checker import (
     check_output,
     DETECTED_JOB_STATE,
@@ -122,6 +139,11 @@ from galaxy.tools.evaluation import (
     PartialToolEvaluator,
     ToolEvaluator,
     UserToolEvaluator,
+)
+from galaxy.tools.job_parameters import (
+    DBKEY,
+    ELEMENT_IDENTIFIER_SUFFIX,
+    is_element_identifier_parameter,
 )
 from galaxy.tools.parameters import (
     collect_directory_uris,
@@ -1125,10 +1147,15 @@ class MinimalJobWrapper(HasResourceParameters):
 
     @property
     def remote_command_line(self):
-        use_remote = self.get_destination_configuration("tool_evaluation_strategy") == "remote"
+        if self.get_destination_configuration("tool_evaluation_strategy") != "remote":
+            return False
+        # Interactive tools register their entry points while the command is built, the
+        # metadata tool is Galaxy's own job, and task splitting builds a command per task.
+        if self.tool is None or self.tool.tool_type in ("interactive", "set_metadata") or self.__has_tasks:
+            return False
         # It wouldn't be hard to support history export, but we want to do this in task queue workers anyway ...
         stmt = select(model.JobExportHistoryArchive).filter_by(job=self.get_job()).limit(1)
-        return use_remote and self.external_output_metadata.extended and not self.sa_session.scalars(stmt).first()
+        return not self.sa_session.scalars(stmt).first()
 
     def tool_directory(self):
         tool_dir = self.tool and self.tool.tool_dir
@@ -1156,6 +1183,13 @@ class MinimalJobWrapper(HasResourceParameters):
             if dataset is not None and dataset.has_deferred_data and dataset.dataset is not None:
                 uris.update(dataset.dataset.source_uris)
         return uris
+
+    def _check_can_add_to_library_folders(self, job: model.Job, import_model_store: store.ModelImportStore) -> None:
+        # The import adds datasets to existing library folders by id, check the job's user may add to them.
+        work_request = WorkRequestContext(self.app, user=job.user, galaxy_session=job.galaxy_session)
+        for library_attrs in import_model_store.library_properties():
+            if library_attrs["model_class"] == "LibraryFolder" and library_attrs.get("id"):
+                self.app.library_folder_manager.get_for_adding(work_request, library_attrs["id"])
 
     @property
     def job_io(self) -> JobIO:
@@ -1229,6 +1263,13 @@ class MinimalJobWrapper(HasResourceParameters):
 
     @property
     def requires_containerization(self):
+        # User-defined tools run arbitrary commands, don't run them on the host.
+        if (
+            self.tool
+            and self.tool.tool_type == "user_defined"
+            and self.app.config.require_container_for_user_defined_tools
+        ):
+            return True
         return util.asbool(self.get_destination_configuration("require_container", "False"))
 
     @property
@@ -1299,6 +1340,24 @@ class MinimalJobWrapper(HasResourceParameters):
         assert job
         return job
 
+    def _charge_outputs(self, datasets: list[model.Dataset]) -> None:
+        """
+        Increase the disk usage of every user with an HDA of the outputs: the owner of the job's history, who is
+        the user who logged in for a job run before logging in, and the owners of copies made while the job ran.
+        """
+        sizes = {dataset: int(dataset.total_size or 0) for dataset in datasets if not dataset.purged}
+        holders = model.dataset_holders(self.sa_session, [dataset for dataset, size in sizes.items() if size])
+        sizes_by_user_id: dict[int, dict[model.Dataset, int]] = defaultdict(dict)
+        for dataset, user_ids in holders.items():
+            for user_id in user_ids:
+                sizes_by_user_id[user_id][dataset] = sizes[dataset]
+        # Lock the users' rows in the order of their ids, so jobs charging the same users can't deadlock
+        for user_id in sorted(sizes_by_user_id):
+            user = self.sa_session.get(model.User, user_id)
+            assert user
+            user.adjust_disk_usage_for_datasets(sizes_by_user_id[user_id])
+            self.sa_session.flush([user])
+
     def get_id_tag(self):
         # For compatibility with drmaa, which uses job_id right now, and TaskWrapper
         return self.get_job().get_id_tag()
@@ -1325,8 +1384,8 @@ class MinimalJobWrapper(HasResourceParameters):
         return os.path.abspath(os.path.join(self.working_directory, "outputs", COMMAND_VERSION_FILENAME))
 
     def __prepare_upload_paramfile(self, job):
-        """Copy the upload paramfile into the working directory and use the stable path."""
-        new = os.path.join(self.working_directory, "upload_params.json")
+        """Copy the upload paramfile into the configs directory and use the stable path."""
+        new = os.path.join(ensure_configs_directory(self.working_directory), "upload_params.json")
         paramfile_parameter = next(iter(param for param in job.parameters if param.name == "paramfile"))
         if (param_file_path := json.loads(paramfile_parameter.value)) != new:
             try:
@@ -1352,6 +1411,14 @@ class MinimalJobWrapper(HasResourceParameters):
             # The owner's execution role is checked when the job is created and again
             # here, so revoking it also fails jobs that are already queued.
             self.app.dynamic_tool_manager.ensure_can_use_unprivileged_tool(job.user)
+        assert self.tool
+        if self.tool.tool_type == "user_defined":
+            # Check the containers the tool declares, not the resolved container: container
+            # resolvers may map an allowed image to e.g. a cached Singularity image path.
+            allowlist = self.app.dynamic_tool_manager.container_allowlist
+            for container_description in self.tool.containers:
+                if rejection := allowlist.rejection(container_description.identifier):
+                    raise InsufficientPermissionsException(rejection)
 
         def get_special():
             stmt = select(model.JobExportHistoryArchive).filter_by(job=job).limit(1)
@@ -1361,7 +1428,8 @@ class MinimalJobWrapper(HasResourceParameters):
             return self.sa_session.scalars(stmt).first()
 
         # TODO: The upload tool actions that create the paramfile can probably be turned in to a configfile to remove this special casing
-        if job.tool_id == "upload1":
+        # A user defined tool picks its own id, so the id alone does not make it the upload tool.
+        if job.tool_id == "upload1" and dynamic_tool is None:
             self.__prepare_upload_paramfile(job)
 
         tool_evaluator = self._get_tool_evaluator(job)
@@ -1376,16 +1444,20 @@ class MinimalJobWrapper(HasResourceParameters):
         ) = tool_evaluator.build()
         if tool_evaluator.use_cached_job and job.user and job.tool_id and not tool_evaluator.consumes_names:
             # search again, now we know tool doesn't require name match
-            param_dump = {p.name: p.value for p in job.parameters if not p.name.startswith("__")}
             assert self.tool
+            # Some wrappers (e.g. QIIME2) declare __-prefixed input sections.
+            # Keep these scientific parameters while excluding internal state.
+            param_dump = {
+                p.name: p.value for p in job.parameters if p.name in self.tool.inputs or not p.name.startswith("__")
+            }
             params = self.tool.params_from_strings(param_dump)
             json_internal = params_to_json_internal(self.tool.inputs, params, self.app)
             element_identifiers = None
             if tool_evaluator.consumes_identifiers:
                 element_identifiers = {
-                    name.removesuffix("|__identifier__"): json.loads(value)
+                    name.removesuffix(ELEMENT_IDENTIFIER_SUFFIX): json.loads(value)
                     for name, value in param_dump.items()
-                    if name.endswith("|__identifier__")
+                    if is_element_identifier_parameter(name)
                 }
             job_to_copy = self.app.job_search.by_tool_input(
                 job.user,
@@ -1398,6 +1470,9 @@ class MinimalJobWrapper(HasResourceParameters):
             )
             if job_to_copy and isinstance(job_to_copy, Job):
                 job.copy_from_job(job_to_copy, copy_outputs=True)
+                if job.history:
+                    # The outputs are the cached job's datasets, possibly another user's from a published history
+                    job.history.charge_added_datasets(job.output_hdas())
                 # The copied job never reaches finish(), so run its post job actions here.
                 for pjaa in job.post_job_actions:
                     if pjaa.post_job_action.action_type not in ActionBox.immediate_actions:
@@ -1412,13 +1487,20 @@ class MinimalJobWrapper(HasResourceParameters):
         self.galaxy_lib_dir  # noqa: B018
         if self.tool.requires_galaxy_python_environment or self.remote_command_line:
             # These tools (upload, metadata, data_source) may need access to the datatypes registry.
-            self.app.datatypes_registry.to_xml_file(os.path.join(self.working_directory, "registry.xml"))
-        if self.remote_command_line:
-            os.makedirs(os.path.join(self.working_directory, "metadata", "outputs_new"), exist_ok=True)
-            self.job_io.to_json(path=os.path.join(self.working_directory, "metadata", "outputs_new", "job_io.json"))
-            self.app.tool_data_tables.to_json(
-                path=os.path.join(self.working_directory, "metadata", "outputs_new", "tool_data_tables.json")
+            self.app.datatypes_registry.to_xml_file(
+                os.path.join(ensure_configs_directory(self.working_directory), "registry.xml")
             )
+        if self.remote_command_line:
+            export_directory = os.path.join(self.working_directory, "metadata", "outputs_new")
+            os.makedirs(export_directory, exist_ok=True)
+            with open(os.path.join(export_directory, "job_io.json"), "w") as f:
+                json.dump(compute_environment.remote_evaluation_job_io(self.job_io), f)
+            paths = remote_evaluation_paths(
+                self.job_io, compute_environment, compute_environment.remote_evaluation_unstructured_paths()
+            )
+            with open(os.path.join(export_directory, "compute_environment.json"), "w") as f:
+                json.dump(paths, f)
+            self.app.tool_data_tables.to_json(path=os.path.join(export_directory, "tool_data_tables.json"))
         job.dependencies = self.tool.dependencies
         self.sa_session.add(job)
         self.sa_session.commit()
@@ -1436,7 +1518,8 @@ class MinimalJobWrapper(HasResourceParameters):
             # The tool execution is given a working directory beneath the
             # "job" working directory.
             safe_makedirs(self.tool_working_directory)
-            safe_makedirs(os.path.join(working_directory, "outputs"))
+            for name in JOB_DIRECTORY_CONTAINER_SUBDIRECTORIES:
+                safe_makedirs(os.path.join(working_directory, name))
             log.debug("(%s) Working directory for job is: %s", self.job_id, self.working_directory)
         except ObjectInvalid:
             raise Exception("(%s) Unable to create job working directory", job.id)
@@ -1505,7 +1588,7 @@ class MinimalJobWrapper(HasResourceParameters):
     def _get_tool_evaluator(self, job):
         if self.remote_command_line:
             klass = PartialToolEvaluator
-        elif self.tool.base_command or self.tool.shell_command:
+        elif self.tool.uses_user_tool_evaluator:
             klass = UserToolEvaluator
         else:
             klass = ToolEvaluator
@@ -1583,12 +1666,21 @@ class MinimalJobWrapper(HasResourceParameters):
                 if self.outputs_to_working_directory and not self.__link_file_check() and working_directory_exists:
                     for dataset_path in self.job_io.get_output_fnames():
                         try:
-                            shutil.move(dataset_path.false_path, dataset_path.real_path)
+                            self._move_working_directory_output(dataset_path)
                             log.debug("fail(): Moved %s to %s", dataset_path.false_path, dataset_path.real_path)
                         except FileNotFoundError as e:
                             log.warning("fail(): Missing output file in working directory: %s", unicodify(e))
+                        except OutputCollectionSecurityError as e:
+                            log.warning("fail(): Not moving %s: %s", dataset_path.false_path, e)
             except Exception as e:
                 log.exception(str(e))
+            # finish() sets the total size of the outputs in the same transaction that charges them to the user,
+            # so outputs without a total size haven't been charged yet
+            uncharged_datasets = [
+                output_dataset
+                for dataset_assoc in job.output_datasets
+                if (output_dataset := dataset_assoc.dataset.dataset) is not None and output_dataset.total_size is None
+            ]
             for dataset_assoc in job.output_datasets + job.output_library_datasets:
                 dataset = dataset_assoc.dataset
                 self.sa_session.refresh(dataset)
@@ -1614,6 +1706,8 @@ class MinimalJobWrapper(HasResourceParameters):
                         "Execution of this dataset's job is paused because its input datasets are in an error state.",
                     )
             self._set_unknown_output_extensions_to_data(job)
+            # Failed outputs keep their partial content, charge it like finish() does
+            self._charge_outputs(uncharged_datasets)
             job.set_final_state(job.states.ERROR)
             job.command_line = self.command_line
             job.info = message
@@ -1636,11 +1730,6 @@ class MinimalJobWrapper(HasResourceParameters):
         if working_directory_exists:
             self._fix_output_permissions()
         self._report_error()
-        # Perform email action even on failure.
-        for pja in [
-            pjaa.post_job_action for pjaa in job.post_job_actions if pjaa.post_job_action.action_type == "EmailAction"
-        ]:
-            ActionBox.execute(self.app, self.sa_session, pja, job)
 
         # If the job was deleted, call tool specific fail actions (used for e.g. external metadata) and clean up
         if self.tool:
@@ -1665,6 +1754,8 @@ class MinimalJobWrapper(HasResourceParameters):
             log.debug("Pausing Job '%d', %s", job.id, message)
             job.set_state(job.states.PAUSED)
             self.sa_session.add(job)
+            return True
+        return False
 
     def is_ready_for_resubmission(self, job=None):
         if job is None:
@@ -2041,7 +2132,6 @@ class MinimalJobWrapper(HasResourceParameters):
         user = job.user
         object_store_id = self.get_destination_configuration("object_store_id", None)
         split_object_stores: Callable[[str], ObjectStorePopulator] | None = None
-        object_store_id_overrides: dict[str, str | None] | None = None
 
         if object_store_id is None:
             object_store_id = job.preferred_object_store_id
@@ -2071,11 +2161,6 @@ class MinimalJobWrapper(HasResourceParameters):
                     output_names = [
                         o for o in output_names if invocation_object_stores.is_output_name_an_effective_output(o)
                     ]
-
-                # we resolve the precreated datasets here with object store populators
-                # but for dynamically created datasets after the job we need to record
-                # the outputs and set them accordingly
-                object_store_id_overrides = dict.fromkeys(output_names, preferred_outputs_object_store_id)
 
                 def split_object_stores(output_name: str):  # noqa: F811 https://github.com/PyCQA/pyflakes/issues/783
                     if "|__part__|" in output_name:
@@ -2119,7 +2204,8 @@ class MinimalJobWrapper(HasResourceParameters):
                 dataset_object_store_populator = split_object_stores(dataset_assoc.name)
                 dataset_object_store_populator.set_object_store_id(dataset, require_shareable=require_shareable)
             job.object_store_id = object_store_populator.object_store_id
-            job.object_store_id_overrides = object_store_id_overrides
+            # Datasets discovered after the job go to the store the precreated outputs settled on.
+            job.object_store_id_overrides = dict.fromkeys(output_names, outputs_object_store_populator.object_store_id)
             self._setup_working_directory(job=job)
 
     def _set_unknown_output_extensions_to_data(self, job: Job) -> None:
@@ -2229,13 +2315,17 @@ class MinimalJobWrapper(HasResourceParameters):
                 else:
                     dataset.state = model.HistoryDatasetAssociation.states.FAILED_METADATA
             else:
-                self.external_output_metadata.load_metadata(
-                    dataset,
-                    output_name,
-                    self.sa_session,
-                    working_directory=self.working_directory,
-                    remote_metadata_directory=remote_metadata_directory,
-                )
+                try:
+                    self.external_output_metadata.load_metadata(
+                        dataset,
+                        output_name,
+                        self.sa_session,
+                        working_directory=self.working_directory,
+                        remote_metadata_directory=remote_metadata_directory,
+                    )
+                except MetadataTempFilePathError as e:
+                    log.warning("(%s) Rejected metadata for output %s: %s", job.id, output_name, e)
+                    dataset.state = model.HistoryDatasetAssociation.states.FAILED_METADATA
             if final_job_state != job.states.ERROR:
                 line_count = context.get("line_count", None)
                 dataset.set_peek(line_count=line_count)
@@ -2332,12 +2422,30 @@ class MinimalJobWrapper(HasResourceParameters):
         else:
             final_job_state = job.states.ERROR
 
-        if not extended_metadata and self.outputs_to_working_directory and not self.__link_file_check():
+        output_collection_security_error = None
+        try:
+            self._ensure_outputs_in_job_directory(job)
+        except OutputCollectionSecurityError as e:
+            log.warning("Job %s failed output collection: %s", job.id, e)
+            output_collection_security_error = e
+            final_job_state = job.states.ERROR
+
+        if (
+            output_collection_security_error is None
+            and not extended_metadata
+            and self.outputs_to_working_directory
+            and not self.__link_file_check()
+        ):
             # output will be moved by job if metadata_strategy is extended_metadata, so skip moving here
             for dataset_path in self.job_io.get_output_fnames():
                 try:
-                    shutil.move(dataset_path.false_path, dataset_path.real_path)
+                    self._move_working_directory_output(dataset_path)
                     log.debug(f"finish(): Moved {dataset_path.false_path} to {dataset_path.real_path}")
+                except OutputCollectionSecurityError as e:
+                    log.warning("Job %s failed output collection: %s", job.id, e)
+                    output_collection_security_error = e
+                    final_job_state = job.states.ERROR
+                    break
                 except OSError:
                     # this can happen if Galaxy is restarted during the job's
                     # finish method - the false_path file has already moved,
@@ -2355,10 +2463,28 @@ class MinimalJobWrapper(HasResourceParameters):
 
         job_context = ExpressionContext(dict(stdout=tool_stdout, stderr=tool_stderr))
         if extended_metadata:
+            # Commit the tool's streams and messages first, so that a refused or failed import can roll back
+            # everything it imported.
+            self.sa_session.commit()
             try:
-                import_options = store.ImportOptions(allow_dataset_object_edit=True, allow_edit=True)
+                metadata_directory = os.path.join(self.working_directory, "metadata")
+                # The job writes this model store, so it may only edit the job's own outputs. User-defined tools
+                # can't link their outputs to server files or move them to another object store either.
+                user_defined_tool = bool(job.dynamic_tool and job.dynamic_tool.tool_format == "GalaxyUserTool")
+                import_options = store.ImportOptions(
+                    allow_dataset_object_edit=True,
+                    allow_edit=True,
+                    editable_objects=store.EditableObjects(
+                        job,
+                        allow_dataset_file_edit=not user_defined_tool,
+                        can_add_to_library_folder=functools.partial(self._can_add_to_library_folder, job),
+                    ),
+                    datasets_attrs_at_job_setup=store.load_datasets_attrs_by_id(
+                        os.path.join(metadata_directory, "outputs_new")
+                    ),
+                )
                 import_model_store = store.get_import_model_store_for_directory(
-                    os.path.join(self.working_directory, "metadata", "outputs_populated"),
+                    os.path.join(metadata_directory, "outputs_populated"),
                     app=self.app,
                     import_options=import_options,
                     user=job.user,
@@ -2366,6 +2492,7 @@ class MinimalJobWrapper(HasResourceParameters):
                     # The imported outputs are committed together with the final job state below.
                     commit=False,
                 )
+                self._check_can_add_to_library_folders(job, import_model_store)
                 object_import_tracker = import_model_store.perform_import(history=job.history, job=job)
                 # Datasets discovered by the job are created by the import, without permissions.
                 # Precreated outputs (hdas_by_id) got their permissions when the job was created.
@@ -2387,13 +2514,23 @@ class MinimalJobWrapper(HasResourceParameters):
                 if object_import_tracker.job_states_by_id.get(job.id) == job.states.ERROR:
                     final_job_state = job.states.ERROR
             except store.FileTracebackException as e:
+                self.sa_session.rollback()
                 job.traceback = e.traceback
                 log.exception(f"Problem generating command line for Job {job.id}.\n{job.traceback}")
                 return fail(str(e), exception=e)
             except Exception as e:
+                self.sa_session.rollback()
                 log.exception(f"problem importing job outputs. stdout [{job.stdout}] stderr [{job.stderr}]")
                 return fail(str(e), exception=e)
         else:
+            if self.remote_command_line:
+                # The extended metadata export carries the command line; without it the evaluator leaves it here.
+                command_line_path = os.path.join(
+                    job_metadata_directory(self.working_directory), REMOTE_COMMAND_LINE_FILE
+                )
+                if os.path.exists(command_line_path):
+                    with open(command_line_path) as fh:
+                        job.command_line = fh.read()
             if self.tool.version_string_cmd:
                 version_filename = self.get_version_string_path()
                 self.version_string = collect_shrinked_content_from_path(version_filename)
@@ -2465,6 +2602,21 @@ class MinimalJobWrapper(HasResourceParameters):
                     # We don't set datsets in error state to OK because discover_outputs may have already set the state to error
                     dataset_assoc.dataset.dataset.state = Dataset.states.OK
 
+        if output_collection_security_error:
+            # Importing job outputs and output discovery replace the job's messages, so add this one afterwards.
+            # Extended metadata may already have recorded the same rejection.
+            message = {
+                "type": "output_collection_security",
+                "desc": str(output_collection_security_error),
+                "error_level": StdioErrorLevel.FATAL,
+            }
+            job_messages = job.job_messages or []
+            if not any(
+                existing.get("type") == message["type"] and existing.get("desc") == message["desc"]
+                for existing in job_messages
+            ):
+                job.job_messages = [*job_messages, message]
+
         if job.states.ERROR == final_job_state:
             for dataset_assoc in output_dataset_associations:
                 log.debug("(%s) setting dataset %s state to ERROR", job.id, dataset_assoc.dataset.dataset.id)
@@ -2488,18 +2640,13 @@ class MinimalJobWrapper(HasResourceParameters):
             job.exit_code = tool_exit_code
         # custom post process setup
 
-        collected_bytes = 0
-        quota_source_info = None
         # Once datasets are collected, set the total dataset size (includes extra files)
         for dataset_assoc in job.output_datasets:
             dataset = dataset_assoc.dataset.dataset
-            # assume all datasets in a job get written to the same objectstore
-            quota_source_info = dataset.quota_source_info
-            collected_bytes += dataset.set_total_size()
+            dataset.set_total_size()
             if dataset.purged:
                 # Purge, in case job wrote directly to object store
                 dataset.full_delete()
-                collected_bytes = 0
 
         # Calculate dataset hash - only if the job completed successfully,
         # otherwise dataset files may be missing/invalid (e.g. failed fetch from 404 URL).
@@ -2523,9 +2670,7 @@ class MinimalJobWrapper(HasResourceParameters):
                                 )
                             )
 
-        user = job.user
-        if user and collected_bytes > 0 and quota_source_info is not None and quota_source_info.use:
-            user.adjust_total_disk_usage(collected_bytes, quota_source_info.label)
+        self._charge_outputs([dataset_assoc.dataset.dataset for dataset_assoc in job.output_datasets])
 
         # Certain tools require tasks to be completed after job execution
         # ( this used to be performed in the "exec_after_process" hook, but hooks are deprecated ).
@@ -2554,12 +2699,14 @@ class MinimalJobWrapper(HasResourceParameters):
         self._set_unknown_output_extensions_to_data(job)
         self._fix_output_permissions()
 
-        # Outputs, metrics and the final job state are committed together, so
-        # readers never see finished outputs on a job that is still running, or
-        # a finished job without its metrics.
+        # Outputs, metrics, the output collections' update_time and the final
+        # job state are committed together, so readers never see finished
+        # outputs on a job that is still running, or a finished job without its
+        # metrics or with a history update_time that is about to change.
         if not job.tasks:
             # If job was composed of tasks, don't attempt to recollect statistics
             self._collect_metrics(job, job_metrics_directory)
+        job.touch_collections_update_time()
         job.set_state(final_job_state)
         self.sa_session.commit()
 
@@ -2573,17 +2720,17 @@ class MinimalJobWrapper(HasResourceParameters):
                 except Exception:
                     log.exception("Error queuing hash calculation for dataset %d", request.dataset_id)
 
-        # The update_time bumps wake the workflow scheduler. Every job of a
-        # mapped-over step bumps the same workflow_invocation_step row, so they
-        # run in their own short transaction after the outputs are visible,
-        # not in the one that holds the user's disk usage row. A failure here
-        # leaves the committed job state alone; the scheduler also checks job
-        # states directly.
+        # The invocation step update_time bump wakes the workflow scheduler.
+        # Every job of a mapped-over step bumps the same workflow_invocation_step
+        # row, so it runs in its own short transaction after the outputs are
+        # visible, not in the one that holds the user's disk usage row. A
+        # failure here leaves the committed job state alone; the scheduler also
+        # checks job states directly.
         try:
-            job.touch_dependent_update_times()
+            job.touch_invocation_steps_update_time()
             self.sa_session.commit()
         except Exception:
-            log.exception(f"Updating update_time of collections and invocation steps failed for job {self.job_id}")
+            log.exception(f"Updating update_time of invocation steps failed for job {self.job_id}")
             self.sa_session.rollback()
         if job.state == job.states.ERROR:
             self._report_error()
@@ -2602,7 +2749,7 @@ class MinimalJobWrapper(HasResourceParameters):
         # before persisting them.
         input_params = job.raw_param_dict()
         input_ext = input_params.get("__input_ext")
-        input_dbkey = input_params.get("dbkey")
+        input_dbkey = input_params.get(DBKEY)
         if input_ext is not None:
             input_ext = loads(input_ext)
             input_dbkey = loads(input_dbkey)
@@ -2630,7 +2777,14 @@ class MinimalJobWrapper(HasResourceParameters):
             input_ext=input_ext,
             input_dbkey=input_dbkey,
             final_job_state=final_job_state,
+            # Metadata set for legacy galaxy.json datasets writes its temp files here.
+            metadata_tmp_files_dir=job_metadata_directory(self.working_directory),
         )
+
+    def _can_add_to_library_folder(self, job: model.Job, folder_id: int) -> bool:
+        folder = self.sa_session.get(model.LibraryFolder, folder_id)
+        trans = WorkRequestContext(self.app, user=job.user, galaxy_session=job.galaxy_session)
+        return folder is not None and self.app.library_folder_manager.can_add_item(trans, folder)
 
     def check_tool_output(self, tool_stdout, tool_stderr, tool_exit_code, job, job_stdout=None, job_stderr=None):
         state, tool_stdout, tool_stderr, job_messages = check_output(
@@ -3006,6 +3160,38 @@ class MinimalJobWrapper(HasResourceParameters):
                 except ObjectNotFound:
                     pass
 
+    def _ensure_outputs_in_job_directory(self, job: Job) -> None:
+        """Reject outputs and ``from_work_dir`` sources that resolve outside the job directory."""
+        for dataset_path in self.job_io.get_output_fnames():
+            if dataset_path.false_path:
+                ensure_job_path_in_job_directory(dataset_path.false_path, self.working_directory)
+        # Only check existence, the file is writable by the tool.
+        if os.path.lexists(rejected_work_dir_outputs_file(self.working_directory)):
+            raise OutputCollectionSecurityError(
+                "The job script refused to collect a from_work_dir output "
+                "that does not resolve to a path inside the job directory."
+            )
+        if not self.tool:
+            return
+        for dataset_assoc in job.output_datasets + job.output_library_datasets:
+            output = self.tool.find_output_def(dataset_assoc.name)
+            dataset = dataset_assoc.dataset.dataset
+            if not output or not output.from_work_dir or not dataset or dataset.purged:
+                continue
+            source = os.path.join(self.tool_working_directory, output.from_work_dir)
+            for path in glob.glob(escape_preserving_wildcards(source, glob.escape)):
+                ensure_job_path_in_job_directory(path, self.working_directory)
+
+    def _move_working_directory_output(self, dataset_path: DatasetPath) -> None:
+        false_path = dataset_path.false_path
+        assert false_path
+        ensure_job_path_in_job_directory(false_path, self.working_directory)
+        if os.path.islink(false_path):
+            # Copy the target, the link itself would dangle once the job directory is cleaned up.
+            shutil.copyfile(false_path, dataset_path.real_path)
+        else:
+            shutil.move(false_path, dataset_path.real_path)
+
     def __link_file_check(self):
         """outputs_to_working_directory breaks library uploads where data is
         linked.  This method is a hack that solves that problem, but is
@@ -3212,7 +3398,15 @@ class TaskWrapper(JobWrapper):
         return self.extra_filenames
 
     def fail(
-        self, message, exception=False, tool_stdout="", tool_stderr="", exit_code=None, job_stdout=None, job_stderr=None
+        self,
+        message,
+        exception=False,
+        tool_stdout="",
+        tool_stderr="",
+        exit_code=None,
+        job_stdout=None,
+        job_stderr=None,
+        job_metrics_directory=None,
     ):
         log.error(f"TaskWrapper Failure {message}")
         self.status = "error"
@@ -3224,6 +3418,7 @@ class TaskWrapper(JobWrapper):
             exit_code=exit_code,
             job_stdout=job_stdout,
             job_stderr=job_stderr,
+            job_metrics_directory=job_metrics_directory,
         )
         # How do we want to handle task failure?  Fail the job and let it clean up?
 

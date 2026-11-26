@@ -29,6 +29,7 @@ import {
 import purify from "dompurify";
 import type { DirectiveBinding, ObjectDirective, VNode } from "vue";
 
+import { addIdReference, removeIdReference } from "../utils/idReferences";
 import { DEFAULT_TOOLTIP_HOVER_DELAY_MS, useDelayedAction } from "../utils/tooltipTiming";
 
 interface TooltipState {
@@ -386,6 +387,8 @@ function updateContent(el: HTMLElement, bindingValue: unknown, state: TooltipSta
     const label = state.isHtml ? getHtmlLabel(state.contentEl) : content;
     // Set aria-label so icon-only buttons have an accessible name
     const target = getLabelTarget(el);
+    // Set alongside aria-label, so the description and the name always land on the same target
+    addIdReference(target, "aria-describedby", state.tooltipEl.id);
     const labelledHere = !!target.dataset.gTooltipAriaLabel;
     // Tooltips describe text controls without replacing their visible or explicit names.
     const alreadyNamed =
@@ -420,7 +423,6 @@ export const vGTooltip: ObjectDirective<HTMLElement> = {
 
         const uid = `g-tooltip-${tooltipCounter++}`;
         tooltipEl.id = uid;
-        el.setAttribute("aria-describedby", uid);
 
         let resizeObserver: ResizeObserver | null = null;
         if (onOverflow) {
@@ -493,8 +495,8 @@ export const vGTooltip: ObjectDirective<HTMLElement> = {
         state.resizeObserver?.disconnect();
         state.tooltipEl.remove();
         restoreNativeTooltip(el);
-        el.removeAttribute("aria-describedby");
         const labelTarget = getLabelTarget(el);
+        removeIdReference(labelTarget, "aria-describedby", state.tooltipEl.id);
         if (labelTarget.dataset.gTooltipAriaLabel) {
             labelTarget.removeAttribute("aria-label");
         }

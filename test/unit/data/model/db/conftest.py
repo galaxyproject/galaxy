@@ -88,10 +88,12 @@ def clear_database(engine: "Engine", session) -> "Generator":
             while to_delete:
                 for table in to_delete:
                     try:
-                        conn.execute(text(f"DELETE FROM {table}"))
+                        # Preserve earlier successful deletes when a parent is
+                        # still referenced; only retry this table on a later pass.
+                        with conn.begin_nested():
+                            conn.execute(text(f"DELETE FROM {table}"))
                     except IntegrityError:
                         failed.append(table)
-                        conn.rollback()
                 to_delete, failed = failed, []
 
         conn.commit()

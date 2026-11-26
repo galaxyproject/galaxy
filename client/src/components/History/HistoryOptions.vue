@@ -204,6 +204,7 @@ watch(
             </GDropdownItem>
 
             <GDropdownItem
+                data-description="export tool references"
                 :title="localize('Export references for all Tools used in this History')"
                 :to="`/histories/citations?id=${history.id}`">
                 <FontAwesomeIcon fixed-width :icon="faStream" />

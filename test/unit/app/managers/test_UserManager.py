@@ -4,6 +4,7 @@ User Manager testing.
 Executable directly using: python -m test.unit.managers.test_UserManager
 """
 
+import logging
 from typing import (
     cast,
     TYPE_CHECKING,
@@ -19,12 +20,15 @@ from sqlalchemy import (
 from galaxy import (
     exceptions,
     model,
+    schema,
 )
+from galaxy.config import COMPLIANCE_LOGGER_NAME
 from galaxy.managers import (
     base as base_manager,
     histories,
     users,
 )
+from galaxy.managers.api_keys import ApiKeyManager
 from galaxy.managers.extra_preferences import ExtraPreferencesManager
 from galaxy.schema.schema import UserUpdatePayload
 from galaxy.security.passwords import check_password
@@ -42,6 +46,14 @@ user2_data = dict(email="user2@user2.user2", username="user2", password=default_
 user3_data = dict(email="user3@user3.user3", username="user3", password=default_password)
 user4_data = dict(email="user4@user4.user4", username="user4", password=default_password)
 uppercase_email_user = dict(email="USER5@USER5.USER5", username="USER5", password=default_password)
+
+
+class FakeAuthnzManager:
+    def __init__(self, users_by_token: dict[str, model.User]) -> None:
+        self.users_by_token = users_by_token
+
+    def match_access_token_to_user(self, sa_session, access_token: str) -> model.User | None:
+        return self.users_by_token.get(access_token)
 
 
 def assert_user_display_name_is(user: model.User, display_name: str | None) -> None:
@@ -561,6 +573,37 @@ class TestUserManager(BaseTestCase):
         # Email lookups should be case-insensitive
         assert self.user_manager.get_user_by_identity(uppercase_email_user["email"].capitalize()) == uppercase_user
 
+    def test_by_credentials(self):
+        user2 = self.user_manager.create(**user2_data)
+        user3 = self.user_manager.create(**user3_data)
+        api_key = ApiKeyManager(self.app).create_api_key(user2).key
+        authnz_manager = FakeAuthnzManager({"good-token": user3})
+        with patch.object(self.app, "authnz_manager", authnz_manager, create=True):
+            self.log("an API key wins over an access token")
+            assert self.user_manager.by_credentials(api_key, "good-token") == user2
+
+            self.log("a bad API key raises, even with a good access token alongside")
+            with pytest.raises(exceptions.AuthenticationFailed):
+                self.user_manager.by_credentials("not-a-real-key", "good-token")
+
+            self.log("an access token alone goes to the OIDC lookup")
+            assert self.user_manager.by_credentials(None, "good-token") == user3
+            assert self.user_manager.by_credentials(None, "unknown-token") is None
+
+            self.log("no credentials means no user")
+            assert self.user_manager.by_credentials(None, None) is None
+
+    def test_user_can_do_run_as(self):
+        user2 = self.user_manager.create(**user2_data)
+        user3 = self.user_manager.create(**user3_data)
+        with patch.object(self.app.config, "api_allow_run_as", user2.email, create=True):
+            assert self.user_manager.user_can_do_run_as(user2)
+            assert not self.user_manager.user_can_do_run_as(user3)
+            # The master API key's user has no email, but may always run as others.
+            assert self.user_manager.user_can_do_run_as(schema.BootstrapAdminUser())
+            # A Bearer token that matches no user reaches the run_as check with no user at all.
+            assert not self.user_manager.user_can_do_run_as(None)
+
     def test_purge_deletes_oidc_tokens(self):
         self.log("purging a user should unlink their external identities")
         self.trans.app.config.allow_user_deletion = True
@@ -573,6 +616,18 @@ class TestUserManager(BaseTestCase):
         self.user_manager.purge(user2)
 
         assert self._oidc_tokens_for(user2) == []
+
+    def test_purge_logs_compliance_event_with_user_id(self, caplog):
+        self.log("purging a user should log the user ID, not their PII, to the compliance logger")
+        self.trans.app.config.allow_user_deletion = True
+        user2 = self.user_manager.create(**user2_data)
+        self.user_manager.delete(user2)
+
+        with caplog.at_level(logging.INFO, logger=COMPLIANCE_LOGGER_NAME):
+            self.user_manager.purge(user2)
+
+        compliance_messages = [r.getMessage() for r in caplog.records if r.name == COMPLIANCE_LOGGER_NAME]
+        assert compliance_messages == [f"delete-user-event: {user2.id}"]
 
     def test_new_remote_user_default_access_private(self):
         self.app.config.use_remote_user = True

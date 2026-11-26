@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import axios, { type AxiosError } from "axios";
 import { BForm, BFormCheckbox, BFormGroup } from "bootstrap-vue";
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import Multiselect from "vue-multiselect";
 
 import {
@@ -50,10 +50,26 @@ const messageVariant = ref<string | null>(null);
 const cILogonIdps = ref<Idp[]>([]);
 const selected = ref<Idp | null>(null);
 const rememberIdp = ref(false);
+/** IdPs whose icon has loaded; the rest show a text button. */
+const loadedIcons = ref(new Set<string>());
 
 const oIDCIdps = computed<OIDCConfig>(() => (isConfigLoaded.value ? config.value.oidc : {}));
 
 const filteredOIDCIdps = computed(() => getFilteredOIDCIdps(oIDCIdps.value, props.excludeIdps));
+
+watch(
+    filteredOIDCIdps,
+    (idps) => {
+        Object.entries(idps).forEach(([idp, cfg]) => {
+            if (cfg.icon && !loadedIcons.value.has(idp)) {
+                const img = new Image();
+                img.onload = () => loadedIcons.value.add(idp);
+                img.src = cfg.icon;
+            }
+        });
+    },
+    { immediate: true },
+);
 
 const cILogonConfigured = computed(() => getNeedShowCilogonInstitutionList(oIDCIdps.value));
 
@@ -166,13 +182,17 @@ function getIdpPreference() {
 </script>
 
 <template>
-    <div class="h-100">
-        <GAlert v-if="messageText" class="text-nowrap" show :variant="messageVariant">
+    <div class="h-100" :class="{ 'd-flex flex-column': !props.columnDisplay }">
+        <GAlert v-if="messageText" show :variant="messageVariant">
             {{ messageText }}
         </GAlert>
 
-        <div :class="{ 'd-flex h-100': !props.columnDisplay }">
-            <BForm v-if="cILogonConfigured" id="externalLogin" class="cilogon">
+        <div :class="{ 'd-flex flex-grow-1': !props.columnDisplay }">
+            <BForm
+                v-if="cILogonConfigured"
+                id="externalLogin"
+                class="cilogon"
+                :class="{ 'cilogon-row': !props.columnDisplay }">
                 <div>
                     <BFormGroup :label="`Use ${props.loginPage ? `existing` : ``} institutional login`">
                         <Multiselect
@@ -223,7 +243,7 @@ function getIdpPreference() {
                 :class="!props.columnDisplay && props.loginPage ? 'oidc-idps-column' : 'oidc-idps-grid'">
                 <div v-for="(iDPInfo, idp) in filteredOIDCIdps" :key="idp">
                     <GButton
-                        v-if="iDPInfo['icon']"
+                        v-if="iDPInfo['icon'] && loadedIcons.has(idp)"
                         transparent
                         class="d-block oidc-button p-0"
                         :disabled="loading"
@@ -237,7 +257,6 @@ function getIdpPreference() {
                         class="d-block oidc-button"
                         :disabled="loading"
                         @click="clickOIDCLogin(idp)">
-                        <i :class="oIDCIdps[idp]" />
                         Sign in with {{ iDPInfo["custom_button_text"] }}
                     </GButton>
                     <GButton
@@ -247,7 +266,6 @@ function getIdpPreference() {
                         class="d-block oidc-button"
                         :disabled="loading"
                         @click="clickOIDCLogin(idp)">
-                        <i :class="oIDCIdps[idp]" />
                         Sign in with
                         <span v-if="iDPInfo['label']">
                             {{ iDPInfo["label"].charAt(0).toUpperCase() + iDPInfo["label"].slice(1) }}
@@ -266,17 +284,20 @@ function getIdpPreference() {
 .card-body {
     overflow: visible;
 }
+.cilogon-row {
+    max-width: 22rem;
+}
 /* Enforce idps to appear in a column */
 .oidc-idps-column {
     display: flex;
     flex-direction: column;
+    flex-grow: 1;
     gap: 0.5rem;
     height: 100%;
     justify-content: center;
     .oidc-button {
         width: 100%;
-        display: flex !important;
-        justify-content: center;
+        text-align: center;
     }
 }
 /* Flexible grid for idps */

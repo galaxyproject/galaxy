@@ -19,11 +19,9 @@ from typing import (
     TypedDict,
 )
 
-from kombu import (
-    Consumer,
-    Queue,
-    uuid,
-)
+from kombu.common import uuid
+from kombu.entity import Queue
+from kombu.messaging import Consumer
 from kombu.mixins import ConsumerProducerMixin
 from kombu.pools import producers
 
@@ -602,7 +600,7 @@ control_message_to_task = {
 }
 
 
-class GalaxyQueueWorker(ConsumerProducerMixin, threading.Thread):  # type: ignore[misc]  # kombu is untyped
+class GalaxyQueueWorker(ConsumerProducerMixin, threading.Thread):  # type: ignore[misc,unused-ignore]  # kombu < 5.7 is untyped
     """
     This is a flexible worker for galaxy's queues.  Each process, web or
     handler, will have one of these used for dispatching so called 'control'

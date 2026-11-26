@@ -2,6 +2,7 @@ from fastapi import Query
 from fastapi.responses import RedirectResponse
 
 from galaxy.exceptions import ObjectNotFound
+from galaxy.managers._config_templates import galaxy_url_for_path
 from galaxy.managers.file_source_instances import FileSourceInstancesManager
 from galaxy.schema.schema import OAuth2State
 from galaxy.webapps.galaxy.api import (
@@ -57,10 +58,10 @@ class OAuth2Callback:
     ):
         if error:
             error_code = self._ensure_valid_oauth_error_code(error)
-            return RedirectResponse(f"{trans.request.url_path}{ERROR_REDIRECT_PATH}?error={error_code}")
+            return RedirectResponse(galaxy_url_for_path(trans, f"{ERROR_REDIRECT_PATH}?error={error_code}"))
         elif not code:
             return RedirectResponse(
-                f"{trans.request.url_path}{ERROR_REDIRECT_PATH}?error=No credentials provided, please try again."
+                galaxy_url_for_path(trans, f"{ERROR_REDIRECT_PATH}?error=No credentials provided, please try again.")
             )
 
         oauth2_state = OAuth2State.decode(state)
@@ -72,7 +73,7 @@ class OAuth2Callback:
         else:
             raise ObjectNotFound(f"Could not find oauth2 callback for route {route}")
 
-        return RedirectResponse(f"{trans.request.url_path}{redirect}")
+        return RedirectResponse(galaxy_url_for_path(trans, redirect))
 
     def _ensure_valid_oauth_error_code(self, error: str) -> str:
         # if the error code is valid, return it as is so the client can

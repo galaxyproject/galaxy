@@ -1,6 +1,7 @@
-import { getLocalVue } from "@tests/vitest/helpers";
+import { getLocalVue, withPlugins } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import { describe, expect, it, vi } from "vitest";
+import { defineComponent, h, nextTick, ref } from "vue";
 import { createMemoryHistory, createRouter } from "vue-router";
 
 import GButton from "./GButton.vue";
@@ -275,5 +276,71 @@ describe("GButton.vue link targets", () => {
         const wrapper = mountGButton({ href: "https://example.org/data.txt", disabled: true });
 
         expect(wrapper.get("button").attributes("href")).toBeUndefined();
+    });
+});
+
+describe("GButton.vue pressed", () => {
+    it("announces itself as a toggle that is pressed", () => {
+        const wrapper = mountGButton({ pressed: true });
+
+        expect(wrapper.get("button").attributes("aria-pressed")).toBe("true");
+    });
+
+    it("announces itself as a toggle that is not pressed", () => {
+        const wrapper = mountGButton({ pressed: false });
+
+        expect(wrapper.get("button").attributes("aria-pressed")).toBe("false");
+    });
+
+    it("is not announced as a toggle when pressed is not passed", () => {
+        const wrapper = mountGButton({});
+
+        expect(wrapper.get("button").attributes("aria-pressed")).toBeUndefined();
+    });
+
+    // aria-pressed is not allowed on links.
+    it("leaves aria-pressed off a router-link root", () => {
+        const wrapper = mount(GButton as object, {
+            propsData: { to: "/pages/create", pressed: true },
+            localVue,
+            router: routerWithRoutes(),
+        });
+
+        expect(wrapper.get("a").attributes("aria-pressed")).toBeUndefined();
+    });
+
+    // A disclosure button announces its state through aria-expanded; aria-pressed would contradict it.
+    it.each([
+        ["aria-expanded", "true"],
+        ["aria-haspopup", "true"],
+    ])("leaves aria-pressed off when %s is passed", (attribute, value) => {
+        const wrapper = mountGButton({ pressed: true, [attribute]: value });
+        const button = wrapper.get("button");
+
+        expect(button.attributes("aria-pressed")).toBeUndefined();
+        expect(button.attributes(attribute)).toBe(value);
+        expect(button.classes()).toContain("g-pressed");
+    });
+
+    it("drops aria-pressed once aria-expanded is passed later", async () => {
+        const expanded = ref<string>();
+        const Parent = defineComponent({
+            render: () => h(GButton as object, { pressed: true, "aria-expanded": expanded.value }),
+        });
+        const wrapper = mount(Parent, { global: withPlugins(localVue) });
+        expect(wrapper.get("button").attributes("aria-pressed")).toBe("true");
+
+        expanded.value = "false";
+        await nextTick();
+
+        expect(wrapper.get("button").attributes("aria-pressed")).toBeUndefined();
+    });
+
+    it("emits the toggled state on click", async () => {
+        const wrapper = mountGButton({ pressed: false });
+
+        await wrapper.get("button").trigger("click");
+
+        expect(wrapper.emitted("update:pressed")).toEqual([[true]]);
     });
 });

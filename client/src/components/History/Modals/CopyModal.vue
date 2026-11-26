@@ -111,6 +111,7 @@ async function copy() {
         :ok-color="saveColor"
         :ok-disabled="loading || !formValid"
         :close-on-ok="false"
+        data-description="copy history modal"
         @ok="copy">
         <transition name="fade">
             <GAlert v-localize :show="isAnonymous" variant="warning">
@@ -131,7 +132,11 @@ async function copy() {
                     title="Enter a title for the new history"
                     invalid-feedback="Please enter a valid history title."
                     :state="newNameValid">
-                    <GFormInput v-model="name" :state="newNameValid" required />
+                    <GFormInput
+                        v-model="name"
+                        :state="newNameValid"
+                        required
+                        data-description="copy history name input" />
                 </GFormLabel>
 
                 <GFormLabel title="Choose which datasets from the original history to include.">

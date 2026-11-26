@@ -13,6 +13,7 @@ from typing import (
     ClassVar,
     get_args,
     Literal,
+    NotRequired,
     Union,
 )
 
@@ -32,7 +33,6 @@ from pydantic import (
 )
 from pydantic_core import PydanticCustomError
 from typing_extensions import (
-    NotRequired,
     TypedDict,
 )
 
@@ -897,10 +897,11 @@ class BaseTestOutputModel(StrictModel):
             title="Decompress",
             description=(
                 "If true, decompress files before comparison. Applies to assertions expressed with "
-                "`assert_contents` or `compare` set to anything but `sim_size`. Useful for testing "
+                "`assert_contents`, to `md5` and `checksum`, and to `compare` set to anything but `sim_size`. Useful for testing "
                 "compressed outputs that are non-deterministic despite having deterministic decompressed "
                 "contents. By default, only files compressed with bz2, gzip and zip are automatically "
-                "decompressed."
+                "decompressed. The result of combining `decompress` with `md5` or `checksum` on an archive "
+                "with more than one member is undefined."
             ),
         ),
     ] = None
@@ -957,6 +958,11 @@ class CollectionAttributes(StrictModel):
     collection_type: Annotated[CollectionType, Field(title="Collection Type")] = None
 
 
+class CollectionMetadata(StrictModel):
+    model_config = ConfigDict(extra="forbid", title="CollectionMetadata")
+    name: Annotated[str | None, Field(title="Name", description="Expected name of the output collection.")] = None
+
+
 class TestCollectionOutputAssertions(StrictModel):
     model_config = ConfigDict(extra="forbid", title="TestCollectionOutputAssertions")
     class_: Literal["Collection"] | None = Field("Collection", alias="class", title="Class")
@@ -971,6 +977,7 @@ class TestCollectionOutputAssertions(StrictModel):
     element_count: Annotated[int | None, Field(title="Element Count")] = None
     attributes: Annotated[CollectionAttributes | None, Field(title="Attributes")] = None
     collection_type: Annotated[CollectionType, Field(title="Collection Type")] = None
+    metadata: Annotated[CollectionMetadata | None, Field(title="Metadata")] = None
 
 
 TestOutputLiteral = bool | int | float | str

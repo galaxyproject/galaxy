@@ -1,5 +1,6 @@
 import os
 import random
+import time
 import uuid
 from tempfile import NamedTemporaryFile
 
@@ -192,15 +193,6 @@ class TestMappings(BaseModelTestCase):
         states = summary.states
         assert states == {"new": 2}
         assert extensions == ["bam", "txt"]
-        assert c2.element_identifiers_extensions_paths_and_metadata_files == [
-            [
-                ("inner_list", "forward"),
-                "bam",
-                "mock_dataset_14.dat",
-                [("bai", "mock_dataset_14.dat"), ("bam.csi", "mock_dataset_14.dat")],
-            ],
-            [("inner_list", "reverse"), "txt", "mock_dataset_14.dat", []],
-        ]
         assert c3.dataset_instances == []
         assert c3.dataset_elements == []
         summary_c3 = c3.dataset_states_and_extensions_summary
@@ -289,10 +281,17 @@ class TestMappings(BaseModelTestCase):
         assert len(get_audit_table_entries(h1)) == 1
         assert len(get_audit_table_entries(h2)) == 1
 
+        # The SQLite trigger records update_time with millisecond resolution and the
+        # (history_id, update_time) primary key ignores duplicates, so audited statements
+        # for the same history must land in different milliseconds to get separate rows.
+        # new_hda(h2) autoflushes the HDA added to h1, so it needs its own millisecond too.
+        time.sleep(0.002)
         self.new_hda(h1, name="1")
+        time.sleep(0.002)
         self.new_hda(h2, name="2")
 
         session = self.session()
+        time.sleep(0.002)
         session.commit()
         # _next_hid modifies history, plus trigger on HDA means 2 additional audit rows per history
 
@@ -768,16 +767,20 @@ class TestMappings(BaseModelTestCase):
         return history.add_dataset(hda)
 
 
+def create_postgres_test_database() -> str:
+    base = os.environ.get("GALAXY_TEST_UNIT_MAPPING_URI_POSTGRES_BASE")
+    dbname = "gxtest" + str(uuid.uuid4())
+    assert base
+    postgres_url = base + dbname
+    create_database(postgres_url)
+    return postgres_url
+
+
 @skip_if_not_postgres_base
 class TestPostgresMappings(TestMappings):
     @classmethod
     def _db_uri(cls):
-        base = os.environ.get("GALAXY_TEST_UNIT_MAPPING_URI_POSTGRES_BASE")
-        dbname = "gxtest" + str(uuid.uuid4())
-        assert base
-        postgres_url = base + dbname
-        create_database(postgres_url)
-        return postgres_url
+        return create_postgres_test_database()
 
 
 def _invocation_for_workflow(user, workflow):

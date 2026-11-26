@@ -323,6 +323,52 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions, UsesUploadActivi
         self.screenshot("tool_form_map_over_paired_collection_hint")
 
     @selenium_test
+    def test_data_parameter_accepted_formats(self):
+        self.tool_open("column_param")
+        assert sorted(self.tool_form_accepted_formats("input1")) == ["csv", "tabular"]
+        self.screenshot("tool_form_data_accepted_formats")
+
+    @selenium_test
+    def test_form_element_values(self):
+        self.tool_open("simple_constructs")
+        defaults = {
+            "booltest": "false",
+            "inttest": "1",
+            "floattest": "1.0",
+            "radio_select": "a_radio",
+            "check_select": "a_check",
+            "drop_select": "A Drop",
+        }
+        assert {name: self.form_element_value(name) for name in defaults} == defaults
+        self.form_element_set_value("booltest", "true")
+        self.form_element_set_value("inttest", "42")
+        self.form_element_set_value("floattest", "2.5")
+        self.form_element_set_value("radio_select", "c_radio")
+        self.form_element_set_value("check_select", ["b_check", "c_check"])
+        self.form_element_set_value("drop_select", "B Drop")
+        assert {name: self.form_element_value(name) for name in defaults} == {
+            "booltest": "true",
+            "inttest": "42",
+            "floattest": "2.5",
+            "radio_select": "c_radio",
+            "check_select": "a_check, b_check, c_check",
+            "drop_select": "B Drop",
+        }
+
+        self.tool_open("gx_color")
+        assert self.form_element_value("parameter") == "#aabbcc"
+        self.form_element_set_value("parameter", "#112233")
+        assert self.form_element_value("parameter") == "#112233"
+        self.tool_form_execute()
+        self.history_panel_wait_for_hid_ok(1)
+        content = self.dataset_populator.get_history_dataset_content(self.current_history_id(), hid=1)
+        assert content.strip() == "#112233"
+
+        self.tool_open("drill_down")
+        self.form_element_set_value("dd", ["a", "b"])
+        assert self.form_element_value("dd") == "a, b"
+
+    @selenium_test
     @flakey
     def test_run_data(self):
         test_path = self.get_filename("1.fasta")
@@ -506,6 +552,40 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions, UsesUploadActivi
 
 class TestLoggedInToolForm(SeleniumTestCase, UsesUploadActivity):
     ensure_registered = True
+
+    @selenium_test
+    @managed_history
+    def test_run_reuses_equivalent_job(self) -> None:
+        history_id = self.current_history_id()
+        self.dataset_populator.new_dataset(history_id, content="a b c", name="reuse_input.txt", wait=True)
+        selected = self.components.tool_form.parameter_data_select_value(parameter="input1")
+
+        @retry_assertion_during_transitions
+        def assert_input_selected():
+            assert (text := selected.wait_for_text()) == "1: reuse_input.txt", text
+
+        for reuse in (False, True):
+            self.home()
+            self.tool_open("cat1")
+            # Wait for the form's default pick so it can't override ours.
+            selected.wait_for_visible()
+            self.tool_form_select_data("input1", "reuse_input.txt")
+            if reuse:
+                self.tool_form_set_use_cached_job()
+                # let the CSS switch transition finish so the screenshot shows it on
+                self.sleep_for(self.wait_types.UX_RENDER)
+                self.screenshot("tool_form_use_cached_job")
+            assert_input_selected()
+            self.tool_form_execute()
+            self.history_panel_wait_for_hid_ok(3 if reuse else 2)
+        original, rerun = (
+            self.dataset_populator.get_job_details(
+                self.dataset_populator.get_history_dataset_details(history_id, hid=hid)["creating_job"], full=True
+            ).json()
+            for hid in (2, 3)
+        )
+        assert original["copied_from_job_id"] is None
+        assert rerun["copied_from_job_id"] == original["id"]
 
     @selenium_test
     def test_dataset_state_filtering(self):

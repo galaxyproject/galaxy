@@ -11,10 +11,6 @@ export function helpHtml(activeList = "my", isAnonymous = false) {
         <dd>
             Shows importable workflows (this also means they are URL generated).
         </dd>
-        <dt><code>is:shared_with_me</code></dt>
-        <dd>
-            Shows workflows shared by another user directly with you.
-        </dd>
         <dt><code>is:deleted</code></dt>
         <dd>Shows deleted workflows.</dd>`;
     } else if (activeList === "shared_with_me") {
@@ -102,13 +98,6 @@ export function getWorkflowFilters(activeList = "my", isAnonymous = false) {
                     type: Boolean,
                     boolType: "is",
                     handler: equals("importable", "importable", toBool),
-                    menuItem: true,
-                },
-                shared_with_me: {
-                    placeholder: "Shared with me",
-                    type: Boolean,
-                    boolType: "is",
-                    handler: equals("shared_with_me", "shared_with_me", toBool),
                     menuItem: true,
                 },
                 deleted: {

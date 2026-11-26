@@ -1,0 +1,61 @@
+class: GalaxyWorkflow
+inputs:
+  replacemeouter: text
+outputs:
+  out1:
+    outputSource: nested_workflow/workflow_output_1
+  out2:
+    outputSource: nested_workflow/workflow_output_2
+  out3:
+    outputSource: nested_workflow/workflow_output_3
+steps:
+  pick_replaceme:
+    tool_id: pick_value
+    in:
+      style_cond|type_cond|pick_from_0|value: replacemeouter
+    state:
+      style_cond:
+        pick_style: first
+        type_cond:
+          param_type: text
+          pick_from:
+          - value:
+              __class__: RuntimeValue
+  nested_workflow:
+    run:
+      class: GalaxyWorkflow
+      inputs:
+        replacemeinner: text
+      outputs:
+        workflow_output_1:
+          outputSource: create_2/out_file1
+        workflow_output_2:
+          outputSource: create_2/out_file2
+        workflow_output_3:
+          outputSource: pick_created/output
+      steps:
+        create_2:
+          tool_id: create_2
+          state:
+            sleep_time: 0
+          out:
+            out_file1:
+              rename: "${replacemeinner} name"
+            out_file2:
+              rename: "${replacemeinner} name 2"
+        create_for_pick:
+          tool_id: create_2
+          state:
+            sleep_time: 0
+        pick_created:
+          type: pick_value
+          in:
+            input_0:
+              source: create_for_pick/out_file1
+          state:
+            mode: first_non_null
+          out:
+            output:
+              rename: "${replacemeinner} picked"
+    in:
+      replacemeinner: pick_replaceme/text_param

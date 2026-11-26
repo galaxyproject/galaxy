@@ -5,7 +5,7 @@
             <div class="text-right">
                 <button
                     class="run-tool-collection-edit btn btn-primary"
-                    :disabled="selectedConverter == {}"
+                    :disabled="!selectedConverter?.tool_id"
                     @click="clickedConvert">
                     {{ l("Convert Collection") }}
                 </button>
@@ -17,7 +17,6 @@
             v-model="selectedConverter"
             :aria-label="l('Converter Tool')"
             name="converter-tool"
-            deselect-label="Can't remove this value"
             track-by="name"
             label="name"
             :options="suitableConverters"

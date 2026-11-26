@@ -36,7 +36,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ['3.10']
+        python-version: ['3.11']
     services:
       postgres:
         image: postgres:18
@@ -56,6 +56,7 @@ jobs:
         with:
           version-file: galaxy root/.tool-versions
           python-version: ${{ matrix.python-version }}
+          prune-cache: true
       - name: Install Python
         run: uv python install
       - name: Run migration tests
@@ -67,8 +68,21 @@ jobs:
       - name: Run job handler ready window tests
         run: ./run_tests.sh -unit test/unit/app/jobs/test_handler.py
         working-directory: 'galaxy root'
+      - name: Run concurrent HDA copy_from tests
+        run: ./run_tests.sh -unit test/unit/data/test_hda_copy_from.py
+        working-directory: 'galaxy root'
       - name: Run OIDC flow-state tests with PostgreSQL
         env:
           GALAXY_TEST_OIDC_DATABASE_URL: ${{ env.GALAXY_TEST_DBURI }}
         run: ./run_tests.sh -unit test/unit/authnz/test_flow_state.py
+        working-directory: 'galaxy root'
+      - name: Run disk usage and quota tests with PostgreSQL
+        env:
+          GALAXY_TEST_UNIT_MAPPING_URI_POSTGRES_BASE: 'postgresql+psycopg://postgres:postgres@localhost:5432/'
+        run: ./run_tests.sh -unit test/unit/data/test_quota.py -- -k Postgres
+        working-directory: 'galaxy root'
+      - name: Run session cleanup tests with PostgreSQL
+        env:
+          GALAXY_TEST_SESSION_CLEANUP_DATABASE_URL: ${{ env.GALAXY_TEST_DBURI }}
+        run: ./run_tests.sh -unit test/unit/data/model/db/test_delete_galaxy_sessions.py
         working-directory: 'galaxy root'

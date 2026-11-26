@@ -8078,6 +8078,11 @@ export interface components {
              */
             reasoning?: string | null;
             /**
+             * Sources
+             * @description Verified sources behind the response
+             */
+            sources?: components["schemas"]["SourceCitation"][];
+            /**
              * Suggestions
              * @description Actionable suggestions
              */
@@ -9432,6 +9437,14 @@ export interface components {
              * @description The list of tags associated with the element.
              */
             tags?: string[] | null;
+        };
+        /** CollectionMetadata */
+        CollectionMetadata: {
+            /**
+             * Name
+             * @description Expected name of the output collection.
+             */
+            name?: string | null;
         };
         /**
          * CollectionSourceType
@@ -18173,7 +18186,7 @@ export interface components {
          * InvocationSortByEnum
          * @enum {string}
          */
-        InvocationSortByEnum: "create_time" | "update_time" | "None";
+        InvocationSortByEnum: "create_time" | "update_time";
         /**
          * InvocationState
          * @enum {string}
@@ -18504,7 +18517,7 @@ export interface components {
             new_history_name?: string | null;
             /**
              * No Add to History
-             * @description Indicates if the workflow invocation should not be added to the history.
+             * @description If true, workflow inputs from other histories or libraries are not copied into the target history.
              * @default false
              */
             no_add_to_history: boolean | null;
@@ -19078,10 +19091,17 @@ export interface components {
             rerun_remap_job_id?: string | null;
             /**
              * Send Email Notification
-             * @description TODO
+             * @deprecated
+             * @description Legacy alias for send_notification. Delivery follows the user's tool notification preferences.
              * @default false
              */
             send_email_notification: boolean;
+            /**
+             * Send Notification
+             * @description Notify on completion using the user's channel preferences.
+             * @default false
+             */
+            send_notification: boolean;
             /**
              * Strict
              * @description Turn on strict validation of the inputs that drops support for some inconsistent legacy behavior.
@@ -20739,6 +20759,8 @@ export interface components {
                 | components["schemas"]["MessageNotificationContent"]
                 | components["schemas"]["NewSharedItemNotificationContent"]
                 | components["schemas"]["StorageOperationNotificationContent"]
+                | components["schemas"]["WorkflowCompletionNotificationContent"]
+                | components["schemas"]["ToolCompletionNotificationContent"]
                 | components["schemas"]["ToolInstallationRequestCreateContent"]
                 | components["schemas"]["BroadcastNotificationContent"];
             /**
@@ -20829,6 +20851,8 @@ export interface components {
                 | components["schemas"]["MessageNotificationContent"]
                 | components["schemas"]["NewSharedItemNotificationContent"]
                 | components["schemas"]["StorageOperationNotificationContent"]
+                | components["schemas"]["WorkflowCompletionNotificationContent"]
+                | components["schemas"]["ToolCompletionNotificationContent"]
                 | components["schemas"]["ToolInstallationRequestNotificationContent"]
                 | components["schemas"]["BroadcastNotificationContent"];
             /**
@@ -22062,7 +22086,13 @@ export interface components {
          *     displayed in the notification preferences.
          * @enum {string}
          */
-        PersonalNotificationCategory: "message" | "new_shared_item" | "storage_operation" | "tool_installation_request";
+        PersonalNotificationCategory:
+            | "message"
+            | "new_shared_item"
+            | "storage_operation"
+            | "tool_installation_request"
+            | "workflow_execution_completed"
+            | "tool_execution_completed";
         /** PluginAspectStatus */
         PluginAspectStatus: {
             /** Message */
@@ -24242,6 +24272,27 @@ export interface components {
              */
             user_id?: string | null;
         };
+        /**
+         * SourceCitation
+         * @description A source an agent drew on, taken from what its tools returned rather than model-written text.
+         */
+        SourceCitation: {
+            /**
+             * Source Type
+             * @description Kind of source, e.g. 'gtn_tutorial' or 'gtn_faq'
+             */
+            source_type: string;
+            /**
+             * Title
+             * @description Title of the source
+             */
+            title: string;
+            /**
+             * Url
+             * @description URL of the source
+             */
+            url: string;
+        };
         /** SplitUpPairedDataLogEntry */
         SplitUpPairedDataLogEntry: {
             /** Message */
@@ -25348,7 +25399,7 @@ export interface components {
             compare?: components["schemas"]["OutputCompareType"] | null;
             /**
              * Decompress
-             * @description If true, decompress files before comparison. Applies to assertions expressed with `assert_contents` or `compare` set to anything but `sim_size`. Useful for testing compressed outputs that are non-deterministic despite having deterministic decompressed contents. By default, only files compressed with bz2, gzip and zip are automatically decompressed.
+             * @description If true, decompress files before comparison. Applies to assertions expressed with `assert_contents`, to `md5` and `checksum`, and to `compare` set to anything but `sim_size`. Useful for testing compressed outputs that are non-deterministic despite having deterministic decompressed contents. By default, only files compressed with bz2, gzip and zip are automatically decompressed. The result of combining `decompress` with `md5` or `checksum` on an archive with more than one member is undefined.
              */
             decompress?: boolean | null;
             /**
@@ -25431,7 +25482,7 @@ export interface components {
             compare?: components["schemas"]["OutputCompareType"] | null;
             /**
              * Decompress
-             * @description If true, decompress files before comparison. Applies to assertions expressed with `assert_contents` or `compare` set to anything but `sim_size`. Useful for testing compressed outputs that are non-deterministic despite having deterministic decompressed contents. By default, only files compressed with bz2, gzip and zip are automatically decompressed.
+             * @description If true, decompress files before comparison. Applies to assertions expressed with `assert_contents`, to `md5` and `checksum`, and to `compare` set to anything but `sim_size`. Useful for testing compressed outputs that are non-deterministic despite having deterministic decompressed contents. By default, only files compressed with bz2, gzip and zip are automatically decompressed. The result of combining `decompress` with `md5` or `checksum` on an archive with more than one member is undefined.
              */
             decompress?: boolean | null;
             /**
@@ -25512,6 +25563,8 @@ export interface components {
                     | components["schemas"]["TestCollectionDatasetElementAssertions-Input"]
                     | components["schemas"]["TestCollectionCollectionElementAssertions-Input"];
             } | null;
+            /** Metadata */
+            metadata?: components["schemas"]["CollectionMetadata"] | null;
         };
         /** TestCollectionOutputAssertions */
         "TestCollectionOutputAssertions-Output": {
@@ -25538,6 +25591,8 @@ export interface components {
                     | components["schemas"]["TestCollectionDatasetElementAssertions-Output"]
                     | components["schemas"]["TestCollectionCollectionElementAssertions-Output"];
             } | null;
+            /** Metadata */
+            metadata?: components["schemas"]["CollectionMetadata"] | null;
         };
         /** TestDataOutputAssertions */
         "TestDataOutputAssertions-Input": {
@@ -25566,7 +25621,7 @@ export interface components {
             compare?: components["schemas"]["OutputCompareType"] | null;
             /**
              * Decompress
-             * @description If true, decompress files before comparison. Applies to assertions expressed with `assert_contents` or `compare` set to anything but `sim_size`. Useful for testing compressed outputs that are non-deterministic despite having deterministic decompressed contents. By default, only files compressed with bz2, gzip and zip are automatically decompressed.
+             * @description If true, decompress files before comparison. Applies to assertions expressed with `assert_contents`, to `md5` and `checksum`, and to `compare` set to anything but `sim_size`. Useful for testing compressed outputs that are non-deterministic despite having deterministic decompressed contents. By default, only files compressed with bz2, gzip and zip are automatically decompressed. The result of combining `decompress` with `md5` or `checksum` on an archive with more than one member is undefined.
              */
             decompress?: boolean | null;
             /**
@@ -25649,7 +25704,7 @@ export interface components {
             compare?: components["schemas"]["OutputCompareType"] | null;
             /**
              * Decompress
-             * @description If true, decompress files before comparison. Applies to assertions expressed with `assert_contents` or `compare` set to anything but `sim_size`. Useful for testing compressed outputs that are non-deterministic despite having deterministic decompressed contents. By default, only files compressed with bz2, gzip and zip are automatically decompressed.
+             * @description If true, decompress files before comparison. Applies to assertions expressed with `assert_contents`, to `md5` and `checksum`, and to `compare` set to anything but `sim_size`. Useful for testing compressed outputs that are non-deterministic despite having deterministic decompressed contents. By default, only files compressed with bz2, gzip and zip are automatically decompressed. The result of combining `decompress` with `md5` or `checksum` on an archive with more than one member is undefined.
              */
             decompress?: boolean | null;
             /**
@@ -25796,6 +25851,40 @@ export interface components {
             )[];
             /** Value */
             value?: string | null;
+        };
+        /** ToolCompletionNotificationContent */
+        ToolCompletionNotificationContent: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            category: "tool_execution_completed";
+            /**
+             * Event
+             * @default completed
+             * @enum {string}
+             */
+            event: "needs_attention" | "completed";
+            /**
+             * Implicit Collection Jobs Id
+             * @description The encoded job group ID for a collection map-over.
+             */
+            implicit_collection_jobs_id?: string | null;
+            /**
+             * Job Id
+             * @description The encoded job ID for a single tool execution.
+             */
+            job_id?: string | null;
+            /**
+             * Message
+             * @description The message of the notification (supports Markdown).
+             */
+            message: string;
+            /**
+             * Subject
+             * @description The subject of the notification.
+             */
+            subject: string;
         };
         /** ToolDataDetails */
         ToolDataDetails: {
@@ -27002,9 +27091,23 @@ export interface components {
          *           },
          *           "enabled": true
          *         },
+         *         "tool_execution_completed": {
+         *           "channels": {
+         *             "email": false,
+         *             "push": true
+         *           },
+         *           "enabled": true
+         *         },
          *         "tool_installation_request": {
          *           "channels": {
          *             "email": true,
+         *             "push": true
+         *           },
+         *           "enabled": true
+         *         },
+         *         "workflow_execution_completed": {
+         *           "channels": {
+         *             "email": false,
          *             "push": true
          *           },
          *           "enabled": true
@@ -27470,9 +27573,23 @@ export interface components {
          *           },
          *           "enabled": true
          *         },
+         *         "tool_execution_completed": {
+         *           "channels": {
+         *             "email": false,
+         *             "push": true
+         *           },
+         *           "enabled": true
+         *         },
          *         "tool_installation_request": {
          *           "channels": {
          *             "email": true,
+         *             "push": true
+         *           },
+         *           "enabled": true
+         *         },
+         *         "workflow_execution_completed": {
+         *           "channels": {
+         *             "email": false,
          *             "push": true
          *           },
          *           "enabled": true
@@ -27507,6 +27624,8 @@ export interface components {
                 | components["schemas"]["MessageNotificationContent"]
                 | components["schemas"]["NewSharedItemNotificationContent"]
                 | components["schemas"]["StorageOperationNotificationContent"]
+                | components["schemas"]["WorkflowCompletionNotificationContent"]
+                | components["schemas"]["ToolCompletionNotificationContent"]
                 | components["schemas"]["ToolInstallationRequestNotificationContent"];
             /**
              * Create time
@@ -28451,6 +28570,35 @@ export interface components {
              * @example 0123456789ABCDEF
              */
             revision: string;
+        };
+        /** WorkflowCompletionNotificationContent */
+        WorkflowCompletionNotificationContent: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            category: "workflow_execution_completed";
+            /**
+             * Event
+             * @default completed
+             * @enum {string}
+             */
+            event: "needs_attention" | "completed";
+            /**
+             * Invocation Id
+             * @description The encoded workflow invocation ID.
+             */
+            invocation_id?: string | null;
+            /**
+             * Message
+             * @description The message of the notification (supports Markdown).
+             */
+            message: string;
+            /**
+             * Subject
+             * @description The subject of the notification.
+             */
+            subject: string;
         };
         /** WorkflowEngineVersion */
         WorkflowEngineVersion: {

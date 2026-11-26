@@ -76,3 +76,16 @@ def test_is_valid_expression_return_true_when_valid(expr: str, _: bool):
 def test_is_valid_expression_return_false_when_invalid(expr: str):
     result = BooleanExpressionEvaluator.is_valid_expression(expr)
     assert result is False
+
+
+def test_evaluators_resolve_tokens_independently():
+    deny = BooleanExpressionEvaluator(TokenContainedEvaluator(set()))
+    allow = BooleanExpressionEvaluator(TokenContainedEvaluator({"private"}))
+    assert deny.evaluate_expression("private") is False
+    assert allow.evaluate_expression("private") is True
+
+
+def test_is_valid_expression_leaves_other_evaluators_unchanged():
+    deny = BooleanExpressionEvaluator(TokenContainedEvaluator(set()))
+    assert BooleanExpressionEvaluator.is_valid_expression("private") is True
+    assert deny.evaluate_expression("private") is False

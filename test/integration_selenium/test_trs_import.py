@@ -5,6 +5,7 @@ from galaxy.util.unittest_utils import (
     skip_if_dockstore_down,
     skip_if_workflowhub_down,
 )
+from galaxy.workflow.trs_proxy import TRS_REQUEST_TIMEOUT
 from .framework import SeleniumIntegrationTestCase
 
 TRS_API_URL_DOCKSTORE = "https://dockstore.org/api"
@@ -83,10 +84,16 @@ class TestTrsImport(SeleniumIntegrationTestCase):
         import_button = self.wait_for_selector_clickable(".wizard-actions .go-next-btn.btn-primary:not([disabled])")
         import_button.click()
 
-    def _wait_for_import_redirect(self):
+    def _trs_response_timeout(self, trs_requests=1):
+        # The page waits for the Galaxy server to make ``trs_requests`` requests to the remote TRS
+        # server, one after another. Wait longer than the server's timeout for each of them, so that
+        # a slow TRS server makes the page show an error instead of the test timing out first.
+        return trs_requests * sum(TRS_REQUEST_TIMEOUT) + 20
+
+    def _wait_for_import_redirect(self, trs_requests=1):
         # The client redirects to the workflow list only once the import request returns,
         # which includes the server fetching the workflow from the remote TRS server.
-        self.components.workflows.workflows_list.wait_for_visible(wait_type=self.wait_types.SHED_SEARCH)
+        self.components.workflows.workflows_list.wait_for_visible(timeout=self._trs_response_timeout(trs_requests))
 
     def assert_workflow_imported(self, name):
         # surround name with quotes to consider case where name contains colons
@@ -96,19 +103,19 @@ class TestTrsImport(SeleniumIntegrationTestCase):
     @skip_if_dockstore_down
     def test_import_workflow_by_url_dockstore(self):
         import_url = f"workflows/trs_import?trs_server=dockstore.org&trs_version={TRS_VERSION_DOCKSTORE}&trs_id=%23{TRS_ID_DOCKSTORE}"
-        self._import_workflow_by_url(import_url)
+        self._import_workflow_by_url(import_url, trs_requests=2)
 
     @skip_if_workflowhub_down
     @with_page_errors
     def test_import_workflow_by_url_workflowhub(self):
         import_url = f"workflows/trs_import?trs_server=workflowhub&trs_version={TRS_VERSION_WORKFLOWHUB}&trs_id={TRS_ID_WORKFLOWHUB}"
-        self._import_workflow_by_url(import_url)
+        self._import_workflow_by_url(import_url, trs_requests=2)
 
-    def _import_workflow_by_url(self, import_url):
+    def _import_workflow_by_url(self, import_url, trs_requests=1):
+        # Launch links import without a click.
+        # Importing by TRS id fetches the tool and then its descriptor, importing by TRS URL only the descriptor.
         self.get(import_url)
-        self.components.workflows.workflow_trs_import.wait_for_visible()
-        self._click_wizard_import_button()
-        self._wait_for_import_redirect()
+        self._wait_for_import_redirect(trs_requests)
         self.workflow_index_open()
         self.assert_workflow_imported(WORKFLOW_NAME)
 
@@ -145,7 +152,9 @@ class TestTrsImport(SeleniumIntegrationTestCase):
         self.components.trs_search.select_server_button.wait_for_and_click()
         self.components.trs_search.select_server(server="workflowhub").wait_for_and_click()
         self.components.trs_search.search.wait_for_and_send_keys(WORKFLOW_NAME)
-        self.components.trs_search.search_result(workflow_name=WORKFLOW_NAME).wait_for_and_click()
+        search_result = self.components.trs_search.search_result(workflow_name=WORKFLOW_NAME)
+        search_result.wait_for_clickable(timeout=self._trs_response_timeout())
+        search_result.wait_for_and_click()
         self._click_wizard_import_button(wait_for_validation=True)
         self._wait_for_import_redirect()
         self.workflow_index_open()
@@ -186,6 +195,7 @@ class TestTrsImport(SeleniumIntegrationTestCase):
         self.components.trs_import.select_server(server=server).wait_for_and_click()
         self.components.trs_import.input.wait_for_and_send_keys(trs_id)
         # Select version from dropdown
+        self.components.trs_import.version_select.wait_for_visible(timeout=self._trs_response_timeout())
         self.components.trs_import.version_select.select_by_visible_text("v0.4")
         self._click_wizard_import_button(wait_for_validation=True)
         self._wait_for_import_redirect()

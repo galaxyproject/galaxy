@@ -9,7 +9,7 @@ import editorWorker from "monaco-editor/esm/vs/editor/editor.worker?worker";
 import jsonWorker from "monaco-editor/esm/vs/language/json/json.worker?worker";
 import tsWorker from "monaco-editor/esm/vs/language/typescript/ts.worker?worker";
 import yamlWorker from "monaco-yaml/yaml.worker?worker";
-import { nextTick, onMounted, onUnmounted, ref, watch } from "vue";
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import { parse, stringify } from "yaml";
 
@@ -19,6 +19,7 @@ import {
     type MessageException,
     type UnprivilegedToolResponse,
 } from "@/api";
+import { useConfig } from "@/composables/config";
 import { useUnprivilegedToolStore } from "@/stores/unprivilegedToolStore";
 
 import { linkedAuthoringHelpSection } from "./authoringHelp";
@@ -52,6 +53,8 @@ loader.config({ monaco });
 const { unload, monacoRef } = useMonaco();
 const unprivilegedToolStore = useUnprivilegedToolStore();
 const router = useRouter();
+const { config, isConfigLoaded } = useConfig();
+const showGenerateViaAI = computed(() => isConfigLoaded.value && Boolean(config.value?.llm_api_configured));
 
 const disposeConfig = ref<() => void>();
 watch(
@@ -230,6 +233,7 @@ async function generateViaLLM() {
         <div class="d-flex flex-gapx-1">
             <Heading h1 separator inline size="lg" class="flex-grow-1 mb-2">Tool Editor</Heading>
             <GButton
+                v-if="showGenerateViaAI"
                 outline
                 icon-only
                 tooltip

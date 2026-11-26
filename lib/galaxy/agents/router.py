@@ -16,6 +16,7 @@ router can answer those directly without round-tripping through a specialist.
 import json
 import logging
 import re
+import secrets
 from functools import partial
 from pathlib import Path
 from typing import (
@@ -41,6 +42,7 @@ from .base import (
     BaseGalaxyAgent,
     extract_result_content,
     GalaxyAgentDependencies,
+    SourceCitation,
 )
 
 log = logging.getLogger(__name__)
@@ -107,6 +109,12 @@ class QueryRouterAgent(BaseGalaxyAgent):
     # conversation_history via the handoff context.
     ROUTING_HISTORY_TURNS = 1
     MAX_CLARIFICATION_TURNS = 3
+
+    def __init__(self, deps: GalaxyAgentDependencies):
+        # Marks handoffs this router actually serialized. The model can write
+        # handoff-shaped JSON itself, and those must not carry "verified" sources.
+        self._handoff_token = secrets.token_hex(16)
+        super().__init__(deps)
 
     def _create_agent(self) -> Agent[GalaxyAgentDependencies, str]:
         # ``instructions`` rather than ``system_prompt``: pydantic-ai drops ``system_prompt`` from
@@ -338,6 +346,8 @@ class QueryRouterAgent(BaseGalaxyAgent):
                 "suggestions": [
                     s.model_dump() if hasattr(s, "model_dump") else s for s in (response.suggestions or [])
                 ],
+                "sources": [s.model_dump() for s in response.sources],
+                "handoff_token": self._handoff_token,
                 "handoff_info": {
                     "source_agent": self.agent_type,
                     "target_agent": target_agent,
@@ -656,6 +666,11 @@ class QueryRouterAgent(BaseGalaxyAgent):
                         confidence=ConfidenceLevel(parsed.get("confidence", "medium")),
                         agent_type=parsed.get("agent_type", self.agent_type),
                         suggestions=parsed.get("suggestions", []),
+                        sources=(
+                            [SourceCitation(**s) for s in parsed.get("sources", [])]
+                            if parsed.get("handoff_token") == self._handoff_token
+                            else []
+                        ),
                         metadata=metadata,
                     )
             except (json.JSONDecodeError, TypeError, KeyError, ValidationError) as e:

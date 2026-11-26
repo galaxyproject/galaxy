@@ -31,6 +31,7 @@ from galaxy.util import unicodify
 from galaxy.web.framework.decorators import require_admin_message
 from galaxy.webapps.base.webapp import create_new_session
 from galaxy.webapps.galaxy.api import (
+    API_KEY_HEADER_NAME,
     depends as framework_depends,
     FrameworkRouter,
     GalaxyASGIRequest,
@@ -72,7 +73,7 @@ DependsOnApp = cast(ToolShedApp, Depends(get_app_with_request_session))
 AUTH_COOKIE_NAME = "galaxycommunitysession"
 
 api_key_query = APIKeyQuery(name="key", auto_error=False)
-api_key_header = APIKeyHeader(name="x-api-key", auto_error=False)
+api_key_header = APIKeyHeader(name=API_KEY_HEADER_NAME, auto_error=False)
 api_key_cookie = APIKeyCookie(name=AUTH_COOKIE_NAME, auto_error=False)
 
 

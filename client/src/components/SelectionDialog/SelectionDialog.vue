@@ -8,6 +8,7 @@ import { computed, ref, watch } from "vue";
 import type { RowClickEvent, RowSelectEvent, TableField } from "@/components/Common/GTable.types";
 import { type ItemsProvider, SELECTION_STATES } from "@/components/SelectionDialog/selectionTypes";
 import type Filtering from "@/utils/filtering";
+import localize from "@/utils/localization";
 
 import type { SelectionItem } from "./selectionTypes";
 
@@ -176,6 +177,10 @@ function onRowSelect(event: RowSelectEvent<SelectionItem>) {
     emit("onClick", event.item);
 }
 
+function selectCheckboxTitle(item: SelectionItem) {
+    return `${localize("Select")} ${item.label}`;
+}
+
 function onOpen(item: SelectionItem) {
     emit("onOpen", item);
 }
@@ -219,8 +224,6 @@ if (props.watchOnPageChanges) {
     );
 }
 
-const dialog = ref<InstanceType<typeof GModal> | null>(null);
-
 watch(
     [
         () => props.itemsProvider,
@@ -245,16 +248,6 @@ watch(filter, () => {
 });
 
 watch(
-    () => dialog.value,
-    (newValue) => {
-        if (newValue) {
-            dialog.value?.showModal();
-        }
-    },
-    { immediate: true },
-);
-
-watch(
     tableItems,
     () => {
         syncSelectedItems();
@@ -271,7 +264,6 @@ defineExpose({
 
 <template>
     <GModal
-        ref="dialog"
         class="selection-dialog-modal"
         size="medium"
         :show="props.modalShow"
@@ -321,6 +313,7 @@ defineExpose({
                     :indeterminate-items="indeterminateItems"
                     :per-page="usingProvider ? undefined : perPage"
                     :selectable="props.selectable"
+                    :select-checkbox-title="selectCheckboxTitle"
                     :selected-items="selectedItems"
                     :show-select-all="props.selectable"
                     @row-click="onRowClick"

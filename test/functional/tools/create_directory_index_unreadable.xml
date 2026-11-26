@@ -1,0 +1,15 @@
+<tool id="create_directory_index_unreadable" name="Create directory index with an unreadable file" version="1.0" profile="24.2">
+    <description>so that copying the index directory fails</description>
+    <command><![CDATA[
+mkdir 'out_dir' &&
+cp '$reference' 'out_dir/1.fasta' &&
+echo 'unreadable' > 'out_dir/2.txt' &&
+chmod 000 'out_dir/2.txt'
+    ]]></command>
+    <inputs>
+        <param name="reference" type="data" label="Select a genome to index" format="fasta"/>
+    </inputs>
+    <outputs>
+        <data name="index" format="bwa_mem2_index" precreate_directory="true" from_work_dir="out_dir"/>
+    </outputs>
+</tool>

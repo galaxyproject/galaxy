@@ -33,7 +33,7 @@ jobs:
       fail-fast: false
       matrix:
         tox_env: [py314]
-        galaxy_python_version: ['3.10']
+        galaxy_python_version: ['3.11']
     steps:
       - name: Checkout Galaxy
         uses: actions/checkout@v7.0.1
@@ -54,6 +54,7 @@ jobs:
         uses: astral-sh/setup-uv@v10.2.0
         with:
           version-file: galaxy/.tool-versions
+          prune-cache: true
       - name: Install tox
         run: uv tool install --python ${BIOBLEND_PYTHON_VERSION} tox --with tox-uv
         env:
@@ -65,6 +66,8 @@ jobs:
           PGPASSWORD: postgres
           PGPORT: 5432
           PGHOST: localhost
+          # BioBlend's user-defined tool tests use busybox.
+          GALAXY_CONFIG_OVERRIDE_USER_DEFINED_TOOL_ALLOWED_CONTAINERS: '*'
         run: |
           # Create a PostgreSQL database for Galaxy. The default SQLite3 database makes test fail randomly because of "database locked" error.
           createdb -U postgres galaxy

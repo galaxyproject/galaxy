@@ -430,6 +430,15 @@ sections:
       writing the prefix yourself produces a doubled `docker://docker://...`
       identifier.
 
+      A tag can be combined with or replaced by a digest to pin the exact
+      image, as in `quay.io/biocontainers/foldseek@sha256:<digest>`.
+
+      The server decides which images user-defined tools may use. By default
+      only images below `quay.io/biocontainers/` are allowed. Saving a tool
+      with any other image is refused with an error that lists the images
+      the server allows, and a tool whose image the server no longer allows
+      fails when it runs.
+
       Author user-defined tools with the top-level `container` field. Which
       container runtime executes that image, and whether images are converted
       and cached ahead of time, depends on the server.

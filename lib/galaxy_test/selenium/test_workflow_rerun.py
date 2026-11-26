@@ -18,6 +18,7 @@ inputs:
   bool_param:
     type: boolean
     default: true
+    doc: Shown beside the switch in place of its Yes/No label.
 steps:
   echo_bool:
     tool_id: gx_boolean
@@ -97,7 +98,7 @@ class TestWorkflowRun(SeleniumTestCase, UsesHistoryItemAssertions, RunsWorkflows
 
         # Override the boolean default of true to false before submitting.
         # The boolean is the workflow's only input, hence step_index 0.
-        self._toggle_workflow_run_boolean(parameter="0", target=False)
+        self.tool_form_set_switch("0", False)
         self.screenshot("workflow_run_boolean_false_before_submit")
 
         self.workflow_run_submit()
@@ -124,7 +125,7 @@ class TestWorkflowRun(SeleniumTestCase, UsesHistoryItemAssertions, RunsWorkflows
         self.screenshot("workflow_rerun_boolean_preserved_false")
 
         # Toggling the value back to true should flag it as changed.
-        self._toggle_workflow_run_boolean(parameter="0", target=True)
+        self.tool_form_set_switch("0", True)
         form_element.changed_value_badge.wait_for_visible()
         self.screenshot("workflow_rerun_boolean_changed_input")
 
@@ -184,11 +185,6 @@ class TestWorkflowRun(SeleniumTestCase, UsesHistoryItemAssertions, RunsWorkflows
         text = table.text
         assert label in text, f"Expected input label '{label}' in inputs table, got: {text!r}"
         assert value in text, f"Expected input value '{value}' in inputs table, got: {text!r}"
-
-    def _toggle_workflow_run_boolean(self, parameter: str, target: bool):
-        checkbox = self.components.tool_form.parameter_checkbox_input(parameter=parameter).wait_for_present()
-        if checkbox.is_selected() != target:
-            self.execute_script("arguments[0].click();", checkbox)
 
     @retry_assertion_during_transitions
     def _assert_history_name_is(self, expected_name=None):

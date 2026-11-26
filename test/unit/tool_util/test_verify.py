@@ -285,6 +285,88 @@ def _nested_data_collection():
     }
 
 
+@pytest.mark.parametrize("populated_state", ["failed", "new"])
+@pytest.mark.parametrize(
+    "assertions",
+    [
+        {"attributes": {"type": "list"}},
+        {"attributes": {"type": "list:paired"}},
+        {"element_count": 1},
+        {"element_tests": {}},
+    ],
+)
+def test_verify_collection_rejects_unpopulated_empty_collection(populated_state, assertions):
+    output_def = TestCollectionOutputDef.from_dict({"name": "plots", **assertions})
+    collection = {"collection_type": "list", "elements": [], "populated_state": populated_state}
+    with pytest.raises(AssertionError) as exc_info:
+        verify_collection(output_def, collection, lambda *a, **k: None)
+    assert str(exc_info.value) == f"Output collection 'plots': populated state is '{populated_state}', expected 'ok'."
+
+
+def test_verify_collection_reports_population_message():
+    output_def = TestCollectionOutputDef.from_dict({"name": "plots"})
+    collection = {
+        "collection_type": "list",
+        "elements": [],
+        "populated_state": "failed",
+        "populated_state_message": "Problem building datasets for collection.",
+    }
+    with pytest.raises(AssertionError) as exc_info:
+        verify_collection(output_def, collection, lambda *a, **k: None)
+    assert str(exc_info.value) == (
+        "Output collection 'plots': populated state is 'failed', expected 'ok'. "
+        "Problem building datasets for collection."
+    )
+
+
+def test_verify_collection_rejects_unpopulated_child():
+    output_def = TestCollectionOutputDef.from_dict({"name": "plots", "attributes": {"type": "list:list"}})
+    collection = _nested_data_collection()
+    collection.update(populated_state="ok", populated=False)
+    collection["elements"][0]["object"] = {"collection_type": "list", "elements": [], "populated": False}
+    with pytest.raises(AssertionError) as exc_info:
+        verify_collection(output_def, collection, lambda *a, **k: None)
+    assert str(exc_info.value) == "Output collection 'plots/sample1': collection is not populated."
+
+
+def test_verify_collection_reports_deepest_unpopulated_collection():
+    output_def = TestCollectionOutputDef.from_dict({"name": "plots"})
+    inner = {"collection_type": "list", "elements": [], "populated": False}
+    outer = {
+        "collection_type": "list:list",
+        "elements": [{"element_identifier": "inner", "element_type": "dataset_collection", "object": inner}],
+        "populated": False,
+    }
+    collection = {
+        "collection_type": "list:list:list",
+        "elements": [{"element_identifier": "outer", "element_type": "dataset_collection", "object": outer}],
+        "populated_state": "ok",
+        "populated": False,
+    }
+    with pytest.raises(AssertionError) as exc_info:
+        verify_collection(output_def, collection, lambda *a, **k: None)
+    assert str(exc_info.value) == "Output collection 'plots/outer/inner': collection is not populated."
+
+
+def test_verify_collection_accepts_populated_child():
+    output_def = TestCollectionOutputDef.from_dict({"name": "plots", "attributes": {"type": "list:list"}})
+    collection = _nested_data_collection()
+    collection.update(populated_state="ok", populated=True)
+    collection["elements"][0]["object"]["populated"] = True
+    verify_collection(output_def, collection, lambda *a, **k: None)
+
+
+@pytest.mark.parametrize(
+    "population",
+    [{}, {"populated_state": None}, {"populated_state": "ok"}, {"populated_state": "ok", "populated": True}],
+)
+def test_verify_collection_accepts_empty_collection(population):
+    output_def = TestCollectionOutputDef.from_dict(
+        {"name": "plots", "attributes": {"type": "list"}, "element_tests": {}}
+    )
+    verify_collection(output_def, {"collection_type": "list", "elements": [], **population}, lambda *a, **k: None)
+
+
 def test_verify_collection_nested_element_tests_are_checked():
     output_def = TestCollectionOutputDef.from_dict(
         {
@@ -307,3 +389,13 @@ def test_verify_collection_nested_elements_alias_still_checked():
     calls = []
     verify_collection(output_def, _nested_data_collection(), lambda el, a, o: calls.append(el["element_identifier"]))
     assert calls == ["dnacomp"]
+
+
+def test_verify_collection_name():
+    output_def = TestCollectionOutputDef.from_yaml_test_format(
+        {"name": "out", "class": "Collection", "metadata": {"name": "renamed"}}
+    )
+    verify_collection(output_def, {"name": "renamed", "elements": []}, lambda *a, **k: None)
+    with pytest.raises(AssertionError) as exc_info:
+        verify_collection(output_def, {"name": "other", "elements": []}, lambda *a, **k: None)
+    assert "expected to have name [renamed], but it had name [other]" in str(exc_info.value)

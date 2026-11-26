@@ -29,7 +29,11 @@ import { useSpecialWorkflowActivities, useWorkflowActivities } from "@/component
 import { fromSimple, type Workflow } from "@/components/Workflow/Editor/modules/model";
 import { getUntypedWorkflowParameters, type UntypedParameters } from "@/components/Workflow/Editor/modules/parameters";
 import { getModule, getVersions, saveWorkflow } from "@/components/Workflow/Editor/modules/services";
-import { getStateUpgradeMessages, type UpgradeMessage } from "@/components/Workflow/Editor/modules/utilities";
+import {
+    getFilledDefaults,
+    getStateUpgradeMessages,
+    type UpgradeMessage,
+} from "@/components/Workflow/Editor/modules/utilities";
 import reportDefault from "@/components/Workflow/Editor/reportDefault";
 import { Services } from "@/components/Workflow/services";
 import { useConfirmDialog } from "@/composables/confirmDialog";
@@ -317,6 +321,8 @@ function setTags(newTags: string[]) {
 // For the State Upgrade modal
 const stateMessages = ref<UpgradeMessage[]>([]);
 const insertedStateMessages = ref<UpgradeMessage[]>([]);
+const filledDefaults = ref<UpgradeMessage[]>([]);
+const insertedFilledDefaults = ref<UpgradeMessage[]>([]);
 
 /** Refactor actions that are queued up to be executed on the workflow. */
 const refactorActions = ref<RefactorRequestAction[]>([]);
@@ -722,6 +728,7 @@ async function copyIntoWorkflow(workflowId: string) {
         // Determine if any parameters were 'upgraded' and provide message
         const insertedStateMessagesGotten = getStateUpgradeMessages(data);
         insertedStateMessages.value = insertedStateMessagesGotten;
+        insertedFilledDefaults.value = getFilledDefaults(data);
     } finally {
         loadingWorkflow.value = false;
     }
@@ -1201,11 +1208,17 @@ async function loadEditorData(data: any) {
     hideErrorModal();
 
     stateMessages.value = getStateUpgradeMessages(data);
+    filledDefaults.value = [];
     const hasStateMessages = stateMessages.value.length > 0;
     tags.value = data.tags;
     license.value = data.license;
     creator.value = data.creator;
     doi.value = data.doi;
+
+    // The attribute watchers just marked these loaded values as changes; undo that now,
+    // not after the versions request, so the editor isn't dirty while it's pending.
+    await nextTick();
+    hasChanges.value = hasStateMessages;
 
     try {
         versions.value = await getVersions(id.value);
@@ -1215,6 +1228,8 @@ async function loadEditorData(data: any) {
         await nextTick();
         hasChanges.value = hasStateMessages;
     }
+    // filled defaults aren't changes to save; show them only now, so accepting them isn't reset above
+    filledDefaults.value = getFilledDefaults(data);
 }
 
 /**
@@ -1253,6 +1268,14 @@ async function loadCurrent(workflowId: string, workflowVersion?: number | null, 
             } else {
                 // If we are not fitting the graph, adjust for coordinate shifts so the nodes appear in the same position
                 adjustForCoordinateShift(transformBefore, boundsBefore);
+            }
+
+            // the graph's first layout of a workflow without positions is part of loading it, not an edit
+            if (stateStore.needsInitialLayout) {
+                const loadedChanges = hasChanges.value;
+                await until(() => stateStore.needsInitialLayout).toBe(false, { timeout: 30000 });
+                await nextTick();
+                hasChanges.value = loadedChanges;
             }
         } finally {
             loadingWorkflow.value = false;
@@ -1310,12 +1333,17 @@ initializeWorkflowEditor();
 
 <template>
     <div class="workflow-editor">
-        <StateUpgradeModal :state-messages="stateMessages" />
+        <StateUpgradeModal
+            :state-messages="stateMessages"
+            :filled-defaults="filledDefaults"
+            @accept="hasChanges = true" />
 
         <StateUpgradeModal
             :state-messages="insertedStateMessages"
+            :filled-defaults="insertedFilledDefaults"
             title="Subworkflow embedded with changes"
-            message="Problems were encountered loading this workflow (possibly a result of tool upgrades). Please review the following parameters and then save." />
+            message="Problems were encountered loading this workflow (possibly a result of tool upgrades). Please review the following parameters and then save."
+            @accept="hasChanges = true" />
 
         <RefactorConfirmationModal
             v-model:loading="loadingWorkflow"

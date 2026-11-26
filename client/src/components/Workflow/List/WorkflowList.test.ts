@@ -35,11 +35,12 @@ const FAKE_USER = getFakeRegisteredUser({
     username: FAKE_USERNAME,
 });
 
-async function mountWorkflowList() {
+async function mountWorkflowList(activeList: "my" | "shared_with_me" | "published" = "my") {
     const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
     setActivePinia(pinia);
 
     const wrapper = mount(WorkflowList as object, {
+        props: { activeList },
         global: localVue,
         pinia,
         router,
@@ -110,6 +111,33 @@ describe("WorkflowList", () => {
         expect(wrapper.findComponent(LoadingSpan).exists()).toBe(false);
     });
 
+    it("fetches only the user's own workflows on the my tab, so the total matches what is listed", async () => {
+        mockedLoadWorkflows.mockResolvedValue({ data: [], totalMatches: 0 });
+        await mountWorkflowList();
+
+        expect(mockedLoadWorkflows).toHaveBeenCalledWith(expect.objectContaining({ showShared: false }));
+    });
+
+    it("leaves shared workflows to the server default on the published tab", async () => {
+        mockedLoadWorkflows.mockResolvedValue({ data: [], totalMatches: 0 });
+        await mountWorkflowList("published");
+
+        expect(mockedLoadWorkflows).toHaveBeenCalled();
+        for (const [options] of mockedLoadWorkflows.mock.calls) {
+            expect(options.showShared).toBeUndefined();
+        }
+    });
+
+    it("asks for shared workflows explicitly on the shared with me tab", async () => {
+        mockedLoadWorkflows.mockResolvedValue({ data: [], totalMatches: 0 });
+        await mountWorkflowList("shared_with_me");
+
+        expect(mockedLoadWorkflows).toHaveBeenCalled();
+        for (const [options] of mockedLoadWorkflows.mock.calls) {
+            expect(options.showShared).toBe(true);
+        }
+    });
+
     it("toggle show deleted workflows", async () => {
         const FAKE_WORKFLOWS = generateRandomWorkflowList(FAKE_USERNAME, 10);
         FAKE_WORKFLOWS.forEach((w) => (w.deleted = true));
@@ -133,5 +161,57 @@ describe("WorkflowList", () => {
 
         expect((wrapper.find("#workflow-list-filter input").element as HTMLInputElement).value).toBe("");
         await flushPromises();
+    });
+
+    it("keeps typed words when a filter is added, in the search box and in the search sent", async () => {
+        mockedLoadWorkflows.mockResolvedValue({ data: generateRandomWorkflowList(FAKE_USERNAME, 2), totalMatches: 2 });
+        const wrapper = await mountWorkflowList();
+        const filterInput = () => wrapper.find("#workflow-list-filter input").element as HTMLInputElement;
+
+        vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+        await wrapper.find("#workflow-list-filter input").setValue("rna");
+        vi.advanceTimersByTime(1000);
+        vi.useRealTimers();
+        await flushPromises();
+
+        await wrapper.find("#show-deleted").trigger("click");
+        await flushPromises();
+
+        expect(filterInput().value).toBe("rna is:deleted");
+        expect(mockedLoadWorkflows).toHaveBeenLastCalledWith(expect.objectContaining({ filterText: "rna is:deleted" }));
+    });
+
+    it("scrolls the card list back to the top when the page changes", async () => {
+        const FAKE_WORKFLOWS = generateRandomWorkflowList(FAKE_USERNAME, 24);
+        mockedLoadWorkflows.mockResolvedValue({ data: FAKE_WORKFLOWS, totalMatches: 50 });
+        const wrapper = await mountWorkflowList();
+
+        const cardList = wrapper.find(".workflow-card-list").element;
+        cardList.scrollTop = 500;
+        expect(cardList.scrollTop).toBe(500);
+
+        const pageTwo = wrapper.findAll(".workflow-list-footer-pagination .page-link").filter((b) => b.text() === "2");
+        expect(pageTwo).toHaveLength(1);
+        await pageTwo[0]!.trigger("click");
+        await flushPromises();
+
+        expect(mockedLoadWorkflows).toHaveBeenLastCalledWith(expect.objectContaining({ offset: 24 }));
+        expect(wrapper.find(".workflow-card-list").element.scrollTop).toBe(0);
+    });
+
+    it("scrolls the card list back to the top when the filter changes", async () => {
+        const FAKE_WORKFLOWS = generateRandomWorkflowList(FAKE_USERNAME, 24);
+        mockedLoadWorkflows.mockResolvedValue({ data: FAKE_WORKFLOWS, totalMatches: 50 });
+        const wrapper = await mountWorkflowList();
+
+        const cardList = wrapper.find(".workflow-card-list").element;
+        cardList.scrollTop = 500;
+        expect(cardList.scrollTop).toBe(500);
+
+        await wrapper.find("#show-deleted").trigger("click");
+        await flushPromises();
+
+        expect((wrapper.find("#workflow-list-filter input").element as HTMLInputElement).value).toBe("is:deleted");
+        expect(wrapper.find(".workflow-card-list").element.scrollTop).toBe(0);
     });
 });

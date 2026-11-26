@@ -764,7 +764,10 @@ defineExpose<UploadMethodComponent>({ prepareUpload, reset });
                     @row-click="onLibraryRowClick">
                     <template v-slot:cell(name)="{ item }">
                         <FontAwesomeIcon :icon="faDatabase" class="mr-2 text-primary" />
-                        <strong data-test-id="data-library-browser-library-label" :data-label="item.name">
+                        <strong
+                            class="data-library-browser-library-label"
+                            data-test-id="data-library-browser-library-label"
+                            :data-label="item.name">
                             {{ item.name }}
                         </strong>
                     </template>
@@ -834,6 +837,7 @@ defineExpose<UploadMethodComponent>({ prepareUpload, reset });
                     <template v-slot:cell(name)="{ item }">
                         <div class="d-flex align-items-center">
                             <span
+                                class="data-library-browser-item-label"
                                 data-test-id="data-library-browser-item-label"
                                 :data-label="item.label"
                                 :data-entry-kind="item.isLeaf ? 'file' : 'directory'">
@@ -1006,6 +1010,11 @@ defineExpose<UploadMethodComponent>({ prepareUpload, reset });
         &:hover {
             background-color: rgba($brand-primary, 0.05);
         }
+    }
+
+    .data-library-browser-library-label,
+    .data-library-browser-item-label {
+        @include upload-browser-label;
     }
 }
 

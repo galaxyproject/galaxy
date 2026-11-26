@@ -1,14 +1,15 @@
 """Standalone worker that evaluates one JavaScript program in QuickJS.
 
-This module is deliberately dependency-light: it imports only the standard library
-at module load and ``quickjs`` lazily, so it starts quickly and can run inside
+This module imports only the standard library at module load, so it can run inside
 a restrictive jail (for example ``bubblewrap``) that has little more than the Python
-interpreter and its site-packages available read-only.
+interpreter and its site-packages available read-only. ``quickjs`` is imported lazily,
+so the Galaxy process can import this module without loading it.
 
 Protocol: read one JSON object ``{"program", "timeout", "memory_limit"}`` from stdin
-and write one JSON object ``{"result": <value>}`` or ``{"error": <message>}`` to
-stdout. ``program`` must yield a JSON string (i.e. end in ``JSON.stringify(...)``) so
-its result round-trips as JSON.
+and write one JSON object to stdout: ``{"result": <value>}``, ``{"error": <message>}``
+when the program fails, or ``{"worker_error": <message>}`` when the worker itself does.
+``program`` must yield a JSON string (i.e. end in ``JSON.stringify(...)``) so its result
+round-trips as JSON.
 """
 
 import json
@@ -18,24 +19,46 @@ import sys
 MAX_MESSAGE_BYTES = 16 * 1024 * 1024
 STACK_LIMIT_BYTES = 1024 * 1024
 
+# Runs the program with an indirect eval, so it keeps its own strict global-level scope, and turns
+# what it throws into ``String(e)``: the error without the stack QuickJS appends to JSException.
+CATCH_THROWN = """(function (program) {
+    try {
+        var value = (0, eval)(program);
+        return typeof value === "string" ? value : undefined;
+    } catch (e) {
+        return {thrown: String(e)};
+    }
+})(%s)"""
+
+
+class ProgramError(Exception):
+    """The program raised or produced a result the protocol cannot carry."""
+
 
 def run_program(program: str, timeout: float, memory_limit: int) -> str:
     """Evaluate in a fresh context, returning JSON text for the parent to decode."""
     try:
         import quickjs
     except ImportError as e:
-        raise RuntimeError("Full JavaScript evaluation requires Python 3.10+ and the quickjs-ng package.") from e
+        raise RuntimeError("Full JavaScript evaluation requires the quickjs-ng package.") from e
 
     ctx = quickjs.Context()
     ctx.set_memory_limit(memory_limit)
     ctx.set_time_limit(timeout)
     ctx.set_max_stack_size(STACK_LIMIT_BYTES)
-    raw = ctx.eval(program)
+    try:
+        raw = ctx.eval(CATCH_THROWN % json.dumps(program))
+    except quickjs.JSException as e:
+        # The program cannot catch QuickJS interrupting it at the time limit. That error's message is
+        # one line of QuickJS's own, followed by the stack.
+        raise ProgramError(str(e).partition("\n")[0]) from e
+    if isinstance(raw, quickjs.Object):
+        raise ProgramError(json.loads(raw.json())["thrown"])
     if not isinstance(raw, str):
         # JSON.stringify(undefined) yields JS ``undefined``; treat as null.
         return "null"
     if len(raw) > MAX_MESSAGE_BYTES:
-        raise ValueError("Expression result exceeds protocol limit")
+        raise ProgramError("Expression result exceeds protocol limit")
     return raw
 
 
@@ -49,9 +72,11 @@ def main() -> None:
         # Forward JSON without expanding it into Python objects in the worker.
         response = ('{"result":' + result + "}").encode("utf-8")
         if len(response) > MAX_MESSAGE_BYTES:
-            raise ValueError("Expression result exceeds protocol limit")
-    except Exception as e:
+            raise ProgramError("Expression result exceeds protocol limit")
+    except ProgramError as e:
         response = json.dumps({"error": str(e)[:500]}).encode("utf-8")
+    except Exception as e:
+        response = json.dumps({"worker_error": str(e)[:500]}).encode("utf-8")
     sys.stdout.buffer.write(response)
 
 

@@ -1792,9 +1792,11 @@ class TestToolsApi(ApiTestCase, TestsTools):
             hdca = self.dataset_populator.get_history_collection_details(
                 history_id, content_id=outputs_four["output_collections"][0]["id"]
             )
-            assert self.dataset_populator.get_history_dataset_content(
-                history_id, content_id=hdca["elements"][0]["object"]["id"]
-            )
+            element_id = hdca["elements"][0]["object"]["id"]
+            assert self.dataset_populator.get_history_dataset_content(history_id, content_id=element_id)
+            element = self.dataset_populator.get_history_dataset_details(history_id, content_id=element_id)
+            assert element["state"] == "ok"
+            assert element["visible"] is False
 
     @skip_without_tool("cat_list")
     @skip_without_tool("__SORTLIST__")
@@ -2431,7 +2433,7 @@ class TestToolsApi(ApiTestCase, TestsTools):
 
     @skip_without_tool("column_param")
     def test_column_legal_values(self, history_id):
-        new_dataset1 = self.dataset_populator.new_dataset(history_id, content="#col1\tcol2")
+        new_dataset1 = self.dataset_populator.new_dataset(history_id, content="#col1\tcol2", wait=True)
         inputs = {
             "input1": {"src": "hda", "id": new_dataset1["id"]},
             "col": "' ; echo 'moo",
@@ -2443,6 +2445,57 @@ class TestToolsApi(ApiTestCase, TestsTools):
             job = response.json()["jobs"][0]
             final_job_state = self.dataset_populator.wait_for_job(job["id"])
             assert final_job_state == "error"
+
+    def _empty_tabular_dataset_param(self, history_id):
+        empty_dataset = self._run_and_get_outputs("empty_output", history_id)[0]
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        self.dataset_populator.update_dataset(empty_dataset["id"], {"datatype": "tabular"})
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        return dataset_to_param(empty_dataset)
+
+    @skip_without_tool("column_param")
+    def test_column_legal_values_empty_dataset(self, history_id):
+        input1 = self._empty_tabular_dataset_param(history_id)
+        for col in ["1;id", "' ; echo 'moo", "-1", "1.5", "c1;id"]:
+            response = self._run("column_param", history_id, {"input1": input1, "col": col, "col_names": "1"})
+            self._assert_status_code_is(response, 400)
+            assert "col" in response.json()["param_errors"]
+        for col in ["1", "3", "c3"]:
+            response = self._run("column_param", history_id, {"input1": input1, "col": col, "col_names": "1"})
+            self._assert_status_code_is(response, 200)
+
+    @skip_without_tool("column_param")
+    def test_column_legal_values_deferred_dataset(self, history_id):
+        deferred = self.dataset_populator.create_deferred_hda(
+            history_id, "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/2.tabular", ext="tabular"
+        )
+        input1 = dataset_to_param(deferred)
+        response = self._run("column_param", history_id, {"input1": input1, "col": "1", "col_names": "B;id"})
+        self._assert_status_code_is(response, 400)
+        assert list(response.json()["param_errors"]) == ["col_names"]
+        response = self._run("column_param", history_id, {"input1": input1, "col": "1", "col_names": "2"})
+        self._assert_status_code_is(response, 200)
+
+    @skip_without_tool("column_param")
+    def test_column_label_resolved_for_empty_dataset(self, history_id):
+        input1 = self._empty_tabular_dataset_param(history_id)
+        response = self._run("column_param", history_id, {"input1": input1, "col": "1", "col_names": "c2: $(id)"})
+        self._assert_status_code_is(response, 200)
+        job_id = response.json()["jobs"][0]["id"]
+        self.dataset_populator.wait_for_job(job_id)
+        job = self.dataset_populator.get_job_details(job_id, full=True).json()
+        assert 'echo "col_names 2" >>' in job["command_line"]
+
+    @skip_without_tool("column_param_list")
+    def test_multiple_column_legal_values_empty_dataset(self, history_id):
+        input1 = self._empty_tabular_dataset_param(history_id)
+        for col in ["1,2;id", ["1", "2;id"], "1\n$(id)"]:
+            response = self._run("column_param_list", history_id, {"input1": input1, "col": col, "col_names": "1"})
+            self._assert_status_code_is(response, 400)
+            assert "col" in response.json()["param_errors"]
+        for col in ["1,3", ["1", "3"], "c1\nc3"]:
+            response = self._run("column_param_list", history_id, {"input1": input1, "col": col, "col_names": "1"})
+            self._assert_status_code_is(response, 200)
 
     @requires_new_history
     @skip_without_tool("collection_paired_test")
@@ -3541,6 +3594,27 @@ class TestToolsApi(ApiTestCase, TestsTools):
             self._run("collection_type_source", history_id, inputs, assert_ok=True, wait_for_job=True)
             collection_details = self.dataset_populator.get_history_collection_details(history_id, hid=4)
             assert collection_details["elements"][0]["object"]["elements"][0]["element_type"] == "hda"
+
+    @skip_without_tool("collection_type_source")
+    def test_discovered_collection_format_source(self):
+        with self.dataset_populator.test_history() as history_id:
+            header = self.dataset_populator.new_dataset(history_id, content="1\t2\n", file_type="tabular", wait=True)
+            hdca_id = self.dataset_collection_populator.create_list_in_history(
+                history_id, contents=[("A", "3\t4\n"), ("B", "5\t6\n")], wait=True
+            ).json()["outputs"][0]["id"]
+            inputs = {
+                "header": {"src": "hda", "id": header["id"]},
+                "input_collect": {"src": "hdca", "id": hdca_id},
+            }
+            response = self._run("collection_type_source", history_id, inputs, assert_ok=True, wait_for_job=True)
+            output_collection = response["output_collections"][0]
+            collection_details = self.dataset_populator.get_history_collection_details(
+                history_id, content_id=output_collection["id"]
+            )
+            assert [element["object"]["file_ext"] for element in collection_details["elements"]] == [
+                "tabular",
+                "tabular",
+            ]
 
     @skip_without_tool("multi_data_param")
     def test_reduce_collections_legacy(self):

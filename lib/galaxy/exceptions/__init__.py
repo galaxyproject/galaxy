@@ -153,7 +153,7 @@ class ToolInputsNotReadyException(MessageException):
 
 class ToolInputsNotOKException(MessageException):
     def __init__(
-        self, err_msg: str | None = None, type="info", *, src: str, id: str, input_name: str, **extra_error_info
+        self, err_msg: str | None = None, type="info", *, src: str, id: int, input_name: str, **extra_error_info
     ):
         super().__init__(err_msg, type, src=src, id=id, input_name=input_name, **extra_error_info)
         self.src = src

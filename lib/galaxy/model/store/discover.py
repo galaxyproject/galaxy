@@ -14,6 +14,7 @@ from collections.abc import (
     Iterable,
 )
 from decimal import Decimal
+from pathlib import Path
 from typing import (
     Any,
     NamedTuple,
@@ -118,6 +119,20 @@ def resolve_discovered_extension(ext: str, path: str | None) -> str:
     return ext
 
 
+def ensure_job_path_in_job_directory(path: StrPath, job_directory: StrPath) -> None:
+    """Reject ``path`` if it is located in ``job_directory`` but resolves to a location outside of it.
+
+    Paths located elsewhere, e.g. object store paths of outputs written there directly, are not checked.
+    Symbolic links above ``job_directory`` are trusted, links below it are not.
+    """
+    real_job_directory = os.path.realpath(job_directory)
+    absolute_path = Path(os.path.abspath(path))
+    if os.path.lexists(absolute_path) and any(
+        os.path.realpath(parent) == real_job_directory for parent in absolute_path.parents
+    ):
+        ensure_path_in_directory(absolute_path, real_job_directory)
+
+
 class ModelPersistenceContext(metaclass=abc.ABCMeta):
     """Class for creating datasets while finding files.
 
@@ -130,6 +145,8 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
     discovered_file_count: int
 
     allows_external_output_paths: bool = False
+    # Directory a JSON MetadataTempFile in dataset attributes may be read from; None rejects them.
+    metadata_tmp_files_dir: str | None = None
 
     def get_job(self) -> galaxy.model.Job | None:
         return getattr(self, "job", None)
@@ -344,8 +361,7 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
         # TODO: this might run set_meta after copying the file to the object store, which could be inefficient if job working directory is closer to the node.
         self.set_datasets_metadata(datasets=[primary_data], datasets_attributes=[dataset_attributes])
 
-    @staticmethod
-    def set_datasets_metadata(datasets, datasets_attributes=None, overwrite: bool = True):
+    def set_datasets_metadata(self, datasets, datasets_attributes=None, overwrite: bool = True):
         datasets_attributes = datasets_attributes or [{} for _ in datasets]
         for primary_data, dataset_attributes in zip(datasets, datasets_attributes):
             # add tool/metadata provided information
@@ -368,7 +384,9 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
                     if "dbkey" in dataset_attributes:
                         metadata_dict["dbkey"] = dataset_attributes["dbkey"]
                     # branch tested with tool_provided_metadata_3 / tool_provided_metadata_10
-                    primary_data.metadata.from_JSON_dict(json_dict=metadata_dict)
+                    primary_data.metadata.from_JSON_dict(
+                        json_dict=metadata_dict, metadata_tmp_files_dir=self.metadata_tmp_files_dir
+                    )
                 else:
                     primary_data.set_meta(overwrite=overwrite)
             except Exception:
@@ -1234,7 +1252,14 @@ class JsonCollectedDatasetMatch:
 
     @property
     def ext(self) -> str:
-        return self.as_dict.get("ext", self.collector and self.collector.default_ext or "data")
+        # A named group that did not participate in the regex match shows up
+        # in ``groupdict()`` with a value of ``None``; treat that like a
+        # pattern without an ``ext`` group and fall back to the collector
+        # default extension.
+        ext = self.as_dict.get("ext")
+        if not ext:
+            return self.collector and self.collector.default_ext or "data"
+        return ext
 
     @property
     def visible(self) -> bool:

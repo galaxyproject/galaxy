@@ -17,7 +17,8 @@ from pydantic import ValidationError
 from galaxy.exceptions import ObjectNotFound
 from galaxy.managers.notification import (
     DefaultStrategy,
-    MessageEmailNotificationTemplateBuilder,
+    EmailNotificationChannelPlugin,
+    NOTIFICATION_PREFERENCES_SECTION_NAME,
     NotificationManager,
     NotificationRecipientResolver,
     TemplateFormats,
@@ -303,6 +304,13 @@ class TestUserNotifications(NotificationManagerBaseTestCase):
         assert content["history_id"] == "encoded-11"
         assert content["run_id"] == "encoded-7"
 
+    def test_notifications_expire_six_months_after_they_are_created(self):
+        user = self._create_test_users(num_users=1)[0]
+        created = datetime(2030, 1, 1)
+        with patch("galaxy.model.now", return_value=created):
+            notification, _ = self._send_message_notification_to_users([user])
+        assert notification.expiration_time == created + timedelta(days=30 * 6)
+
     def test_get_user_notifications(self):
         user = self._create_test_user()
         user_notifications = self.notification_manager.get_user_notifications(user)
@@ -368,6 +376,15 @@ class TestUserNotifications(NotificationManagerBaseTestCase):
         actual_preferences = self.notification_manager.get_user_notification_preferences(user)
 
         assert actual_preferences == default_preferences
+
+    def test_old_preferences_include_new_categories_without_changing_saved_settings(self):
+        user = self._create_test_user()
+        user.preferences[NOTIFICATION_PREFERENCES_SECTION_NAME] = UserNotificationPreferences(
+            preferences={PersonalNotificationCategory.message: NotificationCategorySettings(enabled=False)}
+        ).model_dump_json()
+        expected = UserNotificationPreferences.default()
+        expected.preferences[PersonalNotificationCategory.message].enabled = False
+        assert self.notification_manager.get_user_notification_preferences(user) == expected
 
     def test_update_user_notification_preferences(self):
         user = self._create_test_user()
@@ -550,6 +567,35 @@ class TestUserNotificationsWithTasks(NotificationManagerBaseTestCaseWithTasks):
         mock_send_mail.assert_called_once()
         assert self.notification_manager.get_pending_notifications() == []
 
+    def test_dispatch_now_queues_delivery_instead_of_waiting_for_the_dispatcher(self):
+        user = self._create_test_user()
+
+        with patch("galaxy.celery.tasks.dispatch_notification.delay") as queue_dispatch:
+            notification, _ = self._send_dispatch_now_notification(user)
+
+        queue_dispatch.assert_called_once_with(notification_id=notification.id)
+        assert self.notification_manager.get_pending_notifications() == []
+        with patch("galaxy.util.send_mail") as mock_send_mail:
+            self.notification_manager.dispatch_notification_via_channels(notification.id)
+        mock_send_mail.assert_called_once()
+
+    def test_dispatch_now_leaves_notification_to_the_dispatcher_when_queueing_fails(self):
+        user = self._create_test_user()
+
+        with patch("galaxy.celery.tasks.dispatch_notification.delay", side_effect=ConnectionError("broker down")):
+            notification, _ = self._send_dispatch_now_notification(user)
+
+        assert self.notification_manager.get_pending_notifications() == [notification]
+
+    def _send_dispatch_now_notification(self, user: User):
+        request = NotificationCreateRequest(
+            recipients=NotificationRecipients.model_construct(user_ids=[user.id]),
+            notification=InternalNotificationCreateData(**self._default_test_notification_data()),
+            galaxy_url="https://test.galaxy.url",
+            dispatch_now=True,
+        )
+        return self.notification_manager.send_notification_to_recipients(request)
+
 
 class TestNotificationRecipientResolver(NotificationsBaseTestCase):
     def test_default_resolution_strategy(self):
@@ -661,7 +707,6 @@ class TestUserNotificationPreferencesFallback:
 
 
 class TestToolInstallationRequestContentValidation:
-
     def test_control_characters_are_collapsed_in_single_line_fields(self):
         tool = RequestedTool(name="FastQC\nEvil", requested_version="1.0\r2")
         assert tool.name == "FastQC Evil"
@@ -740,15 +785,25 @@ class TestToolInstallationRequestContentValidation:
 
 
 class TestMessageEmailBuilder(NotificationManagerBaseTestCase):
-    def test_html_email_renders_the_message_markdown_and_escapes_the_subject(self):
+    @pytest.mark.parametrize(
+        "category",
+        [
+            PersonalNotificationCategory.message,
+            PersonalNotificationCategory.workflow_execution_completed,
+            PersonalNotificationCategory.tool_execution_completed,
+        ],
+    )
+    def test_html_email_renders_the_message_markdown_and_escapes_the_subject(self, category):
         user = self._create_test_user()
         notification, _ = self._send_message_notification_to_users(
             [user],
             notification={
-                "content": {"category": "message", "subject": "<i>Maintenance</i>", "message": "**Downtime** tonight"}
+                "category": category,
+                "content": {"category": category, "subject": "<i>Maintenance</i>", "message": "**Downtime** tonight"},
             },
         )
-        builder = MessageEmailNotificationTemplateBuilder(self.app.config, notification, user)
+        builder_class = EmailNotificationChannelPlugin.email_templates_by_category[category]
+        builder = builder_class(self.app.config, notification, user)
         html = builder.get_body(TemplateFormats.HTML)
         assert "<strong>Downtime</strong>" in html
         assert "&lt;i&gt;Maintenance&lt;/i&gt;" in html

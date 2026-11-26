@@ -1305,10 +1305,10 @@ galaxy:
   #error_email_to: null
 
   # Email address to use in the 'From' field when sending emails for
-  # account activations, workflow step notifications, password resets,
-  # and tool error reports.  We recommend using a string in the
-  # following format: Galaxy Project <galaxy-no-reply@example.com>. If
-  # not configured, '<galaxy-no-reply@HOSTNAME>' will be used.
+  # account activations, completion notifications, password resets, and
+  # tool error reports.  We recommend using a string in the following
+  # format: Galaxy Project <galaxy-no-reply@example.com>. If not
+  # configured, '<galaxy-no-reply@HOSTNAME>' will be used.
   #email_from: null
 
   # This text will be inserted at the end of the activation email's
@@ -2492,10 +2492,10 @@ galaxy:
   # decoding also adds overhead. Simple parameter references resolve in
   # Python without starting a worker. When empty (the default), the
   # worker runs without an OS-level jail.
-  # Full JavaScript evaluation requires Python 3.10+ and the quickjs-ng
-  # package. Without QuickJS, expressions requiring JavaScript fail with
-  # an error; literals and simple parameter references continue to work
-  # without it.
+  # Full JavaScript evaluation requires the quickjs-ng package. Without
+  # QuickJS, expressions requiring JavaScript fail with an error;
+  # literals and simple parameter references continue to work without
+  # it.
   # Set this to ``bubblewrap`` to use a built-in bubblewrap jail. It
   # clears the environment, unshares the PID/IPC/UTS namespaces, and
   # read-only-binds only what the worker needs to run: the Python
@@ -2738,7 +2738,10 @@ galaxy:
   # This option allows users to see the full path of datasets via the
   # "View Details" option in the history. This option also exposes the
   # command line to non-administrative users. Administrators can always
-  # see dataset paths.
+  # see dataset paths. It also shows users the error from a failing
+  # JavaScript expression in a YAML tool, which can quote the job's
+  # input values, including dataset paths. User-defined tools always
+  # show this error.
   #expose_dataset_path: false
 
   # This option allows users to view the tool wrapper source code. This
@@ -2880,10 +2883,19 @@ galaxy:
   # handler processes. Float values are allowed.
   #workflow_monitor_sleep: 1.0
 
-  # Time in seconds between workflow completion monitor iterations. The
-  # completion monitor checks for workflows that have all jobs completed
-  # and triggers completion hooks (e.g., exports, notifications). Float
-  # values are allowed.
+  # Time in seconds between workflow and tool completion monitor
+  # iterations. Workflow handlers check up to 100 of their assigned
+  # invocations per iteration and trigger completion hooks, such as
+  # exports. When notifications or SMTP are configured, one elected web
+  # process checks tool and workflow runs that requested notifications,
+  # reporting when attention is needed and when they finish. It checks
+  # an unfinished run again after this interval or a tenth of the time
+  # the run has been pending, whichever is longer, and at least every 5
+  # minutes. Once the user has been told that a run has paused jobs, its
+  # checks back off the same way from that moment, but up to once an
+  # hour. Runs in deleted histories are not reported. With SMTP
+  # configured, that process also dispatches queued completion emails in
+  # a separate thread at this interval. Float values are allowed.
   #workflow_completion_monitor_sleep: 5.0
 
   # In which cases Galaxy should calculate a hash for a new dataset.
@@ -2955,8 +2967,7 @@ galaxy:
   # to ``remote`` the tool command line will be built as part of the
   # submitted job. Note that ``remote`` is a beta setting that will be
   # useful for materializing deferred datasets as part of the submitted
-  # job. Note also that you have to set ``metadata_strategy`` to
-  # ``extended`` if you set this option to ``remote``.
+  # job. The job then needs a Galaxy runtime where it runs.
   #tool_evaluation_strategy: local
 
   # In the past Galaxy would preserve its Python environment when
@@ -3631,6 +3642,46 @@ galaxy:
   # ``true``. Runs in a Celery task.
   #failed_jobs_working_directory_cleanup_interval: 86400
 
+  # Container images that user defined tools may run in. User defined
+  # tools run an arbitrary command in the image they name, so only list
+  # images you trust. An entry ending in ``/*`` allows any image below
+  # that registry or path, at any depth, with any tag or digest
+  # (``quay.io/biocontainers/*``). An image without a tag or digest
+  # allows any tag or digest of it (``docker.io/library/python``),
+  # ``<image>:<tag>`` only that tag, and ``<image>@<digest>`` only that
+  # digest. A lone ``*`` allows any image; it is meant for testing and
+  # is not recommended in production, because users can then run any
+  # image from any registry, and denied entries can't block copies of an
+  # image on other registries. An empty list allows none, so no user
+  # defined tool can be created or run. References are canonicalized
+  # before they are compared, so ``python`` and
+  # ``docker.io/library/python`` are the same image. Tools are checked
+  # when they are created and again when their jobs run. Malformed
+  # entries prevent Galaxy from starting. See the user defined tools
+  # admin documentation for details.
+  #user_defined_tool_allowed_containers:
+  #- quay.io/biocontainers/*
+
+  # Container images that user defined tools may not run in, even if
+  # ``user_defined_tool_allowed_containers`` allows them. An entry
+  # ending in ``/*`` denies any image below that registry or path, at
+  # any depth, and an image name denies every tag and digest of that
+  # image. Entries with a tag or digest are not accepted, because the
+  # same image can be named by another tag or digest. When this list is
+  # not empty, references that cannot be parsed are refused even if
+  # ``user_defined_tool_allowed_containers`` is ``*``. Entries match
+  # image names, so a copy of an image published under another name or
+  # on another registry is not denied. Malformed entries prevent Galaxy
+  # from starting. See the user defined tools admin documentation for
+  # details.
+  #user_defined_tool_denied_containers: []
+
   # Enable beta tool formats (yaml, cwl, ...) which is a prerequisite
   # for user defined tools.
   #enable_beta_tool_formats: false
+
+  # Fail jobs of user defined tools that would not run in a container,
+  # regardless of the destination's ``require_container`` setting. User
+  # defined tools run arbitrary commands, only disable this if the job
+  # destinations isolate them in some other way (or for testing).
+  #require_container_for_user_defined_tools: true

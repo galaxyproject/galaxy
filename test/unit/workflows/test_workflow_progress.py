@@ -3,13 +3,23 @@ from typing import cast
 import pytest
 
 from galaxy import model
+from galaxy.model.dataset_collections.readiness import dataset_readiness
+from galaxy.schema.invocation import FailureReason
 from galaxy.util.unittest import TestCase
 from galaxy.workflow import modules
 from galaxy.workflow.run import (
     ModuleInjector,
+    STEP_OUTPUT_DELAYED,
     WorkflowProgress,
 )
+from galaxy.workflow.scheduling_dependencies import (
+    DependencyType,
+    SchedulingDependencies,
+    SchedulingDependency,
+    unpopulated_collection_dependencies,
+)
 from .workflow_support import (
+    expression_json_hda,
     MockApp,
     MockTrans,
     yaml_to_model,
@@ -66,6 +76,24 @@ steps:
         connections:
         - "@output_step": 0
           output_name: "output"
+          "@input_subworkflow_step": 0
+"""
+
+TEST_SUBWORKFLOW_PARAMETER_YAML = """
+steps:
+  - type: "tool"
+    tool_id: "pick_value"
+  - type: "subworkflow"
+    subworkflow:
+       steps:
+          - type: "parameter_input"
+            label: "inner_text"
+            tool_inputs: {"parameter_type": "text", "optional": false}
+    inputs:
+      inner_text:
+        connections:
+        - "@output_step": 0
+          output_name: "text_param"
           "@input_subworkflow_step": 0
 """
 
@@ -192,20 +220,26 @@ class TestWorkflowProgress(TestCase):
         return conn
 
     def test_pending_dataset_delays_with_tracked_dependency(self):
+        self._assert_delays_with_readiness_dependency(model.Dataset.states.QUEUED, is_data=False)
+
+    def test_paused_dataset_delays_with_readiness_dependency_when_ready_required(self):
+        self._assert_delays_with_readiness_dependency(model.Dataset.states.PAUSED, require_ready=True)
+
+    def _assert_delays_with_readiness_dependency(self, state, **kwds):
         self._setup_workflow(TEST_WORKFLOW_YAML)
         dataset = model.Dataset()
-        dataset.state = model.Dataset.states.QUEUED
+        dataset.state = state
         hda = model.HistoryDatasetAssociation(dataset=dataset)
         hda.id = 7
         progress = self._new_workflow_progress()
         progress.set_step_outputs(self._invocation_step(2), {"out1": hda})
 
         with pytest.raises(modules.DelayedWorkflowEvaluation) as delayed:
-            progress.replacement_for_connection(self._connection_to_step_2_output(), is_data=False)
+            progress.replacement_for_connection(self._connection_to_step_2_output(), **kwds)
         progress.record_delay(delayed.value)
 
-        assert progress.scheduling_dependencies() == modules.SchedulingDependencies(
-            tracked=frozenset({modules.SchedulingDependency(modules.DependencyType.HDA, 7)}),
+        assert progress.scheduling_dependencies() == SchedulingDependencies(
+            tracked=frozenset({SchedulingDependency(DependencyType.HDA, 7, dataset_readiness(hda))}),
             untracked=(),
             more_work=False,
         )
@@ -220,8 +254,8 @@ class TestWorkflowProgress(TestCase):
         session.add(collection)
         session.commit()
 
-        assert modules.unpopulated_collection_dependencies(collection) == [
-            modules.SchedulingDependency(modules.DependencyType.DATASET_COLLECTION, unpopulated_child.id)
+        assert unpopulated_collection_dependencies(collection) == [
+            SchedulingDependency(DependencyType.DATASET_COLLECTION, unpopulated_child.id)
         ]
 
     def test_delay_inherited_from_delayed_step_is_not_untracked(self):
@@ -234,7 +268,7 @@ class TestWorkflowProgress(TestCase):
         assert delayed.value.inherited
         progress.record_delay(delayed.value)
 
-        assert progress.scheduling_dependencies() == modules.SchedulingDependencies(
+        assert progress.scheduling_dependencies() == SchedulingDependencies(
             tracked=frozenset(), untracked=(), more_work=False
         )
 
@@ -290,6 +324,78 @@ class TestWorkflowProgress(TestCase):
             subworkflow_cat_step,
             step_dict,
         )
+
+    def test_subworkflow_unreadable_expression_json_parameter_delays_subworkflow(self, tmp_path):
+        hda = expression_json_hda(tmp_path / "expression.json", None)
+        subworkflow_invocation, subworkflow_step = self._setup_subworkflow_parameter(hda)
+        with pytest.raises(modules.DelayedWorkflowEvaluation) as exc_info:
+            self._recovered_workflow_progress().subworkflow_progress(subworkflow_invocation, subworkflow_step, {})
+        assert "could not be read" in exc_info.value.why
+
+    def _recovered_workflow_progress(self):
+        progress = self._new_workflow_progress()
+        progress.remaining_steps()
+        return progress
+
+    def _setup_subworkflow_parameter(self, hda):
+        self._setup_workflow(TEST_SUBWORKFLOW_PARAMETER_YAML)
+        self._set_previous_progress(
+            [
+                (100, {"text_param": hda}),
+                (101, UNSCHEDULED_STEP),
+            ]
+        )
+        subworkflow_step = self.invocation.workflow.step_by_index(1)
+        subworkflow_invocation = self.invocation.create_subworkflow_invocation_for_step(subworkflow_step)
+        session = self.app.model.session
+        session.add(self.invocation)
+        session.add(subworkflow_invocation)
+        session.commit()
+        return subworkflow_invocation, subworkflow_step
+
+
+@pytest.mark.parametrize(
+    "connection_state,missing_names",
+    [
+        ("disconnected", "'1', 'missing_input'"),
+        ("ready", "'missing_input'"),
+        ("pending", "'missing_input'"),
+    ],
+)
+def test_disconnected_subworkflow_runtime_failure(connection_state, missing_names):
+    # Persist a run directly: ordinary submission now rejects this saved graph.
+    app = MockApp()
+    workflow = yaml_to_model(TEST_SUBWORKFLOW_YAML)
+    subworkflow_step = workflow.step_by_index(1)
+    missing_input = model.WorkflowStep()
+    missing_input.id = 104
+    missing_input.order_index = 2
+    missing_input.type = "data_input"
+    missing_input.tool_inputs = {"name": "missing_input"}
+    subworkflow_step.subworkflow.steps.append(missing_input)
+    if connection_state == "disconnected":
+        subworkflow_step.inputs = []
+    invocation = model.WorkflowInvocation()
+    invocation.workflow = workflow
+    subworkflow_invocation = invocation.create_subworkflow_invocation_for_step(subworkflow_step)
+    session = app.model.session
+    session.add(invocation)
+    session.add(subworkflow_invocation)
+    session.commit()
+    injector = cast(ModuleInjector, MockModuleInjector({}))
+    progress = WorkflowProgress(invocation, {}, injector, {})
+    if connection_state == "ready":
+        progress.outputs[workflow.step_by_index(0).id] = {"output": model.HistoryDatasetAssociation()}
+    elif connection_state == "pending":
+        progress.outputs[workflow.step_by_index(0).id] = STEP_OUTPUT_DELAYED
+
+    with pytest.raises(modules.FailWorkflowEvaluation) as exc:
+        progress.subworkflow_progress(subworkflow_invocation, subworkflow_step, {})
+    assert exc.value.why.model_dump(exclude_none=True) == {
+        "reason": FailureReason.unexpected_failure,
+        "workflow_step_id": subworkflow_step.id,
+        "details": f"Subworkflow has disconnected required input {missing_names}",
+    }
 
 
 class MockModuleInjector:

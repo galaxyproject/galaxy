@@ -8,7 +8,7 @@ outputs:
 steps:
   multi_select:
     tool_id: multi_select
-    tool_version: "0.1"
+    tool_version: "1.0.0"
     in:
       select_ex: input
     tool_state:

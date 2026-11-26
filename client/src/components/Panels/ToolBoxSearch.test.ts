@@ -28,16 +28,6 @@ const EXPECTED_LABELS = ["Recent tools", "Favorites"];
 const localVue = getLocalVue();
 const router = injectTestRouter(localVue);
 
-function toToolsById(list: Tool[]) {
-    return list.reduce(
-        (acc, tool) => {
-            acc[tool.id] = tool;
-            return acc;
-        },
-        {} as Record<string, Tool>,
-    );
-}
-
 function withFavoriteEdamOperationTool(list: Tool[]) {
     return list.map((tool) =>
         tool.id === "liftOver1" ? ({ ...tool, edam_operations: ["operation_2409"] } as Tool) : tool,
@@ -78,7 +68,7 @@ function mountToolBox(options: MountToolBoxOptions = {}) {
 
     const toolStore = useToolStore();
     vi.spyOn(toolStore, "fetchToolTagsMapping").mockResolvedValue();
-    toolStore.toolsById = toToolsById(options.tools ?? toolsList);
+    toolStore.saveAllTools(options.tools ?? toolsList);
     toolStore.toolSections = options.toolSections ?? { default: toolsListInPanel };
     toolStore.defaultPanelView = "default";
     toolStore.currentPanelView = options.currentPanelView ?? "my_panel";
@@ -135,6 +125,97 @@ describe("ToolBox search", () => {
 
         expect((input.element as HTMLInputElement).value).toBe("");
         expect(wrapper.find('[data-tool-id="liftOver1"]').exists()).toBe(true);
+    });
+
+    it("searches from 2 characters and flags 1-character queries as too short", async () => {
+        const { wrapper } = mountToolBox();
+        await flushPromises();
+        const input = wrapper.find("input.search-query");
+
+        await input.setValue("Z");
+        vi.advanceTimersByTime(250);
+        await flushPromises();
+        expect(wrapper.text()).toContain("Search term is too short");
+
+        await input.setValue("Zi");
+        vi.advanceTimersByTime(250);
+        await flushPromises();
+        expect(wrapper.text()).not.toContain("Search term is too short");
+        expect(wrapper.find('[data-tool-id="__ZIP_COLLECTION__"]').exists()).toBe(true);
+    });
+
+    /** Mounts a toolbox with 120 "Many tool N" tools in one section, followed by `extraTools`. */
+    function mountWithManyTools(extraTools: Tool[] = []) {
+        const tools = [
+            ...Array.from(
+                { length: 120 },
+                (_, i) => ({ ...toolsList[0], id: `many_tool_${i}`, name: `Many tool ${i}` }) as Tool,
+            ),
+            ...extraTools,
+        ];
+        return mountToolBox({
+            tools,
+            toolSections: {
+                default: {
+                    many: {
+                        model_class: "ToolSection",
+                        id: "many",
+                        name: "Many",
+                        tools: tools.map((tool) => tool.id),
+                    } as unknown as ToolSection,
+                },
+            },
+        });
+    }
+
+    it("caps rendered search results and shows all of them on request", async () => {
+        const { wrapper, userStore } = mountWithManyTools();
+        await flushPromises();
+
+        const input = wrapper.find("input.search-query");
+        await input.setValue("Many tool");
+        vi.advanceTimersByTime(250);
+        await flushPromises();
+
+        expect(wrapper.findAll("a[data-tool-id]")).toHaveLength(100);
+        expect(wrapper.text()).toContain("Loaded 100 out of 120 tools");
+
+        const showAll = wrapper.find('[data-description="show all tool search results button"]');
+        expect(showAll.exists()).toBe(true);
+        await showAll.trigger("click");
+        await flushPromises();
+
+        expect(wrapper.findAll("a[data-tool-id]")).toHaveLength(120);
+        expect(wrapper.find('[data-description="show all tool search results button"]').exists()).toBe(false);
+
+        // Starring a tool re-runs the search; the list stays expanded until the query changes.
+        userStore.currentPreferences = { favorites: { tools: ["many_tool_119"] } };
+        await flushPromises();
+        expect(wrapper.find('[data-description="show all tool search results button"]').exists()).toBe(false);
+        expect(wrapper.find('[data-tool-id="many_tool_110"]').exists()).toBe(true);
+
+        // Still matches all 120 tools by word match, but a new query collapses the list again.
+        await input.setValue("Many tool 1");
+        vi.advanceTimersByTime(250);
+        await flushPromises();
+        expect(wrapper.find('[data-description="show all tool search results button"]').exists()).toBe(true);
+    });
+
+    it("keeps the best-ranked matches when capping, even if they come last in the tool list", async () => {
+        const exactMatch = { ...toolsList[0], id: "exact_tool", name: "Tool" } as Tool;
+        const startsWithMatch = { ...toolsList[0], id: "starts_with_tool", name: "Tool kit" } as Tool;
+        const { wrapper } = mountWithManyTools([exactMatch, startsWithMatch]);
+        await flushPromises();
+
+        const input = wrapper.find("input.search-query");
+        await input.setValue("Tool");
+        vi.advanceTimersByTime(250);
+        await flushPromises();
+
+        const toolIds = wrapper.findAll("a[data-tool-id]").map((item) => item.attributes("data-tool-id"));
+        expect(toolIds).toHaveLength(100);
+        expect(toolIds.slice(0, 2)).toEqual([exactMatch.id, startsWithMatch.id]);
+        expect(wrapper.text()).toContain("Loaded 100 out of 122 tools");
     });
 
     it("shows empty favorites copy in My panel when no favorites are set", async () => {

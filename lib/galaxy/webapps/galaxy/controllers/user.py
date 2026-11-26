@@ -259,7 +259,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin):
             return self.message_exception(trans, message)
         # Since logging an event requires a session, we'll log prior to ending the session
         trans.log_event("User logged out")
-        trans.handle_user_logout(logout_all=logout_all)
+        trans.handle_user_logout(logout_all=util.string_as_bool(logout_all))
         success_response = {"message": "Success."}  # This is a little weird as a response.
         if trans.app.config.use_remote_user and trans.app.config.remote_user_logout_href:
             success_response["redirect_uri"] = trans.app.config.remote_user_logout_href

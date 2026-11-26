@@ -34,7 +34,7 @@ const mockTools: Partial<Tool>[] = [
 // trap -- not through the property descriptor `vi.spyOn` reads -- so it can't
 // be spied on directly. Seed the state it derives from instead.
 function seedToolsById(toolStore: ReturnType<typeof useToolStore>, toolsList: Partial<Tool>[]) {
-    toolStore.toolsById = Object.fromEntries(toolsList.map((tool) => [tool.id as string, tool as Tool]));
+    toolStore.saveAllTools(toolsList as Tool[]);
 }
 
 describe("InteractiveToolsPanel component", () => {
@@ -132,6 +132,22 @@ describe("InteractiveToolsPanel component", () => {
         await mountComponent([]);
 
         expect(filterLatestToolVersions).toHaveBeenCalledWith([]);
+    });
+
+    it("keeps the slashes of a Tool Shed tool ID unencoded in the icon URL", async () => {
+        const shedTool = {
+            id: "toolshed.example.org/repos/an owner/a_repo/interactive_tool_example/1.0",
+            version: "1.0",
+            name: "Example",
+            model_class: "InteractiveTool",
+            icon: "example.png",
+        };
+
+        const wrapper = await mountComponent([shedTool]);
+
+        expect(wrapper.find(".tool-icon img").attributes("src")).toBe(
+            "/api/tools/toolshed.example.org/repos/an%20owner/a_repo/interactive_tool_example/1.0/icon",
+        );
     });
 
     it("should display active interactive tools at the top", async () => {

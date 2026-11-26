@@ -64,6 +64,7 @@ from typing import (
     cast,
     Literal,
     NamedTuple,
+    Self,
     Union,
 )
 from uuid import UUID
@@ -81,7 +82,6 @@ from pydantic import (
 from requests import Response
 from rocrate.rocrate import ROCrate
 from typing_extensions import (
-    Self,
     TypedDict,
 )
 
@@ -1330,6 +1330,7 @@ class BaseDatasetPopulator(BasePopulator):
         strict: bool = True,
         preferred_object_store_id: str | None = None,
         tool_uuid: str | None = None,
+        send_notification: bool = False,
     ) -> Response:
         payload: dict[str, Any] = {
             "history_id": history_id,
@@ -1340,6 +1341,8 @@ class BaseDatasetPopulator(BasePopulator):
             payload["tool_id"] = tool_id
         if tool_uuid is not None:
             payload["tool_uuid"] = tool_uuid
+        if send_notification:
+            payload["send_notification"] = True
         if preferred_object_store_id is not None:
             payload["preferred_object_store_id"] = preferred_object_store_id
         response = self._post("jobs", data=payload, json=True)
@@ -1784,6 +1787,11 @@ class BaseDatasetPopulator(BasePopulator):
         user_object = response.json()
         assert "total_disk_usage" in user_object
         return user_object["total_disk_usage"]
+
+    def recalculate_disk_usage(self) -> None:
+        """Recalculate the current user's disk usage, waiting on the task."""
+        recalculate_response = self._put("users/current/recalculate_disk_usage")
+        assert self.wait_on_task(recalculate_response)
 
     def update_object_store_id(self, dataset_id: str, object_store_id: str):
         payload = {"object_store_id": object_store_id}
@@ -3028,8 +3036,7 @@ steps: []
             history_id = request.get("history_id")
         if history_id is None and request:
             history_id = request["history"]
-            if history_id.startswith("hist_id="):
-                history_id = history_id[len("hist_id=") :]
+            history_id = history_id.removeprefix("hist_id=")
         assert history_id
         self.wait_for_workflow(workflow_id, invocation_id, history_id, assert_ok=assert_ok)
         return invoke_return
@@ -3100,10 +3107,14 @@ steps: []
         response.raise_for_status()
 
     def update_workflow(self, workflow_id: str, workflow_object: dict) -> Response:
-        data = dict(workflow=workflow_object)
-        raw_url = f"workflows/{workflow_id}"
-        put_response = self._put(raw_url, data, json=True)
-        return put_response
+        return self.update_workflow_fields(workflow_id, {"workflow": workflow_object})
+
+    def update_workflow_fields(self, workflow_id: str, fields: dict, admin: bool = False) -> Response:
+        """PUT ``fields`` as top-level payload keys, the shape the client sends."""
+        return self._put(f"workflows/{workflow_id}", fields, admin=admin, json=True)
+
+    def set_workflow_menu(self, workflow_ids: list[str]) -> Response:
+        return self._put("workflows/menu", {"workflow_ids": workflow_ids}, json=True)
 
     def refactor_workflow(
         self,
@@ -4084,9 +4095,14 @@ class LibraryPopulator:
     def setup_fetch_to_folder(self, test_name):
         history_id = self.dataset_populator.new_history()
         library = self.new_private_library(test_name)
-        folder_id = library["root_folder_id"][1:]
-        destination = {"type": "library_folder", "library_folder_id": folder_id}
+        destination = self.fetch_destination_for_library(library)
         return history_id, library, destination
+
+    def fetch_destination_for_library(self, library: dict[str, Any]) -> dict[str, Any]:
+        root_folder_id = library["root_folder_id"]
+        # The libraries API prefixes folder ids with "F", fetch destinations take the bare encoded id.
+        assert root_folder_id.startswith("F"), root_folder_id
+        return {"type": "library_folder", "library_folder_id": root_folder_id[1:]}
 
 
 class BaseDatasetCollectionPopulator:
@@ -5305,8 +5321,7 @@ class GiHttpMixin:
         return requests.delete(self._url(route), data=data, headers=headers, timeout=DEFAULT_SOCKET_TIMEOUT)
 
     def _url(self, route):
-        if route.startswith("/api/"):
-            route = route[len("/api/") :]
+        route = route.removeprefix("/api/")
 
         return f"{self._api_url()}/{route}"
 

@@ -772,6 +772,12 @@ def send_notification_to_recipients_async(
     log.info(f"Successfully sent {notifications_sent} notifications.")
 
 
+@galaxy_task(action="dispatch a notification")
+def dispatch_notification(notification_id: int, notification_manager: NotificationManager):
+    """Deliver one notification through the other channels, e.g. email."""
+    notification_manager.dispatch_notification_via_channels(notification_id)
+
+
 @galaxy_task(action="dispatch pending notifications")
 def dispatch_pending_notifications(notification_manager: NotificationManager):
     """Dispatch pending notifications."""

@@ -14,7 +14,7 @@ from dataclasses import dataclass
 from datetime import (
     datetime,
     timedelta,
-    timezone,
+    UTC,
 )
 from email.utils import parsedate_to_datetime
 from pathlib import Path
@@ -29,7 +29,8 @@ from urllib.parse import (
 from galaxy.util import requests
 
 GTN_DATABASE_URL = "https://depot.galaxyproject.org/chatgxy/gtn_search.db"
-GTN_FAQ_BASE_URL = "https://training.galaxyproject.org/training-material/faqs"
+GTN_SITE_URL = "https://training.galaxyproject.org/training-material"
+GTN_FAQ_BASE_URL = f"{GTN_SITE_URL}/faqs"
 # Connect + per-read timeout for the initial GTN database download. The file
 # is ~25MB; this bounds individual socket reads so a stalled depot can't hang
 # an agent init forever. Total wall-clock can still exceed this if the
@@ -53,7 +54,7 @@ def _parse_last_modified(header: str | None) -> datetime | None:
     except (TypeError, ValueError):
         return None
     if parsed.tzinfo is None:
-        parsed = parsed.replace(tzinfo=timezone.utc)
+        parsed = parsed.replace(tzinfo=UTC)
     return parsed
 
 
@@ -66,7 +67,7 @@ def _file_url_path(url: str) -> Path | None:
 
 
 def _mtime_utc(path: Path) -> datetime:
-    return datetime.fromtimestamp(path.stat().st_mtime, tz=timezone.utc)
+    return datetime.fromtimestamp(path.stat().st_mtime, tz=UTC)
 
 
 def _escape_like(value: str) -> str:
@@ -256,7 +257,7 @@ class GTNSearchDB:
         if target.exists():
             remote_mtime = cls._remote_last_modified(url)
             if remote_mtime is not None:
-                local_mtime = datetime.fromtimestamp(target.stat().st_mtime, tz=timezone.utc)
+                local_mtime = datetime.fromtimestamp(target.stat().st_mtime, tz=UTC)
                 # depot's Last-Modified has second resolution; the 1-second slack
                 # absorbs rounding so a successful refresh isn't immediately re-triggered.
                 if remote_mtime <= local_mtime + _ONE_SECOND:
@@ -540,6 +541,64 @@ class GTNSearchDB:
 
         except sqlite3.Error as e:
             log.warning(f"Failed to get tutorial content for {topic}/{tutorial}: {e}")
+            return None
+
+    def get_tutorial(self, topic: str, tutorial: str) -> SearchResult | None:
+        """Look up a single tutorial by its topic and tutorial slugs."""
+        try:
+            with self._get_connection() as conn:
+                row = conn.execute(
+                    """
+                    SELECT id, topic, tutorial, title, url, description,
+                        difficulty, hands_on, time_estimation
+                    FROM tutorials WHERE topic = ? COLLATE NOCASE AND tutorial = ? COLLATE NOCASE
+                    """,
+                    (topic, tutorial),
+                ).fetchone()
+                if not row:
+                    return None
+                return SearchResult(
+                    id=row["id"],
+                    topic=row["topic"],
+                    tutorial=row["tutorial"],
+                    title=row["title"],
+                    url=row["url"],
+                    snippet=row["description"] or "",
+                    score=0.0,
+                    difficulty=row["difficulty"],
+                    hands_on=bool(row["hands_on"]),
+                    time_estimation=row["time_estimation"] or "",
+                    description=row["description"] or "",
+                )
+        except sqlite3.Error as e:
+            log.warning(f"Failed to look up tutorial {topic}/{tutorial}: {e}")
+            return None
+
+    def get_faq(self, category: str, filename: str) -> FAQResult | None:
+        """Look up a single FAQ by its category and filename."""
+        try:
+            with self._get_connection() as conn:
+                row = conn.execute(
+                    """
+                    SELECT id, category, filename, title, area, content
+                    FROM faqs WHERE category = ? COLLATE NOCASE AND filename = ? COLLATE NOCASE
+                    """,
+                    (category, filename),
+                ).fetchone()
+                if not row:
+                    return None
+                return FAQResult(
+                    id=row["id"],
+                    category=row["category"],
+                    filename=row["filename"],
+                    title=row["title"],
+                    area=row["area"] or "",
+                    content=row["content"],
+                    snippet="",
+                    score=0.0,
+                )
+        except sqlite3.Error as e:
+            log.warning(f"Failed to look up FAQ {category}/{filename}: {e}")
             return None
 
     def get_topics(self) -> list[str]:

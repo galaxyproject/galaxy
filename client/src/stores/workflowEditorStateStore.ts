@@ -48,6 +48,8 @@ export const useWorkflowStateStore = defineScopedStore("workflowStateStore", () 
     const stepLoadingState = ref<StepLoadingState>({});
     const multiSelectedSteps = ref<Record<number, boolean>>({});
     const hasChanges = ref(false);
+    /** Set when a workflow arrives without step positions; the graph lays it out once its nodes have sizes. */
+    const needsInitialLayout = ref(false);
     const pendingHighlight = ref<{ bounds: Rectangle; moveTo?: boolean } | null>(null);
     const report = ref<WorkflowReport>({
         markdown: reportDefault,
@@ -64,6 +66,7 @@ export const useWorkflowStateStore = defineScopedStore("workflowStateStore", () 
         stepPosition.value = {};
         stepLoadingState.value = {};
         multiSelectedSteps.value = {};
+        needsInitialLayout.value = false;
         pendingHighlight.value = null;
         report.value = {
             markdown: reportDefault,
@@ -151,6 +154,7 @@ export const useWorkflowStateStore = defineScopedStore("workflowStateStore", () 
         position,
         report,
         hasChanges,
+        needsInitialLayout,
         stepPosition,
         stepLoadingState,
         pendingHighlight,

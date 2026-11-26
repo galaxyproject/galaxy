@@ -15,6 +15,7 @@ from galaxy.model import (
     HistoryDatasetAssociation,
     HistoryDatasetCollectionAssociation,
     InpDataDictT,
+    tag_strings,
 )
 from galaxy.tool_util.cwl.util import set_basename_and_derived_properties
 from galaxy.tool_util_models.parameters import (
@@ -180,8 +181,11 @@ def setup_for_runtimeify(
             "class": "Directory" if is_directory else "File",
             "location": f"step_input://{index}",
             "format": hda_entry.extension,
-            # A deferred dataset has no local file to measure.
-            "size": hda_entry.dataset.get_size(calculate_size=not hda_entry.has_deferred_data),
+            # Measure only a size that is unknown: a deferred dataset has no local file, and remote
+            # evaluation has no object store, so a recorded size (0 included) is used as is.
+            "size": hda_entry.dataset.get_size(
+                calculate_size=hda_entry.dataset.file_size is None and not hda_entry.has_deferred_data
+            ),
             "listing": [],
         }
         if hda_entry.has_deferred_data:
@@ -240,7 +244,7 @@ def _adapt_from_hdca(
     return collection_to_runtime(
         hdca.collection,
         name=hdca.name,
-        tags=[str(t) for t in hdca.tags],
+        tags=hdca.make_tag_string_list(),
         adapt_dataset=adapt_dataset,
         compute_environment=compute_environment,
     )
@@ -260,7 +264,7 @@ def _adapt_from_dce(
     return collection_to_runtime(
         dce.child_collection,
         name=dce.element_identifier,
-        tags=[str(t) for t in dce.auto_propagated_tags],
+        tags=tag_strings(dce.auto_propagated_tags),
         adapt_dataset=adapt_dataset,
         compute_environment=compute_environment,
         columns=dce.columns,  # pass columns for sample_sheet:* types
@@ -358,7 +362,7 @@ def _element_to_runtime(
         return _build_collection_runtime_dict(
             element.child_collection,
             name=element.element_identifier,
-            tags=list(element.auto_propagated_tags) if element.auto_propagated_tags else [],
+            tags=tag_strings(element.auto_propagated_tags),
             adapt_dataset=adapt_dataset,
             compute_environment=compute_environment,
             columns=element.columns,  # pass columns for sample_sheet:* types

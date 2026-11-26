@@ -1,7 +1,7 @@
 """Package-root API request and response schema implementations."""
 
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 from pydantic import (
@@ -100,7 +100,7 @@ class SerializationParams(BaseModel):
     )
 
 
-class PdfDocumentType(str, Enum):
+class PdfDocumentType(StrEnum):
     invocation_report = "invocation_report"
     page = "page"
 

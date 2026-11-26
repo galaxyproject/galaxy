@@ -184,7 +184,7 @@ class MapOverPlanner:
         for step_input in step.inputs:
             step_input_name = step_input.name
             input_in_execution_state = step_input_name not in known_input_names
-            if input_in_execution_state:
+            if input_in_execution_state and step_input_name in step.input_connections_by_name:
                 maybe_collection = progress.replacement_for_connection(
                     step.input_connections_by_name[step_input_name][0]
                 )

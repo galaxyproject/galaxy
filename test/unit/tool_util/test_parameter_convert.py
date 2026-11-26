@@ -15,6 +15,7 @@ from galaxy.tool_util.parameters import (
     input_models_for_tool_source,
     landing_decode,
     landing_encode,
+    LandingRequestInternalToolState,
     LandingRequestToolState,
     RelaxedRequestToolState,
     RequestInternalDereferencedToolState,
@@ -181,6 +182,14 @@ def test_landing_encode_data_batch():
     encoded_state = landing_encode(decoded_state, bundle, _fake_encode)
     assert encoded_state.input_state["parameter"]["values"][0]["src"] == "hda"
     assert encoded_state.input_state["parameter"]["values"][0]["id"] == EXAMPLE_ID_1_ENCODED
+
+
+def test_landing_encode_unset_optional_data():
+    for tool_name in ["gx_data_optional", "gx_data_collection_optional"]:
+        bundle = input_models_for_tool_source(tool_source_for(f"parameters/{tool_name}"))
+        decoded_state = LandingRequestInternalToolState({"parameter": None})
+        encoded_state = landing_encode(decoded_state, bundle, _fake_encode)
+        assert encoded_state.input_state["parameter"] is None
 
 
 def test_dereference():
@@ -357,6 +366,11 @@ def test_fill_defaults():
     with_defaults = fill_state_for({"conditional_parameter": {}}, "parameters/gx_conditional_boolean")
     assert with_defaults["conditional_parameter"]["test_parameter"] is False
     assert with_defaults["conditional_parameter"]["boolean_parameter"] is False
+
+    with_defaults = fill_state_for(
+        {"input": {"src": "hda", "id": EXAMPLE_ID_1}}, "parameters/gx_conditional_boolean_implicit"
+    )
+    assert with_defaults["conditional_parameter"] == {"test_parameter": False}
 
     with_defaults = fill_state_for({}, "parameters/gx_repeat_boolean")
     assert len(with_defaults["parameter"]) == 0

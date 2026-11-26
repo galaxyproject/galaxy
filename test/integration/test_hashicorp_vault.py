@@ -75,6 +75,17 @@ class VaultClient:
         ).json()
         return result["auth"]["client_token"]
 
+    def lookup_token(self, token):
+        response = self.session.post(f"{self.addr}/v1/auth/token/lookup", json={"token": token})
+        response.raise_for_status()
+        return response.json()["data"]
+
+    def wait_for_renewal(self, token, timeout):
+        def renewed():
+            return self.lookup_token(token).get("last_renewal_time") or None
+
+        return wait_on(renewed, "Vault token renewal", timeout)
+
 
 def _write_vault_config(vault_addr, vault_token, path_prefix="/galaxy_integration_test"):
     fd, path = tempfile.mkstemp(prefix="vault_hashicorp_integ_", suffix=".yml")
@@ -141,8 +152,8 @@ class TestHashicorpVaultRenewalGalaxyIntegration(integration_util.IntegrationTes
     thread via the Galaxy app's DI container.
 
     The test stores credentials (which write secrets to the vault) via the
-    Galaxy API, then verifies the operation still succeeds past the token
-    TTL thanks to Beat renewal.
+    Galaxy API, waits for Beat to renew a short-lived token, then verifies a
+    write still succeeds past the token's original TTL.
     """
 
     container_name = "galaxy_test_hashicorp_vault_galaxy"
@@ -153,12 +164,18 @@ class TestHashicorpVaultRenewalGalaxyIntegration(integration_util.IntegrationTes
     _beat_service = None
     _beat_thread = None
     RENEWAL_INTERVAL = 2  # seconds
+    SHORT_TOKEN_TTL = 5 * RENEWAL_INTERVAL
 
     @classmethod
     def setUpClass(cls):
         cls.vault_addr, cls._vault_client = _start_vault_container(cls.container_name)
         super().setUpClass()
-        cls._start_beat()
+        try:
+            cls._start_beat()
+        except Exception:
+            # unittest skips tearDownClass when setUpClass raises.
+            cls.tearDownClass()
+            raise
 
     @classmethod
     def tearDownClass(cls):
@@ -211,7 +228,10 @@ class TestHashicorpVaultRenewalGalaxyIntegration(integration_util.IntegrationTes
         cls._beat_service = BeatService(celery_app, max_interval=cls.RENEWAL_INTERVAL)
         cls._beat_thread = threading.Thread(target=cls._beat_service.start, daemon=True)
         cls._beat_thread.start()
-        time.sleep(1)
+        # Beat's first due tick also opens the broker connection, which took
+        # several seconds on CI. Wait for one completed renewal so the test
+        # starts against a Beat that is renewing on schedule.
+        cls._vault_client.wait_for_renewal(cls._vault_token, timeout=60)
 
     @classmethod
     def _stop_beat(cls):
@@ -232,31 +252,29 @@ class TestHashicorpVaultRenewalGalaxyIntegration(integration_util.IntegrationTes
     # ---- tests ---------------------------------------------------------------
 
     def test_beat_renews_token_and_secrets_survive(self):
-        """Beat fires renew_vault_token every 2 s, keeping the token alive past its 3 s TTL."""
-        # Swap in a short-lived token after Galaxy is running.
         short_token = self._vault_client.create_renewable_token(
-            ttl="3s",
+            ttl=f"{self.SHORT_TOKEN_TTL}s",
             max_ttl="1h",
             policies=["galaxy"],
         )
+        original_expiry = time.time() + self.SHORT_TOKEN_TTL
         self._swap_token(short_token)
+        try:
+            self.credentials_populator.create_credentials(
+                tool_id=CREDENTIALS_TOOL,
+                variables=CREDENTIALS_VARIABLES,
+                secrets=CREDENTIALS_SECRETS,
+            )
+            self._vault_client.wait_for_renewal(short_token, timeout=self.SHORT_TOKEN_TTL)
 
-        # Store credentials — secrets go to Vault.
-        self.credentials_populator.create_credentials(
-            tool_id=CREDENTIALS_TOOL,
-            variables=CREDENTIALS_VARIABLES,
-            secrets=CREDENTIALS_SECRETS,
-        )
+            time.sleep(max(0, original_expiry + 1 - time.time()))
 
-        # Beat renews every 2 s.  Sleep 4 s — past the 3 s TTL.
-        time.sleep(4)
-
-        # Creating credentials again exercises a vault write — this would fail
-        # with Forbidden if the token had expired.
-        self.credentials_populator.create_credentials(
-            tool_id=CREDENTIALS_TOOL,
-            variables=CREDENTIALS_VARIABLES,
-            secrets=CREDENTIALS_SECRETS,
-        )
-
-        self._swap_token(self._vault_token)
+            # Both fail with permission denied if the token expired at its original TTL.
+            assert self._vault_client.lookup_token(short_token)["ttl"] > 0
+            self.credentials_populator.create_credentials(
+                tool_id=CREDENTIALS_TOOL,
+                variables=CREDENTIALS_VARIABLES,
+                secrets=CREDENTIALS_SECRETS,
+            )
+        finally:
+            self._swap_token(self._vault_token)

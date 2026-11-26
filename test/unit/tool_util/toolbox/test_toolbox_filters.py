@@ -36,6 +36,40 @@ def test_custom_filters():
     assert label_filters[1].__doc__ == "Test Filter Label 2"
 
 
+def test_user_preference_filters_allowed_by_config():
+    factory = filter_factory(
+        dict(
+            user_tool_filters=["filtermod:filter_tool"],
+            user_tool_section_filters=["filtermod:filter_section"],
+            user_tool_label_filters=["filtermod:filter_label_1"],
+        )
+    )
+    trans = mock_trans()
+    trans.app.config = factory.toolbox.app.config
+    trans.user.preferences = {
+        "toolbox_tool_filters": "filtermod:filter_tool",
+        "toolbox_section_filters": "filtermod:filter_section",
+        "toolbox_label_filters": "filtermod:filter_label_1",
+    }
+    filters = factory.build_filters(trans)
+    assert filters["tool"][-1].__doc__ == "Test Filter Tool"
+    assert [f.__doc__ for f in filters["section"]] == ["Test Filter Section"]
+    assert [f.__doc__ for f in filters["label"]] == ["Test Filter Label 1"]
+
+
+def test_user_preference_filters_not_allowed_by_config():
+    factory = filter_factory(dict(user_tool_filters=[], user_tool_section_filters=[], user_tool_label_filters=[]))
+    trans = mock_trans()
+    trans.app.config = factory.toolbox.app.config
+    trans.user.preferences = {
+        "toolbox_tool_filters": "filtermod:filter_tool",
+        "toolbox_section_filters": "filtermod:filter_section",
+        "toolbox_label_filters": "filtermod:filter_label_1",
+    }
+    filters = factory.build_filters(trans)
+    assert filters == factory.default_filters
+
+
 def filter_factory(config_dict=None):
     if config_dict is None:
         config_dict = dict(

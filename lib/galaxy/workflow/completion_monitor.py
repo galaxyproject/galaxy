@@ -13,6 +13,7 @@ from typing import (
 
 from galaxy.celery.tasks import execute_workflow_completion_hook
 from galaxy.util.monitors import Monitors
+from galaxy.workflow.completion_hooks.notification import SendNotificationHook
 
 if TYPE_CHECKING:
     from galaxy.managers.workflow_completion import WorkflowCompletionManager
@@ -52,6 +53,7 @@ class WorkflowCompletionMonitor(Monitors):
         self.completion_manager = completion_manager
         self.hook_registry = hook_registry
         self.monitor_sleep_time = app.config.workflow_completion_monitor_sleep
+        self._last_pending_id = 0
         self._init_monitor_thread(
             name="WorkflowCompletionMonitor.monitor_thread",
             target=self._monitor,
@@ -83,7 +85,12 @@ class WorkflowCompletionMonitor(Monitors):
             # Find SCHEDULED invocations without completion records
             # Only poll invocations assigned to this handler
             handler = self.app.config.server_name
-            pending_ids = self.completion_manager.poll_pending_completions(handler=handler)
+            pending_ids = self.completion_manager.poll_pending_completions(
+                handler=handler, after_id=self._last_pending_id
+            )
+            # Advance through bounded batches so long-running invocations cannot
+            # starve later completions. Start another pass after reaching the end.
+            self._last_pending_id = pending_ids[-1] if pending_ids else 0
 
             for invocation_id in pending_ids:
                 if not self.monitor_running:
@@ -106,7 +113,18 @@ class WorkflowCompletionMonitor(Monitors):
         Args:
             invocation_id: The ID of the invocation to check.
         """
-        completion = self.completion_manager.check_and_record_completion(invocation_id)
+        session = self.app.model.context
+        try:
+            completion = self.completion_manager.check_and_record_completion(invocation_id, commit=False)
+            if completion and (self.app.config.enable_notification_system or self.app.config.smtp_server):
+                hook = self.hook_registry.get_hook("send_notification")
+                if isinstance(hook, SendNotificationHook) and hook.is_applicable(completion):
+                    hook.execute(completion, commit=False)
+                    completion.hooks_executed = [*(completion.hooks_executed or []), "send_notification"]
+            session.commit()
+        except Exception:
+            session.rollback()
+            raise
 
         if completion:
             log.info(
@@ -163,6 +181,8 @@ class WorkflowCompletionMonitor(Monitors):
         )
 
         for hook_name in hooks_to_queue:
+            if hook_name in (completion.hooks_executed or []):
+                continue
             try:
                 execute_workflow_completion_hook.delay(
                     invocation_id=invocation.id,

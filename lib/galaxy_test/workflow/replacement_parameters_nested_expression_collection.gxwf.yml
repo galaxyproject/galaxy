@@ -1,0 +1,37 @@
+class: GalaxyWorkflow
+inputs:
+  replacemeouter: text
+outputs:
+  out1:
+    outputSource: nested_workflow/workflow_output
+steps:
+  pick_replaceme:
+    tool_id: pick_value
+    in:
+      style_cond|type_cond|pick_from_0|value: replacemeouter
+    state:
+      style_cond:
+        pick_style: first
+        type_cond:
+          param_type: text
+          pick_from:
+          - value:
+              __class__: RuntimeValue
+  nested_workflow:
+    run:
+      class: GalaxyWorkflow
+      inputs:
+        replacemeinner: text
+      outputs:
+        workflow_output:
+          outputSource: build_list/output
+      steps:
+        build_list:
+          tool_id: __BUILD_LIST__
+          state:
+            datasets: []
+          out:
+            output:
+              rename: "${replacemeinner} renamed"
+    in:
+      replacemeinner: pick_replaceme/text_param

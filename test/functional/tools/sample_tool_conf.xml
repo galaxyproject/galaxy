@@ -53,7 +53,10 @@
   <tool file="tool_provided_metadata_10.xml" />
   <tool file="tool_provided_metadata_11.xml" />
   <tool file="tool_provided_metadata_12.xml" />
+  <tool file="tool_provided_metadata_13.xml" />
   <tool file="tool_provided_metadata_security.xml" />
+  <tool file="output_symlink_containment.xml" />
+  <tool file="output_symlink_containment_timeout.xml" />
   <tool file="empty_datasets.xml" />
   <tool file="is_of_type.xml" />
   <tool file="data_optional.xml" />
@@ -87,6 +90,7 @@
   <tool file="metadata.xml" />
   <tool file="metadata_defaults.xml" />
   <tool file="metadata_bam.xml" />
+  <tool file="collection_input_paths.xml" />
   <tool file="discover_metadata_files.xml" />
   <tool file="metadata_bcf.xml" />
   <tool file="metadata_bed.xml" />
@@ -115,6 +119,7 @@
   <tool file="job_properties.xml" />
   <tool file="job_environment_default.xml" />
   <tool file="job_environment_default_legacy.xml" />
+  <tool file="legacy_home_probe.xml" />
   <tool file="job_environment_explicit_shared_home.xml" />
   <tool file="job_environment_explicit_isolated_home.xml" />
   <tool file="galaxy_slots_and_memory.xml" />
@@ -133,6 +138,7 @@
   <tool file="format_source_in_conditional.xml" />
   <tool file="format_source_in_collection.xml" />
   <tool file="output_filter.xml" />
+  <tool file="output_filter_select.xml" />
   <tool file="async_conditional_no_default_nested_data.xml" />
   <tool file="async_ambiguous_unqualified_name.xml" />
   <tool file="async_nested_conditional_shared_discriminator.xml" />
@@ -143,6 +149,7 @@
   <tool file="output_empty_work_dir.xml" />
   <tool file="output_filter_with_input.xml" />
   <tool file="output_filter_with_input_optional.xml" />
+  <tool file="output_filter_all_by_param.xml" />
   <tool file="output_filter_exception_1.xml" />
   <tool file="output_collection_filter.xml" />
   <tool file="output_auto_format.xml" />
@@ -160,6 +167,8 @@
   <tool file="param_text_option.xml" />
   <tool file="column_param.xml" />
   <tool file="column_param_configfile.xml" />
+  <tool file="command_reads_input_size.xml" />
+  <tool file="command_reads_configfile.xml" />
   <tool file="column_param_list.xml" />
   <tool file="column_multi_param.xml" />
   <tool file="select_optional_legacy.xml" />
@@ -169,6 +178,7 @@
   <tool file="hidden_param.xml" />
   <tool file="special_params.xml" />
   <tool file="section.xml" />
+  <tool file="cache_dunder_section.xml" />
   <tool file="sam_to_unsorted_bam.xml" />
   <tool file="top_level_data.xml" />
   <tool file="validation_hdf5.xml" />
@@ -194,6 +204,7 @@
   <tool file="explicit_conversion.xml" />
   <tool file="identifier_source.xml" />
   <tool file="identifier_single.xml" />
+  <tool file="template_macro_undeclared_name.xml" />
   <tool file="identifier_single_in_repeat.xml" />
   <tool file="identifier_in_conditional.xml" />
   <tool file="identifier_multiple.xml" />
@@ -241,6 +252,7 @@
   <tool file="collection_type_source_section_repeat.xml" />
   <tool file="collection_creates_list_fail.xml" />
   <tool file="collection_creates_dynamic_nested_fail.xml" />
+  <tool file="collection_creates_dynamic_population_fail.xml" />
   <tool file="collection_list_or_nested_list_input.xml" />
   <tool file="collection_list_2x_or_3x_nested.xml" />
   <tool file="collection_paired_or_list_paired_input.xml" />
@@ -331,6 +343,7 @@
   <tool file="zarr_store_root_compat.xml" />
   <tool file="discover_zarr_store_in_wrapper_folder.xml" />
   <tool file="dataset_path.xml" />
+  <tool file="create_directory_index_unreadable.xml" />
   <tool file="use_directory_index.xml" />
 
   <tool_dir dir="parameters/" />
@@ -382,6 +395,7 @@
   <tool file="cat_multiple_user_defined.yml" />
   <tool file="configfile_user_defined.yml" />
   <tool file="from_work_dir_glob.xml" />
+  <tool file="from_work_dir_glob_output_written.xml" />
   <tool file="secret_tool.xml" />
   <tool file="credentials_test.xml" />
 

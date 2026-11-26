@@ -35,6 +35,11 @@ from typing import (
 from unittest.mock import patch
 from uuid import uuid4
 
+from sqlalchemy import (
+    func,
+    select,
+)
+
 from galaxy.celery.tasks import (
     prune_expired_bulk_storage_operations,
     recover_stale_bulk_storage_operation_runs,
@@ -420,6 +425,15 @@ class TestBulkStorageOperationsIntegration(BaseObjectStoreIntegrationTestCase):
         """Check whether a snapshot has been pruned by attempting to retrieve it from the database."""
         snapshot = self._sa_session.get(DatasetStorageOperationSnapshot, self._decode_id(snapshot_id))
         return snapshot is None
+
+    def _stored_run_item_count(self, run_id: str) -> int:
+        """Count the run's items in the database, where they can outlive the run itself."""
+        stmt = (
+            select(func.count())
+            .select_from(DatasetStorageOperationRunItem)
+            .where(DatasetStorageOperationRunItem.run_id == self._decode_id(run_id))
+        )
+        return self._sa_session.execute(stmt).scalar_one()
 
     def _run_has_been_pruned(self, history_id: str, run_id: str) -> bool:
         """Check via the API whether a run has been pruned (returns 404 when gone)."""
@@ -1710,6 +1724,7 @@ class TestBulkStorageOperationsIntegration(BaseObjectStoreIntegrationTestCase):
             self._prune_expired_bulk_storage_operations()
             assert self._snapshot_has_been_pruned(preview["snapshot_id"])
             assert self._run_has_been_pruned(history_id, run_id)
+            assert self._stored_run_item_count(run_id) == 0
 
 
 USER_OBJECT_STORE_CATALOG = """

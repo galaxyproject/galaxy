@@ -245,12 +245,21 @@ export const useWorkflowCommentStore = defineScopedStore("workflowCommentStore",
     }
 
     /** Calculates which comments are within frames and attaches that information to the parent comments */
+    /** A frame without an area (not laid out yet) says nothing about what it contains, so it keeps its saved members. */
+    function isUnplaced(frame: WorkflowComment) {
+        return frame.size[0] * frame.size[1] === 0;
+    }
+
     function resolveCommentsInFrames() {
         // reverse to give frames on top of other frames higher precedence
         const frameComments = comments.value.filter((comment) => comment.type === "frame").reverse();
-        let candidates = [...comments.value];
+        const keptChildren = new Set(frameComments.filter(isUnplaced).flatMap((frame) => frame.child_comments ?? []));
+        let candidates = comments.value.filter((comment) => !keptChildren.has(comment.id));
 
         frameComments.forEach((frame) => {
+            if (isUnplaced(frame)) {
+                return;
+            }
             const bounds = new AxisAlignedBoundingBox();
             bounds.fitRectangle(commentToRectangle(frame));
             frame.child_comments = [];
@@ -295,9 +304,13 @@ export const useWorkflowCommentStore = defineScopedStore("workflowCommentStore",
     function resolveStepsInFrames() {
         // reverse to give frames on top of other frames higher precedence
         const frameComments = comments.value.filter((comment) => comment.type === "frame").reverse();
-        let candidates = [...Object.values(stepStore.steps)];
+        const keptSteps = new Set(frameComments.filter(isUnplaced).flatMap((frame) => frame.child_steps ?? []));
+        let candidates = Object.values(stepStore.steps).filter((step) => !keptSteps.has(step.id));
 
         frameComments.forEach((frame) => {
+            if (isUnplaced(frame)) {
+                return;
+            }
             const bounds = new AxisAlignedBoundingBox();
             bounds.fitRectangle(commentToRectangle(frame));
             frame.child_steps = [];

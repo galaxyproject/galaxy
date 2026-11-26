@@ -26,3 +26,8 @@
 	flex-direction: column;
 	align-items: center;
 }
+
+/* Focus moves to #center after a tutorial button opens a page; a ring around the whole panel would just be noise. */
+#center[tabindex="-1"]:focus {
+	outline: none;
+}

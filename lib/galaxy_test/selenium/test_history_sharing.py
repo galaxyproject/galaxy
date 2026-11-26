@@ -86,6 +86,20 @@ class TestHistorySharing(SeleniumTestCase, UsesUploadActivity):
         assert len(rows) > 0
         assert any(user1_email.split("@")[0] in row.text for row in rows)
 
+    @selenium_test
+    def test_import_shared_history(self):
+        user1_email, user2_email, history_id = self.setup_two_users_with_one_shared_history()
+        self.submit_login(user2_email, retries=VALID_LOGIN_RETRIES)
+        self.navigate_to_history_view(history_id)
+        self.components.history_view.import_button.wait_for_visible()
+        self.screenshot("history_view_shared_importable")
+        self.history_view_import(new_name="imported shared history")
+        imported = self.current_history()
+        assert imported["id"] != history_id
+        assert imported["name"] == "imported shared history"
+        contents = self.api_get(f"histories/{imported['id']}/contents")
+        assert [c["name"] for c in contents] == ["1.txt"]
+
     def setup_two_users_with_one_shared_history(self, share_by_id=False):
         user1_email = self._get_random_email()
         user2_email = self._get_random_email()

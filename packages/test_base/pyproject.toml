@@ -7,7 +7,7 @@ dynamic = ["readme"]
 name = "galaxy-test-base"
 version = "26.2.0rc1"
 description = "Galaxy testing utilities"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 license = "MIT"
 license-files = [
     "LICENSE",
@@ -20,7 +20,7 @@ dependencies = [
     "galaxy-util",
     "bioblend",
     "cwltest>=2.5.20240906231108",
-    "gxformat2>=0.28.0",
+    "gxformat2>=0.29.2",
     "pytest",
     "pytest-celery",
     "PyYAML",
@@ -34,7 +34,6 @@ classifiers = [
     "Natural Language :: English",
     "Operating System :: POSIX",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",

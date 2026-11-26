@@ -1,5 +1,9 @@
 """Shared fixtures for tool source store unit tests."""
 
+import os
+import subprocess
+import sys
+import time
 from types import SimpleNamespace
 from typing import cast
 
@@ -59,3 +63,40 @@ def search_config():
         )
 
     return _make
+
+
+@pytest.fixture
+def run_processes_together(tmp_path):
+    """Run ``script`` once per argument list, releasing all processes at once.
+
+    ``script`` gets ``ready go *args``: it creates ``ready`` once set up, then
+    waits for ``go`` to exist. Fails unless every process exits 0.
+    """
+
+    def _run(script: str, args_per_process: list[list[str]]) -> None:
+        go = tmp_path / "go"
+        ready_files = [tmp_path / f"ready-{i}" for i in range(len(args_per_process))]
+        env = dict(os.environ, PYTHONPATH=os.pathsep.join(sys.path))
+        processes = [
+            subprocess.Popen(
+                [sys.executable, "-c", script, str(ready), str(go), *args],
+                env=env,
+                stderr=subprocess.PIPE,
+                text=True,
+            )
+            for ready, args in zip(ready_files, args_per_process)
+        ]
+        try:
+            deadline = time.monotonic() + 120
+            while not all(ready.exists() for ready in ready_files):
+                assert all(p.poll() is None for p in processes), "a process exited before the start signal"
+                assert time.monotonic() < deadline, "processes did not start"
+                time.sleep(0.01)
+            go.touch()
+            errors = [p.communicate(timeout=120)[1] for p in processes]
+        finally:
+            for p in processes:
+                p.kill()
+        assert [p.returncode for p in processes] == [0] * len(processes), "\n".join(errors)
+
+    return _run

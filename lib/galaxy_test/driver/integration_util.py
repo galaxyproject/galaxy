@@ -24,12 +24,17 @@ from unittest import (
     SkipTest,
 )
 from urllib.parse import urljoin
+from uuid import uuid4
 
 import pytest
 import requests
 
 from galaxy.app import UniverseApplication
 from galaxy.app_unittest_utils.fake_ai_provider import FakeAIProvider
+from galaxy.model import (
+    DynamicTool,
+    UserDynamicToolAssociation,
+)
 from galaxy.tool_util.verify.test_data import TestDataResolver
 from galaxy.util import safe_makedirs
 from galaxy.util.unittest import TestCase
@@ -63,6 +68,25 @@ class CachedToolBoxIntegrationMixin:
     def handle_galaxy_config_kwds(cls, config):
         super().handle_galaxy_config_kwds(config)  # type: ignore[misc]
         config["use_cached_toolbox"] = True
+
+
+def store_user_tool_row(app: UniverseApplication, user_id: int, representation: dict[str, Any]) -> str:
+    """Store a user defined tool row the way an older Galaxy may have, bypassing today's validation."""
+    session = app.model.session
+    dynamic_tool = DynamicTool(
+        tool_format="GalaxyUserTool",
+        tool_id=representation["id"],
+        tool_version=representation["version"],
+        uuid=uuid4(),
+        value=representation,
+        public=False,
+        active=True,
+    )
+    session.add(dynamic_tool)
+    session.flush()
+    session.add(UserDynamicToolAssociation(user_id=user_id, dynamic_tool_id=dynamic_tool.id))
+    session.commit()
+    return str(dynamic_tool.uuid)
 
 
 def docker_run(image, name, *args, detach=True, remove=True, ports=None, env_vars: dict[str, str] | None = None):

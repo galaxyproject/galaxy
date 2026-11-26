@@ -2,9 +2,12 @@ import logging
 import os
 from datetime import (
     datetime,
-    timezone,
+    UTC,
 )
-from json import loads
+from json import (
+    dumps,
+    loads,
+)
 from typing import (
     Any,
     cast,
@@ -77,6 +80,7 @@ from galaxy.tools.fetch.workbooks import (
     ParsedFetchWorkbook,
     ParseFetchWorkbook,
 )
+from galaxy.tools.job_parameters import TARGET_DATATYPE
 from galaxy.tools.parameters.pagination import OptionsPaginationT
 from galaxy.util.hash_util import (
     HashFunctionNameEnum,
@@ -91,10 +95,14 @@ from galaxy.web import (
 )
 from galaxy.webapps.base.controller import UsesVisualizationMixin
 from galaxy.webapps.base.webapp import GalaxyWebTransaction
-from galaxy.webapps.galaxy.api.common import serve_workbook
+from galaxy.webapps.galaxy.api.common import (
+    lift_headers,
+    serve_workbook,
+)
 from galaxy.webapps.galaxy.services.base import tool_request_detailed_to_model
 from galaxy.webapps.galaxy.services.tools import (
     get_tool,
+    PROTECTED_TOOLS,
     ToolsService,
 )
 from . import (
@@ -110,13 +118,10 @@ from . import (
 
 log = logging.getLogger(__name__)
 
-# Do not allow these tools to be called directly - they (it) enforces extra security and
-# provides access via a different API endpoint.
-PROTECTED_TOOLS = ["__DATA_FETCH__"]
 # Tool search bypasses the fulltext for the following list of terms
 SEARCH_RESERVED_TERMS_FAVORITES = ["#favs", "#favorites", "#favourites"]
 
-ICON_CACHE_MAX_AGE = 2592000  # 30 days
+ICON_CACHE_MAX_AGE = 86400  # 1 day
 
 
 class FormDataApiRoute(APIContentTypeRoute):
@@ -129,6 +134,19 @@ class JsonApiRoute(APIContentTypeRoute):
 
 class PNGIconResponse(FileResponse):
     media_type = "image/png"
+
+
+def _etag_matches(if_none_match: str, file_hash: str) -> bool:
+    """Weak comparison of an If-None-Match header against an opaque tag."""
+    for candidate in if_none_match.split(","):
+        candidate = candidate.strip()
+        if candidate == "*":
+            return True
+        if candidate.startswith("W/"):
+            candidate = candidate[2:]
+        if candidate.strip('"') == file_hash:
+            return True
+    return False
 
 
 FetchWorkbookTypeQueryParam: FetchWorkbookType = Query(
@@ -259,29 +277,29 @@ class FetchTools:
 
         # Get file modification time
         file_stat = os.stat(tool_icon_path)
-        last_modified = datetime.fromtimestamp(file_stat.st_mtime, tz=timezone.utc).strftime(
-            "%a, %d %b %Y %H:%M:%S GMT"
-        )
-
-        # Check If-Modified-Since
-        if_modified_since = request.headers.get("If-Modified-Since")
-        if if_modified_since == last_modified:
-            return Response(status_code=304)
+        last_modified = datetime.fromtimestamp(file_stat.st_mtime, tz=UTC).strftime("%a, %d %b %Y %H:%M:%S GMT")
 
         # Generate ETag based on file content
         file_hash = memory_bound_hexdigest(hash_func_name=HashFunctionNameEnum.md5, path=tool_icon_path)
         etag = f'"{file_hash}"'
+        cache_headers = {
+            # The icon URL is not versioned, so the icon may change under the same URL.
+            "Cache-Control": f"public, max-age={ICON_CACHE_MAX_AGE}",
+            "ETag": etag,
+            "Last-Modified": last_modified,
+        }
 
-        # Check If-None-Match (ETag)
-        if_none_match = request.headers.get("If-None-Match", "").split(",")
-        if any(etag.strip() == e.strip(' W/"') for e in if_none_match):  # Handle weak ETags
-            return Response(status_code=304)
+        # If-None-Match takes precedence over If-Modified-Since (RFC 9110, section 13.2.2)
+        if_none_match = request.headers.get("If-None-Match")
+        if if_none_match is not None:
+            if _etag_matches(if_none_match, file_hash):
+                return Response(status_code=304, headers=cache_headers)
+        elif request.headers.get("If-Modified-Since") == last_modified:
+            return Response(status_code=304, headers=cache_headers)
 
         # Serve the file with caching headers
         response = PNGIconResponse(tool_icon_path)
-        response.headers["Cache-Control"] = f"public, max-age={ICON_CACHE_MAX_AGE}, immutable"
-        response.headers["ETag"] = etag
-        response.headers["Last-Modified"] = last_modified
+        response.headers.update(cache_headers)
         return response
 
     @router.post("/api/file_landings", public=True, allow_cors=True)
@@ -969,7 +987,7 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         self.history_manager.error_unless_mutable(target_history)
 
         # Make the target datatype available to the converter
-        params["__target_datatype__"] = target_type
+        params[TARGET_DATATYPE] = target_type
         vars = converter.handle_input(trans, params, history=target_history)
         return self.service._handle_inputs_output_to_api_response(trans, converter, target_history, vars)
 
@@ -1007,21 +1025,11 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         if dynamic_tool := getattr(tool, "dynamic_tool", None):
             if dynamic_tool.value.get("class") == "GalaxyUserTool":
                 status, lifted, errors = lift_user_tool_source(dynamic_tool.value)
-                if status == "lifted" and errors:
-                    compact = ",".join(errors)
-                    trans.response.headers["X-Galaxy-Deprecated-Fields"] = compact
-                    trans.response.headers["Warning"] = (
-                        f'299 - "Some conventions are no longer valid; ignored on read: {compact}"'
-                    )
-                elif status == "invalid":
-                    compact = "; ".join(errors)
-                    trans.response.headers["X-Galaxy-Schema-Errors"] = compact
-                    trans.response.headers["Warning"] = f'299 - "Stored tool no longer satisfies schema: {compact}"'
+                trans.response.headers.update(lift_headers(status, errors))
+                if status == "invalid":
                     # Return the raw stored value so callers can still inspect /
                     # repair the YAML manually.
-                    import json
-
-                    return json.dumps(dynamic_tool.value)
+                    return dumps(dynamic_tool.value)
                 assert isinstance(lifted, UserToolSource)
                 return lifted.model_dump_json(
                     by_alias=True,
@@ -1061,20 +1069,12 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         """
         tool_id = payload.get("tool_id")
         tool_uuid = payload.get("tool_uuid")
-        validate_not_protected(tool_id)
         if tool_id is None and tool_uuid is None:
             raise exceptions.RequestParameterInvalidException("Must specify a valid tool_id to use this endpoint.")
         __tags = payload.get("__tags", [])
         if not isinstance(__tags, list) or not all(isinstance(tag, str) for tag in __tags):
             raise exceptions.RequestParameterInvalidException("__tags must be a list of strings.")
-        return self.service._create(trans, payload, **kwd)
-
-
-def validate_not_protected(tool_id: str | None):
-    if tool_id in PROTECTED_TOOLS:
-        raise exceptions.RequestParameterInvalidException(
-            f"Cannot execute tool [{tool_id}] directly, must use alternative endpoint."
-        )
+        return self.service.create(trans, payload, **kwd)
 
 
 def _kwd_or_payload(kwd: dict[str, Any]) -> dict[str, Any]:

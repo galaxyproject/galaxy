@@ -56,7 +56,10 @@ from galaxy.job_execution.output_collect import (
     MetadataSourceProvider,
     PermissionProvider,
 )
-from galaxy.job_execution.setup import JobWorkingDirectory
+from galaxy.job_execution.setup import (
+    ensure_configs_directory,
+    JobWorkingDirectory,
+)
 from galaxy.managers.credentials import build_credentials_context_response
 from galaxy.metadata import get_metadata_compute_strategy
 from galaxy.model import (
@@ -131,6 +134,10 @@ from galaxy.tool_util.toolbox import (
     ToolLoadError,
     ToolSection,
 )
+from galaxy.tool_util.toolbox.base import (
+    ToolConfRepository,
+    ToolLike,
+)
 from galaxy.tool_util.toolbox.entry import (
     ToolPanelEntry,
     ToolShedRepositoryInfo,
@@ -175,6 +182,11 @@ from galaxy.tools.evaluation import (
 from galaxy.tools.execution_helpers import ToolExecutionCache
 from galaxy.tools.expressions.labels import render_yaml_tool_label
 from galaxy.tools.imp_exp import JobImportHistoryArchiveWrapper
+from galaxy.tools.job_parameters import (
+    DATA_MANAGER_MODE,
+    EXPORT_TO_URI,
+    TEMPLATE_JOB_PARAMETERS,
+)
 from galaxy.tools.parameters import (
     check_param,
     fill_dynamic_defaults,
@@ -218,7 +230,10 @@ from galaxy.tools.parameters.meta import (
 )
 from galaxy.tools.parameters.pagination import OptionsPaginationT
 from galaxy.tools.parameters.populate_model import populate_model
-from galaxy.tools.parameters.workflow_utils import workflow_building_modes
+from galaxy.tools.parameters.workflow_utils import (
+    RuntimeValue,
+    workflow_building_modes,
+)
 from galaxy.tools.parameters.wrapped_json import json_wrap
 from galaxy.util import (
     asbool,
@@ -249,6 +264,11 @@ from galaxy.version import VERSION_MAJOR
 from galaxy.work.context import (
     proxy_work_context_for_history,
     WorkRequestContext,
+)
+from galaxy.workflow.scheduling_dependencies import (
+    dataset_dependencies,
+    ToolInputsNotReadyWithDependencies,
+    unpopulated_collection_dependencies,
 )
 from ._types import (
     InputFormatT,
@@ -452,6 +472,10 @@ def tool_runner_link(url_prefix: str, tool_id: str, is_data_source: bool) -> str
 REQUIRE_FULL_DIRECTORY = {
     "includes": [{"path": "**", "path_type": "glob"}],
 }
+# Main script at the top level, helper modules imported from utils/
+REQUIRE_PY_SCRIPTS_AND_UTILS = {
+    "includes": [{"path": "*.py", "path_type": "glob"}, {"path": "utils/*", "path_type": "glob"}],
+}
 IMPLICITLY_REQUIRED_TOOL_FILES: dict[str, dict] = {
     "deseq2": {
         "version": parse_version("2.11.40.6"),
@@ -460,22 +484,38 @@ IMPLICITLY_REQUIRED_TOOL_FILES: dict[str, dict] = {
     # minimum example:
     # "foobar": {"required": REQUIRE_FULL_DIRECTORY}
     # if no version is specified, all versions without explicit RequiredFiles will be selected
+    # charts.r sources the module script named by -m from the -w tool directory
+    "charts": {"required": {"includes": [{"path": "*.r", "path_type": "glob"}]}},
     "circos": {"required": REQUIRE_FULL_DIRECTORY},
     "cp_image_math": {"required": {"includes": [{"path": "*.py", "path_type": "glob"}]}},
+    # the script path sits in \'...\' inside a $'...' parallel argument
+    "docking": {"required": {"includes": [{"path": "*.py", "path_type": "glob"}]}},
     "enumerate_charges": {"required": REQUIRE_FULL_DIRECTORY},
-    "fasta_compute_length": {"required": {"includes": [{"path": "utils/*", "path_type": "glob"}]}},
-    "fasta_concatenate0": {"required": {"includes": [{"path": "utils/*", "path_type": "glob"}]}},
+    "fasta_compute_length": {"required": REQUIRE_PY_SCRIPTS_AND_UTILS},
+    "fasta_concatenate0": {"required": REQUIRE_PY_SCRIPTS_AND_UTILS},
     "filter_tabular": {"required": {"includes": [{"path": "*.py", "path_type": "glob"}]}},
-    "flanking_features_1": {"required": {"includes": [{"path": "utils/*", "path_type": "glob"}]}},
-    "gops_intersect_1": {"required": {"includes": [{"path": "utils/*", "path_type": "glob"}]}},
-    "gops_subtract_1": {"required": {"includes": [{"path": "utils/*", "path_type": "glob"}]}},
+    "flanking_features_1": {"required": REQUIRE_PY_SCRIPTS_AND_UTILS},
+    "gops_intersect_1": {"required": REQUIRE_PY_SCRIPTS_AND_UTILS},
+    "gops_subtract_1": {"required": REQUIRE_PY_SCRIPTS_AND_UTILS},
     "maxquant": {"required": {"includes": [{"path": "*.py", "path_type": "glob"}]}},
     "maxquant_mqpar": {"required": {"includes": [{"path": "*.py", "path_type": "glob"}]}},
     "query_tabular": {"required": {"includes": [{"path": "*.py", "path_type": "glob"}]}},
+    # the script path sits in \"...\" inside an Rscript -e argument
+    "seurat": {"required": {"includes": [{"path": "*.R", "path_type": "glob"}]}},
     "shasta": {"required": {"includes": [{"path": "configs/*", "path_type": "glob"}]}},
     "sqlite_to_tabular": {"required": {"includes": [{"path": "*.py", "path_type": "glob"}]}},
     "sucos_max_score": {"required": {"includes": [{"path": "*.py", "path_type": "glob"}]}},
+    # transformation_wrapper.R sources transformation_script.R from its own directory
+    "Transformation": {"required": {"includes": [{"path": "*.R", "path_type": "glob"}]}},
+    "translate_bed": {"required": {"includes": [{"path": "*.py", "path_type": "glob"}]}},
 }
+
+
+def _describe_default(value: Any) -> str:
+    """How a parameter's default reads in an upgrade message; runtime markers have no useful repr."""
+    if isinstance(value, RuntimeValue):
+        return "a value set at runtime"
+    return f"'{value}'"
 
 
 def get_safe_version(tool: "Tool", requested_tool_version: str) -> str | None:
@@ -491,6 +531,12 @@ def get_safe_version(tool: "Tool", requested_tool_version: str) -> str | None:
                 if safe_version.current_version >= parse_version(lineage_version) >= safe_version.min_version:
                     return lineage_version
     return None
+
+
+def get_safe_version_tool(toolbox: AbstractToolBox, tool: "Tool", requested_tool_version: str) -> ToolLike | None:
+    """The installed workflow-safe update of ``tool`` for ``requested_tool_version``, if any."""
+    safe_version = get_safe_version(tool, requested_tool_version)
+    return toolbox.get_tool(tool.id, tool_version=safe_version, exact=True) if safe_version else None
 
 
 class ToolNotFoundException(Exception):
@@ -1032,6 +1078,7 @@ class JobContext(BaseJobContext):
         final_job_state: "JobState",
         max_discovered_files: int | None,
         flush_per_n_datasets=None,
+        metadata_tmp_files_dir: str | None = None,
     ):
         self.tool = tool
         self._metadata_source_provider = metadata_source_provider
@@ -1050,6 +1097,7 @@ class JobContext(BaseJobContext):
         self._tag_handler = None
         self.allows_unnamed_outputs = tool.allows_unnamed_outputs
         self.allows_external_output_paths = tool.allows_external_output_paths
+        self.metadata_tmp_files_dir = metadata_tmp_files_dir
 
     @property
     def change_datatype_actions(self):
@@ -1110,8 +1158,7 @@ class JobContext(BaseJobContext):
     def get_library_folder(self, destination: dict[str, Any]):
         folder_id = destination.get("library_folder_id")
         assert folder_id
-        decoded_folder_id = self.app.security.decode_id(folder_id) if isinstance(folder_id, str) else folder_id
-        library_folder = self.app.library_folder_manager.get(self.work_context, decoded_folder_id)
+        library_folder = self.app.library_folder_manager.get_for_adding(self.work_context, folder_id)
         return library_folder
 
     def get_hdca(self, object_id):
@@ -1213,10 +1260,16 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
     default_tool_action = DefaultToolAction
     tool_action: ToolAction
     tool_type_local = False
+    # Files the tool writes to the job directory while the job is prepared; runners
+    # that stage the job elsewhere (Pulsar) transfer them with the job.
+    job_directory_files: tuple[str, ...] = ()
     dict_collection_visible_keys = ["id", "name", "version", "description", "labels"]
+    _conf_tool_shed_repository: ToolConfRepository | None = None
     job_search: "JobSearch"
     uses_tool_provided_metadata: bool
     allows_unnamed_outputs: bool
+    # Job parameters that are not tool inputs and that the tool's templates read.
+    template_job_parameters: frozenset[str] = TEMPLATE_JOB_PARAMETERS
 
     def __init__(
         self,
@@ -1333,6 +1386,11 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
         return self.tool_source.is_yaml_origin()
 
     @property
+    def uses_user_tool_evaluator(self) -> bool:
+        """Whether the command comes from ``shell_command`` or ``base_command`` rather than a Cheetah ``command``."""
+        return bool(self.base_command or self.shell_command)
+
+    @property
     def sa_session(self):
         """Returns a SQLAlchemy session"""
         return self.app.model.context
@@ -1365,7 +1423,7 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
     def tool_shed_repository(self):
         # If this tool is included in an installed tool shed repository, return it.
         if self.tool_shed:
-            return get_installed_repository(
+            repository = get_installed_repository(
                 self.app,
                 tool_shed=self.tool_shed,
                 name=self.repository_name,
@@ -1373,6 +1431,8 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
                 installed_changeset_revision=self.installed_changeset_revision,
                 from_cache=True,
             )
+            # Conf-only repositories outlive the startup-scoped repository cache.
+            return repository or self._conf_tool_shed_repository
 
     @property
     def valid_input_states(self):
@@ -2033,6 +2093,8 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
                 inputs.append(resource_xml)
 
     def populate_tool_shed_info(self, tool_shed_repository):
+        if isinstance(tool_shed_repository, ToolConfRepository):
+            self._conf_tool_shed_repository = tool_shed_repository
         if tool_shed_repository:
             self.tool_shed = tool_shed_repository.tool_shed
             assert self.tool_shed
@@ -2100,6 +2162,15 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
                 )
             help_content = HelpContent(format="restructuredtext", content=help_text)
         return help_content
+
+    @property
+    def keeps_undeclared_job_parameters(self) -> bool:
+        """Pass job parameters that are not tool inputs to the templates.
+
+        Tools that do not check their values (data source tools) take the request
+        parameters as they are sent.
+        """
+        return not self.check_values
 
     def new_state(self, trans: "ProvidesHistoryContext"):
         """
@@ -2319,10 +2390,11 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
         trans: "ProvidesUserContext",
         use_cached_job: bool,
         all_params: list[ToolStateJobInstancePopulatedT],
+        recorded_job_indexes: set[int] | None = None,
     ) -> dict[int, Job | None]:
         completed_jobs: dict[int, Job | None] = {}
         for i, param in enumerate(all_params):
-            if use_cached_job and trans.user:
+            if use_cached_job and trans.user and not (recorded_job_indexes and i in recorded_job_indexes):
                 tool_id = self.id
                 assert tool_id
                 param_dump: ToolStateDumpedToJsonInternalT = params_to_json_internal(self.inputs, param, self.app)
@@ -2383,6 +2455,7 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
         input_format: InputFormatT = "legacy",
         tags: list[str] | None = None,
         send_email_notification: bool = False,
+        send_notification: bool = False,
     ):
         """
         Process incoming parameters for this tool from the dict `incoming`,
@@ -2417,8 +2490,9 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
         if tags:
             execution_tracker.apply_tags(trans.tag_handler, trans.user, tags)
             trans.sa_session.commit()
-        if send_email_notification:
-            execution_tracker.apply_email_action(trans.user)
+        # Completion requests are recorded only when notifications or SMTP are configured.
+        if send_notification or send_email_notification:
+            execution_tracker.request_completion_notification(trans.user, request_context.history)
             trans.sa_session.commit()
 
         # Raise an exception if there were jobs to execute and none of them were submitted,
@@ -2661,12 +2735,20 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
         return self.params_from_strings(param_dict, ignore_errors=ignore_errors)
 
     def check_and_update_param_values(
-        self, values, trans: "ProvidesHistoryContext", update_values: bool = True, workflow_building_mode: bool = False
+        self,
+        values,
+        trans: "ProvidesHistoryContext",
+        update_values: bool = True,
+        workflow_building_mode: bool = False,
+        filled_defaults: dict[str, str] | None = None,
     ):
         """
         Check that all parameters have values, and fill in with default
         values where necessary. This could be called after loading values
         from a database in case new parameters have been added.
+
+        If ``filled_defaults`` is given, parameters that had no value and got their default are reported
+        there instead of in the returned messages, which then only hold values that had to be replaced.
         """
         messages: dict[str, Any] = {}
         request_context = proxy_work_context_for_history(trans, workflow_building_mode=workflow_building_mode)
@@ -2680,9 +2762,18 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
                         previous_value = value
                         value = input.get_initial_value(request_context, context)
                         if not prefixed_name.startswith("__"):
-                            messages[prefixed_name] = (
-                                error if previous_value == value else f"{error} Using default: '{value}'."
+                            message = (
+                                error
+                                if previous_value == value
+                                else f"{error} Using default: {_describe_default(value)}."
                             )
+                            # a required parameter whose default lookup gave None was not filled; it stays a problem
+                            missing = input.name not in parent
+                            if missing and filled_defaults is not None and (value is not None or input.optional):
+                                default = "no value" if value is None else _describe_default(value)
+                                filled_defaults[prefixed_name] = f"Default for '{prefixed_label}': {default}."
+                            else:
+                                messages[prefixed_name] = message
                         parent[input.name] = value
                     except Exception:
                         messages[prefixed_name] = f"Attempt to replace invalid value for '{prefixed_label}' failed."
@@ -2800,6 +2891,7 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
         input_dbkey,
         inp_data=None,
         final_job_state="ok",
+        metadata_tmp_files_dir: str | None = None,
     ):
         """
         Find any additional datasets generated by a tool and attach (for
@@ -2822,6 +2914,7 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
             final_job_state=final_job_state,
             flush_per_n_datasets=tool.app.config.flush_per_n_datasets,
             max_discovered_files=tool.app.config.max_discovered_files,
+            metadata_tmp_files_dir=metadata_tmp_files_dir,
         )
         collected = output_collect.collect_primary_datasets(
             job_context,
@@ -3362,6 +3455,8 @@ class ExpressionTool(Tool):
     tool_type = "expression"
     tool_type_local = True
     EXPRESSION_INPUTS_NAME = "_expression_inputs_.json"
+    # Written to configs/ by exec_before_job.
+    job_directory_files = (f"configs/{expressions.EXPRESSION_SCRIPT_NAME}", f"configs/{EXPRESSION_INPUTS_NAME}")
 
     def parse(self, tool_source: ToolSource, guid: str | None = None, dynamic: bool = False) -> None:
         super().parse(tool_source, guid, dynamic)
@@ -3389,8 +3484,8 @@ class ExpressionTool(Tool):
 
     def exec_before_job(self, app, inp_data: InpDataDictT, out_data: OutDataDictT, param_dict=None):
         super().exec_before_job(app, inp_data, out_data, param_dict=param_dict)
-        local_working_directory = param_dict["__local_working_directory__"]
-        expression_inputs_path = os.path.join(local_working_directory, ExpressionTool.EXPRESSION_INPUTS_NAME)
+        configs_directory = ensure_configs_directory(param_dict["__local_working_directory__"])
+        expression_inputs_path = os.path.join(configs_directory, ExpressionTool.EXPRESSION_INPUTS_NAME)
 
         outputs = []
         for out_name in out_data.keys():
@@ -3416,7 +3511,7 @@ class ExpressionTool(Tool):
             "script": self._expression,
             "outputs": outputs,
         }
-        expressions.write_evalute_script(os.path.join(local_working_directory))
+        expressions.write_evalute_script(configs_directory)
         with open(expression_inputs_path, "w") as f:
             json.dump(expression_inputs, f)
 
@@ -3474,7 +3569,8 @@ class ExpressionTool(Tool):
         environmnt_variables_raw = super().parse_environment_variables(tool_source)
         expression_script_inputs = dict(
             name="GALAXY_EXPRESSION_INPUTS",
-            template=ExpressionTool.EXPRESSION_INPUTS_NAME,
+            # Relative to the job directory, which the expression script runs from.
+            template=f"configs/{ExpressionTool.EXPRESSION_INPUTS_NAME}",
         )
         environmnt_variables_raw.append(expression_script_inputs)
         return environmnt_variables_raw
@@ -3629,6 +3725,7 @@ class SetMetadataTool(Tool):
 
 class ExportHistoryTool(Tool):
     tool_type = "export_history"
+    template_job_parameters = Tool.template_job_parameters | {EXPORT_TO_URI}
 
 
 class ImportHistoryTool(Tool):
@@ -3735,7 +3832,7 @@ class DataManagerTool(OutputParameterJSONTool):
         assert (
             data_manager is not None
         ), f"Invalid data manager ({data_manager_id}) requested. It may have been removed before the job completed."
-        data_manager_mode = param_dict.get("__data_manager_mode", "populate")
+        data_manager_mode = param_dict.get(DATA_MANAGER_MODE, "populate")
         if data_manager_mode == "populate":
             data_manager.process_result(out_data, _data_manager_source_extra_files_paths(app, job, out_data))
         elif data_manager_mode == "dry_run":
@@ -3847,37 +3944,41 @@ class DatabaseOperationTool(Tool):
         return not self.require_dataset_ok
 
     def check_inputs_ready(self, input_datasets, input_dataset_collections, security):
-        def check_dataset_state(input_key, state):
+        def check_dataset_state(input_key, input_dataset):
+            state = input_dataset.state
             if self.require_terminal_states and state in model.Dataset.non_ready_states:
-                raise ToolInputsNotReadyException("An input dataset is pending.")
-
+                raise ToolInputsNotReadyWithDependencies(
+                    "An input dataset is pending.", dependencies=dataset_dependencies(input_dataset)
+                )
             if state == model.Dataset.states.PAUSED and not self.require_terminal_or_paused_states:
-                raise ToolInputsNotReadyException(f"Input '{input_key}' is paused; the file is not yet available.")
+                raise ToolInputsNotReadyWithDependencies(
+                    f"Input '{input_key}' is paused; the file is not yet available.",
+                    dependencies=dataset_dependencies(input_dataset),
+                )
+            if self.require_dataset_ok and state != model.Dataset.states.OK:
+                raise ToolInputsNotOKException(
+                    f"Tool requires inputs to be in valid state, but dataset with hid {input_dataset.hid} is in state '{state}'",
+                    src="hda",
+                    id=input_dataset.id,
+                    input_name=input_key,
+                )
 
-            if self.require_dataset_ok:
-                if state != model.Dataset.states.OK:
-                    # TODO: frontend component should intercept and point to problematic input
-                    raise ToolInputsNotOKException(
-                        f"Tool requires inputs to be in valid state, but dataset with hid {input_dataset.hid} is in state '{input_dataset.state}'",
-                        src="hda",
-                        id=input_dataset.id,
-                        input_name=input_key,
-                    )
-
+        # Collection inputs are flattened into input_datasets as well, so this
+        # also covers their members. The first wait becomes the step's blocker.
         for input_key, input_dataset in input_datasets.items():
-            if input_dataset:
-                # None is a possible input for optional inputs
-                check_dataset_state(input_key, input_dataset.state)
+            if input_dataset is not None:
+                check_dataset_state(input_key, input_dataset)
 
-        for input_key, input_dataset_collection_pairs in input_dataset_collections.items():
-            for input_dataset_collection, _ in input_dataset_collection_pairs:
-                if not input_dataset_collection.collection.populated_optimized:
-                    raise ToolInputsNotReadyException("An input collection is not populated.")
-
-            summary = input_dataset_collection.collection.dataset_states_and_extensions_summary
-            states = summary.states
-            for state in states.keys():
-                check_dataset_state(input_key, state)
+        for pairs in input_dataset_collections.values():
+            for input_collection, _ in pairs:
+                if input_collection is None:
+                    continue
+                collection = input_collection.collection
+                if not collection.populated_optimized:
+                    raise ToolInputsNotReadyWithDependencies(
+                        "An input collection is not populated.",
+                        dependencies=unpopulated_collection_dependencies(collection),
+                    )
 
     def _check_output_count(self, count: int) -> None:
         max_outputs = self.app.config.max_discovered_files
@@ -4393,7 +4494,9 @@ class KeepSuccessDatasetsTool(FilterDatasetsTool):
         element_object = element.element_object
         assert isinstance(element_object, model.DatasetInstance)
         if element_object.is_pending:
-            raise ToolInputsNotReadyException("An input dataset is pending.")
+            raise ToolInputsNotReadyWithDependencies(
+                "An input dataset is pending.", dependencies=dataset_dependencies(element_object)
+            )
         return element_object.is_ok
 
 

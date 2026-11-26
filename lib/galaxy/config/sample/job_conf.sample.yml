@@ -351,6 +351,15 @@ runners:
     # by loading a separate file (using pulsar_config).
     #app: {}
     #pulsar_config: path/to/pulsar/app.yml
+    # Every job handler process loading this runner starts its own Pulsar app, and
+    # each app monitors and recovers all jobs recorded in its persistence_directory,
+    # so handlers must not share it. The default is
+    # <data_dir>/pulsar_persisted_data/<server_name>. If the Pulsar app configuration
+    # sets persistence_directory, include {server_name}, which is replaced with the
+    # handler's server name, e.g.:
+    #   persistence_directory: /srv/galaxy/pulsar_persisted_data/{server_name}
+    # scripts/migrate_embedded_pulsar_persistence.py moves jobs recorded in a shared
+    # directory to the per-handler directories.
 
   # Using Pulsar and co-execution to run jobs against a TES service.
   # - https://www.ga4gh.org/product/task-execution-service-tes/
@@ -465,7 +474,7 @@ execution:
       # For a stock Galaxy instance and traditional job runner $defaults will
       # expand out as:
 
-      # $galaxy_root:ro,$tool_directory:ro,$job_directory:ro,$working_directory:rw,$default_file_path:rw
+      # $galaxy_root:ro,$tool_directory:ro,$job_directory/tool_script.sh:ro,$job_directory/inputs:ro,$job_directory/configs:ro,$job_directory/outputs:rw,$working_directory:rw,$default_file_path:rw
 
       # This assumes most of what is needed is available under Galaxy's root directory,
       # the tool directory, and the Galaxy's file_path (if using object store creatively
@@ -476,19 +485,24 @@ execution:
       # galaxy.yml. This will cause $defaults to allow writing to much
       # less. It will then expand as follows:
 
-      # $galaxy_root:ro,$tool_directory:ro,$job_directory:ro,$working_directory:rw,$default_file_path:ro
+      # $galaxy_root:ro,$tool_directory:ro,$job_directory/tool_script.sh:ro,$job_directory/inputs:ro,$job_directory/configs:ro,$job_directory/outputs:rw,$working_directory:rw,$default_file_path:ro
 
       # If using the Pulsar, defaults will be even further restricted because the
       # Pulsar will (by default) stage all needed inputs into the job's job_directory
       # (so there is not need to allow the docker container to read all the
       # files - let alone write over them). Defaults in this case becomes:
 
-      # $job_directory:ro,$tool_directory:ro,$job_directory/outputs:rw,$working_directory:rw
+      # $job_directory/tool_script.sh:ro,$job_directory/inputs:ro,$job_directory/configs:ro,$job_directory/unstructured:ro,$job_directory/outputs:rw,$tool_directory:ro,$working_directory:rw
 
       # Python string.Template is used to expand volumes and values $defaults,
       # $galaxy_root, $default_file_path, $tool_directory, $working_directory,
       # are available to all jobs and $job_directory is also available for
       # Pulsar jobs.
+
+      # The job directory itself is not mounted - besides the subdirectories above
+      # it holds the job script, the files metadata is set from (possibly including
+      # object store credentials) and, for Pulsar, credentials for the job's Galaxy
+      # callbacks. Avoid adding $job_directory to the volumes.
       #docker_volumes: $defaults,/mnt/galaxyData/libraries:ro,/mnt/galaxyData/indices:ro
 
       # One can run docker using volumes-from tag by setting the following
@@ -1131,7 +1145,11 @@ execution:
 
     #   - "walltime_reached" (True if and only if the job runner indicates a walltime maximum was reached)
     #   - "memory_limit_reached" (True if and only if the job runner indicates a memory limit was hit)
+    #   - "node_failure" (True if and only if the job runner indicates a node the job was running on failed)
+    #   - "preempted" (True if and only if the job runner indicates the job was preempted by another job)
+    #   - "job_output_not_returned_from_cluster" (True if and only if the job runner indicates the job's outputs were not returned from the cluster)
     #   - "unknown_error" (True for job or job runner problems that aren't otherwise classified)
+    #   - "runner_state" (the reason reported by the job runner as a string, e.g. ``runner_state == 'node_failure'``)
     #   - "attempt" (the re-submission attempt number this is)
     #   - "seconds_since_queued" (the number of seconds since the last time the job was in a queued state within Galaxy)
     #   - "seconds_running" (the number of seconds the job was in a running state within Galaxy)

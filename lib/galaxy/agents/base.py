@@ -36,6 +36,7 @@ from galaxy.schema.agents import (
     ActionSuggestion,
     ActionType,
     ConfidenceLevel,
+    SourceCitation,
 )
 from galaxy.work.context import SessionRequestContext
 
@@ -208,6 +209,7 @@ __all__ = [
     "MAX_HISTORY_MESSAGES",
     "normalize_llm_text",
     "SimpleGalaxyAgent",
+    "SourceCitation",
     "TOOL_HELPER_HISTORY_MESSAGES",
     "truncate_message_history",
     "truncate_middle",
@@ -379,6 +381,7 @@ class AgentResponse:
         suggestions: list[ActionSuggestion] | None = None,
         metadata: dict[str, Any] | None = None,
         reasoning: str | None = None,
+        sources: list[SourceCitation] | None = None,
     ):
         self.content = content
         if isinstance(confidence, ConfidenceLevel):
@@ -387,6 +390,7 @@ class AgentResponse:
             self.confidence = ConfidenceLevel(confidence.lower())
         self.agent_type = agent_type
         self.suggestions = suggestions or []
+        self.sources = sources or []
         self.metadata = metadata or {}
         self.reasoning = reasoning
 
@@ -845,12 +849,14 @@ class BaseGalaxyAgent(ABC):
         fallback: bool = False,
         error: str | None = None,
         reasoning: str | None = None,
+        sources: list[SourceCitation] | None = None,
     ) -> AgentResponse:
         return AgentResponse(
             content=content,
             confidence=confidence,
             agent_type=self.agent_type,
             suggestions=suggestions or [],
+            sources=sources or [],
             metadata=self._build_metadata(method, result, query, agent_data, fallback, error),
             reasoning=reasoning,
         )

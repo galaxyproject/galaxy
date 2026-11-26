@@ -6,7 +6,11 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 
 import pytest
-from sqlalchemy import event
+from sqlalchemy import (
+    create_engine,
+    event,
+    inspect,
+)
 
 import galaxy.tools.source_store.sqlalchemy as sqlalchemy_store_module
 from galaxy.tools.source_store import (
@@ -201,3 +205,37 @@ def test_writes_from_threads_are_serialized(sqlite_path):
 
     assert max_open_writes == 1
     assert store.count() == 8
+
+
+_OPEN_STORE_ON_SIGNAL = """
+import os, sys, time
+from galaxy.tools.source_store.sqlalchemy import SqlAlchemyToolSourceStore
+ready, go, url = sys.argv[1:]
+open(ready, "w").close()
+while not os.path.exists(go):
+    time.sleep(0.001)
+SqlAlchemyToolSourceStore(url=url).dispose()
+"""
+
+
+def test_processes_opening_a_new_store_concurrently_all_succeed(sqlite_path, run_processes_together):
+    """Independent processes opening one new database must not race on its schema."""
+    run_processes_together(_OPEN_STORE_ON_SIGNAL, [[_sqlite_url(sqlite_path)]] * 8)
+
+    inspector = inspect(create_engine(_sqlite_url(sqlite_path)))
+    assert set(inspector.get_table_names()) == {"tool_source", "tool_index", "tool_source_populate_lease"}
+    assert {index["name"] for index in inspector.get_indexes("tool_source")} == {
+        "ix_tool_source_hash",
+        "ix_tool_source_source_path",
+        "ix_tool_source_tool_id",
+    }
+
+
+def test_opening_an_existing_store_adds_the_populate_lease_table(sqlite_path):
+    engine = create_engine(_sqlite_url(sqlite_path))
+    metadata = sqlalchemy_store_module._metadata
+    metadata.create_all(engine, tables=[metadata.tables["tool_source"], metadata.tables["tool_index"]])
+
+    SqliteToolSourceStore(url=_sqlite_url(sqlite_path)).dispose()
+
+    assert "tool_source_populate_lease" in inspect(engine).get_table_names()

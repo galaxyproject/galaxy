@@ -72,6 +72,24 @@ if TYPE_CHECKING:
 
 log = logging.getLogger(__name__)
 
+# Tools whose code file is valid Python 3 syntax but calls Python 2 APIs (e.g.
+# ``dict.iteritems()``) when its hooks run. Executing it untranslated succeeds,
+# so the fallback translation below never triggers; for these tool ids the code
+# file is always translated before it is executed.
+TRANSLATE_PYTHON2_CODE_FILE_TOOL_IDS = frozenset(
+    (
+        "gops_basecoverage_1",
+        "gops_cluster_1",
+        "gops_complement_1",
+        "gops_concat_1",
+        "gops_coverage_1",
+        "gops_intersect_1",
+        "gops_join_1",
+        "gops_merge_1",
+        "gops_subtract_1",
+    )
+)
+
 
 class RawToolSource(NamedTuple):
     """Compact representation of a tool's raw source for transport/serialization.
@@ -207,6 +225,9 @@ class AbstractTool:
             if self._allow_code_files:
                 with open(code_path) as f:
                     code_string = f.read()
+                if self.old_id in TRANSLATE_PYTHON2_CODE_FILE_TOOL_IDS:
+                    self._exec_translated_code_file(code_string, code_path)
+                    continue
                 try:
                     compiled_code = compile(code_string, code_path, "exec")
                     exec(compiled_code, self.code_namespace)
@@ -217,13 +238,14 @@ class AbstractTool:
                         and self.python_template_version.release[0] < 3
                     ):
                         # Could be a code file that uses python 2 syntax
-                        translated_code = str(
-                            refactoring_tool.refactor_string(code_string, name="auto_translated_code_file")
-                        )
-                        compiled_code = compile(translated_code, f"futurized_{code_path}", "exec")
-                        exec(compiled_code, self.code_namespace)
+                        self._exec_translated_code_file(code_string, code_path)
                     else:
                         raise
+
+    def _exec_translated_code_file(self, code_string: str, code_path: str) -> None:
+        translated_code = str(refactoring_tool.refactor_string(code_string, name="auto_translated_code_file"))
+        compiled_code = compile(translated_code, f"futurized_{code_path}", "exec")
+        exec(compiled_code, self.code_namespace)
 
     def _parse_config_files(self, tool_source: "ToolSource") -> None:
         self.config_files = []
@@ -233,7 +255,9 @@ class AbstractTool:
         self.config_files.extend(tool_source.parse_file_sources())
 
     def parse_tests(self) -> None:
-        self._tests_parsed = True
+        # The parsed flag is set only once ``_tests`` holds the result, so a
+        # concurrent first access parses again instead of reading ``None``
+        # while this parse is still running.
         source = self.tool_source
         # ``Tool.__init__`` calls ``tool_source.mem_optimize()`` after parsing,
         # which frees an ``XmlToolSource``'s element tree (``root`` becomes
@@ -246,6 +270,7 @@ class AbstractTool:
                 source = get_tool_source(raw_tool_source=source.to_string(), tool_source_class=type(source).__name__)
             except Exception:
                 self._tests = None
+                self._tests_parsed = True
                 log.exception("Failed to rebuild tool source for deferred test parsing of '%s'", self.id)
                 return
         test_descriptions = parse_tool_test_descriptions(source, self.id, self.parameters)
@@ -254,6 +279,7 @@ class AbstractTool:
         except Exception:
             self._tests = None
             log.exception("Failed to parse tool tests for tool '%s'", self.id)
+        self._tests_parsed = True
 
     @property
     def _repository_dir(self) -> str | None:

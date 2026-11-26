@@ -17,7 +17,7 @@ from typing import (
 )
 
 from cachetools import TTLCache
-from kombu import Queue
+from kombu.entity import Queue
 
 from galaxy.managers.sse import make_event_id
 from galaxy.queue_worker import (

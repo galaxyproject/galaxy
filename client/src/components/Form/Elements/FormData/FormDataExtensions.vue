@@ -39,6 +39,7 @@ const localFormatsVisible = computed({
             :id="props.formatsButtonId"
             v-model:pressed="localFormatsVisible"
             v-g-tooltip.hover.bottom="!formatsVisible ? orList([...props.extensions]) : ''"
+            data-description="accepted formats button"
             size="small"
             color="blue"
             transparent
@@ -53,12 +54,16 @@ const localFormatsVisible = computed({
             :target="props.formatsButtonId"
             placement="bottom">
             <ul class="pl-3 m-0">
-                <li v-for="extension in props.extensions" :key="extension">{{ extension }}</li>
+                <li v-for="extension in props.extensions" :key="extension" data-description="accepted format">
+                    {{ extension }}
+                </li>
             </ul>
         </GPopover>
         <GCollapse v-else :visible="localFormatsVisible">
             <ul class="pl-3 m-0">
-                <li v-for="extension in props.extensions" :key="extension">{{ extension }}</li>
+                <li v-for="extension in props.extensions" :key="extension" data-description="accepted format">
+                    {{ extension }}
+                </li>
             </ul>
         </GCollapse>
     </div>

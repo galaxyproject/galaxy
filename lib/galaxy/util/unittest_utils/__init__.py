@@ -1,9 +1,12 @@
+import json
 import os
 import re
 from collections.abc import Callable
 from datetime import datetime
 from functools import wraps
+from pathlib import Path
 from typing import (
+    Any,
     TypeVar,
 )
 from unittest import SkipTest
@@ -36,9 +39,13 @@ def is_site_up(url: str) -> bool:
 
 def raise_skip_if_site_down(url: str) -> None:
     """Raise ``SkipTest`` if ``url`` does not answer with HTTP 200, for setup code that isn't a test."""
-    reason = site_down_reason(url)
-    if reason:
+    if reason := site_down_reason(url):
         raise SkipTest(f"Test depends on [{url}] being up and it appears to be down ({reason}).")
+
+
+def read_mock_emails(directory: str | Path) -> list[dict[str, Any]]:
+    """Emails sent with ``smtp_server`` set to ``mock_emails_to_path://<directory>``, oldest first."""
+    return [json.loads(path.read_text()) for path in sorted(Path(directory).glob("*.json"))]
 
 
 P = ParamSpec("P")
@@ -83,7 +90,9 @@ def skip_if_site_down(url: str, unavailable_pattern: str | None = None) -> Calla
 
 
 def skip_on_network_error(method: Callable[P, T]) -> Callable[P, T]:
-    """Skip the test if it fails because a remote site could not be reached or timed out."""
+    """Skip the test if it fails because a remote site could not be reached, timed out,
+    rate limited the request (HTTP 429) or answered with a server error (HTTP 5xx, which
+    includes Cloudflare's 52x errors)."""
 
     @wraps(method)
     def wrapped_method(*args: P.args, **kwargs: P.kwargs) -> T:
@@ -91,6 +100,10 @@ def skip_on_network_error(method: Callable[P, T]) -> Callable[P, T]:
             return method(*args, **kwargs)
         except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as e:
             raise SkipTest(f"Test depends on a remote site that could not be reached: {e}") from e
+        except requests.exceptions.HTTPError as e:
+            if e.response is not None and (e.response.status_code >= 500 or e.response.status_code == 429):
+                raise SkipTest(f"Test depends on a remote site that is unavailable: {e}") from e
+            raise
 
     return wrapped_method
 

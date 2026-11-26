@@ -43,28 +43,13 @@ from galaxy.webapps.galaxy.api import (
     DependsOnUser,
     Router,
 )
+from galaxy.webapps.galaxy.api.common import lift_headers
 
 log = logging.getLogger(__name__)
 
 router = Router(tags=["dynamic_tools"])
 
 DatabaseIdOrUUID = DecodedDatabaseIdField | str
-
-
-def _set_lift_headers(response: Response, status: str, errors: list[str]) -> None:
-    """Surface lift status as response headers so consumers can react without
-    parsing the response body. Headers are computed dynamically per request and
-    are intentionally not declared in the OpenAPI schema."""
-    if status == "ok" or not errors:
-        return
-    if status == "lifted":
-        compact = ",".join(errors)
-        response.headers["X-Galaxy-Deprecated-Fields"] = compact
-        response.headers["Warning"] = f'299 - "Some conventions are no longer valid; ignored on read: {compact}"'
-    elif status == "invalid":
-        compact = "; ".join(errors)
-        response.headers["X-Galaxy-Schema-Errors"] = compact
-        response.headers["Warning"] = f'299 - "Stored tool no longer satisfies schema: {compact}"'
 
 
 class UnprivilegedToolResponse(BaseModel):
@@ -116,27 +101,18 @@ class UnprivilegedToolsApi:
     )
     def index(
         self,
-        response: Response,
         active: bool = True,
         trans: ProvidesUserContext = DependsOnTrans,
     ) -> list[UnprivilegedToolResponse]:
+        # No lift headers here: an aggregate across all of a user's tools is
+        # unbounded and has no per-tool attribution. Per-tool status and errors
+        # are in the body.
         if not trans.user:
             return []
-        result = [
+        return [
             _build_unprivileged_tool_response(t.to_dict())
             for t in self.dynamic_tools_manager.list_unprivileged_tools(trans.user, active=active)
         ]
-        # Aggregate header: any tool with drift surfaces it on the index call.
-        worst = "ok"
-        aggregate: list[str] = []
-        for tool in result:
-            if tool.representation_status == "invalid":
-                worst = "invalid"
-            elif tool.representation_status == "lifted" and worst == "ok":
-                worst = "lifted"
-            aggregate.extend(tool.representation_errors)
-        _set_lift_headers(response, worst, aggregate)
-        return result
 
     @router.get(
         "/api/unprivileged_tools/{uuid}",
@@ -148,7 +124,7 @@ class UnprivilegedToolsApi:
         if dynamic_tool is None:
             raise ObjectNotFound()
         tool = _build_unprivileged_tool_response(dynamic_tool.to_dict())
-        _set_lift_headers(response, tool.representation_status, tool.representation_errors)
+        response.headers.update(lift_headers(tool.representation_status, tool.representation_errors))
         return tool
 
     @router.post(

@@ -1,0 +1,20 @@
+- doc: |
+    Test to verify a mapped-over subworkflow can use a text parameter connected to an expression tool output as a replacement parameter.
+  job:
+    outer_input:
+      class: Collection
+      collection_type: list
+      elements:
+        - identifier: el1
+          class: File
+          path: 1.bed
+    replacemeouter: moocow
+  outputs:
+    out1:
+      class: Collection
+      metadata:
+        name: 'moocow suffix'
+      elements:
+        el1:
+          metadata:
+            name: 'moocow suffix'
