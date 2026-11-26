@@ -918,7 +918,7 @@ class ColorToolParameter(ToolParameter):
         if self.value is not None:
             return self.value.lower()
 
-    def _ensure_color(self, value):
+    def _ensure_color(self, value: Any) -> None:
         if value in ("", None):
             return
         if self.rgb:
