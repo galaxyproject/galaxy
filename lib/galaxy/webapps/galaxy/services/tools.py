@@ -13,6 +13,10 @@ from typing import (
 )
 from uuid import UUID
 
+from pydantic import (
+    TypeAdapter,
+    ValidationError,
+)
 from starlette.datastructures import UploadFile
 
 from galaxy import (
@@ -52,8 +56,22 @@ from galaxy.schema.fetch_data import (
     UrlDataElement,
 )
 from galaxy.schema.schema import CreateToolLandingRequestPayload
+from galaxy.schema.tool_outputs import (
+    ToolOutputActionsByName,
+    ToolOutputsPreview,
+    ToolOutputsPreviewRequest,
+)
 from galaxy.security.idencoding import IdEncodingHelper
-from galaxy.tool_util.parameters import ToolParameterT
+from galaxy.tool_util.parameters import (
+    decode,
+    dereference,
+    RelaxedRequestToolState,
+    RequestInternalToolState,
+    RequestToolState,
+    strictify,
+    ToolParameterBundleModel,
+    ToolParameterT,
+)
 from galaxy.tool_util.parameters.data_inputs import ToolDataInput
 from galaxy.tool_util.toolbox.base import (
     MaterializationReasonName,
@@ -70,11 +88,13 @@ from galaxy.tools import Tool
 from galaxy.tools._types import InputFormatT
 from galaxy.tools.cached_toolbox import CachedToolBox
 from galaxy.tools.job_parameters import DATA_MANAGER_MODE
+from galaxy.tools.parameters.meta import validate_matched_batch_lengths
 from galaxy.tools.search import ToolBoxSearch
 from galaxy.util.path import safe_contains
 from galaxy.util.tool_version import remove_version_from_guid
 from galaxy.webapps.galaxy.services._fetch_util import validate_and_normalize_targets
 from galaxy.webapps.galaxy.services.base import ServiceBase
+from galaxy.work.context import proxy_work_context_for_history
 
 if TYPE_CHECKING:
     from galaxy.webapps.base.webapp import GalaxyWebTransaction
@@ -130,6 +150,36 @@ def validate_tool_for_running(trans: ProvidesHistoryContext, tool_ref: ToolRunRe
     if not tool.allow_user_access(trans.user):
         raise exceptions.ItemAccessibilityException("Tool not accessible.")
     return tool
+
+
+def validated_request_internal_state(
+    trans: ProvidesUserContext, tool: Tool, inputs: dict[str, Any] | None, strict: bool
+) -> RequestInternalToolState:
+    """Validate the state of a tool request against the tool's parameters and decode its IDs."""
+    if tool.parameters is None:
+        raise exceptions.RequestParameterInvalidException(f"Tool {tool.id} has no parameters defined")
+    parameter_bundle = ToolParameterBundleModel(parameters=tool.parameters)
+    if not strict:
+        relaxed_request_state = RelaxedRequestToolState(inputs or {})
+        relaxed_request_state.validate(parameter_bundle, f"{tool.id} (relaxed request model)")
+        request_state = strictify(relaxed_request_state, parameter_bundle, yaml_origin=tool.yaml_origin)
+    else:
+        request_state = RequestToolState(inputs or {})
+    request_state.validate(parameter_bundle, f"{tool.id} (request model)")
+    request_internal_state = decode(request_state, parameter_bundle, trans.security.decode_id)
+    # request_internal records absent inputs as absent; static defaults (incl. url_default
+    # data inputs) are filled later, at dereference/job_internal time (see fill_static_defaults).
+    request_internal_state.validate(parameter_bundle, f"{tool.id} (request internal model)")
+    validate_matched_batch_lengths(tool, request_internal_state)
+    return request_internal_state
+
+
+class _InputFromUrl(Exception):
+    """Raised when dereferencing a request state that fetches an input from a URL."""
+
+
+def _refuse_url_input(data_request: Any) -> Any:
+    raise _InputFromUrl()
 
 
 def file_landing_payload_to_fetch_targets(data_landing_payload: CreateFileLandingPayload):
@@ -221,6 +271,9 @@ def file_landing_payload_to_fetch_targets(data_landing_payload: CreateFileLandin
     return [target.model_dump(mode="json", exclude_unset=True) for target in TargetsAdapter.validate_python(targets)]
 
 
+OUTPUT_ACTIONS_ADAPTER = TypeAdapter(ToolOutputActionsByName)
+
+
 class ToolsService(ServiceBase):
     def __init__(
         self,
@@ -233,6 +286,34 @@ class ToolsService(ServiceBase):
         self.config = config
         self.toolbox_search = toolbox_search
         self.history_manager = history_manager
+
+    def preview_outputs(self, trans: ProvidesHistoryContext, payload: ToolOutputsPreviewRequest) -> ToolOutputsPreview:
+        """Describe the outputs a tool request would create, without creating anything."""
+        tool = validate_tool_for_running(
+            trans, ToolRunReference(payload.tool_id, payload.tool_uuid, payload.tool_version)
+        )
+        if not tool.can_preview_outputs:
+            return ToolOutputsPreview(
+                supported=False, unsupported_reason="The outputs of this tool can't be described before it runs."
+            )
+        history = trans.history
+        if payload.history_id is not None:
+            history = self.history_manager.get_owned(payload.history_id, trans.user, current_history=trans.history)
+        request_internal_state = validated_request_internal_state(trans, tool, payload.inputs, payload.strict)
+        assert tool.parameters is not None
+        try:
+            tool_state = dereference(
+                request_internal_state,
+                ToolParameterBundleModel(parameters=tool.parameters),
+                _refuse_url_input,
+                _refuse_url_input,
+            )
+        except _InputFromUrl:
+            return ToolOutputsPreview(
+                supported=False, unsupported_reason="Outputs of runs that fetch inputs from URLs can't be described."
+            )
+        request_context = proxy_work_context_for_history(trans, history=history)
+        return tool.preview_outputs(request_context, request_internal_state.input_state, tool_state)
 
     def curated_tool_tags_by_id(self, trans: ProvidesUserContext) -> dict[str, list[str]]:
         """Return {tool_id: [tag, ...]} for currently-loaded tools that carry curated tags.
@@ -429,6 +510,10 @@ class ToolsService(ServiceBase):
         if "data_manager_mode" in payload:
             incoming[DATA_MANAGER_MODE] = payload["data_manager_mode"]
         tags = payload.get("__tags")
+        try:
+            output_actions = OUTPUT_ACTIONS_ADAPTER.validate_python(payload.get("output_actions") or {})
+        except ValidationError as e:
+            raise exceptions.RequestParameterInvalidException(f"output_actions invalid: {e}")
         vars = tool.handle_input(
             trans,
             incoming,
@@ -440,6 +525,7 @@ class ToolsService(ServiceBase):
             tags=tags,
             send_email_notification=inputs.get("send_email_notification", False),
             send_notification=inputs.get("send_notification", False),
+            output_actions=output_actions,
         )
         return self._handle_inputs_output_to_api_response(trans, tool, target_history, vars)
 

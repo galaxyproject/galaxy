@@ -19,14 +19,12 @@ from galaxy.tools import (
     load_tool_action_class,
     tool_produces_real_jobs,
 )
-from galaxy.tools.actions import (
-    DefaultToolAction,
-    determine_output_format,
-)
+from galaxy.tools.actions import DefaultToolAction
 from galaxy.tools.execution_helpers import (
     on_text_for_dataset_and_collections,
     on_text_for_numeric_ids,
 )
+from galaxy.tools.output_planning import determine_output_format
 from galaxy.util import XML
 from galaxy.util.unittest import TestCase
 

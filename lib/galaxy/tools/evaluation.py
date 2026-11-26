@@ -57,7 +57,6 @@ from galaxy.tool_util_models.tool_source import (
     XmlTemplateConfigFile,
     YamlTemplateConfigFile,
 )
-from galaxy.tools.actions import determine_output_format
 from galaxy.tools.expressions import (
     do_eval,
     expression_error_message,
@@ -68,6 +67,7 @@ from galaxy.tools.job_parameters import (
     CHROM_INFO,
     is_element_identifier_parameter,
 )
+from galaxy.tools.output_planning import determine_output_format
 from galaxy.tools.parameters import (
     visit_input_values,
     wrapped_json,

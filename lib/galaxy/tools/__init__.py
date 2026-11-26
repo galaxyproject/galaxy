@@ -19,8 +19,12 @@ from contextlib import (
     contextmanager,
     nullcontext,
 )
+from copy import deepcopy
 from datetime import datetime
-from itertools import chain
+from itertools import (
+    chain,
+    islice,
+)
 from typing import (
     Any,
     cast,
@@ -51,6 +55,7 @@ from galaxy.exceptions import (
     ToolInputsNotReadyException,
 )
 from galaxy.job_execution import output_collect
+from galaxy.job_execution.actions.post import ActionBox
 from galaxy.job_execution.compute_environment import dataset_path_to_extra_path
 from galaxy.job_execution.output_collect import (
     BaseJobContext,
@@ -80,6 +85,10 @@ from galaxy.model.dataset_collections.types.sample_sheet_workbook import _sample
 from galaxy.model.store.discover import safe_path_from_directory
 from galaxy.objectstore import ObjectStorePopulator
 from galaxy.schema.credentials import CredentialsContext
+from galaxy.schema.tool_outputs import (
+    ToolOutputActions,
+    ToolOutputsPreview,
+)
 from galaxy.tool_shed.util.repository_util import get_installed_repository
 from galaxy.tool_shed.util.shed_util_common import set_image_paths
 from galaxy.tool_util.abstract_tool import AbstractTool
@@ -193,6 +202,11 @@ from galaxy.tools.job_parameters import (
     EXPORT_TO_URI,
     TEMPLATE_JOB_PARAMETERS,
 )
+from galaxy.tools.output_actions import (
+    output_actions_of_job,
+    post_job_actions_for_outputs,
+)
+from galaxy.tools.output_planning import planned_implicit_outputs
 from galaxy.tools.parameters import (
     check_param,
     fill_dynamic_defaults,
@@ -303,6 +317,7 @@ from .execute import (
     ExecutionSlice,
     JobCallbackT,
     MappingParameters,
+    ToolExecutionTracker,
 )
 
 if TYPE_CHECKING:
@@ -2234,6 +2249,28 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
 
         This is responsible for breaking the map over job requests into individual jobs for execution.
         """
+        all_params, all_errors, collection_info, internal_states, _ = self._expand_incoming_async(
+            request_context, tool_request_internal_state, rerun_remap_job_id
+        )
+        return all_params, all_errors, collection_info, internal_states
+
+    def _expand_incoming_async(
+        self,
+        request_context: WorkRequestContext,
+        tool_request_internal_state: RequestInternalDereferencedToolState,
+        rerun_remap_job_id: int | None,
+        limit: int | None = None,
+    ) -> tuple[
+        list[ToolStateJobInstancePopulatedT],
+        list[ParameterValidationErrorsT],
+        MatchingCollections | None,
+        list[JobInternalToolState],
+        int,
+    ]:
+        """Expand the request into jobs, populating and validating at most ``limit`` of them.
+
+        Also returns the number of jobs the request expands to.
+        """
         if self.input_translator:
             raise exceptions.RequestParameterInvalidException(
                 "Failure executing tool request with id '%s' (cannot validate inputs from this type of data source tool - please POST to /api/tools).",
@@ -2262,7 +2299,7 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
         if self.parameters is None:
             raise RequestParameterInvalidException(f"Tool {self.id} has no parameters defined")
         parameter_bundle = ToolParameterBundleModel(parameters=self.parameters)
-        for expanded_incoming, job_tool_state in zip(expanded_incomings, job_tool_states):
+        for expanded_incoming, job_tool_state in islice(zip(expanded_incomings, job_tool_states), limit):
             expanded_incoming = fill_static_defaults(
                 expanded_incoming, parameter_bundle, self.profile, yaml_origin=self.yaml_origin
             )
@@ -2282,7 +2319,7 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
         unset_dataset_matcher_factory(request_context)
 
         log.info(validation_timer)
-        return all_params, all_errors, collection_info, internal_states
+        return all_params, all_errors, collection_info, internal_states, len(expanded_incomings)
 
     def expand_incoming(
         self, request_context: WorkRequestContext, incoming: ToolRequestT, input_format: InputFormatT = "legacy"
@@ -2448,6 +2485,7 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
         rerun_remap_job_id: int | None = None,
         credentials_context: CredentialsContext | None = None,
         input_format: str = "legacy",
+        output_actions: Mapping[str, ToolOutputActions] | None = None,
     ):
         """The tool request API+tasks version of handle_input."""
         all_params, all_errors, collection_info, job_tool_states = self.expand_incoming_async(
@@ -2457,7 +2495,8 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
 
         mapping_params = MappingParameters(tool_request.request, all_params, tool_state, job_tool_states)
         completed_jobs: dict[int, model.Job | None] = self.completed_jobs(request_context, use_cached_job, all_params)
-        return execute_async(
+        post_job_actions = post_job_actions_for_outputs(self, output_actions or {})
+        execution_tracker = execute_async(
             request_context,
             self,
             mapping_params,
@@ -2468,7 +2507,88 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
             preferred_object_store_id=preferred_object_store_id,
             credentials_context=credentials_context,
             collection_info=collection_info,
+            job_callback=self._output_actions_job_callback(
+                request_context, post_job_actions, mapping_over=collection_info is not None
+            ),
         )
+        execution_tracker.apply_mapped_over_post_job_actions(post_job_actions)
+        return execution_tracker
+
+    def _output_actions_job_callback(
+        self, trans: "ProvidesHistoryContext", post_job_actions: list[model.PostJobAction], mapping_over: bool
+    ) -> JobCallbackT | None:
+        if mapping_over:
+            # A mapped-over run renames the collection of the output, not the datasets in it.
+            post_job_actions = [pja for pja in post_job_actions if pja.action_type != "RenameDatasetAction"]
+        if not post_job_actions:
+            return None
+
+        def apply_output_actions(job: Job) -> None:
+            # Attached to every job, also for the actions run now, so the job records what was asked.
+            ActionBox.apply_to_job(
+                trans.app,
+                trans.sa_session,
+                post_job_actions,
+                job,
+                execute_all_now=isinstance(self, DatabaseOperationTool),
+                record_executed=True,
+            )
+
+        return apply_output_actions
+
+    @property
+    def can_preview_outputs(self) -> bool:
+        """Whether ``preview_outputs`` can describe this tool's outputs before it runs.
+
+        Model operations create their outputs while executing, data source tools translate their
+        inputs from another site, and tools without typed parameters can't take tool requests.
+        """
+        return (
+            isinstance(self.tool_action, DefaultToolAction)
+            and not isinstance(self.tool_action, ModelOperationToolAction)
+            and self.input_translator is None
+            and self.parameters is not None
+        )
+
+    def preview_outputs(
+        self,
+        request_context: WorkRequestContext,
+        request_template: ToolRequestT,
+        tool_state: RequestInternalDereferencedToolState,
+    ) -> ToolOutputsPreview:
+        """Describe the jobs and outputs a tool request would create, without creating anything.
+
+        :param request_template: the decoded request state, as ``handle_input_async`` gets it from
+            the stored tool request
+        :param tool_state: the dereferenced request state
+        """
+        assert self.can_preview_outputs
+        tool_action = cast(DefaultToolAction, self.tool_action)
+        # The outputs only depend on the first job; the others only count.
+        all_params, all_errors, collection_info, job_tool_states, job_count = self._expand_incoming_async(
+            request_context, tool_state, None, limit=1
+        )
+        self.handle_incoming_errors(all_errors)
+        history = request_context.history
+        implicit_plans = None
+        if collection_info is not None:
+            # Planned before the first job's planner adds to its params, as a run precreates them.
+            mapping_params = MappingParameters(request_template, all_params, tool_state, job_tool_states)
+            tracker = ToolExecutionTracker(request_context, self, mapping_params, collection_info)
+            implicit_plans = tracker.plan_implicit_outputs(history, deepcopy(request_template))
+        job_planner = None
+        if all_params:
+            job_planner = tool_action.preview_output_planner(
+                request_context, self, all_params[0], history, collection_info=collection_info
+            )
+        if implicit_plans is not None:
+            outputs = planned_implicit_outputs(implicit_plans, job_planner)
+        elif job_planner is not None:
+            outputs = job_planner.planned_outputs()
+        else:
+            # A request that expands to no jobs creates nothing.
+            outputs = []
+        return ToolOutputsPreview(supported=True, job_count=job_count, outputs=outputs)
 
     def handle_input(
         self,
@@ -2482,6 +2602,7 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
         tags: list[str] | None = None,
         send_email_notification: bool = False,
         send_notification: bool = False,
+        output_actions: Mapping[str, ToolOutputActions] | None = None,
     ):
         """
         Process incoming parameters for this tool from the dict `incoming`,
@@ -2501,6 +2622,7 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
         if use_cached_job:
             mapping_params.param_template["__use_cached_job__"] = use_cached_job
         completed_jobs: dict[int, Job | None] = self.completed_jobs(trans, use_cached_job, all_params)
+        post_job_actions = post_job_actions_for_outputs(self, output_actions or {})
         execution_tracker = execute_sync(
             trans,
             self,
@@ -2511,7 +2633,13 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
             credentials_context=credentials_context,
             collection_info=collection_info,
             completed_jobs=completed_jobs,
+            job_callback=self._output_actions_job_callback(
+                trans, post_job_actions, mapping_over=collection_info is not None
+            ),
         )
+        if post_job_actions and execution_tracker.implicit_collections:
+            execution_tracker.apply_mapped_over_post_job_actions(post_job_actions)
+            trans.sa_session.commit()
 
         if tags:
             execution_tracker.apply_tags(trans.tag_handler, trans.user, tags)
@@ -3258,6 +3386,11 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
                 "job_id": trans.security.encode_id(job.id) if job else None,
                 "job_remap": job.remappable() if job else None,
                 "job_credentials_context": job_credentials_context.model_dump() if job_credentials_context else None,
+                "job_output_actions": (
+                    {output_name: actions.model_dump() for output_name, actions in output_actions_of_job(job).items()}
+                    if job
+                    else None
+                ),
                 "history_id": trans.security.encode_id(history.id) if history else None,
                 "display": self.display_interface,
                 "action": action,

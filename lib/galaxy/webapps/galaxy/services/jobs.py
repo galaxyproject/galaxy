@@ -51,19 +51,16 @@ from galaxy.schema.tasks import (
     QueueJobs,
     ToolSource,
 )
+from galaxy.schema.tool_outputs import ToolOutputActionsByName
 from galaxy.security.idencoding import IdEncodingHelper
-from galaxy.tool_util.parameters import (
-    decode,
-    RelaxedRequestToolState,
-    RequestToolState,
-    strictify,
-    ToolParameterBundleModel,
-)
-from galaxy.tools.parameters.meta import validate_matched_batch_lengths
+from galaxy.tools.output_actions import post_job_actions_for_outputs
 from galaxy.webapps.galaxy.services.base import (
     ServiceBase,
 )
-from .tools import validate_tool_for_running
+from .tools import (
+    validate_tool_for_running,
+    validated_request_internal_state,
+)
 
 if TYPE_CHECKING:
     from galaxy.model import (
@@ -99,6 +96,12 @@ class JobRequest(BaseModel):
     )
     preferred_object_store_id: str | None = Field(default=None, title="Preferred Object Store ID")
     tags: list[str] | None = Field(default=None, title="Tags")
+    output_actions: ToolOutputActionsByName = Field(
+        default_factory=dict,
+        title="Output Actions",
+        description="Changes to make to the outputs the run creates, by tool output name. On a mapped-over run "
+        "they apply to the collections of the outputs.",
+    )
     data_manager_mode: str | None = Field(default=None, title="Data Manager Mode")
     credentials_context: list[dict[str, Any]] | None = Field(default=None, title="Credentials Context")
 
@@ -264,23 +267,9 @@ class JobsService(ServiceBase):
         target_history = None
         if (history_id := job_request.history_id) is not None:
             target_history = self.history_manager.get_owned(history_id, trans.user, current_history=trans.history)
-        inputs = job_request.inputs
-        strict = job_request.strict
-        if tool.parameters is None:
-            raise exceptions.RequestParameterInvalidException(f"Tool {tool.id} has no parameters defined")
-        parameter_bundle = ToolParameterBundleModel(parameters=tool.parameters)
-        if not strict:
-            relaxed_request_state = RelaxedRequestToolState(inputs or {})
-            relaxed_request_state.validate(parameter_bundle, f"{tool.id} (relaxed request model)")
-            request_state = strictify(relaxed_request_state, parameter_bundle, yaml_origin=tool.yaml_origin)
-        else:
-            request_state = RequestToolState(inputs or {})
-        request_state.validate(parameter_bundle, f"{tool.id} (request model)")
-        request_internal_state = decode(request_state, parameter_bundle, trans.security.decode_id)
-        # request_internal records absent inputs as absent; static defaults (incl. url_default
-        # data inputs) are filled later, at dereference/job_internal time (see fill_static_defaults).
-        request_internal_state.validate(parameter_bundle, f"{tool.id} (request internal model)")
-        validate_matched_batch_lengths(tool, request_internal_state)
+        request_internal_state = validated_request_internal_state(trans, tool, job_request.inputs, job_request.strict)
+        # Rejects unknown output names before the request is queued.
+        post_job_actions_for_outputs(tool, job_request.output_actions)
         sa_session = trans.sa_session
         tool_source_model = get_or_create_tool_source(sa_session, tool)
         tool_request = ToolRequest()
@@ -305,6 +294,7 @@ class JobsService(ServiceBase):
             rerun_remap_job_id=job_request.rerun_remap_job_id,
             preferred_object_store_id=job_request.preferred_object_store_id,
             tags=job_request.tags,
+            output_actions=job_request.output_actions,
             data_manager_mode=job_request.data_manager_mode,
             send_email_notification=job_request.send_email_notification,
             send_notification=job_request.send_notification,

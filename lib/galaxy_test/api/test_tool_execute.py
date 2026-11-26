@@ -539,6 +539,24 @@ def test_map_over_collection(
     output_collection.assert_has_dataset_element("reverse").with_contents_stripped("456")
 
 
+@requires_tool_id("collection_creates_pair")
+def test_map_over_collection_nests_output_collection(
+    target_history: TargetHistory, required_tool: RequiredTool, tool_input_format: DescribeToolInputs
+):
+    hdca = target_history.with_list([("a", "1\n2\n"), ("b", "3\n4\n")])
+    legacy = {"input1": {"batch": True, "values": [hdca.src_dict]}}
+    request = {"input1": {"__class__": "Batch", "values": [hdca.src_dict]}}
+    inputs = tool_input_format.when.flat(legacy).when.nested(legacy).when.request(request)
+    execute = required_tool.execute().with_inputs(inputs)
+    execute.assert_has_n_jobs(2).assert_creates_n_implicit_collections(1)
+    output_collection = execute.assert_creates_implicit_collection(0).named("Split Pair")
+    output_collection.assert_collection_type_is("list:paired")
+    assert [element["element_identifier"] for element in output_collection.elements] == ["a", "b"]
+    # datasets of a mapped-over run are only reachable through the implicit collection
+    forward = output_collection.with_element_dict("a")["object"]["elements"][0]["object"]
+    assert forward["visible"] is False
+
+
 @requires_tool_id("cat|cat1")
 def test_dce_as_input(
     target_history: TargetHistory, required_tool: RequiredTool, tool_input_format: DescribeToolInputs

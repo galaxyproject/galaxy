@@ -5814,6 +5814,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/tools/outputs_preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Describe the outputs a tool request would create, without running the tool */
+        post: operations["tools__outputs_preview"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/tools/{tool_id}/icon": {
         parameters: {
             query?: never;
@@ -19237,6 +19254,13 @@ export interface components {
             inputs?: {
                 [key: string]: unknown;
             } | null;
+            /**
+             * Output Actions
+             * @description Changes to make to the outputs the run creates, by tool output name. On a mapped-over run they apply to the collections of the outputs.
+             */
+            output_actions?: {
+                [key: string]: components["schemas"]["ToolOutputActions"];
+            };
             /** Preferred Object Store ID */
             preferred_object_store_id?: string | null;
             /**
@@ -26315,6 +26339,33 @@ export interface components {
              */
             uuid: string;
         };
+        /**
+         * ToolOutputActions
+         * @description Changes to make to an output of a tool run, applied as post job actions.
+         */
+        ToolOutputActions: {
+            /**
+             * Add Tags
+             * @description Tags to add to the output.
+             */
+            add_tags?: string[];
+            /**
+             * Hide
+             * @description Hide the output once the job has finished; the collection of a mapped-over run is hidden right away.
+             * @default false
+             */
+            hide: boolean;
+            /**
+             * Remove Tags
+             * @description Tags to remove from the output, e.g. ones it inherits from its inputs.
+             */
+            remove_tags?: string[];
+            /**
+             * Rename
+             * @description The new name of the output. ``#{input_name}`` is replaced with the name of that input.
+             */
+            rename?: string | null;
+        };
         /** ToolOutputBoolean */
         ToolOutputBoolean: {
             /**
@@ -26508,6 +26559,63 @@ export interface components {
              */
             type: "integer";
         };
+        /** ToolOutputPreview */
+        ToolOutputPreview: {
+            /**
+             * Collection Type
+             * @description The collection type, including the levels added by mapping over inputs, e.g. ``list:paired``.
+             */
+            collection_type?: string | null;
+            /**
+             * Dynamic
+             * @description Whether the job discovers the datasets of this output.
+             * @default false
+             */
+            dynamic: boolean;
+            /**
+             * Element Count
+             * @description The number of top-level elements of the collection, if known before the run.
+             */
+            element_count?: number | null;
+            /**
+             * Format
+             * @description The datatype of the created dataset, or of all datasets in the collection; null if the job decides it or the collection mixes datatypes.
+             */
+            format?: string | null;
+            /**
+             * Format Source
+             * @description The input whose datatype this output takes.
+             */
+            format_source?: string | null;
+            /**
+             * Hidden
+             * @description Whether the run creates the output hidden.
+             * @default false
+             */
+            hidden: boolean;
+            /**
+             * Label
+             * @description The name the run gives the created dataset or collection; null if it can't be rendered yet.
+             */
+            label: string | null;
+            /**
+             * Mapped Over
+             * @description Whether the output collects the outputs of the jobs of a mapped-over run.
+             * @default false
+             */
+            mapped_over: boolean;
+            /**
+             * Name
+             * @description The name of the output in the tool.
+             */
+            name: string;
+            /**
+             * Output Type
+             * @description Whether the run creates a dataset, a collection or a parameter value for this output. Outputs of a mapped-over run are always collections.
+             * @enum {string}
+             */
+            output_type: "data" | "collection" | "parameter";
+        };
         /** ToolOutputText */
         ToolOutputText: {
             /**
@@ -26530,6 +26638,69 @@ export interface components {
              * @enum {string}
              */
             type: "text";
+        };
+        /** ToolOutputsPreview */
+        ToolOutputsPreview: {
+            /**
+             * Job Count
+             * @description The number of jobs the run would create.
+             * @default 0
+             */
+            job_count: number;
+            /**
+             * Outputs
+             * @description The outputs the run would create.
+             */
+            outputs?: components["schemas"]["ToolOutputPreview"][];
+            /**
+             * Supported
+             * @description Whether the outputs of this tool can be described before it runs.
+             */
+            supported: boolean;
+            /**
+             * Unsupported Reason
+             * @description Why the outputs can't be described.
+             */
+            unsupported_reason?: string | null;
+        };
+        /**
+         * ToolOutputsPreviewRequest
+         * @description A tool request, in the shape ``POST /api/jobs`` takes, whose outputs to describe.
+         */
+        ToolOutputsPreviewRequest: {
+            /**
+             * History Id
+             * @description The history the run would create its outputs in; the current history if not set.
+             */
+            history_id?: string | null;
+            /**
+             * Inputs
+             * @description The tool state, as for a tool request.
+             */
+            inputs?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Strict
+             * @description Turn on strict validation of the inputs that drops support for some inconsistent legacy behavior.
+             * @default true
+             */
+            strict: boolean;
+            /**
+             * Tool Id
+             * @description The ID of the tool to run.
+             */
+            tool_id?: string | null;
+            /**
+             * Tool Uuid
+             * @description The UUID of the tool to run, for user-defined tools.
+             */
+            tool_uuid?: string | null;
+            /**
+             * Tool Version
+             * @description The version of the tool to run.
+             */
+            tool_version?: string | null;
         };
         /** ToolProvidedMetadataDatasetCollection */
         ToolProvidedMetadataDatasetCollection: {
@@ -52270,6 +52441,51 @@ export interface operations {
                     "application/json":
                         | components["schemas"]["ParsedFetchWorkbookForDatasets"]
                         | components["schemas"]["ParsedFetchWorkbookForCollections"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    tools__outputs_preview: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ToolOutputsPreviewRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ToolOutputsPreview"];
                 };
             };
             /** @description Request Error */
