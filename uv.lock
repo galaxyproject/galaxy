@@ -2738,7 +2738,7 @@ requires-dist = [
     { name = "paramiko", specifier = "!=2.9.0,!=2.9.1" },
     { name = "pebble", specifier = "!=5.2.1,!=5.2.2" },
     { name = "pkce", marker = "extra == 'test'" },
-    { name = "pulsar-galaxy-lib", specifier = ">=0.16.0" },
+    { name = "pulsar-galaxy-lib", git = "https://github.com/mvdbeek/pulsar?rev=1e5acbbd45135c51cc2371236415823c0c7ef535" },
     { name = "pydantic", specifier = ">=2.7.4" },
     { name = "pydantic-ai", specifier = ">=1.99.0" },
     { name = "pyjwt" },
@@ -4085,7 +4085,7 @@ requires-dist = [
     { name = "pillow" },
     { name = "pkg-resources-backport" },
     { name = "psutil" },
-    { name = "pulsar-galaxy-lib", specifier = ">=0.16.0" },
+    { name = "pulsar-galaxy-lib", git = "https://github.com/mvdbeek/pulsar?rev=1e5acbbd45135c51cc2371236415823c0c7ef535" },
     { name = "pycryptodome" },
     { name = "pydantic", extras = ["email"], specifier = ">=2.7.4" },
     { name = "pydantic-ai", specifier = ">=1.56.0" },
@@ -7742,8 +7742,8 @@ wheels = [
 
 [[package]]
 name = "pulsar-galaxy-lib"
-version = "0.16.1"
-source = { registry = "https://pypi.org/simple" }
+version = "0.16.4.dev0"
+source = { git = "https://github.com/mvdbeek/pulsar?rev=1e5acbbd45135c51cc2371236415823c0c7ef535#1e5acbbd45135c51cc2371236415823c0c7ef535" }
 dependencies = [
     { name = "google-cloud-batch" },
     { name = "paramiko" },
@@ -7755,10 +7755,6 @@ dependencies = [
     { name = "requests" },
     { name = "typing-extensions" },
     { name = "webob" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/14/4d/4d9cc56b66fb85d9c377e56657183e33834116e5a34c1f723db39afc1ae7/pulsar_galaxy_lib-0.16.1.tar.gz", hash = "sha256:43d7b7b24e636fd5235be411f4aa50d703ded99339557e8c3ff66fb7737010ef", size = 268739, upload-time = "2026-11-20T15:51:16.593Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/f4/8b/821ba27cdc19b8889dc218db14a28903dab4cd6028445eb12d99a88d62d7/pulsar_galaxy_lib-0.16.1-py3-none-any.whl", hash = "sha256:225cecb3006feb38d96f1c3610f3430635af42dc63c050eef0b0a28c619b6a2f", size = 281337, upload-time = "2026-11-20T15:51:13.286Z" },
 ]
 
 [[package]]
