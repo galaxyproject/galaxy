@@ -136,7 +136,11 @@ def secondary_files_json(
         suffix = datatype.secondary_file_suffix(metadata_name, local_path)
         if suffix in secondary_files:
             continue
-        rewrite = compute_environment.input_metadata_rewrite(dataset, local_path) if compute_environment else None
+        rewrite = (
+            compute_environment.input_metadata_rewrite(dataset, metadata_name, metadata_file)
+            if compute_environment
+            else None
+        )
         secondary_file: dict[str, Any] = {"class": "File", "path": rewrite or local_path, "format": suffix.lstrip(".")}
         set_basename_and_derived_properties(secondary_file, f"{basename}{suffix}")
         secondary_files[suffix] = secondary_file

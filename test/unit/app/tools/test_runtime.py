@@ -290,9 +290,10 @@ class RewritingComputeEnvironment:
     def __init__(self):
         self.metadata_rewrites: list[str] = []
 
-    def input_metadata_rewrite(self, dataset, metadata_value):
-        self.metadata_rewrites.append(metadata_value)
-        return f"/job/inputs/metadata_{os.path.basename(metadata_value)}"
+    def input_metadata_rewrite(self, dataset, metadata_name, metadata_file):
+        local_path = metadata_file.get_file_name()
+        self.metadata_rewrites.append(local_path)
+        return f"/job/inputs/metadata_{os.path.basename(local_path)}"
 
 
 class DatatypesApp:
