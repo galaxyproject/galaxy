@@ -2,27 +2,9 @@
 @import "sprite-history-buttons.scss";
 @import "@fortawesome/fontawesome-free/scss/_variables";
 
-// Tabular peeks and previews label columns with Galaxy's own column index
-// ("1", or "1.name" when the column name is known). It is never part of the
-// dataset, so it is styled like interface chrome (spreadsheet column letters)
-// rather than like a header line from the file.
-%column-index-header {
-    color: $text-muted;
-    background: $gray-300;
-    font-weight: normal;
-    text-align: left;
-    border-bottom: 1px solid $border-color;
-    // not a line of the file, so keep it out of copied text
-    user-select: none;
-    // mark where each column starts, like spreadsheet gridlines
-    border-right: 1px solid $border-color;
+@import "_column-index.scss";
 
-    &:last-child {
-        border-right: none;
-    }
-}
-
-// Header cell content (column_index_header_cell on the server, TabularChunkedView on the client):
+// Column index cell content (column_index_header_cell on the server, TabularChunkedView on the client):
 // the column number is left-aligned like a spreadsheet column letter, the name is centred.
 .column-index {
     display: grid;
@@ -360,9 +342,6 @@
             overflow: auto;
 
             //TODO: there doesn't seem to be a way to pad text-only peeks (binary data, etc.)
-            th {
-                @extend %column-index-header;
-            }
             table,
             th,
             tr,
@@ -381,9 +360,6 @@ pre.peek {
     width: 100%;
     font-size: 10px;
     overflow: auto;
-    th {
-        @extend %column-index-header;
-    }
     table,
     th,
     tr,
@@ -393,17 +369,12 @@ pre.peek {
     }
 }
 
-// the dataset details page shows the peek outside the history panel
-.dataset-peek th {
-    @extend %column-index-header;
+.dataset-peek th,
+pre.peek th {
+    @include column-index-header;
 }
 
-// lighter column lines through the data rows, so adjacent cells don't run together
 .dataset-peek td,
 pre.peek td {
-    border-right: 1px solid $gray-300;
-
-    &:last-child {
-        border-right: none;
-    }
+    @include column-index-data-cell;
 }
