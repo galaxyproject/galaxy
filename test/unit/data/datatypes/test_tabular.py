@@ -241,11 +241,12 @@ def test_interval_preview_chunk_names_column_parameters(tmp_path):
 
 def test_column_index_header_cell_escapes_name():
     assert column_index_header_cell("1") == (
-        '<th title="Column 1. Galaxy metadata, not part of the file."><span class="column-index">'
+        '<th class="column-index-header" title="Column 1. Galaxy metadata, not part of the file.">'
+        '<span class="column-index">'
         '<span class="column-number">1</span></span></th>'
     )
     assert column_index_header_cell("2", 'log2(FC) "<b>') == (
-        '<th title="Column 2: log2(FC) &#34;&lt;b&gt;. Galaxy metadata, not part of the file.">'
+        '<th class="column-index-header" title="Column 2: log2(FC) &#34;&lt;b&gt;. Galaxy metadata, not part of the file.">'
         '<span class="column-index"><span class="column-number">2</span>'
         ' <span class="column-name">log2(FC) &#34;&lt;b&gt;</span></span></th>'
     )

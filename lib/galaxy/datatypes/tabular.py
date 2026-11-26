@@ -84,13 +84,14 @@ MAX_DATA_LINES = 100000
 def column_index_header_cell(number: str, name: Optional[str] = None) -> str:
     """Header cell of a tabular peek: Galaxy's column number, plus the column name when known.
 
-    The client styles the number and the name separately (see ``.column-index`` in dataset.scss).
+    The client styles cells of class ``column-index-header`` as Galaxy's column index, and the number
+    and the name separately (see ``.column-index`` in dataset.scss).
     """
     label = f"Column {number}: {name}" if name else f"Column {number}"
     title = escape(f"{label}. Galaxy metadata, not part of the file.")
     name_html = f' <span class="column-name">{escape(name)}</span>' if name else ""
     return (
-        f'<th title="{title}"><span class="column-index">'
+        f'<th class="column-index-header" title="{title}"><span class="column-index">'
         f'<span class="column-number">{number}</span>{name_html}</span></th>'
     )
 

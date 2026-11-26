@@ -369,8 +369,8 @@ pre.peek {
     }
 }
 
-.dataset-peek th,
-pre.peek th {
+.dataset-peek th.column-index-header,
+pre.peek th.column-index-header {
     @include column-index-header;
 }
 
