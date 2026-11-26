@@ -68,6 +68,7 @@ class BioAIRepoFilesSource(
     plugin_type = "bioairepo"
     supports_pagination = True
     supports_search = True
+    supports_recursive = True
 
     template_config_class = BioAIRepoFileSourceTemplateConfiguration
     resolved_config_class = BioAIRepoFileSourceConfiguration
@@ -113,16 +114,25 @@ class BioAIRepoFilesSource(
     ) -> tuple[list[AnyRemoteEntry], int]:
         if write_intent:
             raise MessageException("BioAIRepo is read-only and does not support exporting files.")
-        if recursive:
-            raise MessageException("Recursive listing is not supported for BioAIRepo.")
-
         normalized_path = self._normalize_path(path)
         if normalized_path == "/":
+            if recursive:
+                raise MessageException("Select a BioAIRepo study folder to import its files recursively.")
             return self._list_studies(context.config, limit, offset, query)
 
         accession, relative_directory = self._split_path(normalized_path)
         file_records = self._study_files(accession, context.config)
         entries = self._directory_entries(accession, relative_directory, file_records)
+        if recursive:
+            # The study metadata contains all file paths, so no additional API calls
+            # are needed to walk the directories beneath the selected folder.
+            pending = [entry.path for entry in entries if isinstance(entry, RemoteDirectory)]
+            while pending:
+                directory = pending.pop()
+                _, relative_path = self._split_path(directory)
+                children = self._directory_entries(accession, relative_path, file_records)
+                entries.extend(children)
+                pending.extend(entry.path for entry in children if isinstance(entry, RemoteDirectory))
         if query:
             entries = [entry for entry in entries if query.casefold() in entry.name.casefold()]
         total = len(entries)

@@ -129,3 +129,35 @@ def test_write_is_rejected(tmp_path):
     source = get_source()
     with pytest.raises(Exception, match="non-writable"):
         source.write_from("/S-BAIR2/file.txt", str(tmp_path / "file.txt"))
+
+
+@pytest.mark.parametrize(
+    "folder, expected",
+    [
+        ("/S-BAIR2", {"model.yaml", "predictions.h5", "models/weights.h5", "models/nested/config.json"}),
+        ("/S-BAIR2/models", {"models/weights.h5", "models/nested/config.json"}),
+        ("/S-BAIR2/models/nested", {"models/nested/config.json"}),
+    ],
+)
+@responses.activate
+def test_import_files_from_each_folder(folder, expected, tmp_path):
+    responses.add(responses.GET, STUDY_URL, json=STUDY)
+    source = get_source()
+    assert source.supports_recursive
+    with mock.patch("galaxy.files.sources.bioairepo.validate_non_local", side_effect=lambda url, allowlist: url):
+        entries, total = source.list(folder, recursive=True)
+        files = [entry for entry in entries if entry.class_ == "File"]
+        assert {entry.path.removeprefix("/S-BAIR2/") for entry in files} == expected
+        assert total == len(entries)
+        for index, entry in enumerate(files):
+            relative_path = entry.path.removeprefix("/S-BAIR2/")
+            content = relative_path.encode()
+            responses.add(responses.GET, f"{FILES_URL}/S-BAIR2/{relative_path}", body=content)
+            target = tmp_path / str(index)
+            source.realize_to(entry.path, str(target))
+            assert target.read_bytes() == content
+
+
+def test_recursive_collection_import_requires_a_study_folder():
+    with pytest.raises(Exception, match="Select a BioAIRepo study folder"):
+        get_source().list("/", recursive=True)

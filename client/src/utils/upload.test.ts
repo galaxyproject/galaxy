@@ -508,6 +508,15 @@ describe("parseContentToUploadItems", () => {
         expect((items[2] as { url: string }).url).toBe("zenodo://record/123");
     });
 
+    test("builds an upload payload for BioAIRepo files", () => {
+        const url = "bioairepo://bioairepo/S-BAIR1/bioimage-io-logo.png";
+        const items = parseContentToUploadItems(url, "historyId");
+        expect(items).toHaveLength(1);
+        expect(items[0]!.src).toBe("url");
+        const payload = buildUploadPayload(items);
+        expect(payload.targets[0]!.elements![0]).toMatchObject({ src: "url", url });
+    });
+
     test("handles whitespace around URLs", () => {
         const items = parseContentToUploadItems("  http://example.com/file.txt  \n  ", "historyId");
 

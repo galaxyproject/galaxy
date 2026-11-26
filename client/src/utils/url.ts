@@ -27,6 +27,7 @@ export const URI_PREFIXES = [
     "drs://",
     "invenio://",
     "zenodo://",
+    "bioairepo://",
     "dataverse://",
     "elabftw://",
     "zip://",
