@@ -59,6 +59,11 @@ class DropboxFilesSource(FsspecFilesSource[DropboxFileSourceTemplateConfiguratio
         context: FilesSourceRuntimeContext[DropboxFilesSourceConfiguration],
         _cache_options: CacheOptionsDictType,
     ):
+        if not context.config.access_token:
+            raise AuthenticationRequired(
+                f"No Dropbox access token is set for {self.label}. Add one in your user preferences."
+            )
+
         if DropboxDriveFileSystem is None:
             raise self.required_package_exception
 
