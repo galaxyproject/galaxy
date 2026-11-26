@@ -1006,7 +1006,9 @@ class WorkflowStepExecutionTracker(ExecutionTracker):
             return
 
         history = history or self.tool.get_default_history_by_trans(self.trans)
-        if self.invocation_step.is_new:
+        # A step delayed after precreating its output collections stays new, so reuse
+        # the collections of that attempt instead of adding another set to the history.
+        if self.invocation_step.is_new and not self.invocation_step.output_dataset_collections:
             self.precreate_output_collections(history, params, tool_request)
             for output_name, implicit_collection in self.implicit_collections.items():
                 self.invocation_step.add_output(output_name, implicit_collection)
