@@ -500,7 +500,11 @@ class FastAPIHistories:
         # and if the content type is explicitly JSON, we will use payload_as_json instead.
         # See https://github.com/tiangolo/fastapi/issues/990#issuecomment-639615888
         if payload_as_json:
-            payload = CreateHistoryPayload.model_validate(payload_as_json)
+            try:
+                payload = CreateHistoryPayload.model_validate(payload_as_json)
+            except ValidationError as e:
+                # Answered as a bad request, as the form payload's validation errors are.
+                raise RequestValidationError(e.errors())
         return self.service.create(trans, payload, serialization_params)
 
     @router.delete(

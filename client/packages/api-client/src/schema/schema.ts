@@ -8702,6 +8702,8 @@ export interface components {
              * @default true
              */
             all_datasets: unknown;
+            /** Annotation */
+            annotation?: unknown;
             /** Archive File */
             archive_file?: unknown;
             /** Archive Source */
@@ -15611,6 +15613,11 @@ export interface components {
          */
         HDCACustom: {
             /**
+             * Annotation
+             * @description The requesting user's annotation of this collection.
+             */
+            annotation?: string | null;
+            /**
              * Dataset Collection ID
              * @example 0123456789ABCDEF
              */
@@ -15782,6 +15789,11 @@ export interface components {
          * @description History Dataset Collection Association detailed information.
          */
         HDCADetailed: {
+            /**
+             * Annotation
+             * @description The requesting user's annotation of this collection.
+             */
+            annotation?: string | null;
             /**
              * Dataset Collection ID
              * @example 0123456789ABCDEF
@@ -19217,6 +19229,11 @@ export interface components {
         };
         /** JobRequest */
         JobRequest: {
+            /**
+             * Annotation
+             * @description An annotation for what this request adds to the history: its output datasets and collections, or for a request mapped over a collection the collections created in their place and not the datasets in them. Outputs discovered when a job finishes are not annotated. Ignored for anonymous users.
+             */
+            annotation?: string | null;
             /** Credentials Context */
             credentials_context?:
                 | {

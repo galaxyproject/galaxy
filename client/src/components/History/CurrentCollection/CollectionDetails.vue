@@ -8,9 +8,15 @@ import DetailsLayout from "@/components/History/Layout/DetailsLayout.vue";
 interface Props {
     dsc: HDCASummary;
     writeable: boolean;
+    /** The annotation of the collection; only a collection that is a history item has one. */
+    annotation?: string;
+    showAnnotation?: boolean;
 }
 
-defineProps<Props>();
+withDefaults(defineProps<Props>(), {
+    annotation: undefined,
+    showAnnotation: false,
+});
 
 const emit = defineEmits<{
     (e: "update:dsc", changes: Partial<HDCASummary>): void;
@@ -23,7 +29,8 @@ const emit = defineEmits<{
         :tags="dsc.tags"
         :writeable="writeable"
         :renameable="writeable"
-        :show-annotation="false"
+        :annotation="annotation"
+        :show-annotation="showAnnotation"
         @save="emit('update:dsc', $event)">
         <template v-slot:description>
             <CollectionDescription :hdca="dsc" />

@@ -33,6 +33,7 @@ from galaxy.model.dataset_collections.structure import (
     get_structure,
     tool_output_to_structure,
 )
+from galaxy.model.item_attrs import new_item_annotation
 from galaxy.schema.credentials import CredentialsContext
 from galaxy.tool_util.parameters.state import (
     JobInternalToolState,
@@ -548,6 +549,22 @@ class ExecutionTracker:
             tag_handler.apply_item_tags(user=user, item=hdca, tags_str=tags_str, flush=False)
         for hdca in self.implicit_collections.values():
             tag_handler.apply_item_tags(user=user, item=hdca, tags_str=tags_str, flush=False)
+
+    def apply_annotation(self, sa_session, user, annotation: str) -> None:
+        """Annotate what this request adds to the history.
+
+        A mapped run is annotated on its implicit collections only: its datasets are hidden inside
+        them, and annotating each would store the text once per element.
+        """
+        if user is None:
+            # An annotation belongs to the user who wrote it.
+            return
+        items: list[model.HistoryDatasetAssociation | model.HistoryDatasetCollectionAssociation]
+        if self.collection_info is not None:
+            items = list(self.implicit_collections.values())
+        else:
+            items = [hda for _, hda in self.output_datasets] + [hdca for _, hdca in self.output_collections]
+        sa_session.add_all(new_item_annotation(user, item, annotation) for item in items)
 
     def request_completion_notification(self, user, history) -> None:
         if not (self.trans.app.config.enable_notification_system or self.trans.app.config.smtp_server):

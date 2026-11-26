@@ -1353,12 +1353,15 @@ class BaseDatasetPopulator(BasePopulator):
         preferred_object_store_id: str | None = None,
         tool_uuid: str | None = None,
         send_notification: bool = False,
+        annotation: str | None = None,
     ) -> Response:
         payload: dict[str, Any] = {
             "history_id": history_id,
             "inputs": inputs,
             "strict": strict,
         }
+        if annotation is not None:
+            payload["annotation"] = annotation
         if tool_id is not None:
             payload["tool_id"] = tool_id
         if tool_uuid is not None:

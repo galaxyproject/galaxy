@@ -1450,6 +1450,11 @@ class HDCADetailed(HDCASummary):
         None,
         description="Encoded ID for the ICJ object describing the collection of jobs corresponding to this collection",
     )
+    annotation: str | None = Field(
+        None,
+        title="Annotation",
+        description="The requesting user's annotation of this collection.",
+    )
     column_definitions: SampleSheetColumnDefinitions | None = Field(
         None,
         description="Column data associated with each element of this collection.",
@@ -2057,6 +2062,12 @@ class CreateHistoryPayload(Model):
         default=None,
         title="Name",
         description="The new history name.",
+    )
+    annotation: str | None = Field(
+        default=None,
+        max_length=MAX_ANNOTATION_SIZE,
+        title="Annotation",
+        description="An annotation for the new history; replaces the copied one when copying a history. Not applied when importing from an archive.",
     )
     history_id: DecodedDatabaseIdField | None = Field(
         default=None,

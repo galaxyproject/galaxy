@@ -56,6 +56,24 @@ export async function fetchCollectionSummary(params: { hdca_id: string }): Promi
     return data as HDCASummary;
 }
 
+/**
+ * Fetches the current user's annotation of a collection, without loading its elements.
+ * @param params.hdca_id The ID of the collection (HDCA).
+ */
+export async function fetchCollectionAnnotation(params: { hdca_id: string }): Promise<string | null> {
+    const { data, error } = await GalaxyApi().GET("/api/dataset_collections/{hdca_id}", {
+        params: {
+            path: params,
+            query: { view: "collection" },
+        },
+    });
+
+    if (error) {
+        rethrowSimple(error);
+    }
+    return "annotation" in data ? (data.annotation ?? null) : null;
+}
+
 export async function fetchCollectionElements(params: {
     /** The ID of the top level HDCA that associates this collection with the History it belongs to. */
     hdcaId: string;

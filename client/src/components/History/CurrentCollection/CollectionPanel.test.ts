@@ -9,6 +9,7 @@ import { reactive } from "vue";
 import type { DCESummary, HDASummary, HDCASummary, HistorySummary } from "@/api";
 import { useServerMock } from "@/api/client/__mocks__";
 
+import CollectionDetails from "./CollectionDetails.vue";
 import CollectionPanel from "./CollectionPanel.vue";
 import ListingLayout from "@/components/History/Layout/ListingLayout.vue";
 
@@ -19,7 +20,9 @@ const { server, http } = useServerMock();
 const NUM_ELEMENTS = 3;
 
 let elementsState = "running";
+let annotation: string | null = null;
 const fetchElementsSpy = vi.fn();
+const updateSpy = vi.fn();
 
 const history: HistorySummary = {
     id: "history-id",
@@ -110,8 +113,18 @@ describe("CollectionPanel", () => {
         vi.useFakeTimers();
         setActivePinia(createTestingPinia({ createSpy: vi.fn, stubActions: false }));
         elementsState = "running";
+        annotation = null;
         fetchElementsSpy.mockClear();
+        updateSpy.mockClear();
         server.use(
+            http.get("/api/dataset_collections/{hdca_id}", ({ response }) =>
+                response(200).json({ ...mockCollection(), elements: [], annotation }),
+            ),
+            http.put("/api/histories/{history_id}/contents/{type}s/{id}", async ({ request, response }) => {
+                const body = await request.json();
+                updateSpy(body);
+                return response(200).json({ ...mockCollection(), elements: [], annotation: body.annotation ?? null });
+            }),
             http.get("/api/dataset_collections/{hdca_id}/contents/{parent_id}", ({ response }) => {
                 fetchElementsSpy();
                 return response(200).json(Array.from({ length: NUM_ELEMENTS }, (_, i) => mockElement(i)));
@@ -155,5 +168,51 @@ describe("CollectionPanel", () => {
 
         expect(fetchElementsSpy).toHaveBeenCalledTimes(2);
         expect(renderedStates(wrapper)).toEqual(["ok", "ok", "ok"]);
+    });
+
+    it("shows the annotation of the opened collection", async () => {
+        annotation = "Reads after trimming";
+        const wrapper = mountPanel(mockCollection());
+        await waitForFetch();
+
+        const details = wrapper.findComponent(CollectionDetails);
+        expect(details.props("showAnnotation")).toBe(true);
+        expect(details.props("annotation")).toBe("Reads after trimming");
+    });
+
+    it("offers the annotation for editing only once it has loaded", async () => {
+        annotation = "Reads after trimming";
+        const wrapper = mountPanel(mockCollection());
+        const details = wrapper.findComponent(CollectionDetails);
+        // Saving from an editor opened now would replace an annotation the user has not seen.
+        expect(details.props("showAnnotation")).toBe(false);
+
+        await waitForFetch();
+        expect(details.props("showAnnotation")).toBe(true);
+    });
+
+    it("does not offer the annotation for editing when it could not be loaded", async () => {
+        server.use(
+            http.get("/api/dataset_collections/{hdca_id}", ({ response }) =>
+                response("5XX").json({ err_msg: "unavailable", err_code: 500 }, { status: 500 }),
+            ),
+        );
+        const wrapper = mountPanel(mockCollection());
+        await waitForFetch();
+
+        expect(wrapper.findComponent(CollectionDetails).props("showAnnotation")).toBe(false);
+    });
+
+    it("saves an edited annotation and shows it", async () => {
+        const wrapper = mountPanel(mockCollection());
+        await waitForFetch();
+        const details = wrapper.findComponent(CollectionDetails);
+        expect(details.props("annotation")).toBeUndefined();
+
+        details.vm.$emit("update:dsc", { annotation: "Reads after trimming" });
+        await waitForFetch();
+
+        expect(updateSpy).toHaveBeenCalledWith({ annotation: "Reads after trimming" });
+        expect(details.props("annotation")).toBe("Reads after trimming");
     });
 });

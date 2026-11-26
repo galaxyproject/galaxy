@@ -328,6 +328,10 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
         trans.app.security_agent.history_set_default_permissions(new_history)
         trans.sa_session.add(new_history)
         trans.sa_session.commit()
+        if payload.annotation is not None:
+            # After the commit, so that it replaces an annotation copied from the source history.
+            # An empty one is no annotation: it removes the copied one and stores nothing.
+            self.manager.annotate(new_history, payload.annotation or None, user=trans.user)
 
         # an anonymous user can only have one history
         if self.user_manager.is_anonymous(trans.user):
