@@ -10240,6 +10240,12 @@ export interface components {
              */
             errors?: components["schemas"]["DatasetErrorMessage"][] | null;
             /**
+             * Purge Tasks
+             * @description Background tasks purging the datasets. Wait for them to finish to know that the underlying files have been removed. Empty if purging finished during the request.
+             * @default []
+             */
+            purge_tasks: components["schemas"]["AsyncTaskResultSummary"][];
+            /**
              * Success Count
              * @description The number of datasets successfully processed.
              */
@@ -10279,6 +10285,15 @@ export interface components {
              * @default false
              */
             stop_job: boolean;
+        };
+        /** DeleteHistoryContentResult */
+        DeleteHistoryContentResult: {
+            /**
+             * Purge Tasks
+             * @description Background tasks purging the datasets. Wait for them to finish to know that the underlying files have been removed. Empty if purging finished during the request.
+             * @default []
+             */
+            purge_tasks: components["schemas"]["AsyncTaskResultSummary"][];
         };
         /** DeleteHistoryPayload */
         DeleteHistoryPayload: {
@@ -14033,6 +14048,12 @@ export interface components {
         HistoryContentBulkOperationResult: {
             /** Errors */
             errors: components["schemas"]["BulkOperationItemError"][];
+            /**
+             * Purge Tasks
+             * @description Background tasks purging the datasets. Wait for them to finish to know that the underlying files have been removed. Empty if purging finished during the request.
+             * @default []
+             */
+            purge_tasks: components["schemas"]["AsyncTaskResultSummary"][];
             /** Success Count */
             success_count: number;
         };
@@ -25198,7 +25219,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["DeleteHistoryContentResult"];
+                };
             };
             /** @description Request has been executed. */
             204: {
@@ -31202,7 +31225,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["DeleteHistoryContentResult"];
+                };
             };
             /** @description Request has been executed. */
             204: {
@@ -31622,7 +31647,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["DeleteHistoryContentResult"];
+                };
             };
             /** @description Request has been executed. */
             204: {

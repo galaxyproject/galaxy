@@ -11,6 +11,7 @@ from typing import (
 )
 
 from celery import chain
+from celery.result import AsyncResult
 from pydantic import (
     ConfigDict,
     Field,
@@ -711,10 +712,14 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
                 history,
                 filters,
             )
-        errors = self._apply_bulk_operation(contents, payload.operation, payload.params, trans)
+        errors, purge_tasks = self._apply_bulk_operation(contents, payload.operation, payload.params, trans)
         trans.sa_session.commit()
         success_count = len(contents) - len(errors)
-        return HistoryContentBulkOperationResult(success_count=success_count, errors=errors)
+        return HistoryContentBulkOperationResult(
+            success_count=success_count,
+            errors=errors,
+            purge_tasks=[async_task_summary(purge_task) for purge_task in purge_tasks],
+        )
 
     def validate(self, trans, history_id: DecodedDatabaseIdField, history_content_id: DecodedDatabaseIdField):
         """
@@ -741,18 +746,21 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
         id: DecodedDatabaseIdField,
         contents_type: HistoryContentType,
         payload: DeleteHistoryContentPayload,
-    ):
+    ) -> list[AsyncTaskResultSummary]:
         """
         Delete the history content with the given ``id`` and specified type (defaults to dataset)
+
+        Returns the tasks purging datasets in the background, if any.
         """
         if contents_type == HistoryContentType.dataset:
-            return self.__delete_dataset(trans, id, payload.purge, payload.stop_job)
+            purge_tasks = self.__delete_dataset(trans, id, payload.purge, payload.stop_job)
         elif contents_type == HistoryContentType.dataset_collection:
-            return self.dataset_collection_manager.delete(
+            purge_tasks = self.dataset_collection_manager.delete(
                 trans, "history", id, recursive=payload.recursive, purge=payload.purge
             )
         else:
             raise exceptions.UnknownContentsType(f"Unknown contents type: {contents_type}")
+        return [async_task_summary(purge_task) for purge_task in purge_tasks]
 
     def archive(
         self,
@@ -864,16 +872,16 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
             archive.write(file_path, archive_path)
         return archive
 
-    def __delete_dataset(self, trans, id: DecodedDatabaseIdField, purge: bool, stop_job: bool):
+    def __delete_dataset(self, trans, id: DecodedDatabaseIdField, purge: bool, stop_job: bool) -> list[AsyncResult]:
         hda = self.hda_manager.get_owned(id, trans.user, current_history=trans.history)
         self.history_manager.error_unless_mutable(hda.history)
         self.hda_manager.error_if_uploading(hda)
 
         if purge:
-            return self.hda_manager.purge(hda, user=trans.user)
-        else:
-            self.hda_manager.delete(hda, stop_job=stop_job)
-        return None
+            purge_task = self.hda_manager.purge(hda, user=trans.user)
+            return [purge_task] if purge_task is not None else []
+        self.hda_manager.delete(hda, stop_job=stop_job)
+        return []
 
     def __update_dataset_collection(self, trans, id: DecodedDatabaseIdField, payload: dict[str, Any]):
         return self.dataset_collection_manager.update(trans, "history", id, payload)
@@ -1334,29 +1342,20 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
         operation: HistoryContentItemOperation,
         params: Optional[AnyBulkOperationParams],
         trans: ProvidesHistoryContext,
-    ) -> list[BulkOperationItemError]:
+    ) -> tuple[list[BulkOperationItemError], list[AsyncResult]]:
         errors: list[BulkOperationItemError] = []
+        purge_tasks: list[AsyncResult] = []
         for item in contents:
-            error = self._apply_operation_to_item(operation, item, params, trans)
-            if error:
-                errors.append(error)
-        return errors
-
-    def _apply_operation_to_item(
-        self,
-        operation: HistoryContentItemOperation,
-        item: "HistoryItem",
-        params: Optional[AnyBulkOperationParams],
-        trans: ProvidesHistoryContext,
-    ) -> Optional[BulkOperationItemError]:
-        try:
-            self.item_operator.apply(operation, item, params, trans)
-            return None
-        except Exception as exc:
-            return BulkOperationItemError(
-                item=EncodedHistoryContentItem(id=item.id, history_content_type=item.history_content_type),
-                error=str(exc),
-            )
+            try:
+                purge_tasks.extend(self.item_operator.apply(operation, item, params, trans))
+            except Exception as exc:
+                errors.append(
+                    BulkOperationItemError(
+                        item=EncodedHistoryContentItem(id=item.id, history_content_type=item.history_content_type),
+                        error=str(exc),
+                    )
+                )
+        return errors, purge_tasks
 
     def _get_contents_by_item_list(
         self, trans, history: History, items: list[HistoryContentItem]
@@ -1404,7 +1403,6 @@ class HistoryItemOperator:
             HistoryContentItemOperation.unhide: lambda item, params, trans: self._unhide(item),
             HistoryContentItemOperation.delete: lambda item, params, trans: self._delete(item, trans),
             HistoryContentItemOperation.undelete: lambda item, params, trans: self._undelete(item),
-            HistoryContentItemOperation.purge: lambda item, params, trans: self._purge(item, trans),
             HistoryContentItemOperation.change_datatype: lambda item, params, trans: self._change_datatype(
                 item, params, trans
             ),
@@ -1419,8 +1417,12 @@ class HistoryItemOperator:
         item: "HistoryItem",
         params: Optional[AnyBulkOperationParams],
         trans: ProvidesHistoryContext,
-    ):
+    ) -> list[AsyncResult]:
+        """Apply the operation to the item, returning the tasks purging datasets in the background, if any."""
+        if operation == HistoryContentItemOperation.purge:
+            return self._purge(item, trans)
         self._operation_map[operation](item, params, trans)
+        return []
 
     def _get_item_manager(self, item: "HistoryItem"):
         if isinstance(item, HistoryDatasetAssociation):
@@ -1451,14 +1453,15 @@ class HistoryItemOperator:
         # or when the item was purged as undelete will not trigger an update
         item.update()
 
-    def _purge(self, item: "HistoryItem", trans: ProvidesHistoryContext):
+    def _purge(self, item: "HistoryItem", trans: ProvidesHistoryContext) -> list[AsyncResult]:
         if getattr(item, "purged", False):
             # TODO: remove this `update` when we can properly track the operation results to notify the history
             item.update()
-            return
+            return []
         if isinstance(item, HistoryDatasetCollectionAssociation):
             return self.dataset_collection_manager.delete(trans, "history", item.id, recursive=True, purge=True)
-        self.hda_manager.purge(item, flush=True, user=trans.user)
+        purge_task = self.hda_manager.purge(item, flush=True, user=trans.user)
+        return [purge_task] if purge_task is not None else []
 
     def _change_datatype(
         self, item: "HistoryItem", params: ChangeDatatypeOperationParams, trans: ProvidesHistoryContext

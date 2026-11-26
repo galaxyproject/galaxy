@@ -28,10 +28,7 @@ from tusclient import client
 from galaxy import model
 from galaxy.model.base import ensure_object_added_to_session
 from galaxy_test.base import api_asserts
-from galaxy_test.base.populators import (
-    DatasetPopulator,
-    wait_on,
-)
+from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver import integration_util
 
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
@@ -105,8 +102,8 @@ class TestJobFilesIntegration(integration_util.IntegrationTestCase):
             history_id, content_id=self._app.security.encode_id(input_hda.id), purge=True, wait_for_purge=True
         )
         assert delete_response.status_code == 200
-        # wait_for_purge sees the HDA as purged; the purge task removes the file after that.
-        wait_on(lambda: None if os.path.exists(input_file_path) else True, "input file to be removed")
+        # wait_for_purge waits for the purge task, which removes the file.
+        assert not os.path.exists(input_file_path)
         response = requests.get(get_url, params=data)
         assert response.status_code == 400
         assert response.json()["err_msg"] == "Input dataset(s) for job have been purged."

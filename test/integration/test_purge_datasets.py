@@ -4,10 +4,7 @@ from typing import (
     Optional,
 )
 
-from galaxy_test.base.populators import (
-    DatasetPopulator,
-    wait_on,
-)
+from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver import integration_util
 
 
@@ -45,12 +42,8 @@ class TestPurgeDatasetsIntegration(integration_util.IntegrationTestCase):
         # Ensure dataset is purged
         self.dataset_populator.wait_for_purge(self.test_history_id, hda_id)
 
-        # The HDA is committed as purged before the celery task removes the
-        # file, so the file may still exist for a moment.
-        wait_on(
-            lambda: None if self._file_exists_on_disk(dataset_file) else True,
-            "dataset file to be removed from disk",
-        )
+        # Ensure dataset file is removed from disk after purge
+        assert not self._file_exists_on_disk(dataset_file)
 
     def _purge_hda_using_batch(self, hda_id):
         payload = {
@@ -63,6 +56,7 @@ class TestPurgeDatasetsIntegration(integration_util.IntegrationTestCase):
         self._assert_status_code_is_ok(purge_response)
         purge_result = purge_response.json()
         assert purge_result["success_count"] == 1
+        self._wait_on_purge_tasks(purge_result)
 
     def _purge_hda_using_bulk(self, hda_id):
         payload = {
@@ -82,6 +76,12 @@ class TestPurgeDatasetsIntegration(integration_util.IntegrationTestCase):
         self._assert_status_code_is_ok(purge_response)
         purge_result = purge_response.json()
         assert purge_result["success_count"] == 1
+        self._wait_on_purge_tasks(purge_result)
+
+    def _wait_on_purge_tasks(self, purge_result: dict):
+        # The HDA is marked purged before the purge task removes its file.
+        assert len(purge_result["purge_tasks"]) == 1
+        self.dataset_populator.wait_on_purge_tasks(purge_result)
 
     def _get_underlying_dataset_on_disk(self, hda_id: str) -> Optional[str]:
         detailed_response = self._get(f"datasets/{hda_id}", admin=True).json()

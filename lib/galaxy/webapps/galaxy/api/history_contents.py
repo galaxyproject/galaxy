@@ -44,6 +44,7 @@ from galaxy.schema.schema import (
     DatasetAssociationRoles,
     DatasetSourceType,
     DeleteHistoryContentPayload,
+    DeleteHistoryContentResult,
     HistoryContentBulkOperationPayload,
     HistoryContentBulkOperationResult,
     HistoryContentsArchiveDryRunResult,
@@ -147,6 +148,7 @@ StopJobQueryParam = Query(
 CONTENT_DELETE_RESPONSES = {
     202: {
         "description": "Request accepted, processing will finish later.",
+        "model": DeleteHistoryContentResult,
     },
     204: {
         "description": "Request has been executed.",
@@ -995,13 +997,15 @@ class FastAPIHistoryContents:
         payload.purge = payload.purge or purge is True
         payload.recursive = payload.recursive or recursive is True
         payload.stop_job = payload.stop_job or stop_job is True
-        if self.service.delete(
+        purge_tasks = self.service.delete(
             trans,
             id=id,
             contents_type=type,
             payload=payload,
-        ):
-            return Response(status_code=status.HTTP_202_ACCEPTED)
+        )
+        if purge_tasks:
+            response.status_code = status.HTTP_202_ACCEPTED
+            return DeleteHistoryContentResult(purge_tasks=purge_tasks)
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     @router.get(

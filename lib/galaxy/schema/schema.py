@@ -1379,6 +1379,14 @@ class BulkOperationItemError(Model):
 class HistoryContentBulkOperationResult(Model):
     success_count: int
     errors: list[BulkOperationItemError]
+    purge_tasks: list["AsyncTaskResultSummary"] = Field(
+        default=[],
+        title="Purge Tasks",
+        description=(
+            "Background tasks purging the datasets. Wait for them to finish to know that the "
+            "underlying files have been removed. Empty if purging finished during the request."
+        ),
+    )
 
 
 class UpdateHistoryContentsPayload(Model):
@@ -3967,6 +3975,20 @@ class AsyncTaskResultSummary(Model):
     queue: Optional[str] = Field(
         None,
         title="Queue of task being done derived from Celery AsyncResult",
+    )
+
+
+HistoryContentBulkOperationResult.model_rebuild()
+
+
+class DeleteHistoryContentResult(Model):
+    purge_tasks: list[AsyncTaskResultSummary] = Field(
+        default=[],
+        title="Purge Tasks",
+        description=(
+            "Background tasks purging the datasets. Wait for them to finish to know that the "
+            "underlying files have been removed. Empty if purging finished during the request."
+        ),
     )
 
 

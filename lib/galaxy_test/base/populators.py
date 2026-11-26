@@ -866,8 +866,14 @@ class BaseDatasetPopulator(BasePopulator):
             delete_response = self._delete(dataset_url, {"purge": purge, "stop_job": stop_job}, json=True)
         delete_response.raise_for_status()
         if wait_for_purge and delete_response.status_code == 202:
+            self.wait_on_purge_tasks(delete_response.json())
             return self.wait_for_purge(history_id, content_id)
         return delete_response
+
+    def wait_on_purge_tasks(self, purge_result: dict) -> None:
+        """Wait for the purge tasks of a delete or bulk purge response, which finish after the dataset is marked purged."""
+        for purge_task in purge_result["purge_tasks"]:
+            assert self.wait_on_task_id(purge_task["id"]), f"Purge task {purge_task['id']} failed"
 
     def wait_for_purge(self, history_id, content_id):
         dataset_url = f"histories/{history_id}/contents/{content_id}"
