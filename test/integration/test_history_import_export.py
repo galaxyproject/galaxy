@@ -212,6 +212,29 @@ class TestImportExportHistoryViaTasksIntegration(PosixFileSourceSetup, ImportExp
         self._assert_status_code_is(result_response, 500)
         assert "Cannot export history dataset" in result_response.json()["err_msg"]
 
+    def test_export_missing_dataset_as_discarded_with_ignore_errors(self):
+        history_name = f"for_export_ignore_errors_missing_{uuid4()}"
+        history_id = self.dataset_populator.new_history(history_name)
+        hda = self.dataset_populator.new_dataset(history_id, wait=True)
+        unlink(hda["file_name"])
+        assert not os.path.exists(hda["file_name"])
+
+        model_store_format = "rocrate.zip"
+        target_uri = f"gxfiles://posix_test/history_ignore_errors_missing.{model_store_format}"
+        self.dataset_populator.export_history_to_uri_async(
+            history_id, target_uri, model_store_format, ignore_errors=True
+        )
+        self.dataset_populator.import_history_from_uri_async(target_uri, model_store_format)
+
+        imported_history = self._get("histories?limit=1").json()[0]
+        assert imported_history["id"] != history_id
+        assert imported_history["name"] == history_name
+        self.dataset_populator.wait_for_history(imported_history["id"])
+        history_contents = self.dataset_populator.get_history_contents(imported_history["id"])
+        assert len(history_contents) == 1
+        assert history_contents[0]["state"] == "discarded"
+        assert history_contents[0]["deleted"] is True
+
 
 class TestImportExportHistoryContentsViaTasksIntegration(IntegrationTestCase):
     dataset_populator: DatasetPopulator

@@ -781,6 +781,40 @@ def test_export_history_with_missing_hid(tmp_path):
         export_store.export_history(history)
 
 
+def test_export_history_missing_file_fails(tmp_path):
+    app = _mock_app()
+    u, history, d1, d2, j = _setup_simple_cat_job(app)
+    os.remove(d1.get_file_name())
+
+    with pytest.raises(Exception, match="Cannot export history dataset"):
+        with store.DirectoryModelExportStore(tmp_path, app=app, export_files="copy") as export_store:
+            export_store.export_history(history)
+
+
+def test_export_history_ignore_errors_discards_missing_files(tmp_path):
+    app = _mock_app()
+    u, history, d1, d2, j = _setup_simple_cat_job(app)
+    os.remove(d1.get_file_name())
+
+    with store.DirectoryModelExportStore(tmp_path, app=app, export_files="copy", ignore_errors=True) as export_store:
+        export_store.export_history(history)
+
+    datasets_attrs = json.loads((tmp_path / store.ATTRS_FILENAME_DATASETS).read_text())
+    attrs_by_hid = {attrs["hid"]: attrs for attrs in datasets_attrs}
+    assert attrs_by_hid[d1.hid]["state"] == model.Dataset.states.DISCARDED
+    assert "file_name" not in attrs_by_hid[d1.hid]
+    assert attrs_by_hid[d2.hid]["state"] == model.Dataset.states.OK
+    assert "file_name" in attrs_by_hid[d2.hid]
+
+    import_history = model.History(name="Test History for Import", user=u)
+    app.add_and_commit(import_history)
+    _perform_import_from_directory(tmp_path, app, u, import_history)
+    imported_by_hid = {hda.hid: hda for hda in import_history.datasets}
+    assert imported_by_hid[d1.hid].state == model.Dataset.states.DISCARDED
+    assert imported_by_hid[d1.hid].deleted
+    assert imported_by_hid[d2.hid].state == model.Dataset.states.OK
+
+
 def test_export_history_to_ro_crate(tmp_path):
     app = _mock_app()
     u, history, d1, d2, j = _setup_simple_cat_job(app)
