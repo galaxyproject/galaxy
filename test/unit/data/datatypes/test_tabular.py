@@ -16,6 +16,7 @@ from galaxy.datatypes.tabular import (
     column_index_header_cell,
     CSV,
     MAX_DATA_LINES,
+    Pileup,
     Tabular,
     TSV,
 )
@@ -201,15 +202,29 @@ def _dataset_with_metadata(tmp_path, datatype, text):
     return dataset
 
 
-def test_bed_preview_chunk_and_peek_name_the_same_columns(tmp_path):
-    bed = Bed()
-    dataset = _dataset_with_metadata(tmp_path, bed, "chr1\t100\t200\tfeature\t0\t+\n")
+@pytest.mark.parametrize(
+    "datatype, text, metadata_values, column_names",
+    [
+        (Bed(), "chr1\t100\t200\tfeature\t0\t+\n", {}, ["Chrom", "Start", "End", "Name", "Score", "Strand"]),
+        (
+            Pileup(),
+            "chr1\t100\tA\t3\t.,.\tIII\n",
+            {"chromCol": 1, "startCol": 2, "endCol": 2, "baseCol": 3},
+            ["Chrom", "Start", "Base", None, None, None],
+        ),
+    ],
+)
+def test_preview_chunk_and_peek_name_the_same_columns(tmp_path, datatype, text, metadata_values, column_names):
+    dataset = _dataset_with_metadata(tmp_path, datatype, text)
+    metadata = cast(Any, dataset.metadata)
+    for name, value in metadata_values.items():
+        setattr(metadata, name, value)
 
-    chunk = json.loads(bed.get_chunk(None, dataset, 0, 1024))
-    html = bed.display_peek(dataset)
+    chunk = json.loads(datatype.get_chunk(None, dataset, 0, 1024))
+    html = datatype.display_peek(dataset)
 
-    assert chunk["column_names"] == ["Chrom", "Start", "End", "Name", "Score", "Strand"]
-    peek_cells = "".join(column_index_header_cell(str(i + 1), name) for i, name in enumerate(chunk["column_names"]))
+    assert chunk["column_names"] == column_names
+    peek_cells = "".join(column_index_header_cell(str(i + 1), name) for i, name in enumerate(column_names))
     assert f"<tr>{peek_cells}</tr>" in html
 
 

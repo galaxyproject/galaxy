@@ -932,6 +932,7 @@ class Pileup(Tabular):
     file_ext = "pileup"
     line_class = "genomic coordinate"
     data_sources = {"data": "tabix"}
+    column_parameter_alias = {"chromCol": "Chrom", "startCol": "Start", "baseCol": "Base"}
 
     MetadataElement(name="chromCol", default=1, desc="Chrom column", param=metadata.ColumnParameter)
     MetadataElement(name="startCol", default=2, desc="Start column", param=metadata.ColumnParameter)
@@ -940,12 +941,6 @@ class Pileup(Tabular):
 
     def init_meta(self, dataset: HasMetadata, copy_from: Optional[HasMetadata] = None) -> None:
         super().init_meta(dataset, copy_from=copy_from)
-
-    def display_peek(self, dataset: DatasetProtocol) -> str:
-        """Returns formated html of peek"""
-        return self.make_html_table(
-            dataset, column_parameter_alias={"chromCol": "Chrom", "startCol": "Start", "baseCol": "Base"}
-        )
 
     def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
