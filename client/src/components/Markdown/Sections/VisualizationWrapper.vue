@@ -3,6 +3,8 @@ import { faExpand, faWindowMaximize } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed, ref } from "vue";
 
+import { useEmbed } from "@/composables/embed";
+
 import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import VisualizationFrame from "@/components/Visualizations/VisualizationFrame.vue";
@@ -24,6 +26,7 @@ const emit = defineEmits<{
     (e: "load"): void;
 }>();
 
+const embed = useEmbed();
 const errorMessage = ref("");
 const expand = ref(false);
 
@@ -42,6 +45,7 @@ const fixedHeight = computed(() =>
                 :title="props.title"
                 :config="props.config"
                 :name="props.name"
+                :embed="embed"
                 :style="fixedHeight"
                 @change="emit('change', $event)"
                 @load="emit('load')" />

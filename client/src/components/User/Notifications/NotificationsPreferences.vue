@@ -48,7 +48,7 @@ const categories = computed<NotificationCategory[]>(() =>
     ),
 );
 const showPreferences = computed(() => {
-    return !loading.value && config.value.enable_notification_system && notificationsPreferences.value;
+    return !loading.value && config.value?.enable_notification_system && notificationsPreferences.value;
 });
 
 async function getNotificationsPreferences() {
@@ -90,9 +90,9 @@ async function onTogglePushNotifications() {
 }
 
 watch(
-    () => config.value.enable_notification_system,
+    () => config.value?.enable_notification_system,
     () => {
-        if (config.value.enable_notification_system) {
+        if (config.value?.enable_notification_system) {
             getNotificationsPreferences();
         }
     },
@@ -112,7 +112,7 @@ function onChannelChange(category: NotificationCategory, channel: NotificationCh
     <section class="notifications-preferences">
         <BreadcrumbHeading v-if="props.embedded" :items="breadcrumbItems" />
 
-        <div v-if="config.enable_notification_system" v-localize class="notifications-preferences-description">
+        <div v-if="config?.enable_notification_system" v-localize class="notifications-preferences-description">
             You can manage notifications channels and preferences here.
         </div>
 
@@ -167,7 +167,7 @@ function onChannelChange(category: NotificationCategory, channel: NotificationCh
             Push notifications are not supported by this browser. You can still receive in-app notifications.
         </GAlert>
 
-        <div v-if="!loading && config.enable_notification_system" class="d-flex justify-content-center">
+        <div v-if="!loading && config?.enable_notification_system" class="d-flex justify-content-center">
             <AsyncButton :action="updateNotificationsPreferences" :icon="faSave" color="blue" size="medium">
                 <span v-localize>Save</span>
             </AsyncButton>
@@ -181,9 +181,17 @@ function onChannelChange(category: NotificationCategory, channel: NotificationCh
         margin-bottom: 1rem;
     }
 
+    // At most three columns, fewer when a card would get narrower than 15rem.
     .notifications-preferences-body {
-        display: flex;
-        justify-content: space-around;
+        --columns-gap: 1rem;
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(max(15rem, calc((100% - 2 * var(--columns-gap)) / 3)), 1fr));
+        gap: var(--columns-gap);
+        margin-bottom: 1rem;
+
+        .card-container {
+            margin: 0;
+        }
     }
 
     .push-notifications-notice {

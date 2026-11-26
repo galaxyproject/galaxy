@@ -1,4 +1,4 @@
-import { getLocalVue, suppressBootstrapVueWarnings } from "@tests/vitest/helpers";
+import { getLocalVue } from "@tests/vitest/helpers";
 import { DOMWrapper, mount } from "@vue/test-utils";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -52,7 +52,6 @@ const selectors = {
 
 describe("StatelessTags", () => {
     beforeEach(() => {
-        suppressBootstrapVueWarnings();
         onNewTagSeenMock.mockClear();
         toastWarning.mockClear();
         appRoot = document.createElement("div");
@@ -66,7 +65,7 @@ describe("StatelessTags", () => {
 
     it("shows tags", () => {
         const wrapper = mountWithProps({
-            value: ["tag_1", "tag_2", "tags:tag_3"],
+            modelValue: ["tag_1", "tag_2", "tags:tag_3"],
             disabled: true,
         });
 
@@ -81,7 +80,7 @@ describe("StatelessTags", () => {
 
     it("formats named tags", () => {
         const wrapper = mountWithProps({
-            value: ["name:tag_1", "tag_2", "name:tag_3"],
+            modelValue: ["name:tag_1", "tag_2", "name:tag_3"],
             disabled: true,
         });
 
@@ -128,6 +127,7 @@ describe("StatelessTags", () => {
 
         expect(onNewTagSeenMock.mock.calls.length).toBe(1);
         expect(onNewTagSeenMock.mock.results[0].value).toBe("new_tag");
+        expect(wrapper.emitted("update:modelValue")?.at(-1)?.[0]).toContain("new_tag");
     });
 
     it("warns about not allowed tags", async () => {
@@ -166,7 +166,7 @@ describe("StatelessTags", () => {
 
     it("hides too many tags", async () => {
         const wrapper = mountWithProps({
-            value: ["tag_1", "tag_2", "tag_3", "tag_4", "tag_5", "tag_6"],
+            modelValue: ["tag_1", "tag_2", "tag_3", "tag_4", "tag_5", "tag_6"],
             disabled: true,
             useToggleLing: true,
             maxVisibleTags: 4,

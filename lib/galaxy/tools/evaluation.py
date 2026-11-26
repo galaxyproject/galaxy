@@ -14,6 +14,7 @@ from typing import (
 )
 
 from boltons.iterutils import remap
+from cwl_utils.errors import WorkflowException
 from packaging.version import Version
 
 from galaxy import model
@@ -43,6 +44,10 @@ from galaxy.structured_app import (
 )
 from galaxy.tool_util.data import TabularToolDataTable
 from galaxy.tool_util.parameters import JobInternalToolState
+from galaxy.tool_util.parameters.convert import (
+    reference_data_runtime_json,
+    runtimeify,
+)
 from galaxy.tool_util.parser.output_objects import ToolOutput
 from galaxy.tool_util_models.parameters import ToolParameterBundleModel
 from galaxy.tool_util_models.tool_source import (
@@ -53,12 +58,22 @@ from galaxy.tool_util_models.tool_source import (
     YamlTemplateConfigFile,
 )
 from galaxy.tools.actions import determine_output_format
-from galaxy.tools.expressions import do_eval
+from galaxy.tools.expressions import (
+    do_eval,
+    expression_error_message,
+    ExpressionTemplateError,
+    ExpressionWorkerError,
+)
+from galaxy.tools.job_parameters import (
+    CHROM_INFO,
+    is_element_identifier_parameter,
+)
 from galaxy.tools.parameters import (
     visit_input_values,
     wrapped_json,
 )
 from galaxy.tools.parameters.basic import (
+    ColumnListParameter,
     DataCollectionToolParameter,
     DataToolParameter,
     ReferenceDataToolParameter,
@@ -69,7 +84,10 @@ from galaxy.tools.parameters.grouping import (
     Repeat,
     Section,
 )
-from galaxy.tools.runtime import setup_for_reference_data
+from galaxy.tools.runtime import (
+    setup_for_reference_data,
+    setup_for_runtimeify,
+)
 from galaxy.tools.wrappers import (
     DatasetCollectionWrapper,
     DatasetFilenameWrapper,
@@ -137,12 +155,30 @@ def _is_not_group_state_key(path, key, value) -> bool:
     return key not in _GROUP_STATE_KEYS
 
 
+def _reports_expression_error(exc: Exception, tool: "Tool") -> bool:
+    """Whether a failed JavaScript expression is reported to the user with its error message.
+
+    The message can quote values from the job's inputs, including dataset paths, so outside
+    user-defined tools it is only shown where users may see dataset paths anyway.
+    """
+    if not isinstance(exc, WorkflowException) or isinstance(exc.__cause__, ExpressionWorkerError):
+        return False
+    return tool.tool_type == "user_defined" or tool.app.config.expose_dataset_path
+
+
 def global_tool_logs(func, config_file: StrPath | None, action_str: str, tool: "Tool"):
     try:
         return func()
     except Exception as e:
         # capture and log parsing errors
         global_tool_errors.add_error(config_file, action_str, e)
+        if isinstance(e, ExpressionTemplateError):
+            # The job runner reports these to the user as they are; wrapping would hide the message.
+            raise
+        if _reports_expression_error(e, tool):
+            raise ExpressionTemplateError(
+                f"Error occurred while {action_str.lower()} for tool '{tool.id}': {expression_error_message(e)}"
+            ) from e
         raise ToolTemplatingException(
             f"Error occurred while {action_str.lower()} for tool '{tool.id}'",
             tool_id=tool.id,
@@ -201,6 +237,7 @@ class ToolEvaluator:
         incoming = self.tool.params_from_strings(incoming)
         if "__use_cached_job__" in incoming:
             self.use_cached_job = bool(incoming["__use_cached_job__"])
+        incoming = self._template_job_parameters(incoming)
 
         self.file_sources_dict = compute_environment.get_file_sources_dict()
 
@@ -255,6 +292,28 @@ class ToolEvaluator:
                 validated_tool_state=tool_state,
             )
 
+    def _template_job_parameters(self, incoming: dict) -> dict:
+        """Keep the job parameters that are tool inputs or that the tool's templates read."""
+        tool = self.tool
+        if tool.keeps_undeclared_job_parameters:
+            return incoming
+        # Job parameters are keyed by top-level input name. params_from_strings rebuilt the
+        # values of conditionals, sections and repeats from their declared inputs.
+        template_parameters = {}
+        other_parameters = []
+        for name, value in incoming.items():
+            if name in tool.inputs or name in tool.template_job_parameters or is_element_identifier_parameter(name):
+                template_parameters[name] = value
+            else:
+                other_parameters.append(name)
+        if other_parameters:
+            log.debug(
+                "Job parameters %s of tool '%s' are not tool inputs, not passing them to the templates.",
+                other_parameters,
+                tool.id,
+            )
+        return template_parameters
+
     def execute_tool_hooks(self, inp_data: InpDataDictT, out_data: OutDataDictT, incoming):
         # Certain tools require tasks to be completed prior to job execution
         # ( this used to be performed in the "exec_before_job" hook, but hooks are deprecated ).
@@ -290,9 +349,10 @@ class ToolEvaluator:
         if self._history:
             param_dict["__history_id__"] = self.app.security.encode_id(self._history.id)
         param_dict["__galaxy_url__"] = self.compute_environment.galaxy_url()
-        param_dict.update(self.tool.template_macro_params)
         # All parameters go into the param_dict
         param_dict.update(incoming)
+        # Template macros are tool text that is not sanitized, so they take precedence over job parameters.
+        param_dict.update(self.tool.template_macro_params)
 
         self.__populate_wrappers(param_dict, input_datasets, job_working_directory)
         self.__populate_input_dataset_wrappers(param_dict, input_datasets)
@@ -419,6 +479,9 @@ class ToolEvaluator:
         def validate_inputs(input, value, context, **kwargs):
             value = input.from_json(value, request_context, context)
             input.validate(value, request_context)
+            if isinstance(input, ColumnListParameter):
+                # A column selected by its option label is evaluated as the column number.
+                return value
 
         visit_input_values(self.tool.inputs, incoming, validate_inputs)
 
@@ -749,7 +812,7 @@ class ToolEvaluator:
         Note: this method follows the style of the similar populate calls, in that param_dict is modified in-place.
         """
         # chromInfo is a filename, do not sanitize it.
-        skip = ["chromInfo"] + list(self.tool.template_macro_params.keys())
+        skip = [CHROM_INFO] + list(self.tool.template_macro_params.keys())
         if not self.tool or not self.tool.options or self.tool.options.sanitize:
             for key, value in list(param_dict.items()):
                 if key not in skip:
@@ -1156,9 +1219,6 @@ class UserToolEvaluator(ToolEvaluator):
         adapt_reference_data = setup_for_reference_data(self.app, compute_environment, self.tool.tool_source.trusted)
         hda_references: list[model.HistoryDatasetAssociation]
         if validated_tool_state is not None:
-            from galaxy.tool_util.parameters.convert import runtimeify
-            from galaxy.tools.runtime import setup_for_runtimeify
-
             # Get input collections from job for collection parameter support
             input_dataset_collections: dict[
                 str, model.HistoryDatasetCollectionAssociation | model.DatasetCollectionElement
@@ -1198,9 +1258,7 @@ class UserToolEvaluator(ToolEvaluator):
             def resolve_reference_data(input, value, **kwargs):
                 if not isinstance(input, ReferenceDataToolParameter) or not value:
                     return None
-                if input.multiple and isinstance(value, list):
-                    return [adapt_reference_data(input.table_name, v).model_dump(by_alias=True) for v in value]
-                return adapt_reference_data(input.table_name, value).model_dump(by_alias=True)
+                return reference_data_runtime_json(adapt_reference_data, input.table_name, input.multiple, value)
 
             if self.tool.has_data_table:
                 visit_input_values(self.tool.inputs, incoming, resolve_reference_data)
@@ -1265,3 +1323,7 @@ class RemoteToolEvaluator(ToolEvaluator):
             self.environment_variables,
             self.interactivetools,
         )
+
+
+class RemoteUserToolEvaluator(RemoteToolEvaluator, UserToolEvaluator):
+    """RemoteToolEvaluator for tools that declare ``base_command`` or ``shell_command``."""

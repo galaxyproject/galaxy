@@ -43,7 +43,7 @@ const showAdvancedSearch = ref(false);
 
     <DataDialogSearch
         v-else
-        :value="props.filter"
+        :model-value="props.filter"
         :title="props.placeholder"
-        @input="(v: string) => emit('update:filter', v)" />
+        @update:model-value="(v: string) => emit('update:filter', v)" />
 </template>

@@ -1,5 +1,5 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue } from "@tests/vitest/helpers";
+import { getLocalVue, withPlugins } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
@@ -59,10 +59,7 @@ function mountStep(stepOverrides: Record<string, unknown> = {}) {
             validationScrollTo: [],
             historyId: "history_id",
         },
-        global: {
-            ...globalConfig,
-            plugins: [...(globalConfig.plugins ?? []), pinia],
-        },
+        global: withPlugins(globalConfig, pinia),
     });
 }
 

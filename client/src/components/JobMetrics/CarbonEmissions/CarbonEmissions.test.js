@@ -1,14 +1,13 @@
-import { getLocalVue } from "@tests/vitest/helpers";
+import { createTestRouter, getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import { describe, expect, it } from "vitest";
-import { createMemoryHistory, createRouter } from "vue-router";
 
 import { worldwideCarbonIntensity, worldwidePowerUsageEffectiveness } from "./carbonEmissionConstants.js";
 
 import CarbonEmissions from "./CarbonEmissions.vue";
 
 const localVue = getLocalVue();
-const router = createRouter({ history: createMemoryHistory(), routes: [] });
+const router = createTestRouter();
 
 const oneGibibyteMemoryInMebibyte = 1024;
 const oneHourInSeconds = 3600;

@@ -10,17 +10,41 @@ import StateUpgradeModal from "./StateUpgradeModal.vue";
 
 const MODAL_CONTENT_SELECTOR = '[data-description="workflow state upgrade modal content"]';
 
+function upgradeMessage(overrides: Partial<UpgradeMessage> = {}): UpgradeMessage {
+    return {
+        stepIndex: "2",
+        name: "step name",
+        details: ["my message 1", "my message 2"],
+        iconType: "",
+        label: "",
+        ...overrides,
+    };
+}
+
 describe("StateUpgradeModal.vue", () => {
     let wrapper: VueWrapper;
 
-    async function mountWith(stateMessages: UpgradeMessage[]) {
+    async function mountWith(stateMessages: UpgradeMessage[], filledDefaults: UpgradeMessage[] = []) {
         wrapper = mount(StateUpgradeModal as object, {
             propsData: {
                 stateMessages,
+                filledDefaults,
             },
         });
         await nextTick();
     }
+
+    const FILLED = '[data-description="workflow state upgrade filled defaults"]';
+    const REVIEW = '[data-description="workflow state upgrade review"]';
+    const filledDefaults = [
+        upgradeMessage({
+            stepIndex: "1",
+            name: "FastQC",
+            details: ["Default for 'Adapter list': no value.", "Default for 'Kmers': '7'."],
+        }),
+        upgradeMessage({ stepIndex: "4", name: "MultiQC", details: ["Default for 'Report title': no value."] }),
+    ];
+    const toReview = [upgradeMessage({ name: "step", details: ["Tool version changed"] })];
 
     it("should not render if there are no messages", async () => {
         const stateMessages: UpgradeMessage[] = [];
@@ -29,25 +53,13 @@ describe("StateUpgradeModal.vue", () => {
     });
 
     it("should render if there are messages", async () => {
-        const stateMessages = [
-            {
-                stepIndex: 2,
-                name: "step name",
-                details: ["my message 1", "my message 2"],
-            },
-        ] as unknown as UpgradeMessage[];
+        const stateMessages = [upgradeMessage()];
         await mountWith(stateMessages);
         expect(wrapper.find(MODAL_CONTENT_SELECTOR).exists()).toBeTruthy();
     });
 
     async function mountSomeInitialMessagesAndDismiss() {
-        const stateMessages = [
-            {
-                stepIndex: 2,
-                name: "step name",
-                details: ["my message 1", "my message 2"],
-            },
-        ] as unknown as UpgradeMessage[];
+        const stateMessages = [upgradeMessage()];
         await mountWith(stateMessages);
 
         // Close the modal by dispatching a "close" event on the dialog element
@@ -60,13 +72,7 @@ describe("StateUpgradeModal.vue", () => {
 
     it("should re-render when passed new messages", async () => {
         await mountSomeInitialMessagesAndDismiss();
-        const stateMessagesNew = [
-            {
-                stepIndex: 3,
-                name: "step name",
-                details: ["my message 1", "my message 2"],
-            },
-        ] as unknown as UpgradeMessage[];
+        const stateMessagesNew = [upgradeMessage({ stepIndex: "3" })];
         await wrapper.setProps({
             stateMessages: stateMessagesNew,
         });
@@ -89,9 +95,53 @@ describe("StateUpgradeModal.vue", () => {
         vi.mocked(sanitizeHtml).mockImplementation((html) => `<span class="sanitized">${html}</span>`);
         const detail =
             'Tool version changed, see <a href="https://toolshed.g2.bx.psu.edu" target="_blank">the Tool Shed</a>';
-        await mountWith([{ stepIndex: 1, name: "step", details: [detail] }] as unknown as UpgradeMessage[]);
+        await mountWith([upgradeMessage({ stepIndex: "1", name: "step", details: [detail] })]);
 
         expect(sanitizeHtml).toHaveBeenCalledWith(detail, "links");
         expect(wrapper.find(".workflow-state-upgrade-step-details .sanitized a").exists()).toBe(true);
+    });
+
+    it("summarizes filled defaults, collapsed, when there is nothing to review", async () => {
+        await mountWith([], filledDefaults);
+        const filled = wrapper.find(FILLED);
+        expect(wrapper.find(REVIEW).exists()).toBe(false);
+        expect(filled.text()).toContain("Galaxy filled in 3 default values in 2 steps");
+        expect(wrapper.text()).toContain("Default values filled in");
+        const toggle = filled.find('[data-description="workflow state upgrade filled defaults toggle"]');
+        expect(toggle.attributes("aria-pressed")).toBe("false");
+        expect(toggle.text()).toContain("Show values");
+
+        await toggle.trigger("click");
+        expect(toggle.attributes("aria-pressed")).toBe("true");
+        expect(toggle.text()).toContain("Hide values");
+    });
+
+    it("keeps problems to review separate from filled defaults", async () => {
+        await mountWith(toReview, filledDefaults);
+        expect(wrapper.text()).toContain("Issues loading this workflow");
+        expect(wrapper.find(REVIEW).text()).toContain("Tool version changed");
+        expect(wrapper.find(REVIEW).text()).not.toContain("Adapter list");
+        expect(wrapper.find(FILLED).exists()).toBe(true);
+    });
+
+    it.each([
+        ["Accept", [], filledDefaults, 1],
+        ["Accept defaults", toReview, filledDefaults, 1],
+        ["OK", toReview, [], undefined],
+    ])("closes on %s and reports acceptance only for filled defaults", async (label, review, filled, accepted) => {
+        await mountWith(review, filled);
+        const ok = wrapper.find('[data-description="workflow state upgrade modal ok"]');
+        expect(ok.text()).toBe(label);
+        await ok.trigger("click");
+        expect(wrapper.find(MODAL_CONTENT_SELECTOR).exists()).toBe(false);
+        expect(wrapper.emitted("accept")?.length).toBe(accepted);
+    });
+
+    it("does not report acceptance when closed without Accept", async () => {
+        await mountWith([], filledDefaults);
+        wrapper.find("dialog").element.dispatchEvent(new Event("close"));
+        await nextTick();
+        expect(wrapper.find(MODAL_CONTENT_SELECTOR).exists()).toBe(false);
+        expect(wrapper.emitted("accept")).toBeUndefined();
     });
 });

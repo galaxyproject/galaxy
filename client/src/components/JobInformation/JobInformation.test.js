@@ -1,7 +1,7 @@
 import "@tests/vitest/mockHelpPopovers";
 
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue } from "@tests/vitest/helpers";
+import { getLocalVue, withPlugins } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { http as mswHttp } from "msw";
@@ -66,10 +66,7 @@ describe("JobInformation/JobInformation.vue", () => {
         };
         wrapper = mount(JobInformation, {
             props: propsData,
-            global: {
-                ...localVue,
-                plugins: [...(localVue.plugins ?? []), createTestingPinia({ createSpy: vi.fn, stubActions: false })],
-            },
+            global: withPlugins(localVue, createTestingPinia({ createSpy: vi.fn, stubActions: false })),
         });
         await flushPromises();
         jobInfoTable = wrapper.find("#job-information");

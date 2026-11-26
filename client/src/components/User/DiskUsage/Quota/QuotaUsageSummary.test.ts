@@ -1,6 +1,6 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getFakeStorage } from "@tests/test-data";
-import { getLocalVue } from "@tests/vitest/helpers";
+import { getLocalVue, withPlugins } from "@tests/vitest/helpers";
 import { mount, shallowMount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { describe, expect, it, vi } from "vitest";
@@ -89,7 +89,7 @@ describe("QuotaUsageSummary.vue", () => {
             const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
             const wrapper = mount(QuotaUsageSummary as object, {
                 props: { quotaUsages },
-                global: { plugins: [pinia] },
+                global: withPlugins(localVue, pinia),
             });
             await flushPromises();
             return wrapper.findAll(".storage-source-label").map((label) => label.text());

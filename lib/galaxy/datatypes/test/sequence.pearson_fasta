@@ -1,0 +1,8 @@
+;~ fhr: 0.3
+;~ title: example sequences
+;~ organism: Homo sapiens
+>seq1 first record
+ACGTACGTACGTACGT
+ACGTAC
+>seq2 second record
+TTGGCCAA

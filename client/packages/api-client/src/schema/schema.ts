@@ -6909,6 +6909,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/widgets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Lists the widgets this Galaxy serves
+         * @description **Warning**: This API is unstable and may change without notice.
+         *
+         *     Widgets are interactive views of single resources that respect Galaxy's authorization. Hiding actions in a widget is a presentation choice, not an access control. Any origin may embed widgets that support public embedding while their resource is published or accessible via link; other widgets only Galaxy itself and the origins in `widgets_allowed_origins`. `/widgets/` serves the widgets app for any path, so a widget this Galaxy lacks still loads, showing only an error inside the page. Consumers check this list for the widgets and parameters an instance supports instead of hardcoding routes per Galaxy version.
+         */
+        get: operations["index_api_widgets_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/workflow_landings": {
         parameters: {
             query?: never;
@@ -8188,6 +8210,11 @@ export interface components {
              * @description Explanation of the agent's reasoning
              */
             reasoning?: string | null;
+            /**
+             * Sources
+             * @description Verified sources behind the response
+             */
+            sources?: components["schemas"]["SourceCitation"][];
             /**
              * Suggestions
              * @description Actionable suggestions
@@ -18314,7 +18341,7 @@ export interface components {
          * InvocationSortByEnum
          * @enum {string}
          */
-        InvocationSortByEnum: "create_time" | "update_time" | "None";
+        InvocationSortByEnum: "create_time" | "update_time";
         /**
          * InvocationState
          * @enum {string}
@@ -19219,10 +19246,17 @@ export interface components {
             rerun_remap_job_id?: string | null;
             /**
              * Send Email Notification
-             * @description TODO
+             * @deprecated
+             * @description Legacy alias for send_notification. Delivery follows the user's tool notification preferences.
              * @default false
              */
             send_email_notification: boolean;
+            /**
+             * Send Notification
+             * @description Notify on completion using the user's channel preferences.
+             * @default false
+             */
+            send_notification: boolean;
             /**
              * Strict
              * @description Turn on strict validation of the inputs that drops support for some inconsistent legacy behavior.
@@ -20880,6 +20914,8 @@ export interface components {
                 | components["schemas"]["MessageNotificationContent"]
                 | components["schemas"]["NewSharedItemNotificationContent"]
                 | components["schemas"]["StorageOperationNotificationContent"]
+                | components["schemas"]["WorkflowCompletionNotificationContent"]
+                | components["schemas"]["ToolCompletionNotificationContent"]
                 | components["schemas"]["ToolInstallationRequestCreateContent"]
                 | components["schemas"]["BroadcastNotificationContent"];
             /**
@@ -20970,6 +21006,8 @@ export interface components {
                 | components["schemas"]["MessageNotificationContent"]
                 | components["schemas"]["NewSharedItemNotificationContent"]
                 | components["schemas"]["StorageOperationNotificationContent"]
+                | components["schemas"]["WorkflowCompletionNotificationContent"]
+                | components["schemas"]["ToolCompletionNotificationContent"]
                 | components["schemas"]["ToolInstallationRequestNotificationContent"]
                 | components["schemas"]["BroadcastNotificationContent"];
             /**
@@ -22204,7 +22242,13 @@ export interface components {
          *     displayed in the notification preferences.
          * @enum {string}
          */
-        PersonalNotificationCategory: "message" | "new_shared_item" | "storage_operation" | "tool_installation_request";
+        PersonalNotificationCategory:
+            | "message"
+            | "new_shared_item"
+            | "storage_operation"
+            | "tool_installation_request"
+            | "workflow_execution_completed"
+            | "tool_execution_completed";
         /** PluginAspectStatus */
         PluginAspectStatus: {
             /** Message */
@@ -24451,6 +24495,27 @@ export interface components {
              */
             user_id?: string | null;
         };
+        /**
+         * SourceCitation
+         * @description A source an agent drew on, taken from what its tools returned rather than model-written text.
+         */
+        SourceCitation: {
+            /**
+             * Source Type
+             * @description Kind of source, e.g. 'gtn_tutorial' or 'gtn_faq'
+             */
+            source_type: string;
+            /**
+             * Title
+             * @description Title of the source
+             */
+            title: string;
+            /**
+             * Url
+             * @description URL of the source
+             */
+            url: string;
+        };
         /** SplitUpPairedDataLogEntry */
         SplitUpPairedDataLogEntry: {
             /** Message */
@@ -25557,7 +25622,7 @@ export interface components {
             compare?: components["schemas"]["OutputCompareType"] | null;
             /**
              * Decompress
-             * @description If true, decompress files before comparison. Applies to assertions expressed with `assert_contents` or `compare` set to anything but `sim_size`. Useful for testing compressed outputs that are non-deterministic despite having deterministic decompressed contents. By default, only files compressed with bz2, gzip and zip are automatically decompressed.
+             * @description If true, decompress files before comparison. Applies to assertions expressed with `assert_contents`, to `md5` and `checksum`, and to `compare` set to anything but `sim_size`. Useful for testing compressed outputs that are non-deterministic despite having deterministic decompressed contents. By default, only files compressed with bz2, gzip and zip are automatically decompressed. The result of combining `decompress` with `md5` or `checksum` on an archive with more than one member is undefined.
              */
             decompress?: boolean | null;
             /**
@@ -25640,7 +25705,7 @@ export interface components {
             compare?: components["schemas"]["OutputCompareType"] | null;
             /**
              * Decompress
-             * @description If true, decompress files before comparison. Applies to assertions expressed with `assert_contents` or `compare` set to anything but `sim_size`. Useful for testing compressed outputs that are non-deterministic despite having deterministic decompressed contents. By default, only files compressed with bz2, gzip and zip are automatically decompressed.
+             * @description If true, decompress files before comparison. Applies to assertions expressed with `assert_contents`, to `md5` and `checksum`, and to `compare` set to anything but `sim_size`. Useful for testing compressed outputs that are non-deterministic despite having deterministic decompressed contents. By default, only files compressed with bz2, gzip and zip are automatically decompressed. The result of combining `decompress` with `md5` or `checksum` on an archive with more than one member is undefined.
              */
             decompress?: boolean | null;
             /**
@@ -25779,7 +25844,7 @@ export interface components {
             compare?: components["schemas"]["OutputCompareType"] | null;
             /**
              * Decompress
-             * @description If true, decompress files before comparison. Applies to assertions expressed with `assert_contents` or `compare` set to anything but `sim_size`. Useful for testing compressed outputs that are non-deterministic despite having deterministic decompressed contents. By default, only files compressed with bz2, gzip and zip are automatically decompressed.
+             * @description If true, decompress files before comparison. Applies to assertions expressed with `assert_contents`, to `md5` and `checksum`, and to `compare` set to anything but `sim_size`. Useful for testing compressed outputs that are non-deterministic despite having deterministic decompressed contents. By default, only files compressed with bz2, gzip and zip are automatically decompressed. The result of combining `decompress` with `md5` or `checksum` on an archive with more than one member is undefined.
              */
             decompress?: boolean | null;
             /**
@@ -25862,7 +25927,7 @@ export interface components {
             compare?: components["schemas"]["OutputCompareType"] | null;
             /**
              * Decompress
-             * @description If true, decompress files before comparison. Applies to assertions expressed with `assert_contents` or `compare` set to anything but `sim_size`. Useful for testing compressed outputs that are non-deterministic despite having deterministic decompressed contents. By default, only files compressed with bz2, gzip and zip are automatically decompressed.
+             * @description If true, decompress files before comparison. Applies to assertions expressed with `assert_contents`, to `md5` and `checksum`, and to `compare` set to anything but `sim_size`. Useful for testing compressed outputs that are non-deterministic despite having deterministic decompressed contents. By default, only files compressed with bz2, gzip and zip are automatically decompressed. The result of combining `decompress` with `md5` or `checksum` on an archive with more than one member is undefined.
              */
             decompress?: boolean | null;
             /**
@@ -26009,6 +26074,40 @@ export interface components {
             )[];
             /** Value */
             value?: string | null;
+        };
+        /** ToolCompletionNotificationContent */
+        ToolCompletionNotificationContent: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            category: "tool_execution_completed";
+            /**
+             * Event
+             * @default completed
+             * @enum {string}
+             */
+            event: "needs_attention" | "completed";
+            /**
+             * Implicit Collection Jobs Id
+             * @description The encoded job group ID for a collection map-over.
+             */
+            implicit_collection_jobs_id?: string | null;
+            /**
+             * Job Id
+             * @description The encoded job ID for a single tool execution.
+             */
+            job_id?: string | null;
+            /**
+             * Message
+             * @description The message of the notification (supports Markdown).
+             */
+            message: string;
+            /**
+             * Subject
+             * @description The subject of the notification.
+             */
+            subject: string;
         };
         /** ToolDataDetails */
         ToolDataDetails: {
@@ -27244,9 +27343,23 @@ export interface components {
          *           },
          *           "enabled": true
          *         },
+         *         "tool_execution_completed": {
+         *           "channels": {
+         *             "email": false,
+         *             "push": true
+         *           },
+         *           "enabled": true
+         *         },
          *         "tool_installation_request": {
          *           "channels": {
          *             "email": true,
+         *             "push": true
+         *           },
+         *           "enabled": true
+         *         },
+         *         "workflow_execution_completed": {
+         *           "channels": {
+         *             "email": false,
          *             "push": true
          *           },
          *           "enabled": true
@@ -27713,9 +27826,23 @@ export interface components {
          *           },
          *           "enabled": true
          *         },
+         *         "tool_execution_completed": {
+         *           "channels": {
+         *             "email": false,
+         *             "push": true
+         *           },
+         *           "enabled": true
+         *         },
          *         "tool_installation_request": {
          *           "channels": {
          *             "email": true,
+         *             "push": true
+         *           },
+         *           "enabled": true
+         *         },
+         *         "workflow_execution_completed": {
+         *           "channels": {
+         *             "email": false,
          *             "push": true
          *           },
          *           "enabled": true
@@ -27750,6 +27877,8 @@ export interface components {
                 | components["schemas"]["MessageNotificationContent"]
                 | components["schemas"]["NewSharedItemNotificationContent"]
                 | components["schemas"]["StorageOperationNotificationContent"]
+                | components["schemas"]["WorkflowCompletionNotificationContent"]
+                | components["schemas"]["ToolCompletionNotificationContent"]
                 | components["schemas"]["ToolInstallationRequestNotificationContent"];
             /**
              * Create time
@@ -28694,6 +28823,65 @@ export interface components {
              * @example 0123456789ABCDEF
              */
             revision: string;
+        };
+        /** Widget */
+        Widget: {
+            /**
+             * Description
+             * @description What the widget shows.
+             */
+            description: string;
+            /**
+             * Identifier
+             * @description Identifier of the widget.
+             */
+            id: string;
+            /**
+             * Name
+             * @description Display name of the widget.
+             */
+            name: string;
+            /**
+             * Parameters Schema
+             * @description JSON Schema of the parameters object. Path parameters fill the braces in `path`, all others go in the query.
+             */
+            parameters_schema: {
+                [key: string]: unknown;
+            };
+            /**
+             * Path
+             * @description Path template relative to `<galaxy root>/widgets/`, with path parameters in braces.
+             */
+            path: string;
+        };
+        /** WorkflowCompletionNotificationContent */
+        WorkflowCompletionNotificationContent: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            category: "workflow_execution_completed";
+            /**
+             * Event
+             * @default completed
+             * @enum {string}
+             */
+            event: "needs_attention" | "completed";
+            /**
+             * Invocation Id
+             * @description The encoded workflow invocation ID.
+             */
+            invocation_id?: string | null;
+            /**
+             * Message
+             * @description The message of the notification (supports Markdown).
+             */
+            message: string;
+            /**
+             * Subject
+             * @description The subject of the notification.
+             */
+            subject: string;
         };
         /** WorkflowEngineVersion */
         WorkflowEngineVersion: {
@@ -55612,6 +55800,44 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["UserModel"] | null;
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    index_api_widgets_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Widget"][];
                 };
             };
             /** @description Request Error */

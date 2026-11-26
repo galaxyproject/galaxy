@@ -243,8 +243,7 @@ pre {
     opacity: 1;
 }
 
-// TODO(vue3): rename .slide-up-enter to .slide-up-enter-from
-.slide-up-enter {
+.slide-up-enter-from {
     max-height: 0;
     opacity: 0;
 }

@@ -1,12 +1,11 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getFakeRegisteredUser } from "@tests/test-data";
 import { deferred } from "@tests/vitest/deferred";
-import { getLocalVue, nth, suppressBootstrapVueWarnings } from "@tests/vitest/helpers";
+import { createTestRouter, getLocalVue, nth } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { createMemoryHistory, createRouter } from "vue-router";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import type { CuratedWorkflow, CuratedWorkflowsIndexResponse } from "@/api/curatedWorkflows";
@@ -29,7 +28,7 @@ vi.mock("@/api/notifications", () => ({
 const { server, http } = useServerMock();
 
 const localVue = getLocalVue();
-const router = createRouter({ history: createMemoryHistory(), routes: [] });
+const router = createTestRouter();
 
 const FAKE_USER = getFakeRegisteredUser();
 
@@ -124,7 +123,7 @@ async function mountCuratedList(response: CuratedWorkflowsIndexResponse) {
 }
 
 async function setFilterText(wrapper: Awaited<ReturnType<typeof mountList>>, text: string) {
-    wrapper.findComponent(FilterMenu).vm.$emit("update:filterText", text);
+    wrapper.findComponent(FilterMenu).vm.$emit("update:filter-text", text);
     await flushPromises();
 }
 
@@ -138,7 +137,6 @@ function iwcPage(ids: string[], totalMatches = ids.length): CuratedWorkflowsInde
 
 describe("CuratedWorkflowList", () => {
     beforeEach(() => {
-        suppressBootstrapVueWarnings();
         vi.clearAllMocks();
         catalogQueries = [];
         configSource = "iwc";

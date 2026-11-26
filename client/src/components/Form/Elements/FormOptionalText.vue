@@ -10,7 +10,6 @@
             :id="inputId"
             v-model="currentValue"
             :readonly="readonly"
-            :value="value"
             :area="area"
             :placeholder="placeholder"
             :multiple="multiple"
@@ -31,7 +30,7 @@ export default {
         GCheckbox,
     },
     props: {
-        value: {
+        modelValue: {
             default: "",
         },
         id: {
@@ -66,7 +65,7 @@ export default {
             default: null,
         },
     },
-    emits: ["input"],
+    emits: ["update:modelValue"],
     data() {
         return {
             status: false,
@@ -79,15 +78,15 @@ export default {
         },
         currentValue: {
             get() {
-                return this.value;
+                return this.modelValue;
             },
             set(val) {
-                this.$emit("input", val);
+                this.$emit("update:modelValue", val);
             },
         },
         currentStatus: {
             get() {
-                return this.status || this.value !== null;
+                return this.status || this.modelValue !== null;
             },
             set(val) {
                 this.status = Boolean(val);

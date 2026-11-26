@@ -102,7 +102,7 @@ describe("WorkflowEditor", () => {
         const editorAfter = wrapper.findComponent(Index);
         expect(editorAfter.exists()).toBe(true);
         // A new Editor instance means the `:key` changed and it was remounted.
-        expect(editorAfter.vm).not.toBe(editorBefore.vm);
+        expect(editorAfter.element).not.toBe(editorBefore.element);
     });
 
     it("reloads the editor config when the query changes in place (switching workflows without remounting)", async () => {
@@ -119,7 +119,7 @@ describe("WorkflowEditor", () => {
         const editorAfter = wrapper.findComponent(Index);
         expect(editorAfter.props("workflowId")).toBe("stored456");
         // The `:key` bump also means it's a fresh Editor instance.
-        expect(editorAfter.vm).not.toBe(editorBefore.vm);
+        expect(editorAfter.element).not.toBe(editorBefore.element);
     });
 
     it("re-emits update:confirmation from the Editor", async () => {

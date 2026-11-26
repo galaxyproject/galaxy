@@ -1,8 +1,7 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue, suppressLucideVue2Deprecation } from "@tests/vitest/helpers";
+import { createTestRouter, getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { createMemoryHistory, createRouter } from "vue-router";
 
 import { setupSelectableMock } from "@/components/ObjectStore/mockServices";
 
@@ -13,14 +12,12 @@ vi.mock("components/History/model/queries");
 setupSelectableMock();
 
 const localVue = getLocalVue();
-const router = createRouter({ history: createMemoryHistory(), routes: [] });
+const router = createTestRouter();
 
 describe("GenericElement", () => {
     let wrapper;
 
     beforeEach(() => {
-        suppressLucideVue2Deprecation();
-
         wrapper = mount(GenericElement, {
             props: {
                 dsc: {

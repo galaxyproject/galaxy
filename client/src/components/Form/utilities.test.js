@@ -190,6 +190,10 @@ describe("form component utilities", () => {
         values.input_a = undefined;
         result = validateInputs(index, values);
         expect(JSON.stringify(result)).toEqual('["input_a","Please provide a value for this option."]');
+        index.input_a.default_location = "https://example.org/reference.tsv";
+        result = validateInputs(index, values);
+        expect(result).toEqual(null);
+        delete index.input_a.default_location;
         index.input_a.optional = true;
         result = validateInputs(index, values);
         expect(result).toEqual(null);

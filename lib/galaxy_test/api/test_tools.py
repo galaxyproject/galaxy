@@ -379,6 +379,19 @@ class TestToolsApi(ApiTestCase, TestsTools):
             assert meta["offset"] == 50
             assert meta["has_more"] is False
 
+    @skip_without_tool("cat_default")
+    def test_build_data_input_with_default_location(self):
+        """A data parameter with a File default exposes its location to the form."""
+        with self.dataset_populator.test_history() as history_id:
+            self.dataset_populator.new_dataset(history_id, content="chr1\t1\t2", file_type="bed", wait=True)
+            response = self.dataset_populator._post(
+                "tools/cat_default/build", data={"history_id": history_id}, json=True
+            )
+            response.raise_for_status()
+            input_param = next(i for i in response.json()["inputs"] if i["name"] == "input1")
+            assert input_param["optional"] is False
+            assert input_param["default_location"].endswith("/test-data/1.bed")
+
     @skip_without_tool("cat1")
     def test_build_data_options_limit_clamped(self):
         """Server clamps requested ``limit`` to 500."""
@@ -1752,9 +1765,11 @@ class TestToolsApi(ApiTestCase, TestsTools):
             hdca = self.dataset_populator.get_history_collection_details(
                 history_id, content_id=outputs_four["output_collections"][0]["id"]
             )
-            assert self.dataset_populator.get_history_dataset_content(
-                history_id, content_id=hdca["elements"][0]["object"]["id"]
-            )
+            element_id = hdca["elements"][0]["object"]["id"]
+            assert self.dataset_populator.get_history_dataset_content(history_id, content_id=element_id)
+            element = self.dataset_populator.get_history_dataset_details(history_id, content_id=element_id)
+            assert element["state"] == "ok"
+            assert element["visible"] is False
 
     @skip_without_tool("cat_list")
     @skip_without_tool("__SORTLIST__")
@@ -2405,9 +2420,65 @@ class TestToolsApi(ApiTestCase, TestsTools):
         response = self._run("multi_select", history_id, inputs)
         self._assert_status_code_is(response, 400)
 
+    @skip_without_tool("color_param")
+    def test_color_param_rejects_non_color(self, history_id):
+        # ensure_color_valid accepts any CSS color (e.g. "#fff"), but rgb="true" needs six hex digits.
+        non_colors = ("#fff'; id; '", "red;id", "re d", "$(id)", "#gggggg")
+        for name, values in (("color_default", non_colors), ("color_rgb", (*non_colors, "#fff"))):
+            for value in values:
+                response = self._run("color_param", history_id, {name: value})
+                self._assert_status_code_is(response, 400)
+                assert name in response.json()["err_data"]
+
+    @skip_without_tool("color_param")
+    def test_color_param_rgb_rejects_color_name(self, history_id):
+        response = self._run("color_param", history_id, {"color_rgb": "grey"})
+        self._assert_status_code_is(response, 400)
+        assert "color_rgb" in response.json()["err_data"]
+
+    @skip_without_tool("color_param")
+    def test_color_param_required_rejects_null(self, history_id):
+        response = self._run("color_param", history_id, {"color_default": None})
+        self._assert_status_code_is(response, 400)
+        assert "color_default" in response.json()["err_data"]
+
+    @skip_without_tool("color_param")
+    def test_color_param_accepts_uppercase_hex(self, history_id):
+        response = self._run(
+            "color_param", history_id, {"color_default": "#AABBCC", "color_rgb": "#AABBCC"}, assert_ok=True
+        )
+        outputs = response["outputs"]
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        assert self.dataset_populator.get_history_dataset_content(history_id, dataset=outputs[0]).strip() == "#AABBCC"
+        assert (
+            self.dataset_populator.get_history_dataset_content(history_id, dataset=outputs[1]).strip()
+            == "(170, 187, 204)"
+        )
+
+    @skip_without_tool("gx_color")
+    def test_color_param_accepts_color_name(self, history_id):
+        response = self._run("gx_color", history_id, {"parameter": "goldenrod"}, assert_ok=True)
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        content = self.dataset_populator.get_history_dataset_content(history_id, dataset=response["outputs"][0])
+        assert content.strip() == "goldenrod"
+
+    @skip_without_tool("gx_color_optional")
+    def test_color_param_optional_unset(self, history_id):
+        response = self._run("gx_color_optional", history_id, {"parameter": None}, assert_ok=True)
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        content = self.dataset_populator.get_history_dataset_content(history_id, dataset=response["outputs"][0])
+        assert content.strip() == "None"
+
+    @skip_without_tool("gx_color")
+    def test_color_param_required_accepts_empty(self, history_id):
+        response = self._run("gx_color", history_id, {"parameter": ""}, assert_ok=True)
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        content = self.dataset_populator.get_history_dataset_content(history_id, dataset=response["outputs"][0])
+        assert content.strip() == ""
+
     @skip_without_tool("column_param")
     def test_column_legal_values(self, history_id):
-        new_dataset1 = self.dataset_populator.new_dataset(history_id, content="#col1\tcol2")
+        new_dataset1 = self.dataset_populator.new_dataset(history_id, content="#col1\tcol2", wait=True)
         inputs = {
             "input1": {"src": "hda", "id": new_dataset1["id"]},
             "col": "' ; echo 'moo",
@@ -2419,6 +2490,57 @@ class TestToolsApi(ApiTestCase, TestsTools):
             job = response.json()["jobs"][0]
             final_job_state = self.dataset_populator.wait_for_job(job["id"])
             assert final_job_state == "error"
+
+    def _empty_tabular_dataset_param(self, history_id):
+        empty_dataset = self._run_and_get_outputs("empty_output", history_id)[0]
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        self.dataset_populator.update_dataset(empty_dataset["id"], {"datatype": "tabular"})
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        return dataset_to_param(empty_dataset)
+
+    @skip_without_tool("column_param")
+    def test_column_legal_values_empty_dataset(self, history_id):
+        input1 = self._empty_tabular_dataset_param(history_id)
+        for col in ["1;id", "' ; echo 'moo", "-1", "1.5", "c1;id"]:
+            response = self._run("column_param", history_id, {"input1": input1, "col": col, "col_names": "1"})
+            self._assert_status_code_is(response, 400)
+            assert "col" in response.json()["param_errors"]
+        for col in ["1", "3", "c3"]:
+            response = self._run("column_param", history_id, {"input1": input1, "col": col, "col_names": "1"})
+            self._assert_status_code_is(response, 200)
+
+    @skip_without_tool("column_param")
+    def test_column_legal_values_deferred_dataset(self, history_id):
+        deferred = self.dataset_populator.create_deferred_hda(
+            history_id, "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/2.tabular", ext="tabular"
+        )
+        input1 = dataset_to_param(deferred)
+        response = self._run("column_param", history_id, {"input1": input1, "col": "1", "col_names": "B;id"})
+        self._assert_status_code_is(response, 400)
+        assert list(response.json()["param_errors"]) == ["col_names"]
+        response = self._run("column_param", history_id, {"input1": input1, "col": "1", "col_names": "2"})
+        self._assert_status_code_is(response, 200)
+
+    @skip_without_tool("column_param")
+    def test_column_label_resolved_for_empty_dataset(self, history_id):
+        input1 = self._empty_tabular_dataset_param(history_id)
+        response = self._run("column_param", history_id, {"input1": input1, "col": "1", "col_names": "c2: $(id)"})
+        self._assert_status_code_is(response, 200)
+        job_id = response.json()["jobs"][0]["id"]
+        self.dataset_populator.wait_for_job(job_id)
+        job = self.dataset_populator.get_job_details(job_id, full=True).json()
+        assert 'echo "col_names 2" >>' in job["command_line"]
+
+    @skip_without_tool("column_param_list")
+    def test_multiple_column_legal_values_empty_dataset(self, history_id):
+        input1 = self._empty_tabular_dataset_param(history_id)
+        for col in ["1,2;id", ["1", "2;id"], "1\n$(id)"]:
+            response = self._run("column_param_list", history_id, {"input1": input1, "col": col, "col_names": "1"})
+            self._assert_status_code_is(response, 400)
+            assert "col" in response.json()["param_errors"]
+        for col in ["1,3", ["1", "3"], "c1\nc3"]:
+            response = self._run("column_param_list", history_id, {"input1": input1, "col": col, "col_names": "1"})
+            self._assert_status_code_is(response, 200)
 
     @requires_new_history
     @skip_without_tool("collection_paired_test")

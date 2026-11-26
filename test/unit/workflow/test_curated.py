@@ -16,7 +16,7 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 from datetime import (
     datetime,
-    timezone,
+    UTC,
 )
 from email.utils import format_datetime
 from pathlib import Path
@@ -43,7 +43,7 @@ from galaxy.workflow.trs_proxy import TrsProxy
 THREAD_TIMEOUT_SECONDS = 10.0
 
 # Older than any projection a test writes, so a HEAD answering this reads as "unchanged".
-LONG_AGO = datetime(2000, 1, 1, tzinfo=timezone.utc)
+LONG_AGO = datetime(2000, 1, 1, tzinfo=UTC)
 
 
 def serve_manifest(monkeypatch, download, last_modified: datetime | None = None) -> None:
@@ -752,9 +752,9 @@ def test_refresh_projection_sees_a_publish_a_stale_cdn_hid_from_an_earlier_check
     curated.write_projection(projection_path, curated.project_manifest(SAMPLE_MANIFEST))
     stat = os.stat(projection_path)
     os.utime(projection_path, (stat.st_atime - 3600, stat.st_mtime - 3600))
-    old_publish = format_datetime(datetime.fromtimestamp(stat.st_mtime - 7200, tz=timezone.utc), usegmt=True)
+    old_publish = format_datetime(datetime.fromtimestamp(stat.st_mtime - 7200, tz=UTC), usegmt=True)
     # Published after the projection was written, but before the stale check below runs.
-    new_publish = format_datetime(datetime.fromtimestamp(stat.st_mtime - 60, tz=timezone.utc), usegmt=True)
+    new_publish = format_datetime(datetime.fromtimestamp(stat.st_mtime - 60, tz=UTC), usegmt=True)
     served = [old_publish]
     downloads: list[float] = []
 
@@ -801,7 +801,7 @@ def served_manifest_response(last_modified: str | None) -> SimpleNamespace:
 @pytest.mark.parametrize(
     "header,expected",
     [
-        ("Thu, 01 Jan 2026 12:00:00 GMT", datetime(2026, 1, 1, 12, tzinfo=timezone.utc)),
+        ("Thu, 01 Jan 2026 12:00:00 GMT", datetime(2026, 1, 1, 12, tzinfo=UTC)),
         (None, None),
         ("not a date", None),
     ],
@@ -818,7 +818,7 @@ def test_refresh_projection_forgets_the_version_when_a_download_comes_without_on
 ) -> None:
     """A dated watermark left beside an undated download would vouch for a body it
     never described, and a matching HEAD would then keep that copy forever."""
-    publish = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    publish = datetime(2026, 1, 1, tzinfo=UTC)
     downloads: list[float] = []
 
     def recording_download(timeout: float) -> list[dict[str, Any]]:
@@ -846,8 +846,8 @@ def test_refresh_projection_stamps_the_version_of_the_body_it_was_served(project
     cached versions. A body served as the old publish must not be recorded as the new one
     the HEAD reported, or every later check would call that stale copy current."""
     curated.write_projection(projection_path, curated.project_manifest(SAMPLE_MANIFEST))
-    old_publish = datetime(2026, 1, 1, tzinfo=timezone.utc)
-    new_publish = datetime(2026, 1, 2, tzinfo=timezone.utc)
+    old_publish = datetime(2026, 1, 1, tzinfo=UTC)
+    new_publish = datetime(2026, 1, 2, tzinfo=UTC)
     downloads: list[float] = []
 
     def recording_download(timeout: float) -> list[dict[str, Any]]:
@@ -872,7 +872,7 @@ def test_refresh_projection_stamps_the_version_of_the_body_it_was_served(project
 def test_refresh_projection_keeps_its_copy_when_the_download_is_older(projection_path: str, monkeypatch) -> None:
     """The HEAD can reach a fresh edge while the GET reaches one still serving an older
     publish than the copy we have. Writing that body would roll the catalog back."""
-    stored, stale, newest = (datetime(2026, 1, day, tzinfo=timezone.utc) for day in (2, 1, 3))
+    stored, stale, newest = (datetime(2026, 1, day, tzinfo=UTC) for day in (2, 1, 3))
     serve_manifest(monkeypatch, lambda timeout: SAMPLE_MANIFEST, last_modified=stored)
     monkeypatch.setattr(iwc_manifest, "manifest_last_modified", lambda timeout=None: None)
     curated.refresh_projection(projection_path)

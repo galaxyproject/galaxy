@@ -1,10 +1,11 @@
 import posixpath
 import re
-from enum import Enum
+from enum import StrEnum
 from pathlib import PurePosixPath
 from typing import (
     Annotated,
     Literal,
+    NotRequired,
     Union,
 )
 
@@ -17,7 +18,6 @@ from pydantic import (
 )
 from pydantic_core import PydanticCustomError
 from typing_extensions import (
-    NotRequired,
     TypedDict,
 )
 
@@ -312,7 +312,7 @@ class Stdio(ToolSourceBaseModel):
     regexes: list[StdioRegex] = Field(default_factory=list)
 
 
-class OutputCompareType(str, Enum):
+class OutputCompareType(StrEnum):
     diff = "diff"
     re_match = "re_match"
     sim_size = "sim_size"

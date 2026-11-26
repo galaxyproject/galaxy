@@ -60,6 +60,7 @@ from galaxy.tool_util.parser.util import (
     multiple_select_value_split,
     ParameterParseException,
 )
+from galaxy.tool_util_models.parameters import ensure_color_valid
 from galaxy.tool_util_models.tool_source import DrillDownOptionsDict
 from galaxy.tool_util_models.untrusted import is_loading_untrusted_tools
 from galaxy.tools.parameters.options import ParameterOption
@@ -1029,6 +1030,24 @@ class ColorToolParameter(ToolParameter):
     (255, 255, 255)
     >>> with assert_throws_param_value_error("Parameter '_name': Failed to convert 'None' to RGB."):
     ...      p.to_param_dict_string(None)
+    >>> p = ColorToolParameter(None, XML('<param name="_name" type="color" value="#ffffff"/>'))
+    >>> print(p.from_json("#AABBCC", trans), p.from_json("grey", trans), p.from_json("ff0000", trans))
+    #AABBCC grey ff0000
+    >>> with assert_throws_param_value_error("Parameter '_name': a color in the format #RRGGBB or a color name is required"):
+    ...      p.from_json("#fff'; id; '", trans)
+    >>> with assert_throws_param_value_error("Parameter '_name': a color in the format #RRGGBB or a color name is required"):
+    ...      p.to_param_dict_string("#fff'; id; '")
+    >>> p = ColorToolParameter(None, XML('<param name="_name" type="color" value="#ffffff" optional="true"/>'))
+    >>> assert p.from_json(None, trans) is None
+    >>> p = ColorToolParameter(None, XML('<param name="_name" type="color" value=""/>'))
+    >>> assert p.from_json(p.get_initial_value(trans, {}), trans) == ""
+    >>> with assert_throws_param_value_error("Parameter '_name': a color is required"):
+    ...      p.from_json(None, trans)
+    >>> p = ColorToolParameter(None, XML('<param name="_name" type="color" value="#ffffff" rgb="True"/>'))
+    >>> print(p.from_json("#AABBCC", trans), p.from_json("ff0000", trans))
+    #AABBCC ff0000
+    >>> with assert_throws_param_value_error("Parameter '_name': a color in the format #RRGGBB is required"):
+    ...      p.from_json("grey", trans)
     """
 
     def __init__(self, tool: Optional["Tool"], input_source):
@@ -1041,7 +1060,34 @@ class ColorToolParameter(ToolParameter):
         if self.value is not None:
             return self.value.lower()
 
+    def _ensure_color(self, value: Any) -> None:
+        if value in ("", None):
+            return
+        if self.rgb:
+            # to_param_dict_string converts six hex digits, a color name has no RGB form.
+            if isinstance(value, str) and re.fullmatch(r"#?[0-9a-fA-F]{6}", value):
+                return
+            raise ParameterValueError("a color in the format #RRGGBB is required", self.name, value)
+        # Tools declare color names ("grey") and bare hex ("ff0000") as defaults.
+        if isinstance(value, str) and value.isascii() and value.isalnum():
+            return
+        try:
+            ensure_color_valid(value.lower() if isinstance(value, str) else value)
+        except ValueError:
+            raise ParameterValueError(
+                "a color in the format #RRGGBB or a color name is required", self.name, value
+            ) from None
+
+    def from_json(self, value, trans, other_values=None):
+        if contains_workflow_parameter(value) and trans.workflow_building_mode is workflow_building_modes.ENABLED:
+            return value
+        if value is None and not self.optional:
+            raise ParameterValueError("a color is required", self.name, value)
+        self._ensure_color(value)
+        return value
+
     def to_param_dict_string(self, value, other_values=None):
+        self._ensure_color(value)
         if self.rgb:
             try:
                 return str(tuple(int(value.lstrip("#")[i : i + 2], 16) for i in (0, 2, 4)))
@@ -1284,12 +1330,22 @@ class SelectToolParameter(ToolParameter):
                     self.name,
                     is_dynamic=self.is_dynamic,
                 )
-            if set(value).issubset(legal_values):
+            try:
+                value_set = set(value)
+            except TypeError:
+                # dicts or lists inside the list are unhashable and can never be legal options
+                raise ParameterValueError(
+                    f"invalid options ({value!r}) were selected (valid options: {','.join(iter_to_string(legal_values))})",
+                    self.name,
+                    value,
+                    is_dynamic=self.is_dynamic,
+                ) from None
+            if value_set.issubset(legal_values):
                 return value
-            elif set(value).issubset(set(fallback_values.keys())):
+            elif value_set.issubset(set(fallback_values.keys())):
                 return [fallback_values[v] for v in value]
             else:
-                invalid_options = iter_to_string(set(value) - set(legal_values))
+                invalid_options = iter_to_string(value_set - set(legal_values))
                 raise ParameterValueError(
                     f"invalid options ({','.join(invalid_options)!r}) were selected (valid options: {','.join(iter_to_string(legal_values))})",
                     self.name,
@@ -1725,7 +1781,42 @@ class ColumnListParameter(SelectToolParameter):
         if not value and self.accept_default:
             value = self.default_value or "1"
             return [value] if self.multiple else value
+        value = self._labels_to_columns(value, trans, other_values)
+        self._require_column_numbers(value, trans, other_values)
         return super().from_json(value, trans, other_values)
+
+    _column_label = re.compile(r"c([0-9]+): ")
+
+    @staticmethod
+    def _is_column_number(value):
+        return value.isascii() and value.isdigit()
+
+    def _require_column_numbers(self, value, trans, other_values):
+        """
+        Reject values that are not column numbers when the referenced dataset has no
+        columns to check them against, e.g. while it is empty, deferred or not yet created.
+        """
+        if trans.workflow_building_mode or self.data_ref not in other_values:
+            return
+        invalid = [v for v in util.listify(value) if isinstance(v, str) and not self._is_column_number(v)]
+        if invalid and self.is_file_empty(trans, other_values):
+            raise ParameterValueError(
+                f"invalid columns ({','.join(invalid)!r}), only column numbers are accepted while the columns of the dataset are unknown",
+                self.name,
+                value,
+            )
+
+    def _labels_to_columns(self, value, trans, other_values):
+        """
+        Replace option labels ("c2: name") by their column number when the referenced
+        dataset has no columns to match the label against.
+        """
+        values = value if isinstance(value, list) else [value]
+        matches = [self._column_label.match(v) if isinstance(v, str) else None for v in values]
+        if not any(matches) or self.data_ref not in other_values or not self.is_file_empty(trans, other_values):
+            return value
+        columns = [m.group(1) if m else v for m, v in zip(matches, values)]
+        return columns if isinstance(value, list) else columns[0]
 
     @staticmethod
     def _strip_c(column):
@@ -1834,7 +1925,8 @@ class ColumnListParameter(SelectToolParameter):
             # that it is converted into a list, with extra whitespace around items removed.
             value = util.listify(value, do_strip=True)
             if not set(value).issubset(set(legal_values)) and self.is_file_empty(trans, other_values):
-                legal_values.extend(value)
+                # The columns of the referenced dataset are unknown, so any column number is accepted.
+                legal_values.extend(v for v in value if isinstance(v, str) and self._is_column_number(v))
 
         return set(legal_values)
 
@@ -1880,18 +1972,20 @@ class ReferenceDataToolParameter(SelectToolParameter):
 
     def __init__(self, tool: Optional["Tool"], input_source, context=None):
         input_source = ensure_input_source(input_source)
-        table_name = input_source.get("table")
-        if table_name is None or input_source.parse_dynamic_options() is None:
-            raise ParameterValueError("reference_data is only supported in YAML tools", input_source.parse_name())
+        if (reference_data := input_source.parse_reference_data()) is None:
+            raise ParameterValueError(
+                "reference_data is only supported in GalaxyTool and GalaxyUserTool YAML tools",
+                input_source.parse_name(),
+            )
         super().__init__(tool, input_source, context)
-        self.table_name: str = table_name
-        self.requires_user_accessible_table = not input_source.trusted
+        self.table_name: str = reference_data.table
+        self.trusted = input_source.trusted
         # The tool form and the workflow editor render this as a plain select.
         self.type = "select"
 
     def get_options(self, trans: "ProvidesHistoryContext", other_values) -> Sequence[ParameterOption]:
         table = self.options.tool_data_table if self.options else None
-        if table is None or (self.requires_user_accessible_table and not table.user_accessible):
+        if table is None or not table.readable_by(trusted=self.trusted):
             return []
         # A history data bundle offered as an entry of the table is not an installed row.
         return [
@@ -2352,6 +2446,14 @@ class BaseDataToolParameter(ToolParameter):
         if self.tool is not None and getattr(self.tool, "tool_type", None) == "data_destination":
             return True
         return False
+
+    @property
+    def default_location(self) -> str | None:
+        """Location of a ``File`` default, used when no dataset is selected."""
+        default = getattr(self, "default_object", None)
+        if isinstance(default, dict) and default.get("class") == "File":
+            return default.get("location") or None
+        return None
 
     def get_initial_value(self, trans: "ProvidesHistoryContext | None", other_values):
         assert trans is not None
@@ -2878,6 +2980,8 @@ class DataToolParameter(BaseDataToolParameter):
         other_values = other_values or {}
         d = super().to_dict(trans)
         self._fill_to_dict_static(d)
+        if default_location := self.default_location:
+            d["default_location"] = default_location
 
         builder = DataOptionsBuilder(trans.security, pagination)
         builder.write_into(d)

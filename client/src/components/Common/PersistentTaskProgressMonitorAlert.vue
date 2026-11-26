@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BLink } from "bootstrap-vue";
 import { computed, watch } from "vue";
 
 import { useDownloadTracker } from "@/composables/downloadTracker";
@@ -11,6 +10,7 @@ import { usePersistentProgressTaskMonitor } from "@/composables/persistentProgre
 import { useShortTermStorage } from "@/composables/shortTermStorage";
 
 import GAlert from "@/components/BaseComponents/GAlert.vue";
+import GLink from "@/components/BaseComponents/GLink.vue";
 import FileSourceNameSpan from "@/components/FileSources/FileSourceNameSpan.vue";
 import UtcDate from "@/components/UtcDate.vue";
 
@@ -132,9 +132,7 @@ function dismissAlert() {
         <GAlert v-else-if="isCompleted" variant="success" show dismissible @dismissed="dismissAlert">
             <span>{{ completedMessage }}</span>
 
-            <BLink v-if="downloadUrl" class="download-link" :href="downloadUrl">
-                <b>Download here</b>
-            </BLink>
+            <GLink v-if="downloadUrl" class="download-link" :href="downloadUrl">Download here</GLink>
 
             <span v-if="remoteUri">
                 The result should be available at

@@ -14,6 +14,7 @@ from typing import (
     Any,
     NamedTuple,
 )
+from uuid import uuid4
 
 import pytest
 from rocrate.rocrate import ROCrate
@@ -453,6 +454,30 @@ def test_import_library_require_permissions():
         error_caught = True
 
     assert error_caught
+
+
+def test_serialize_fetch_job_encodes_request_ids():
+    app = _mock_app()
+    job = model.Job()
+    job.tool_id = "__DATA_FETCH__"
+    request = {
+        "targets": [
+            {
+                "destination": {"type": "library_folder", "library_folder_id": 3},
+                "elements": [{"src": "pasted", "paste_content": "1 2 3", "object_id": 7}],
+            }
+        ]
+    }
+    job.add_parameter("request_json", json.dumps(json.dumps(request)))
+    app.add_and_commit(job)
+
+    exported = job.serialize(app.security, model.SerializationOptions(for_edit=False))
+    target = json.loads(exported["params"]["request_json"])["targets"][0]
+    assert target["destination"]["library_folder_id"] == app.security.encode_id(3, kind="model_export")
+    assert target["elements"][0]["object_id"] == app.security.encode_id(7, kind="model_export")
+
+    for_edit = job.serialize(app.security, model.SerializationOptions(for_edit=True))
+    assert json.loads(for_edit["params"]["request_json"]) == request
 
 
 def test_import_export_library(tmp_path):
@@ -1160,6 +1185,45 @@ def test_export_history_with_orphan_icjja(tmp_path):
     assert len(imported_icj.jobs) == 1
 
 
+def test_import_export_history_with_implicit_collection_jobs():
+    app = _mock_app()
+    sa_session = app.model.context
+    u = model.User(email="collection@example.com", password="password")
+    h = model.History(name="Test History", user=u)
+    d1, d2 = _create_datasets(sa_session, h, 2)
+    collection = model.DatasetCollection(collection_type="list")
+    hdca = model.HistoryDatasetCollectionAssociation(
+        history=h, hid=3, collection=collection, name="mapped output", implicit_output_name="out_file1"
+    )
+    icj = model.ImplicitCollectionJobs()
+    hdca.implicit_collection_jobs = icj
+    to_add: list[model.RepresentById] = [h, hdca, icj]
+    for index, dataset in enumerate([d1, d2]):
+        model.DatasetCollectionElement(
+            collection=collection, element=dataset, element_identifier=f"e{index}", element_index=index
+        )
+        job = model.Job()
+        job.user = u
+        job.tool_id = "cat1"
+        job.add_output_dataset("out_file1", dataset)
+        job.add_output_dataset_collection("out_file1", hdca)
+        icja = model.ImplicitCollectionJobsJobAssociation()
+        icja.order_index = index
+        icja.implicit_collection_jobs = icj
+        icja.job = job
+        to_add.extend([job, icja])
+    app.add_and_commit(*to_add)
+
+    imported_history = _import_export_history(app, h)
+
+    [imported_hdca] = imported_history.active_dataset_collections
+    imported_icj = imported_hdca.implicit_collection_jobs
+    assert imported_icj is not None
+    assert imported_icj is not icj
+    element_jobs = [element.element_object.creating_job for element in imported_hdca.collection.elements]
+    assert [icja.job for icja in imported_icj.jobs] == element_jobs
+
+
 def test_export_history_with_null_param_id(tmp_path):
     """Job params shaped {"src": "hda"|"hdca"|"dce", "id": null} are persisted
     by the import path at model/store/__init__.py:1860-1888 when a referenced
@@ -1492,17 +1556,75 @@ def test_sessionless_import_edit_datasets():
 
 def test_import_job_with_output_copy():
     app, h, temp_directory, import_history = _setup_simple_export({"for_edit": True})
+    _edit_exported_dataset_attrs(temp_directory, lambda attrs: attrs[1]["metadata"].update(data_lines=42))
     hda = h.active_datasets[-1]
     # Simulate a copy being made of an output hda
     copy = hda.copy(new_name="output copy")
     # set extension to auto, should be changed to real extension when finalizing job
     copy.extension = "auto"
     app.add_and_commit(copy)
-    import_model_store = store.get_import_model_store_for_directory(
-        temp_directory, import_options=store.ImportOptions(allow_dataset_object_edit=True, allow_edit=True), app=app
-    )
-    import_model_store.perform_import()
+    _perform_edit_import(temp_directory, app)
     assert copy.extension == "txt"
+    # data_lines is not part of the "auto" datatype's metadata spec, it must still be copied
+    assert copy.metadata.data_lines == 42
+
+
+def test_import_job_output_keeps_visibility_set_while_job_ran():
+    app, h, temp_directory, import_history = _setup_simple_export({"for_edit": True})
+    hda = h.active_datasets[-1]
+    # e.g. hidden by building a collection from it while the job was running
+    hda.visible = False
+    app.commit()
+    _perform_edit_import(temp_directory, app)
+    assert hda.visible is False
+
+
+def test_import_errored_job_output_is_unhidden():
+    app, h, temp_directory, import_history = _setup_simple_export({"for_edit": True})
+    _edit_exported_dataset_attrs(temp_directory, lambda attrs: attrs[1]["dataset"].update(state="error"))
+    hda = h.active_datasets[-1]
+    hda.visible = False
+    app.commit()
+    _perform_edit_import(temp_directory, app)
+    assert hda.state == "error"
+    assert hda.visible is True
+
+
+@pytest.mark.parametrize(
+    "info_from_job, expected_info",
+    [
+        pytest.param("", "my note", id="no_stdout"),
+        # the job appends its stdout to the info it got at job setup
+        pytest.param("\nhello from stdout", "my note\nhello from stdout", id="stdout_appended"),
+    ],
+)
+def test_import_job_output_keeps_name_and_info_edited_while_job_ran(info_from_job, expected_info):
+    app, h, temp_directory, import_history = _setup_simple_export({"for_edit": True})
+    attrs_at_job_setup = store.load_datasets_attrs_by_id(temp_directory)
+    _edit_exported_dataset_attrs(temp_directory, lambda attrs: attrs[1].update(info=info_from_job))
+    hda = h.active_datasets[-1]
+    hda.name = "renamed while running"
+    hda.info = "my note"
+    app.commit()
+    _perform_edit_import(temp_directory, app, attrs_at_job_setup)
+    assert hda.name == "renamed while running"
+    assert hda.info == expected_info
+
+
+def test_import_job_output_takes_name_and_info_set_by_job():
+    app, h, temp_directory, import_history = _setup_simple_export({"for_edit": True})
+    attrs_at_job_setup = store.load_datasets_attrs_by_id(temp_directory)
+    # e.g. provided by the tool in galaxy.json
+    _edit_exported_dataset_attrs(
+        temp_directory, lambda attrs: attrs[1].update(name="my dynamic name", info="my dynamic info")
+    )
+    hda = h.active_datasets[-1]
+    hda.name = "renamed while running"
+    hda.info = "my note"
+    app.commit()
+    _perform_edit_import(temp_directory, app, attrs_at_job_setup)
+    assert hda.name == "my dynamic name"
+    assert hda.info == "my dynamic info"
 
 
 def test_import_existing_job_reports_state_without_applying_it():
@@ -1533,6 +1655,176 @@ def test_import_datasets_with_ids_fails_if_not_editing_models():
     assert caught
 
 
+class CatJob(NamedTuple):
+    app: "TestApp"
+    history: model.History
+    input: model.HistoryDatasetAssociation
+    output: model.HistoryDatasetAssociation
+    job: model.Job
+
+
+@pytest.fixture
+def cat_job():
+    app = _mock_app(store_by="uuid")
+    u, h, d1, d2, j = _setup_simple_cat_job(app)
+    return CatJob(app, h, d1, d2, j)
+
+
+def _export_for_edit(directory, cat_job, *datasets):
+    with store.DirectoryModelExportStore(
+        directory, app=cat_job.app, for_edit=True, strip_metadata_files=False
+    ) as export_store:
+        for dataset in datasets:
+            export_store.add_dataset(dataset)
+
+
+def _edit_dataset_attrs(directory, **attributes):
+    attrs_path = directory / store.ATTRS_FILENAME_DATASETS
+    datasets_attrs = json.loads(attrs_path.read_text())
+    datasets_attrs[0].update(attributes)
+    attrs_path.write_text(json.dumps(datasets_attrs))
+    return datasets_attrs[0]
+
+
+def _import_job_outputs(directory, cat_job, allow_dataset_file_edit=True):
+    import_options = store.ImportOptions(
+        allow_dataset_object_edit=True,
+        allow_edit=True,
+        editable_objects=store.EditableObjects(cat_job.job, allow_dataset_file_edit=allow_dataset_file_edit),
+    )
+    _perform_import_from_directory(directory, cat_job.app, cat_job.history.user, cat_job.history, import_options)
+
+
+def test_import_edits_job_outputs(tmp_path, cat_job):
+    _export_for_edit(tmp_path, cat_job, cat_job.output)
+    _edit_dataset_attrs(tmp_path, name="edited")
+    _import_job_outputs(tmp_path, cat_job)
+    assert cat_job.output.name == "edited"
+
+
+def test_import_accepts_sessionless_string_ids(cat_job):
+    store.EditableObjects(cat_job.job).assert_editable(model.Job, str(cat_job.job.id))
+
+
+def test_import_edits_library_folders_the_user_can_add_to(cat_job):
+    editable = store.EditableObjects(cat_job.job, can_add_to_library_folder=lambda folder_id: folder_id == 7)
+    editable.assert_editable(model.LibraryFolder, 7)
+    with pytest.raises(MalformedContents, match="may not edit"):
+        editable.assert_editable(model.LibraryFolder, 8)
+
+
+def _forge_input_edit(directory, cat_job):
+    _export_for_edit(directory, cat_job, cat_job.input)
+
+
+def _forge_dataset_swap(directory, cat_job):
+    _export_for_edit(directory, cat_job, cat_job.output)
+    dataset_attrs = json.loads((directory / store.ATTRS_FILENAME_DATASETS).read_text())[0]["dataset"]
+    _edit_dataset_attrs(directory, dataset={**dataset_attrs, "id": cat_job.input.dataset.id})
+
+
+def _forge_collection_edit(directory, cat_job):
+    collection = model.DatasetCollection(collection_type="list")
+    hdca = model.HistoryDatasetCollectionAssociation(history=cat_job.history, hid=3, collection=collection)
+    cat_job.app.add_and_commit(hdca)
+    _export_for_edit(directory, cat_job, cat_job.output)
+    with store.DirectoryModelExportStore(directory, app=cat_job.app, for_edit=True) as export_store:
+        export_store.add_dataset_collection(hdca)
+
+
+def _forge_job_edit(directory, cat_job):
+    other_job = model.Job()
+    other_job.user = cat_job.history.user
+    other_job.tool_id = "cat1"
+    other_job.state = model.Job.states.OK
+    cat_job.app.add_and_commit(other_job)
+    _export_for_edit(directory, cat_job, cat_job.output)
+    jobs_attrs_path = directory / store.ATTRS_FILENAME_JOBS
+    jobs_attrs = json.loads(jobs_attrs_path.read_text())
+    jobs_attrs[0]["id"] = other_job.id
+    jobs_attrs_path.write_text(json.dumps(jobs_attrs))
+
+
+@pytest.mark.parametrize("forge", [_forge_input_edit, _forge_dataset_swap, _forge_collection_edit, _forge_job_edit])
+def test_import_refuses_objects_that_are_not_job_outputs(tmp_path, cat_job, forge):
+    forge(tmp_path, cat_job)
+    with pytest.raises(MalformedContents, match="may not edit"):
+        _import_job_outputs(tmp_path, cat_job)
+
+
+def test_import_refuses_metadata_file_of_another_dataset(tmp_path, cat_job):
+    index = NamedTemporaryFile("w")
+    index.write("cool bam index")
+    index.flush()
+    cat_job.input.extension = "bam"
+    cat_job.input.metadata.from_JSON_dict(
+        json_dict={"bam_index": MetadataTempFile.from_JSON({"kwds": {}, "filename": index.name})}
+    )
+    cat_job.app.commit()
+    _export_for_edit(tmp_path, cat_job, cat_job.input)
+    _rewrite_export_as_new_datasets(tmp_path)
+    with pytest.raises(MalformedContents, match="may not reuse metadata file"):
+        _import_job_outputs(tmp_path, cat_job)
+
+
+def _forge_external_filename(directory, cat_job):
+    _export_for_edit(directory, cat_job, cat_job.output)
+    dataset_attrs = json.loads((directory / store.ATTRS_FILENAME_DATASETS).read_text())[0]["dataset"]
+    _edit_dataset_attrs(directory, dataset={**dataset_attrs, "external_filename": str(TEST_PATH_1)})
+
+
+def _forge_object_store_move(directory, cat_job):
+    _export_for_edit(directory, cat_job, cat_job.output)
+    dataset_attrs = json.loads((directory / store.ATTRS_FILENAME_DATASETS).read_text())[0]["dataset"]
+    _edit_dataset_attrs(directory, dataset={**dataset_attrs, "object_store_id": "other"})
+
+
+def _forge_uuid_change(directory, cat_job):
+    _export_for_edit(directory, cat_job, cat_job.output)
+    dataset_attrs = json.loads((directory / store.ATTRS_FILENAME_DATASETS).read_text())[0]["dataset"]
+    _edit_dataset_attrs(directory, dataset={**dataset_attrs, "uuid": str(uuid4())})
+
+
+def _forge_new_dataset_in_user_object_store(directory, cat_job):
+    _export_for_edit(directory, cat_job, cat_job.output)
+    _rewrite_export_as_new_datasets(directory)
+    _edit_dataset_attrs(directory, dataset={"object_store_id": "user_objects://another-users-store"})
+
+
+def _forge_new_dataset_in_other_object_store(directory, cat_job):
+    _export_for_edit(directory, cat_job, cat_job.output)
+    _rewrite_export_as_new_datasets(directory)
+    _edit_dataset_attrs(directory, dataset={"object_store_id": "other"})
+
+
+@pytest.mark.parametrize(
+    "forge",
+    [
+        _forge_external_filename,
+        _forge_object_store_move,
+        _forge_uuid_change,
+        _forge_new_dataset_in_user_object_store,
+        _forge_new_dataset_in_other_object_store,
+    ],
+)
+def test_user_defined_tool_import_refuses_dataset_file_edits(tmp_path, cat_job, forge):
+    forge(tmp_path, cat_job)
+    with pytest.raises(MalformedContents, match="may not (link|move|change)"):
+        _import_job_outputs(tmp_path, cat_job, allow_dataset_file_edit=False)
+
+
+def test_user_defined_tool_import_accepts_new_dataset_in_job_object_store(tmp_path, cat_job):
+    object_store_id = "files1"
+    cat_job.output.dataset.object_store_id = object_store_id
+    cat_job.app.commit()
+    _export_for_edit(tmp_path, cat_job, cat_job.output)
+    _rewrite_export_as_new_datasets(tmp_path)
+    _edit_dataset_attrs(tmp_path, dataset={"object_store_id": object_store_id})
+    _import_job_outputs(tmp_path, cat_job, allow_dataset_file_edit=False)
+    new_datasets = [hda for hda in cat_job.history.datasets if hda.id not in (cat_job.input.id, cat_job.output.id)]
+    assert [hda.dataset.object_store_id for hda in new_datasets] == [object_store_id]
+
+
 def _setup_simple_export(export_kwds):
     app = _mock_app()
 
@@ -1547,6 +1839,27 @@ def _setup_simple_export(export_kwds):
         export_store.add_dataset(d2)
 
     return app, h, temp_directory, import_history
+
+
+def _edit_exported_dataset_attrs(temp_directory, edit):
+    datasets_attrs_path = os.path.join(temp_directory, store.ATTRS_FILENAME_DATASETS)
+    with open(datasets_attrs_path) as f:
+        datasets_attrs = json.load(f)
+    edit(datasets_attrs)
+    with open(datasets_attrs_path, "w") as f:
+        json.dump(datasets_attrs, f)
+
+
+def _perform_edit_import(temp_directory, app, datasets_attrs_at_job_setup=None):
+    import_options = store.ImportOptions(
+        allow_dataset_object_edit=True,
+        allow_edit=True,
+        datasets_attrs_at_job_setup=datasets_attrs_at_job_setup,
+    )
+    import_model_store = store.get_import_model_store_for_directory(
+        temp_directory, import_options=import_options, app=app
+    )
+    import_model_store.perform_import()
 
 
 def _assert_simple_cat_job_imported(imported_history, state="ok"):

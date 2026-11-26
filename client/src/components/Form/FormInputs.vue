@@ -191,7 +191,7 @@ export default {
             default: () => [],
         },
     },
-    emits: ["stop-flagging", "update:active-node-id"],
+    emits: ["stop-flagging", "update:active-node-id", "load-more", "search-change"],
     methods: {
         getPrefix(name, index) {
             if (this.prefix) {

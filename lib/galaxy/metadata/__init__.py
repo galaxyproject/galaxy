@@ -45,6 +45,11 @@ except Exception:
 """
 
 
+# Where remote tool evaluation writes the command line it built, relative to the job's metadata
+# directory. Pulsar stages outputs_populated/ back with either metadata strategy.
+REMOTE_COMMAND_LINE_FILE = os.path.join("outputs_populated", "remote_command_line.txt")
+
+
 def job_metadata_directory(working_directory) -> str:
     """Directory in a job's working directory for external metadata files, temp files included."""
     return os.path.join(working_directory, "metadata")
@@ -214,8 +219,10 @@ class PortableDirectoryMetadataGenerator(MetadataCollectionStrategy):
                 dataset, _metadata_path, metadata_dir, kwds, real_metadata_object=self.write_object_store_conf
             )
 
+            file_name = dataset.get_file_name(sync_cache=False)
             outputs[name] = {
-                "filename_override": _get_filename_override(output_fnames, dataset.get_file_name(sync_cache=False)),
+                "filename_override": _get_filename_override(output_fnames, file_name),
+                "filename_fallback": _get_filename_fallback(output_fnames, file_name),
                 "validate": validate_outputs,
                 # False for existing datasets, whose content must stay where it is.
                 "groom_directory_content": groom_directory_content,
@@ -382,6 +389,13 @@ def _get_filename_override(output_fnames, file_name):
             if dataset_path.real_path == file_name:
                 return dataset_path.false_path or dataset_path.real_path
     return ""
+
+
+def _get_filename_fallback(output_fnames, file_name):
+    for dataset_path in output_fnames or []:
+        if dataset_path.real_path == file_name:
+            return dataset_path.fallback_path
+    return None
 
 
 def _init_tmp_dir(tmp_dir):

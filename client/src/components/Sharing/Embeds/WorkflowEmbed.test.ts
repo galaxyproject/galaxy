@@ -18,9 +18,9 @@ describe("WorkflowEmbed", () => {
         expect(embedInput.classes()).toContain("g-form-input");
         expect(embedInput.attributes("readonly")).toBeDefined();
         const embedCode = (embedInput.element as HTMLInputElement).value;
-        expect(embedCode).toMatch(/^<iframe .*published\/workflow\?id=workflow-id&embed=true.*<\/iframe>$/);
+        expect(embedCode).toMatch(/^<iframe .*widgets\/workflows\/workflow-id\?.*<\/iframe>$/);
 
-        await wrapper.get("#embed-code button").trigger("click");
+        await wrapper.get("label[for='embed-code'] button").trigger("click");
         expect(copy).toHaveBeenCalledWith(embedCode);
     });
 

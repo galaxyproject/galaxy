@@ -17,7 +17,7 @@ const entry = computed(() => directiveEntry(props.directive, props.mode));
 <template>
     <div>
         <dt>
-            <tt>{{ directive }}</tt>
+            <code>{{ directive }}</code>
         </dt>
         <dd>{{ entry.help }}</dd>
     </div>

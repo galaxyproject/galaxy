@@ -1,31 +1,207 @@
+<script setup lang="ts">
+import { faFolderOpen } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BBreadcrumb, BBreadcrumbItem, BFormInput } from "bootstrap-vue";
+import { computed, ref, watch } from "vue";
+
+import type { SelectionItem } from "@/components/SelectionDialog/selectionTypes";
+import { useToast } from "@/composables/toast";
+import localize from "@/utils/localization";
+import { errorMessageAsString } from "@/utils/simple-error";
+
+import GButton from "@/components/BaseComponents/GButton.vue";
+import FilesDialog from "@/components/FilesDialog/FilesDialog.vue";
+
+interface PathChunk {
+    /** URI-encoded folder name */
+    pathChunk: string;
+    /** Whether the user added this folder, so it can be edited again */
+    editable: boolean;
+}
+
+interface Props {
+    /** Directory URI, e.g. `gxfiles://folder/subfolder` */
+    modelValue?: string | null;
+}
+
+const props = withDefaults(defineProps<Props>(), {
+    modelValue: null,
+});
+
+const emit = defineEmits<{
+    (e: "update:modelValue", value: string | undefined): void;
+}>();
+
+/** Words separated by single dots, e.g. `results` or `run.1` */
+const VALID_DIRECTORY_NAME = /^\w+(\.\w+)*$/;
+
+const toast = useToast();
+const selectText = localize("Select");
+
+const isModalShown = ref(false);
+const modalKey = ref(0);
+const url = ref<URL | null>(null);
+const pathChunks = ref<PathChunk[]>([]);
+const currentDirectoryName = ref("");
+
+/** Last emitted value, to tell our own updates coming back through `modelValue` from outside changes */
+let emittedValue: string | undefined = undefined;
+
+const isValidName = computed(() => {
+    if (!currentDirectoryName.value) {
+        return null;
+    }
+    return VALID_DIRECTORY_NAME.test(currentDirectoryName.value);
+});
+
+const breadcrumbChunks = computed(() =>
+    pathChunks.value.map((chunk) => ({ ...chunk, label: decodeURIComponent(chunk.pathChunk) })),
+);
+
+function emitValue(value: string | undefined) {
+    emittedValue = value;
+    emit("update:modelValue", value);
+}
+
+function emitPath() {
+    if (url.value) {
+        const path = pathChunks.value.map(({ pathChunk }) => decodeURIComponent(pathChunk)).join("/");
+        emitValue(`${url.value.protocol}//${path}`);
+    }
+}
+
+function clearDirectory() {
+    url.value = null;
+    pathChunks.value = [];
+    currentDirectoryName.value = "";
+}
+
+/** Shows the given directory URI as breadcrumb, returns whether it could be parsed */
+function parseUrl(value: string) {
+    try {
+        url.value = new URL(encodeURI(value));
+        pathChunks.value = url.value.href
+            .split(/[/\\]/)
+            .slice(2)
+            .filter((pathChunk) => pathChunk)
+            .map((pathChunk) => ({ pathChunk, editable: false }));
+        return true;
+    } catch (error) {
+        toast.error(errorMessageAsString(error), "Invalid directory path");
+        return false;
+    }
+}
+
+/** Shows the given directory as breadcrumb, or clears a missing or unparseable one */
+function showDirectory(value: string | null | undefined) {
+    currentDirectoryName.value = "";
+    if (!value || !parseUrl(value)) {
+        clearDirectory();
+        emitValue(undefined);
+    }
+}
+
+function onSelectAnother() {
+    clearDirectory();
+    // a new key mounts a fresh dialog, starting again at the list of file sources
+    modalKey.value += 1;
+    isModalShown.value = true;
+    emitValue(undefined);
+}
+
+function onDirectorySelected(selection: SelectionItem | SelectionItem[]) {
+    const item = Array.isArray(selection) ? selection[0] : selection;
+    if (item?.url && parseUrl(item.url)) {
+        emitPath();
+    }
+}
+
+function removePath(index: number) {
+    pathChunks.value = pathChunks.value.slice(0, index);
+    emitPath();
+}
+
+function addDirectoryToPath() {
+    pathChunks.value.push({ pathChunk: currentDirectoryName.value, editable: true });
+    currentDirectoryName.value = "";
+    emitPath();
+}
+
+function addValidDirectory() {
+    if (isValidName.value) {
+        addDirectoryToPath();
+    }
+}
+
+function onSlashKeydown(event: KeyboardEvent) {
+    // there is no key modifier for "/", so match on the key name
+    if (event.key === "/") {
+        event.preventDefault();
+        event.stopPropagation();
+        addValidDirectory();
+    }
+}
+
+function onBackspaceKeydown(event: KeyboardEvent) {
+    // with an empty input, Backspace moves the last folder the user added back into the input
+    const lastChunk = pathChunks.value.at(-1);
+    if (currentDirectoryName.value === "" && lastChunk?.editable) {
+        event.preventDefault();
+        pathChunks.value.pop();
+        currentDirectoryName.value = lastChunk.pathChunk;
+    }
+}
+
+function onBlur() {
+    if (currentDirectoryName.value && isValidName.value) {
+        addDirectoryToPath();
+    } else {
+        // propagate the path even if the input was only touched
+        emitPath();
+    }
+}
+
+watch(
+    () => props.modelValue,
+    (value) => {
+        // the parent passes our own emits back; only an outside change replaces the breadcrumb
+        if (value !== emittedValue) {
+            showDirectory(value);
+        }
+    },
+);
+
+showDirectory(props.modelValue);
+</script>
+
 <template>
     <div>
         <div v-if="!url">
-            <GButton id="select-btn" @click="reset">
+            <GButton id="select-btn" @click="onSelectAnother">
                 <FontAwesomeIcon :icon="faFolderOpen" /> {{ selectText }}
             </GButton>
             <FilesDialog
+                v-if="isModalShown"
                 :key="modalKey"
                 mode="directory"
-                :callback="setUrl"
-                :require-writable="true"
-                :is-open="isModalShown" />
+                :callback="onDirectorySelected"
+                :require-writable="true" />
         </div>
-        <BBreadcrumb v-if="url" class="mb-0">
-            <BBreadcrumbItem title="Select another folder" class="align-items-center" @click="reset">
+        <BBreadcrumb v-else class="mb-0">
+            <BBreadcrumbItem title="Select another folder" class="d-flex align-items-center" @click="onSelectAnother">
                 <GButton class="pathname" color="blue">
                     <FontAwesomeIcon :icon="faFolderOpen" /> {{ url.protocol }}
                 </GButton>
             </BBreadcrumbItem>
             <BBreadcrumbItem
-                v-for="({ pathChunk, editable }, index) in pathChunks"
+                v-for="({ label, editable }, index) in breadcrumbChunks"
                 :key="index"
-                class="existent-url-path align-items-center">
+                class="existent-url-path d-flex align-items-center">
                 <GButton class="regular-path-chunk" :disabled="!editable" @click="removePath(index)">
-                    {{ decodeURIComponent(pathChunk) }}
+                    {{ label }}
                 </GButton>
             </BBreadcrumbItem>
-            <BBreadcrumbItem class="directory-input-field align-items-center">
+            <BBreadcrumbItem class="directory-input-field d-flex align-items-center">
                 <BFormInput
                     id="path-input-breadcrumb"
                     v-model="currentDirectoryName"
@@ -33,164 +209,29 @@
                     :state="isValidName"
                     placeholder="enter directory name"
                     trim
-                    @keyup.enter="addPath"
+                    @keyup.enter="addValidDirectory"
                     @keydown.capture="onSlashKeydown"
-                    @keydown.backspace.capture="removeLastPath"
-                    @blur="handleBlur" />
+                    @keydown.backspace.capture="onBackspaceKeydown"
+                    @blur="onBlur" />
             </BBreadcrumbItem>
         </BBreadcrumb>
 
-        <div v-if="value" class="px-2" data-description="directory full path">
+        <div v-if="modelValue" class="px-2" data-description="directory full path">
             <span v-localize>Directory Path:</span>
-            <code>{{ value }}</code>
+            <code>{{ modelValue }}</code>
         </div>
     </div>
 </template>
-
-<script>
-import { faFolderOpen } from "@fortawesome/free-solid-svg-icons";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BBreadcrumb, BBreadcrumbItem, BFormInput } from "bootstrap-vue";
-
-import { FilesDialog } from "@/components/FilesDialog";
-import { Toast } from "@/composables/toast";
-import _l from "@/utils/localization";
-import { errorMessageAsString } from "@/utils/simple-error";
-
-import GButton from "@/components/BaseComponents/GButton.vue";
-
-const getDefaultValues = () => ({
-    isModalShown: false,
-    url: "",
-    pathChunks: "",
-    currentDirectoryName: "",
-});
-
-export default {
-    components: {
-        BBreadcrumb,
-        BBreadcrumbItem,
-        BFormInput,
-        FontAwesomeIcon,
-        FilesDialog,
-        GButton,
-    },
-    props: {
-        value: {
-            type: String,
-            default: null,
-        },
-    },
-    data() {
-        return {
-            ...getDefaultValues(),
-            modalKey: 0,
-            selectText: _l("Select"),
-            faFolderOpen,
-        };
-    },
-    computed: {
-        isValidName() {
-            if (!this.currentDirectoryName) {
-                return null;
-            }
-            const regex = new RegExp("^(\\w+\\.?)*\\w+$", "g");
-            return regex.test(this.currentDirectoryName);
-        },
-    },
-    mounted() {
-        this.updateURL(true);
-    },
-    methods: {
-        removePath(index) {
-            this.pathChunks = this.pathChunks.slice(0, index);
-            this.updateURL();
-        },
-        reset() {
-            const data = getDefaultValues();
-            Object.keys(data).forEach((k) => (this[k] = data[k]));
-            this.redrawModal();
-            this.updateURL(true);
-        },
-        // forcing modal to be redrawn
-        // https://michaelnthiessen.com/force-re-render/
-        redrawModal() {
-            this.modalKey += 1;
-            this.isModalShown = true;
-        },
-        removeLastPath(event) {
-            // check whether the last item is editable
-            if (this.currentDirectoryName === "" && this.pathChunks.length > 0 && this.pathChunks.at(-1).editable) {
-                // prevent deleting last character on 'currentDirectoryName'
-                event.preventDefault();
-                this.currentDirectoryName = this.pathChunks.pop().pathChunk;
-            }
-        },
-        setUrl({ url }) {
-            try {
-                this.url = new URL(encodeURI(url));
-                // split path and keep only valid entries
-                this.pathChunks = this.url.href
-                    .split(/[/\\]/)
-                    .splice(2)
-                    .map((x) => ({ pathChunk: x, editable: false }));
-
-                if (url) {
-                    this.updateURL();
-                }
-            } catch (error) {
-                Toast.error(errorMessageAsString(error), "Invalid directory path");
-            }
-        },
-        onSlashKeydown(event) {
-            // Vue 3 dropped keyCode modifiers and has no modifier for "/", so match on the key name.
-            if (event.key === "/") {
-                event.preventDefault();
-                event.stopPropagation();
-                this.addPath(event);
-            }
-        },
-        addPath({ key }) {
-            if ((key === "Enter" || key === "/") && this.isValidName) {
-                this.addDirectoryToPath();
-            }
-        },
-        handleBlur() {
-            if (this.currentDirectoryName && this.isValidName) {
-                this.addDirectoryToPath();
-            } else {
-                // If the input was touched let's propagate the change either way.
-                this.updateURL();
-            }
-        },
-        addDirectoryToPath() {
-            const newFolder = this.currentDirectoryName;
-            this.pathChunks.push({ pathChunk: newFolder, editable: true });
-            this.currentDirectoryName = "";
-            this.updateURL();
-        },
-        updateURL(isReset = false) {
-            let url = undefined;
-            if (!isReset) {
-                // create an string of path chunks separated by `/`
-                url = encodeURI(
-                    `${this.url.protocol}//${this.pathChunks
-                        .map(({ pathChunk }) => decodeURIComponent(pathChunk))
-                        .join("/")}`,
-                );
-                url = decodeURI(url);
-            }
-            this.$emit("input", url);
-        },
-    },
-};
-</script>
 
 <style scoped>
 .breadcrumb-item::before {
     font-size: 1.5rem;
 }
-.directory-input-field a {
+.directory-input-field {
+    flex: 1 1 10rem;
+}
+.directory-input-field :deep(a) {
+    flex: 1 1 auto;
     text-decoration: none;
 }
 </style>

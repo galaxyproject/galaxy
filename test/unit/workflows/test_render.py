@@ -139,3 +139,18 @@ def test_render_connection_to_uninspected_output():
     # The connection should still be drawn (anchored to the upstream step's
     # box) rather than silently dropped.
     assert len(workflow_canvas.connectors) == 1
+
+
+def test_render_without_positions():
+    # steps imported without a layout have no position until the editor lays them out
+    workflow_canvas = render.WorkflowCanvas()
+    step_0 = FakeStep(order_index=0, position=None)  # type: ignore[arg-type]
+    step_1 = FakeStep(order_index=1, position=None)  # type: ignore[arg-type]
+    step_1.input_connections = [FakeConnection(input_name="input1", output_name="di1", output_step=step_0)]
+    workflow_canvas.populate_data_for_step(step_0, "input1", [], [{"name": "di1"}])
+    workflow_canvas.populate_data_for_step(step_1, "cat wrapper", [{"name": "input1", "label": "i1"}], [])
+    workflow_canvas.add_steps()
+    workflow_canvas.finish()
+    assert workflow_canvas.canvas.tostring()
+    tops = [step["position"]["top"] for step in workflow_canvas.data]
+    assert tops[0] < tops[1], "unplaced steps are stacked, not drawn on top of each other"

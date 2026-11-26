@@ -43,6 +43,13 @@ describe("client design tokens", () => {
         }
     });
 
+    it("keeps the input border fallback equal to the input token", () => {
+        const blueTheme = readFileSync(resolve(__dirname, "scss/theme/blue.scss"), "utf8");
+        const fallback = blueTheme.match(/^\$input-border-color:\s*var\(--color-input,\s*(#[0-9a-f]{6})\);/im);
+        expect(fallback, "$input-border-color fallback").not.toBeNull();
+        expect((fallback?.[1] as string).toLowerCase()).toBe(resolveToken(packageTokens, "--color-input"));
+    });
+
     it("loads galaxy-ui's tokens in the analysis entry", () => {
         const entry = readFileSync(resolve(__dirname, "../entry/analysis/index.ts"), "utf8");
         expect(entry).toContain('import "@galaxyproject/galaxy-ui/tokens.css";');

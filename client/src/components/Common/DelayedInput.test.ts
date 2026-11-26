@@ -11,7 +11,7 @@ function mountDelayedInput(props = {}) {
     return mount(DelayedInput as object, {
         localVue,
         propsData: {
-            value: "test query",
+            modelValue: "test query",
             ...props,
         },
     });
@@ -26,5 +26,7 @@ describe("DelayedInput.vue", () => {
 
         expect(wrapper.find("input.g-form-input").exists()).toBe(true);
         expect((wrapper.find("input.g-form-input").element as HTMLInputElement).value).toBe("");
+        expect(wrapper.emitted("update:modelValue")?.at(-1)).toEqual([""]);
+        expect(wrapper.emitted("change")?.at(-1)).toEqual([""]);
     });
 });

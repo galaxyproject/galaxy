@@ -1,5 +1,4 @@
 import json
-import re
 import shlex
 import typing
 from logging import getLogger
@@ -13,7 +12,11 @@ from os.path import (
 )
 
 from galaxy import util
-from galaxy.job_execution.output_collect import default_exit_code_file
+from galaxy.job_execution.output_collect import (
+    default_exit_code_file,
+    escape_preserving_wildcards,
+    rejected_work_dir_outputs_file,
+)
 from galaxy.jobs.runners.util.job_script import (
     INTEGRITY_INJECTION,
     ScriptIntegrityChecks,
@@ -131,7 +134,8 @@ def build_command(
 
     # Galaxy writes I/O files to outputs, Pulsar uses metadata. metadata seems like
     # it should be preferred - at least if the directory exists.
-    io_directory = "../metadata" if for_pulsar else "../outputs"
+    io_directory_name = "metadata" if for_pulsar else "outputs"
+    io_directory = f"../{io_directory_name}"
     commands_builder.capture_stdout_stderr(
         join(io_directory, "tool_stdout"), join(io_directory, "tool_stderr"), stream_stdout_stderr=stream_stdout_stderr
     )
@@ -148,7 +152,8 @@ def build_command(
     if container_monitor_command := job_wrapper.container_monitor_command(container):
         commands_builder.prepend_command(container_monitor_command)
 
-    commands_builder.capture_return_code(default_exit_code_file(working_directory, job_wrapper.job_id))
+    exit_code_path = default_exit_code_file(working_directory, job_wrapper.job_id)
+    commands_builder.capture_return_code(exit_code_path)
     if warning_checks and for_pulsar:
         # Pulsar stages metadata, not outputs, back to Galaxy; copy outside the container.
         metadata_warning_path = shlex.quote(join(working_directory, "metadata", RUNTIME_ENVIRONMENT_WARNING_FILE))
@@ -181,6 +186,11 @@ def build_command(
         __handle_work_dir_outputs(commands_builder, job_wrapper, runner, remote_command_params)
 
     if include_metadata and job_wrapper.requires_setting_metadata:
+        # Absolute, as a tool command not run in a new shell may have changed the current directory.
+        tool_stderr_path = join(working_directory, io_directory_name, "tool_stderr")
+        __handle_work_dir_directory_outputs(
+            commands_builder, remote_command_params, working_directory, tool_stderr_path, exit_code_path
+        )
         commands_builder.append_command(f"cd '{working_directory}'")
         __handle_metadata(commands_builder, job_wrapper, runner, remote_command_params, metadata_container)
 
@@ -235,17 +245,18 @@ def __externalize_commands(
 
 def __handle_remote_command_line_building(commands_builder, job_wrapper: "MinimalJobWrapper", for_pulsar=False):
     if job_wrapper.remote_command_line:
-        sep = "" if for_pulsar else "&&"
+        sep = "&&"
         if for_pulsar:
             # Pulsar sets GALAXY_LIB from its own galaxy_home, so this Galaxy's layout says
             # nothing about the remote's - let the remote pick between the two forms.
-            # TODO: that's not how to do this, pulsar doesn't execute an externalized script by default.
-            # This also breaks rewriting paths etc, so it doesn't really work if there are no shared paths
-            command = f"{REMOTE_TOOL_EVAL_PULSAR_COMMAND} && bash ../tool_script.sh"
+            command = REMOTE_TOOL_EVAL_PULSAR_COMMAND
         elif job_wrapper.galaxy_lib_dir:
             command = REMOTE_TOOL_EVAL_SOURCE_COMMAND
         else:
             command = REMOTE_TOOL_EVAL_PACKAGE_COMMAND
+        # Streaming stdout/stderr adds a multiline setup block. Guard the whole
+        # block so an evaluation failure cannot execute any of the tool command.
+        commands_builder.commands = f"{{ {commands_builder.commands}; }}"
         commands_builder.prepend_command(command, sep=sep)
 
 
@@ -268,12 +279,25 @@ def __handle_work_dir_outputs(
 ):
     # Append commands to copy job outputs based on from_work_dir attribute.
     work_dir_outputs_kwds = {}
+    job_directory = abspath(job_wrapper.working_directory)
     if "working_directory" in remote_command_params:
-        work_dir_outputs_kwds["job_working_directory"] = remote_command_params["working_directory"]
+        job_directory = work_dir_outputs_kwds["job_working_directory"] = remote_command_params["working_directory"]
     work_dir_outputs = runner.get_work_dir_outputs(job_wrapper, **work_dir_outputs_kwds)
     if work_dir_outputs:
-        copy_commands = map(__copy_if_exists_command, work_dir_outputs)
+        copy_commands = (
+            __copy_if_exists_command(work_dir_output, job_directory) for work_dir_output in work_dir_outputs
+        )
         commands_builder.append_commands(copy_commands)
+
+
+def __handle_work_dir_directory_outputs(
+    commands_builder, remote_command_params, job_directory, tool_stderr_path, exit_code_path
+):
+    directory_outputs = remote_command_params.get("metadata_kwds", {}).get("work_dir_directory_outputs", [])
+    for directory_output in directory_outputs:
+        commands_builder.append_command(
+            __copy_directory_if_exists_command(directory_output, job_directory, tool_stderr_path, exit_code_path)
+        )
 
 
 def __handle_metadata(
@@ -294,7 +318,7 @@ def __handle_metadata(
     config_file = metadata_kwds.get("config_file", None)
     datatypes_config = metadata_kwds.get("datatypes_config", None)
     compute_tmp_dir = metadata_kwds.get("compute_tmp_dir", None)
-    version_path = job_wrapper.job_io.version_path
+    version_path = remote_command_params.get("version_path", job_wrapper.job_io.version_path)
     resolve_metadata_dependencies = job_wrapper.commands_in_new_shell
     metadata_command = (
         job_wrapper.setup_external_metadata(
@@ -325,25 +349,57 @@ def __handle_metadata(
         commands_builder.append_command(metadata_command)
 
 
-def __quote_preserving_globs(path: str) -> str:
-    # ``*`` and ``?`` stay unquoted so the shell still expands them, everything
-    # else is quoted.
-    return "".join(part if part in ("*", "?") else shlex.quote(part) for part in re.split(r"([*?])", path) if part)
-
-
-def __copy_if_exists_command(work_dir_output: tuple[str, str]) -> str:
+def __copy_if_exists_command(work_dir_output: tuple[str, str], job_directory: str) -> str:
     source_file, destination = work_dir_output
     is_directory = True if destination.endswith("_files") else False
     test_flag = "-d" if is_directory else "-f"
     recursive_flag = " -r" if is_directory else ""
-    source_file = __quote_preserving_globs(source_file)
+    message = shlex.quote(f"Not collecting {source_file}: it does not resolve to a path inside the job directory")
+    rejected_file = shlex.quote(rejected_work_dir_outputs_file(job_directory))
+    source_file = escape_preserving_wildcards(source_file, shlex.quote)
     destination = shlex.quote(destination)
-    delete_destination_dir = f" rmdir {destination}; " if is_directory else ""
+    job_directory = shlex.quote(job_directory)
+    delete_destination_dir = f" rmdir {destination};" if is_directory else ""
     # Check if source and destination exist.
     # Users can purge outputs before the job completes,
     # in that case we don't want to copy the output to a purged path.
     # Static, non work_dir_output files are handled in job_finish code.
-    return f"\nif [ {test_flag} {source_file} -a {test_flag} {destination} ] ; then{delete_destination_dir} cp{recursive_flag} {source_file} {destination} ; fi"
+    # This copy runs outside of the tool's container, so the source must not be
+    # a link (or inside a linked directory) leading out of the job directory.
+    return (
+        f"\nif [ {test_flag} {source_file} -a {test_flag} {destination} ] ; then "
+        f'case "$(realpath {source_file})" in "$(realpath {job_directory})"/*)'
+        f"{delete_destination_dir} cp{recursive_flag} {source_file} {destination} ;; "
+        f"*) echo {message} >&2 ; echo {message} >> {rejected_file} ;; esac ; fi"
+    )
+
+
+def __copy_directory_if_exists_command(
+    directory_output: tuple[str, str, bool], job_directory: str, tool_stderr_path: str, exit_code_path: str
+) -> str:
+    source_directory, destination, precreated = directory_output
+    message = shlex.quote(f"Not collecting {source_directory}: it does not resolve to a path inside the job directory")
+    # This runs outside the tool's container and from_work_dir comes from the tool, so every path is shell-quoted.
+    source_contents = escape_preserving_wildcards(f"{source_directory}/.", shlex.quote)
+    source_directory = escape_preserving_wildcards(source_directory, shlex.quote)
+    destination = shlex.quote(destination)
+    job_directory = shlex.quote(job_directory)
+    tool_stderr_path = shlex.quote(tool_stderr_path)
+    exit_code_path = shlex.quote(exit_code_path)
+    # Like __copy_if_exists_command, skips a precreated destination that is gone because the output was purged
+    # during the job. Other destinations, e.g. on a remote host, are created.
+    test = f"[ -d {source_directory} -a -d {destination} ]" if precreated else f"[ -d {source_directory} ]"
+    copy_command = f"mkdir -p {destination} && cp -r {source_contents} {destination}"
+    # A failed or refused copy fails the job like a failed tool, keeping the tool's exit code if it already failed.
+    fail_job = f'{{ [ "$return_code" -ne 0 ] || return_code=1 ; echo $return_code > {exit_code_path} ; }}'
+    # Like __copy_if_exists_command, the source must not be a link (or inside a linked directory) leading
+    # out of the job directory.
+    return (
+        f"\nif {test} ; then "
+        f'case "$(realpath {source_directory})" in "$(realpath {job_directory})"/*) '
+        f"{{ {copy_command} ; }} 2>> {tool_stderr_path} || {fail_job} ;; "
+        f"*) echo {message} >> {tool_stderr_path} ; {fail_job} ;; esac ; fi"
+    )
 
 
 class CommandsBuilder:

@@ -5,6 +5,8 @@ import flushPromises from "flush-promises";
 import { beforeEach, expect, it, vi } from "vitest";
 import { ref } from "vue";
 
+import { testDatatypesMapper } from "@/components/Datatypes/test_fixtures";
+
 import InvocationGraph from "./InvocationGraph.vue";
 import GAlert from "@/components/BaseComponents/GAlert.vue";
 import WorkflowGraph from "@/components/Workflow/Editor/WorkflowGraph.vue";
@@ -19,7 +21,9 @@ vi.mock("@/composables/useInvocationGraph", () => ({
         loadInvocationGraph,
     }),
 }));
-vi.mock("@/composables/datatypesMapper", () => ({ useDatatypesMapper: () => ({ datatypesMapper: ref({}) }) }));
+vi.mock("@/composables/datatypesMapper", () => ({
+    useDatatypesMapper: () => ({ datatypesMapper: ref(testDatatypesMapper) }),
+}));
 
 beforeEach(() => {
     loadInvocationGraph.mockReset();

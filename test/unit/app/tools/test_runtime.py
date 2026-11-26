@@ -8,12 +8,19 @@ import pytest
 from pydantic import ValidationError
 
 from galaxy.datatypes.registry import example_datatype_registry_for_sample
+from galaxy.job_execution.compute_environment import (
+    ComputeEnvironment,
+    RemoteComputeEnvironment,
+)
 from galaxy.model import (
     Dataset,
     DatasetCollection,
     DatasetCollectionElement,
     DatasetSource,
     HistoryDatasetAssociation,
+    HistoryDatasetAssociationTagAssociation,
+    HistoryDatasetCollectionAssociation,
+    HistoryDatasetCollectionTagAssociation,
     ImplicitlyConvertedDatasetAssociation,
     set_datatypes_registry,
 )
@@ -25,6 +32,7 @@ from galaxy.tool_util_models.parameters import (
     DataCollectionPairedOrUnpairedRuntime,
     DataCollectionPairedRuntime,
     DataCollectionRecordRuntime,
+    DataCollectionRequestInternal,
     DataCollectionSampleSheetRuntime,
     DataInternalJson,
     DataParameterModel,
@@ -35,6 +43,7 @@ from galaxy.tools.evaluation import UserToolEvaluator
 from galaxy.tools.runtime import (
     _validate_collection_runtime_dict,
     collection_to_runtime,
+    input_extra_files_path,
     setup_for_runtimeify,
 )
 from galaxy.util.bunch import Bunch
@@ -267,6 +276,8 @@ def test_validate_collection_runtime_dict_rejects_unknown_nested():
 
 
 class RewritingComputeEnvironment:
+    input_extra_files_path = ComputeEnvironment.input_extra_files_path
+
     def input_path_rewrite(self, dataset):
         return f"/job/inputs/dataset_{dataset.id}.dat"
 
@@ -317,6 +328,21 @@ def test_adapt_dataset_with_extra_files(extension, tmp_path):
     assert result.class_ == "File"
     assert result.path == "/job/inputs/dataset_1.dat"
     assert result.extra_files_path == "/job/inputs/dataset_1_files"
+
+
+def test_remote_evaluation_input_extra_files_path_uses_recorded_paths():
+    # Remote evaluation has no object store, the recorded paths are all it can use.
+    compute_environment = RemoteComputeEnvironment(
+        cast(Any, None),
+        cast(Any, None),
+        {"datasets": {}, "extra_files": {"1": "/compute/dataset_1_files"}, "metadata_files": {}, "unstructured": {}},
+    )
+    hda = HistoryDatasetAssociation(create_dataset=True, flush=False, name="input", extension="pbed")
+    assert hda.dataset is not None
+    hda.dataset.id = 1
+    assert input_extra_files_path(hda, compute_environment) == "/compute/dataset_1_files"
+    hda.dataset.id = 2
+    assert input_extra_files_path(hda, compute_environment) is None
 
 
 @pytest.mark.parametrize("extension", ["directory", "zarr", "ome_zarr"])
@@ -576,3 +602,70 @@ def test_runtimeify_resolves_a_dataset_used_directly_and_converted():
     assert runtime_state["as_csv"]["path"] == "/job/inputs/dataset_1.dat"
     assert runtime_state["as_tabular"]["format"] == "tabular"
     assert runtime_state["as_tabular"]["path"] == "/job/inputs/dataset_2.dat"
+
+
+def _adapt_tagged_collection(src):
+    """Adapt a list:list whose dataset has a name: tag and whose HDCA has a group: tag."""
+    registry = example_datatype_registry_for_sample()
+    set_datatypes_registry(registry)
+    hda = _hda(7, "txt")
+    hda.tags.append(HistoryDatasetAssociationTagAssociation(user_tname="name", user_value="s1", value="s1"))
+    inner = DatasetCollection(collection_type="list")
+    inner.id = 3
+    DatasetCollectionElement(collection=inner, element_identifier="s1", element_index=0, element=hda)
+    outer = DatasetCollection(collection_type="list:list")
+    outer.id = 4
+    outer_element = DatasetCollectionElement(collection=outer, element_identifier="o1", element_index=0, element=inner)
+    outer_element.id = 9
+    hdca = HistoryDatasetCollectionAssociation(collection=outer, name="samples")
+    hdca.id = 5
+    hdca.tags.append(HistoryDatasetCollectionTagAssociation(user_tname="group", user_value="a", value="a"))
+    hdca.tags.append(HistoryDatasetCollectionTagAssociation(user_tname="reviewed"))
+    _, _, adapt_collection = setup_for_runtimeify(
+        cast(Any, DatatypesApp(registry)),
+        cast(Any, RewritingComputeEnvironment()),
+        {"input": hda},
+        {"input": hdca if src == "hdca" else outer_element},
+    )
+    collection_type, id = ("list:list", hdca.id) if src == "hdca" else ("list", outer_element.id)
+    return adapt_collection(DataCollectionRequestInternal(src=src, id=id), collection_type, ["txt"]).model_dump(
+        by_alias=True
+    )
+
+
+def test_adapt_collection_gives_hdca_tags_as_text():
+    runtime = _adapt_tagged_collection("hdca")
+    assert runtime["tags"] == ["group:a", "reviewed"]
+
+
+def test_adapt_collection_gives_nested_collection_tags_as_text():
+    # Nested collections get the tags propagated from their datasets.
+    runtime = _adapt_tagged_collection("hdca")
+    assert runtime["elements"][0]["tags"] == ["name:s1"]
+
+
+def test_adapt_collection_gives_mapped_over_subcollection_tags_as_text():
+    runtime = _adapt_tagged_collection("dce")
+    assert runtime["tags"] == ["name:s1"]
+
+
+def test_adapt_collection_gives_an_empty_nested_collection_no_tags():
+    inner = DatasetCollection(collection_type="list")
+    inner.id = 3
+    outer = DatasetCollection(collection_type="list:list")
+    outer.id = 4
+    DatasetCollectionElement(collection=outer, element_identifier="o1", element_index=0, element=inner)
+    hdca = HistoryDatasetCollectionAssociation(collection=outer, name="samples")
+    hdca.id = 5
+    registry = example_datatype_registry_for_sample()
+    _, _, adapt_collection = setup_for_runtimeify(
+        cast(Any, DatatypesApp(registry)),
+        cast(Any, RewritingComputeEnvironment()),
+        {},
+        {"input": hdca},
+    )
+    runtime = adapt_collection(DataCollectionRequestInternal(src="hdca", id=hdca.id), "list:list", ["txt"]).model_dump(
+        by_alias=True
+    )
+    assert runtime["elements"][0]["tags"] == []
+    assert runtime["elements"][0]["elements"] == []

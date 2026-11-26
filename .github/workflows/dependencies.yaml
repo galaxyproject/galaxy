@@ -19,7 +19,8 @@ jobs:
         uses: astral-sh/setup-uv@v10.3.3
         with:
           version-file: .tool-versions
-          python-version: '3.10'
+          python-version: '3.11'
+          prune-cache: true
       - name: Update dependencies
         run: make update-dependencies
       - name: Check lock and requirements exports

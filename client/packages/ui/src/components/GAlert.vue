@@ -9,11 +9,6 @@ import { computed, onBeforeUnmount, provide, ref, useAttrs, watch } from "vue";
 
 import { liveRegionKey } from "./liveRegionContext";
 
-defineOptions({
-    // Under @vue/compat: let undeclared listeners (@pointerdown, @dblclick) fall through to the alert, as in Vue 3
-    compatConfig: { INSTANCE_LISTENERS: false },
-});
-
 type AlertVariant = "info" | "warning" | "danger" | "success" | "primary" | "secondary" | "light" | "dark";
 // `string & {}` keeps IDE autocomplete for the recommended variants while still accepting arbitrary
 // strings (and null) -- mirrors BAlert's permissive prop typing so existing call sites don't have
@@ -24,9 +19,7 @@ type AlertShow = boolean | number | string | null;
 interface Props {
     /** Controls alert visibility */
     show?: AlertShow;
-    /** Vue 2 default v-model value */
-    value?: AlertShow;
-    /** Vue 3 default v-model value */
+    /** The v-model value; takes precedence over `show` when bound */
     modelValue?: AlertShow;
     /** Bootstrap contextual variant */
     variant?: AlertVariantProp;
@@ -40,7 +33,6 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
     show: true,
-    value: undefined,
     modelValue: undefined,
     variant: "info",
     dismissible: false,
@@ -51,7 +43,6 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits<{
     (e: "dismissed"): void;
     (e: "dismiss-count-down", count: number): void;
-    (e: "input", show: AlertShow): void;
     (e: "update:modelValue", show: AlertShow): void;
     (e: "update:show", show: AlertShow): void;
 }>();
@@ -65,13 +56,7 @@ const attrs = useAttrs();
 provide(liveRegionKey, !["none", "presentation"].includes(String(attrs.role ?? "")));
 
 const boundShow = computed<AlertShow>(() => {
-    if (props.value !== undefined) {
-        return props.value;
-    }
-    if (props.modelValue !== undefined) {
-        return props.modelValue;
-    }
-    return props.show;
+    return props.modelValue !== undefined ? props.modelValue : props.show;
 });
 
 const countDown = ref(0);
@@ -112,7 +97,6 @@ function hasNumericShow(show: AlertShow | undefined) {
 }
 
 function emitModel(show: AlertShow) {
-    emit("input", show);
     emit("update:modelValue", show);
     emit("update:show", show);
 }

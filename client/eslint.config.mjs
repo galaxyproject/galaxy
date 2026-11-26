@@ -23,7 +23,47 @@ const baseRules = {
     // Vue 3 specific rules
     "vue/no-deprecated-dollar-listeners-api": "error",
     "vue/no-deprecated-dollar-scopedslots-api": "error",
+    "vue/no-deprecated-delete-set": "error",
     "vue/no-deprecated-events-api": "error",
+    // The vue/no-deprecated-* rules only see components in .vue files, so the
+    // render-function providers in .js files need a plain property check.
+    "no-restricted-properties": [
+        "error",
+        ...["$scopedSlots", "$children", "$set", "$delete", "$destroy"].map((property) => ({
+            property,
+            message: `${property} is Vue 2 instance API; compat has it turned off for Galaxy code.`,
+        })),
+        // compat-config.js keeps these on for every component because bootstrap-vue
+        // needs them, so neither compat nor the unit tests flag them in Galaxy code.
+        ...["$on", "$off", "$once"].map((property) => ({
+            property,
+            message: `${property} is Vue 2 instance API; use an event bus or emits instead.`,
+        })),
+        { object: "Vue", property: "extend", message: "Vue.extend is Vue 2 API; use defineComponent() instead." },
+        { property: "$mount", message: "$mount is Vue 2 API; use createApp(Component).mount() instead." },
+    ],
+    // RENDER_FUNCTION is off, so a render function's first argument is the
+    // instance proxy, not `h`.
+    "no-restricted-syntax": [
+        "error",
+        {
+            selector:
+                "Property[key.name='render'] > :matches(FunctionExpression, ArrowFunctionExpression)[params.0.name=/^(h|createElement)$/]",
+            message: "Vue 3 render functions don't receive `h`; import { h } from 'vue' instead.",
+        },
+        {
+            // Kept on globally for bootstrap-vue's functional components (see compat-config.js).
+            selector: "Property[key.name='functional'][value.value=true]",
+            message: "Vue 3 functional components are plain functions; `functional: true` is Vue 2.",
+        },
+        {
+            // GLOBAL_MOUNT is kept on for bootstrap-vue too (see compat-config.js).
+            selector: "NewExpression[callee.name='Vue']",
+            message: "new Vue() is Vue 2 API; use createApp(Component).mount() instead.",
+        },
+    ],
+    "vue/no-deprecated-data-object-declaration": "error",
+    "vue/no-deprecated-destroyed-lifecycle": "error",
     "vue/no-deprecated-filter": "error",
     "vue/no-deprecated-functional-template": "error",
     "vue/no-deprecated-inline-template": "error",
@@ -35,19 +75,30 @@ const baseRules = {
     "vue/no-deprecated-v-bind-sync": "error",
     "vue/no-deprecated-v-on-number-modifiers": "error",
     "vue/no-deprecated-vue-config-keycodes": "error",
+    "vue/no-deprecated-v-on-native-modifier": "error",
+    "vue/no-deprecated-html-element-is": "error",
+    // COMPONENT_V_MODEL is off: v-model is modelValue/update:modelValue.
+    "vue/no-deprecated-model-definition": "error",
+    "vue/no-use-v-if-with-v-for": "error",
+    // A bare <template> renders as a native <template> element under Vue 3.
+    "vue/no-lone-template": "error",
     "vue/no-lifecycle-after-await": "error",
     "vue/no-ref-as-operand": "error",
     "vue/no-v-for-template-key-on-child": "error",
-    "vue/require-explicit-emits": "warn",
+    // Undeclared emits fall through to the root element as native listeners
+    // once INSTANCE_LISTENERS is off.
+    "vue/require-explicit-emits": "error",
     // Bootstrap-vue isn't registered globally, so its components have to be
     // imported where they're used. Only checks bootstrap-vue names.
     "vue/no-undef-components": ["error", { ignorePatterns: ["^(?!b-|B[A-Z])"] }],
-    // client/patches/bootstrap-vue@2.23.1.patch doesn't fix v-model on these under
-    // Vue 3 compat, so they'd silently stop updating their bound values.
+    // One entry for every restricted import: a second "no-restricted-imports"
+    // key in this object would silently replace the first.
     "no-restricted-imports": [
         "error",
         {
             paths: [
+                // client/patches/bootstrap-vue@2.23.1.patch doesn't fix v-model on these under
+                // Vue 3 compat, so they'd silently stop updating their bound values.
                 {
                     name: "bootstrap-vue",
                     importNames: [
@@ -60,6 +111,12 @@ const baseRules = {
                     ],
                     message:
                         "Unpatched under Vue 3 compat; use GCheckbox, GCheckboxGroup, GRadio, GRadioGroup or GSelect.",
+                },
+                // Vue 2 libraries have to be marked with legacyComponent() to keep their
+                // compat behavior, so each has one marked import path.
+                {
+                    name: "vue-json-pretty",
+                    message: "Import @/components/Common/legacy/VueJsonPretty, which keeps it on compat MODE 2.",
                 },
             ],
         },
@@ -213,14 +270,6 @@ export default defineConfig(
             "@typescript-eslint/ban-ts-comment": "warn",
             "@typescript-eslint/no-explicit-any": "warn", // TODO: re-enable this
             "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "_.+", varsIgnorePattern: "_.+" }],
-        },
-    },
-    {
-        // galaxy-ui supports Vue 2.7 and 3 at once (the tool shed consumes it too), so its
-        // components keep `.native` for vue-router 3's RouterLink roots.
-        files: ["**/packages/ui/src/**/*.vue"],
-        rules: {
-            "vue/no-deprecated-v-on-native-modifier": "off",
         },
     },
 );

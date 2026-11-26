@@ -52,6 +52,14 @@ class TestWorkflowsFromYamlApi(BaseWorkflowsApiTestCase):
         )
         assert workflow_as_format2["doc"].startswith("Simple workflow that")
 
+    def test_upload_without_positions_leaves_steps_unplaced(self):
+        workflow_id = self._upload_yaml_workflow(WORKFLOW_SIMPLE_CAT_AND_RANDOM_LINES, client_convert=False)
+        editor = self.workflow_populator.download_workflow(workflow_id, style="editor")
+        assert [step["position"] for step in editor["steps"].values()] == [None] * len(editor["steps"])
+        # exports leave the key out rather than writing null, which older Galaxy cannot read
+        native = self.workflow_populator.download_workflow(workflow_id)
+        assert not any("position" in step for step in native["steps"].values())
+
     def test_simple_output_actions(self):
         history_id = self.dataset_populator.new_history()
         self._run_jobs(

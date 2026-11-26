@@ -395,8 +395,8 @@
                                     :col-headers="colHeaders"
                                     @remove="removeMapping(index)"
                                     @edit="displayRuleType = 'mapping'"
-                                    @mouseover="map.columns.forEach((col) => highlightColumn(col))"
-                                    @mouseout="map.columns.forEach((col) => unhighlightColumn(col))" />
+                                    @mouseenter="highlightColumns(map.columns)"
+                                    @mouseleave="clearHighlightedColumns" />
                                 <div v-if="mapping.length == 0">
                                     One or more column definitions must be specified. These are required to specify how
                                     to build collections and datasets from rows and columns of the table.
@@ -489,22 +489,12 @@
                 <!--  flex-column column -->
                 <!--  style="width: 70%;" -->
                 <div v-if="initialElements !== null" class="table-column" :class="orientation" style="width: 100%">
-                    <HotTable
-                        v-if="gridImplementation === 'hot'"
-                        id="hot-table"
-                        ref="hotTable"
-                        :data="hotData.data"
-                        :col-headers="colHeadersDisplay"
-                        :read-only="true"
-                        stretch-h="all"></HotTable>
                     <RuleGrid
-                        v-else
-                        id="hot-table"
-                        ref="hotTable"
+                        id="rule-grid"
                         height="400px"
                         :data="hotData.data"
                         :col-headers="colHeadersDisplay"
-                        stretch-h="all"></RuleGrid>
+                        :highlighted-columns="highlightedColumns" />
                 </div>
             </div>
         </RuleModalMiddle>
@@ -611,7 +601,6 @@
 </template>
 
 <script>
-import HotTable from "@handsontable/vue";
 import axios from "axios";
 import { BRow } from "bootstrap-vue";
 import { escape } from "lodash";
@@ -665,7 +654,6 @@ export default {
         GAlert,
         GFormInput,
         TooltipOnHover,
-        HotTable,
         RuleGrid,
         RuleComponent,
         RuleTargetComponent,
@@ -736,17 +724,13 @@ export default {
             required: false,
             default: null,
         },
-        gridImplementation: {
-            type: String,
-            required: false,
-            default: "aggrid",
-        },
         mode: {
             type: String,
             required: false,
             default: "modal", // set to wizard to use embedded formatting
         },
     },
+    emits: ["validInput", "onCreate", "onAttemptCreate"],
     data: function () {
         let orientation = "vertical";
         let mapping;
@@ -823,6 +807,7 @@ export default {
             ruleSourceError: null,
             errorMessage: "",
             jaggedData: false,
+            highlightedColumns: [],
             waitingJobState: "new",
             titleReset: _l("Undo all reordering and discards"),
             titleNumericSort: _l(
@@ -1267,6 +1252,10 @@ export default {
         },
     },
     watch: {
+        // Editing a definition hides the list, so the hovered row never gets its mouseleave.
+        displayRuleType: function () {
+            this.clearHighlightedColumns();
+        },
         addColumnRegexType: function (val) {
             if (val == "groups") {
                 this.addColumnRegexGroupCount = 1;
@@ -1338,15 +1327,6 @@ export default {
         // to flair if it is initially okay also.
         if (this.validInput) {
             this.$emit("validInput", true);
-        }
-    },
-    mounted() {
-        // something bizarre is up with the rendering of hands-on-table, needs a click to render.
-        // Vue.nextTick() didn't work here.
-        if (this.gridImplementation === "hot") {
-            setTimeout(() => {
-                this.$refs.hotTable.$el.click();
-            }, 200);
         }
     },
     methods: {
@@ -1463,6 +1443,8 @@ export default {
         },
         removeMapping(index) {
             this.mapping.splice(index, 1);
+            // The removed row never gets its mouseleave.
+            this.clearHighlightedColumns();
         },
         refreshAndWait(response) {
             this.startWatchingHistory();
@@ -1855,17 +1837,11 @@ export default {
             }
             return { data, sources };
         },
-        highlightColumn(n) {
-            const headerSelection = document.querySelectorAll(`.htCore > thead > tr > th:nth-child(${n + 1})`);
-            headerSelection.forEach((el) => el.classList.add("ht__highlight"));
-            const bodySelection = document.querySelectorAll(`.htCore > tbody > tr > td:nth-child(${n + 1})`);
-            bodySelection.forEach((el) => el.classList.add("rule-highlight"));
+        highlightColumns(columns) {
+            this.highlightedColumns = columns;
         },
-        unhighlightColumn(n) {
-            const headerSelection = document.querySelectorAll(`.htCore > thead > tr > th:nth-child(${n + 1})`);
-            headerSelection.forEach((el) => el.classList.remove("ht__highlight"));
-            const bodySelection = document.querySelectorAll(`.htCore > tbody > tr > td:nth-child(${n + 1})`);
-            bodySelection.forEach((el) => el.classList.remove("rule-highlight"));
+        clearHighlightedColumns() {
+            this.highlightedColumns = [];
         },
         _datasetFor(dataIndex, data, mappingAsDict) {
             const res = {};
@@ -1969,7 +1945,6 @@ export default {
 };
 </script>
 
-<style src="../../node_modules/handsontable/dist/handsontable.full.css"></style>
 <style lang="scss">
 .rule-collection-builder {
     .table-column {
@@ -1979,12 +1954,12 @@ export default {
     .select-basic {
         min-width: 60px;
     }
-    .vertical #hot-table {
+    .vertical #rule-grid {
         width: 100%;
         overflow: hidden;
         height: 400px;
     }
-    .horizontal #hot-table {
+    .horizontal #rule-grid {
         width: 100%;
         overflow: hidden;
         height: 250px;

@@ -276,11 +276,18 @@ class BaseJobRunner:
 
     def shutdown(self):
         """Attempts to gracefully shut down the worker threads"""
+        self._stop_worker_threads()
+        self._join_worker_threads()
+
+    def _stop_worker_threads(self) -> None:
+        """Tell the worker threads to stop once their current work item is done."""
         log.info("%s: Sending stop signal to %s job worker threads", self.runner_name, len(self.work_threads))
         self._should_stop = True
         for _ in range(len(self.work_threads)):
             self.work_queue.put((STOP_SIGNAL, None))
 
+    def _join_worker_threads(self) -> None:
+        """Wait up to ``monitor_thread_join_timeout`` seconds for the worker threads to exit."""
         if (join_timeout := self.app.config.monitor_thread_join_timeout) > 0:
             log.info("Waiting up to %d seconds for job worker threads to shutdown...", join_timeout)
             start = time.time()
@@ -765,12 +772,21 @@ class BaseJobRunner:
             # full_status currently only passed in pulsar runner,
             # but might be useful for other runners in the future.
             full_status = full_status or {}
-            tool_stdout = full_status.get("stdout")
-            tool_stderr = full_status.get("stderr")
             fail_message = getattr(job_state, "fail_message", message)
             job_state.job_wrapper.fail(
-                fail_message, tool_stdout=tool_stdout, tool_stderr=tool_stderr, exception=exception
+                fail_message,
+                tool_stdout=full_status.get("stdout"),
+                tool_stderr=full_status.get("stderr"),
+                exit_code=full_status.get("returncode"),
+                job_stdout=full_status.get("job_stdout"),
+                job_stderr=full_status.get("job_stderr"),
+                exception=exception,
+                job_metrics_directory=self._fail_job_metrics_directory(job_state.job_wrapper),
             )
+
+    def _fail_job_metrics_directory(self, job_wrapper: "MinimalJobWrapper") -> str | None:
+        """Where a failed job's metrics are collected from, ``None`` for the job's working directory."""
+        return None
 
     def mark_as_resubmitted(self, job_state: "JobState", info: str | None = None):
         job_state.job_wrapper.mark_as_resubmitted(info=info)
@@ -797,6 +813,18 @@ class BaseJobRunner:
         except Exception:
             log.exception("(%s) Failed to read remote tool evaluation error", job_wrapper.get_id_tag())
             return None
+
+    def _resubmit_for_detected_state(self, job_state: "JobState", check_output_detected_state: str) -> bool:
+        """Offer a job whose tool output indicates failure to the resubmit handler, returns whether it handled the job."""
+        if check_output_detected_state == DETECTED_JOB_STATE.OK:
+            return False
+        job_state.runner_state = (
+            JobState.runner_states.MEMORY_LIMIT_REACHED
+            if check_output_detected_state == DETECTED_JOB_STATE.OUT_OF_MEMORY_ERROR
+            else JobState.runner_states.TOOL_DETECT_ERROR
+        )
+        self._handle_runner_state("failure", job_state)
+        return job_state.runner_state_handled
 
     def _finish_or_resubmit_job(self, job_state: "JobState", job_stdout, job_stderr, job_id=None, external_job_id=None):
         job_wrapper = job_state.job_wrapper
@@ -870,15 +898,9 @@ class BaseJobRunner:
             self.sa_session.add(job)
             self.sa_session.commit()
 
-            if not job_ok:
-                job_runner_state = JobState.runner_states.TOOL_DETECT_ERROR
-                if check_output_detected_state == DETECTED_JOB_STATE.OUT_OF_MEMORY_ERROR:
-                    job_runner_state = JobState.runner_states.MEMORY_LIMIT_REACHED
-                job_state.runner_state = job_runner_state
-                self._handle_runner_state("failure", job_state)
+            if self._resubmit_for_detected_state(job_state, check_output_detected_state):
                 # Was resubmitted or something - I think we are done with it.
-                if job_state.runner_state_handled:
-                    return
+                return
 
             if stdio_errors:
                 # Finishing may require metadata that was never produced. Fail with the

@@ -124,6 +124,12 @@ export interface PaletteSearchOptions {
     signal?: AbortSignal;
 }
 
+/** How a scoped search may answer: early from the cache while its backend search waits, then in full */
+export interface ScopedSearchOptions extends Pick<PaletteSearchOptions, "signal"> {
+    /** Takes the sections the cache answers with before the input settled; the sections returned replace them */
+    onLocal?(sections: ScopedSection[]): void;
+}
+
 /**
  * A source of palette results. Sync providers (navigation, actions) filter
  * local data; async providers (tools, and per-entity searches later) may
@@ -143,6 +149,7 @@ export interface CommandPaletteProvider {
         scope: ScopeDefinition,
         query: string,
         ctx: PaletteContext,
+        options?: ScopedSearchOptions,
     ): ScopedSection[] | Promise<ScopedSection[]>;
     /** Section heading shown above this provider's results */
     title: string;

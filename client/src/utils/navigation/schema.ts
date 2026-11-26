@@ -455,6 +455,8 @@ interface Rootworkflow_editor extends Component {
     connect_icon: SelectorTemplate;
     collapse_icon: SelectorTemplate;
     edit_subworkflow: SelectorTemplate;
+    upgrade_subworkflow: SelectorTemplate;
+    latest_change: SelectorTemplate;
     node_title: SelectorTemplate;
     label_input: SelectorTemplate;
     annotation_input: SelectorTemplate;

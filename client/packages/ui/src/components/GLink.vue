@@ -6,7 +6,7 @@
 
 import type { Placement } from "@floating-ui/dom";
 import { computed, ref } from "vue";
-import type { RouterLink } from "vue-router";
+import type { RouteLocationRaw, RouterLink } from "vue-router";
 
 import { useClickableElement } from "../composables/clickableElement";
 import { useCurrentTitle } from "../composables/currentTitle";
@@ -18,7 +18,7 @@ const props = defineProps<{
     /** Href to set on the underlying 'a' element. Using this will turn the element into an anchor, not affecting the styling */
     href?: string;
     /** Router link "to" prop. Using this will turn the element into a router-link, not affecting the styling  */
-    to?: string;
+    to?: RouteLocationRaw;
     /** Disabled state. Changes appearance, and will no longer accept or forward clicks */
     disabled?: boolean;
     /** Title attribute, or tooltip text */
@@ -79,14 +79,15 @@ const linkElementRef = useResolveElement(linkRef);
 <template>
     <component
         :is="baseComponent"
+        v-bind="anchorAttributes"
         ref="linkRef"
         class="g-link"
         :class="styleClasses"
         :data-title="currentTitle"
         :to="!props.disabled ? props.to : ''"
         :title="props.tooltip ? undefined : currentTitle"
+        :type="baseComponent === 'button' ? ($attrs.type ?? 'button') : undefined"
         :aria-disabled="props.disabled || undefined"
-        v-bind="{ ...anchorAttributes, ...$attrs }"
         @click="onClick">
         <slot></slot>
 
@@ -100,6 +101,8 @@ const linkElementRef = useResolveElement(linkRef);
 </template>
 
 <style scoped lang="scss">
+@use "../styles/focus-ring" as *;
+
 .g-link {
     border: none !important;
     background: none !important;
@@ -124,11 +127,8 @@ const linkElementRef = useResolveElement(linkRef);
         box-shadow: none !important;
     }
 
-    // Page-background gap keeps the ring clear of the surrounding text; outline survives forced colors.
     &:focus-visible {
-        outline: 2px solid var(--color-blue-600);
-        outline-offset: 2px;
-        box-shadow: 0 0 0 2px var(--background-color) !important;
+        @include focus-ring($important: true);
     }
 
     &.g-dark {

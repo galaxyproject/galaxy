@@ -27,7 +27,9 @@
                     return;
                 }
                 if (center && !center.hasAttribute("tabindex")) {
+                    // Only for this hand-off: a lasting tabindex would let later clicks on blank areas focus #center.
                     center.setAttribute("tabindex", "-1");
+                    center.addEventListener("blur", () => center.removeAttribute("tabindex"), { once: true });
                 }
                 target.focus({ preventScroll: true });
             });

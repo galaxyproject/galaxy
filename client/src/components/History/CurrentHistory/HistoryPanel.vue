@@ -60,6 +60,10 @@ const props = withDefaults(defineProps<Props>(), {
     isMultiViewItem: false,
 });
 
+const emit = defineEmits<{
+    (e: "view-collection", item: HistoryItemSummary, currentOffset: number): void;
+}>();
+
 const filterClass = HistoryFilters;
 const filterText = ref("");
 const invisibleHistoryItems = ref<Record<string, any>>({});
@@ -72,7 +76,7 @@ const operationError = ref(null);
 const querySelectionBreak = ref(false);
 
 const { currentFilterText, currentHistoryId, pinnedHistories, storedHistories } = storeToRefs(useHistoryStore());
-const { lastCheckedTime, totalMatchesCount, isWatching } = storeToRefs(useHistoryItemsStore());
+const { lastCheckedTime, isWatching } = storeToRefs(useHistoryItemsStore());
 
 const historyStore = useHistoryStore();
 const historyItemsStore = useHistoryItemsStore();
@@ -81,6 +85,7 @@ const { currentUser } = storeToRefs(useUserStore());
 
 const historyIdComputed = computed(() => props.history.id);
 const { showDropZone, onDragEnter, onDragLeave, onDragOver, onDrop } = useHistoryDragDrop(historyIdComputed);
+const totalMatchesCount = computed(() => historyItemsStore.getTotalMatchesCount(props.history.id));
 
 const currentUserOwnsHistory = computed(() => {
     return userOwnsHistory(currentUser.value, props.history);
@@ -567,7 +572,7 @@ const {
                                 @toggleHighlights="updateFilterValue('related', item.hid)"
                                 @update:expand-dataset="setExpanded(item, $event)"
                                 @update:selected="setSelected(item, $event)"
-                                @view-collection="$emit('view-collection', item, currentOffset)"
+                                @view-collection="emit('view-collection', item, currentOffset)"
                                 @delete="onDelete"
                                 @undelete="onUndelete(item)"
                                 @unhide="onUnhide(item)">

@@ -29,6 +29,7 @@ import {
     RemoveStepAction,
     ToggleStepSelectedAction,
     UpdateStepAction,
+    useStepActions,
 } from "./stepActions";
 import {
     AddToSelectionAction,
@@ -232,6 +233,18 @@ describe("Workflow Undo Redo Actions", () => {
             const action = new DeleteSelectionAction(workflowId);
             testUndoRedo(action);
         });
+
+        it("DeleteSelectionAction keeps step labels across repeated delete and undo", () => {
+            const step = { ...mockToolStep(stepStore.getStepIndex + 1), label: "my_label" };
+            stepStore.addStep(step);
+
+            for (let attempt = 0; attempt < 2; attempt++) {
+                stateStore.setStepMultiSelected(step.id, true);
+                undoRedoStore.applyAction(new DeleteSelectionAction(workflowId));
+                undoRedoStore.undo();
+                expect(stepStore.steps[step.id]?.label).toBe("my_label");
+            }
+        });
     });
 
     describe("Step Actions", () => {
@@ -297,6 +310,22 @@ describe("Workflow Undo Redo Actions", () => {
             ]);
 
             testUndoRedo(action);
+        });
+
+        it("setInputDefaults merges consecutive edits into one undo entry", () => {
+            const step = addStep();
+            const { setInputDefaults } = useStepActions(stepStore, undoRedoStore, stateStore, connectionStore);
+            const fileDefault = (location: string) => ({ input: { default: { class: "File", location } } });
+
+            setInputDefaults(stepStore.getStep(step.id)!, fileDefault("h"));
+            setInputDefaults(stepStore.getStep(step.id)!, fileDefault("ht"));
+            setInputDefaults(stepStore.getStep(step.id)!, fileDefault("http"));
+            undoRedoStore.flushLazyAction();
+
+            expect(undoRedoStore.undoStackLength).toBe(1);
+            expect(stepStore.getStep(step.id)?.in).toEqual(fileDefault("http"));
+            undoRedoStore.undo();
+            expect(stepStore.getStep(step.id)?.in).toBeUndefined();
         });
 
         it("ToggleStepSelectedAction", () => {

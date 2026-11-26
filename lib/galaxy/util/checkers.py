@@ -158,6 +158,15 @@ def check_bz2(file_path: str, check_content: bool = True) -> tuple[bool, bool]:
 
 
 def check_zip(file_path: str, check_content: bool = True, files=1) -> tuple[bool, bool]:
+    # zipfile.is_zipfile only looks for an end-of-central-directory record, which a tar
+    # ending in a zip member also has, so require the archive to start the file.
+    try:
+        with open(file_path, "rb") as temp:
+            magic_check = temp.read(4)
+        if magic_check not in (b"PK\x03\x04", b"PK\x05\x06"):
+            return (False, False)
+    except Exception:
+        return (False, False)
     if not zipfile.is_zipfile(file_path):
         return (False, False)
 

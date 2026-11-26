@@ -2,12 +2,12 @@
     <div>
         <BBreadcrumb v-if="dataManager && jobId && !loading" id="breadcrumb" :items="breadcrumbItems" />
 
-        <Alert :message="message" :variant="status" />
+        <GAlert v-if="message" :variant="statusVariant">{{ message }}</GAlert>
 
-        <Alert v-for="(error, index) in errorMessages" :key="index" :message="error" variant="error" />
+        <GAlert v-for="(error, index) in errorMessages" :key="index" variant="danger">{{ error }}</GAlert>
 
-        <Alert v-if="viewOnly" message="Not implemented" variant="dark" />
-        <Alert v-else-if="loading" message="Waiting for data" variant="info" />
+        <GAlert v-if="viewOnly" variant="dark">Not implemented</GAlert>
+        <GAlert v-else-if="loading" variant="info">Waiting for data</GAlert>
         <BContainer v-else-if="dataManager">
             <BRow>
                 <BCol>
@@ -86,20 +86,21 @@ import axios from "axios";
 import { BBreadcrumb, BCard, BCol, BContainer, BRow } from "bootstrap-vue";
 
 import { getAppRoot } from "@/onload/loadConfig";
+import { alertVariant } from "@/utils/alertVariant";
 
-import Alert from "@/components/Alert.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GTable from "@/components/Common/GTable.vue";
 
 export default {
     components: {
-        Alert,
         BBreadcrumb,
         BCard,
         BCol,
         BContainer,
         BRow,
         FontAwesomeIcon,
+        GAlert,
         GButton,
         GTable,
     },
@@ -136,6 +137,9 @@ export default {
         };
     },
     computed: {
+        statusVariant() {
+            return alertVariant(this.status);
+        },
         breadcrumbItems() {
             return [
                 {

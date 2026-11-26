@@ -1,5 +1,5 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue, nth, suppressDebugConsole } from "@tests/vitest/helpers";
+import { getLocalVue, nth, suppressDebugConsole, withPlugins } from "@tests/vitest/helpers";
 import { mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
@@ -28,9 +28,10 @@ vi.mock("./WorkflowRunDefaultStep.vue", () =>
 );
 vi.mock("./WorkflowRunInputStep.vue", () => stub("WorkflowRunInputStep", ["model", "validationScrollTo", "historyId"]));
 vi.mock("@/components/Form/FormDisplay.vue", () => stub("FormDisplay", ["inputs"]));
-vi.mock("@/components/Form/FormElement.vue", () => stub("FormElement", ["value"]));
+vi.mock("@/components/Form/FormElement.vue", () => stub("FormElement", ["modelValue"]));
 vi.mock("@/components/Common/ButtonSpinner.vue", () => stub("ButtonSpinner", ["disabled", "wait", "tooltip"]));
-vi.mock("@/components/Workflow/Run/OnCompleteActions.vue", () => stub("OnCompleteActions", ["value"]));
+vi.mock("@/components/Notifications/CompletionNotification.vue", () => stub("CompletionNotification", ["modelValue"]));
+vi.mock("@/components/Workflow/Run/OnCompleteActions.vue", () => stub("OnCompleteActions", ["modelValue"]));
 vi.mock("@/components/Workflow/Run/WorkflowCredentials.vue", () => stub("WorkflowCredentials", ["toolIdentifiers"]));
 
 const globalConfig = getLocalVue();
@@ -53,10 +54,7 @@ function mountForm(canMutateCurrentHistory = true) {
             model: new WorkflowRunModel(JSON.parse(JSON.stringify(sampleRunData1))),
             canMutateCurrentHistory,
         },
-        global: {
-            ...globalConfig,
-            plugins: [...(globalConfig.plugins ?? []), pinia],
-        },
+        global: withPlugins(globalConfig, pinia),
     });
 }
 
@@ -118,10 +116,10 @@ describe("WorkflowRunForm", () => {
         findStep(wrapper, "0").vm.$emit("onChange", "0", { input: { values: [{ id: "c1", src: "hdca" }] } });
         findStep(wrapper, "4").vm.$emit("onChange", "4", { input: "text" });
         findStep(wrapper, "3").vm.$emit("onChange", "3", { num_lines: "5", input: { values: [] } });
-        wrapper.findComponent({ name: "FormElement" }).vm.$emit("input", true);
-        wrapper.findComponent({ name: "OnCompleteActions" }).vm.$emit("input", [{ send_notification: {} }]);
+        wrapper.findComponent({ name: "FormElement" }).vm.$emit("update:modelValue", true);
+        wrapper.findComponent({ name: "CompletionNotification" }).vm.$emit("update:modelValue", true);
         await wrapper.vm.$nextTick();
-        expect(wrapper.findComponent({ name: "FormElement" }).props("value")).toBe(true);
+        expect(wrapper.findComponent({ name: "FormElement" }).props("modelValue")).toBe(true);
         await run(wrapper);
         expect(invokeWorkflow).toHaveBeenCalledWith("ebab00128497f9d7", {
             new_history_name: null,
@@ -138,6 +136,14 @@ describe("WorkflowRunForm", () => {
             on_complete: [{ send_notification: {} }],
         });
         expect(wrapper.emitted("submissionSuccess")).toEqual([[[{ id: "invocation_id" }]]]);
+    });
+
+    it("omits unset data inputs but keeps cleared parameter inputs", async () => {
+        const wrapper = mountForm();
+        findStep(wrapper, "0").vm.$emit("onChange", "0", { input: null });
+        findStep(wrapper, "4").vm.$emit("onChange", "4", { input: null });
+        await run(wrapper);
+        expect(vi.mocked(invokeWorkflow).mock.calls[0]![1].inputs).toEqual({ 4: null });
     });
 
     it("sends results to a new history when requested", async () => {

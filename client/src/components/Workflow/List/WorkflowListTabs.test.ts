@@ -1,11 +1,10 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getFakeRegisteredUser } from "@tests/test-data";
-import { getLocalVue, suppressBootstrapVueWarnings } from "@tests/vitest/helpers";
+import { createTestRouter, getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { createMemoryHistory, createRouter } from "vue-router";
 
 import type { AnyUser } from "@/api";
 import { useUserStore } from "@/stores/userStore";
@@ -32,7 +31,7 @@ vi.mock("@/composables/config", async () => {
 });
 
 const localVue = getLocalVue();
-const router = createRouter({ history: createMemoryHistory(), routes: [] });
+const router = createTestRouter();
 
 const REGISTERED_USER = getFakeRegisteredUser();
 const ANONYMOUS_USER = {
@@ -79,7 +78,6 @@ function tabIds(wrapper: Awaited<ReturnType<typeof mountTabs>>) {
 
 describe("WorkflowListTabs", () => {
     beforeEach(() => {
-        suppressBootstrapVueWarnings();
         vi.clearAllMocks();
     });
 

@@ -26,7 +26,11 @@ from galaxy.model import (
     Quota,
     User,
 )
-from galaxy.quota import DatabaseQuotaAgent
+from galaxy.quota import (
+    DatabaseQuotaAgent,
+    queue_quota_change,
+    queue_quota_change_for_users_and_groups,
+)
 from galaxy.quota._schema import (
     CreateQuotaParams,
     DefaultQuotaValues,
@@ -100,6 +104,9 @@ class QuotaManager:
                 gqa = model.GroupQuotaAssociation(group, quota)
                 self.sa_session.add(gqa)
             message = f"Quota '{quota.name}' has been created with {len(in_users)} associated users and {len(in_groups)} associated groups."
+            queue_quota_change_for_users_and_groups(
+                self.sa_session, [user.id for user in in_users], [group.id for group in in_groups]
+            )
 
         self.sa_session.commit()
 
@@ -187,6 +194,7 @@ class QuotaManager:
         quota.amount = new_amount
         quota.operation = params.operation
         self.sa_session.add(quota)
+        queue_quota_change(self.sa_session, quota)
         self.sa_session.commit()
         if old_display_amount != quota.display_amount or old_operation != quota.operation:
             return f"Quota '{quota.name}' is now '{quota.operation}{quota.display_amount}'."
@@ -202,6 +210,7 @@ class QuotaManager:
                 message = f"Quota '{quota.name}' is now the default for {params.default} users."
             elif quota.default:
                 message = f"Quota '{quota.name}' is no longer the default for {quota.default[0].type} users."
+                queue_quota_change(self.sa_session, quota)
                 for dqa in quota.default:
                     self.sa_session.delete(dqa)
                 self.sa_session.commit()
@@ -211,6 +220,7 @@ class QuotaManager:
         message = None
         if quota.default:
             message = f"Quota '{quota.name}' is no longer the default for {quota.default[0].type} users."
+            queue_quota_change(self.sa_session, quota)
             for dqa in quota.default:
                 self.sa_session.delete(dqa)
             self.sa_session.commit()
@@ -232,6 +242,7 @@ class QuotaManager:
         for q in quotas:
             q.deleted = True
             self.sa_session.add(q)
+            queue_quota_change(self.sa_session, q)
             names.append(q.name)
         self.sa_session.commit()
         message += ", ".join(names)
@@ -251,6 +262,7 @@ class QuotaManager:
         for q in quotas:
             q.deleted = False
             self.sa_session.add(q)
+            queue_quota_change(self.sa_session, q)
             names.append(q.name)
         self.sa_session.commit()
         message += ", ".join(names)

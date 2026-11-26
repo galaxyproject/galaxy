@@ -1,9 +1,10 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue, nth } from "@tests/vitest/helpers";
+import { createTestRouter, getLocalVue, nth } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { Router } from "vue-router";
 
 import { useEntryPointStore } from "@/stores/entryPointStore";
 import { useInteractiveToolsStore } from "@/stores/interactiveToolsStore";
@@ -37,14 +38,23 @@ function seedToolsById(toolStore: ReturnType<typeof useToolStore>, toolsList: Pa
     toolStore.saveAllTools(toolsList as Tool[]);
 }
 
+type EntryPoints = ReturnType<typeof useEntryPointStore>["entryPoints"];
+
 describe("InteractiveToolsPanel component", () => {
+    let router: Router;
+
     beforeEach(() => {
         // Reset mocks
         vi.clearAllMocks();
         (filterLatestToolVersions as ReturnType<typeof vi.fn>).mockImplementation((tools) => tools);
+        router = createTestRouter();
     });
 
-    const mountComponent = async (toolsList: Partial<Tool>[] = mockTools, fetchTools = vi.fn()) => {
+    const mountComponent = async (
+        toolsList: Partial<Tool>[] = mockTools,
+        fetchTools = vi.fn(),
+        entryPoints: EntryPoints = [],
+    ) => {
         const pinia = createTestingPinia({
             createSpy: vi.fn,
             stubActions: false,
@@ -60,21 +70,17 @@ describe("InteractiveToolsPanel component", () => {
         vi.spyOn(interactiveToolsStore, "getActiveTools").mockImplementation(vi.fn());
 
         const entryPointStore = useEntryPointStore();
-        entryPointStore.$patch({ entryPoints: [] });
+        entryPointStore.$patch({ entryPoints });
 
         const wrapper = mount(InteractiveToolsPanel as any, {
             global: localVue,
             pinia,
+            router,
             stubs: {
                 ActivityPanel: true,
                 DelayedInput: true,
                 FontAwesomeIcon: true,
                 UtcDate: true,
-            },
-            mocks: {
-                $router: {
-                    push: vi.fn(),
-                },
             },
         });
 
@@ -145,6 +151,55 @@ describe("InteractiveToolsPanel component", () => {
         expect(filterLatestToolVersions).toHaveBeenCalledWith([]);
     });
 
+    it("opens the tool form when a tool is clicked", async () => {
+        const wrapper = await mountComponent([
+            { id: "toolshed/jupyter/2.0", version: "2.0", name: "Jupyter", model_class: "InteractiveTool" },
+        ]);
+
+        await wrapper.find(".tool-item").trigger("click");
+        await flushPromises();
+
+        expect(router.currentRoute.value.path).toBe("/");
+        expect(router.currentRoute.value.query).toEqual({ tool_id: "toolshed/jupyter/2.0", version: "latest" });
+    });
+
+    it("opens the display of an active tool when its name is clicked", async () => {
+        const wrapper = await mountComponent(mockTools, vi.fn(), [
+            {
+                model_class: "InteractiveToolEntryPoint",
+                id: "entry-point-1",
+                job_id: "job-1",
+                name: "Active RStudio",
+                active: true,
+                created_time: new Date().toISOString(),
+                modified_time: new Date().toISOString(),
+                output_datasets_ids: [],
+                target: "http://localhost:8001/entry-point-1",
+            },
+        ]);
+
+        await wrapper.find(".active-tool-item .tool-link").trigger("click");
+        await flushPromises();
+
+        expect(router.currentRoute.value.fullPath).toBe("/interactivetool_entry_points/entry-point-1/display");
+    });
+
+    it("keeps the slashes of a Tool Shed tool ID unencoded in the icon URL", async () => {
+        const shedTool = {
+            id: "toolshed.example.org/repos/an owner/a_repo/interactive_tool_example/1.0",
+            version: "1.0",
+            name: "Example",
+            model_class: "InteractiveTool",
+            icon: "example.png",
+        };
+
+        const wrapper = await mountComponent([shedTool]);
+
+        expect(wrapper.find(".tool-icon img").attributes("src")).toBe(
+            "/api/tools/toolshed.example.org/repos/an%20owner/a_repo/interactive_tool_example/1.0/icon",
+        );
+    });
+
     it("should display active interactive tools at the top", async () => {
         // Set up active tools in the entry points store
         const activeTools = [
@@ -200,11 +255,6 @@ describe("InteractiveToolsPanel component", () => {
                 DelayedInput: true,
                 FontAwesomeIcon: true,
                 UtcDate: true,
-            },
-            mocks: {
-                $router: {
-                    push: vi.fn(),
-                },
             },
         });
 

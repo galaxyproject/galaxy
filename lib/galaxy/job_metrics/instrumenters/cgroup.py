@@ -1,9 +1,11 @@
 """The module describes the ``cgroup`` job metrics plugin."""
 
 import logging
-from collections import namedtuple
+from collections.abc import Callable
 from typing import (
     Any,
+    NamedTuple,
+    TypeAlias,
 )
 
 from galaxy.util import (
@@ -64,7 +66,7 @@ TITLES = {
     "cpu.stat.usage_usec": "CPU usage time",
     "cpu.stat.user_usec": "CPU user time",
 }
-CONVERSION = {
+CONVERSION: dict[str, Callable[[Any], str]] = {
     "memory.oom_control.oom_kill_disable": lambda x: "No" if x == 1 else "Yes",
     "memory.oom_control.under_oom": lambda x: "Yes" if x == 1 else "No",
     "memory.peak": lambda x: nice_size(x, binary=True),
@@ -103,7 +105,13 @@ fi
 """.replace("\n", " ").strip()
 
 
-Metric = namedtuple("Metric", ("key", "subkey", "value"))
+MetricValue: TypeAlias = int | float | str
+
+
+class Metric(NamedTuple):
+    key: str
+    subkey: str
+    value: MetricValue
 
 
 class CgroupPluginFormatter(formatting.JobMetricFormatter):
@@ -132,7 +140,7 @@ class CgroupPlugin(InstrumentPlugin):
     plugin_type = "cgroup"
     formatter = CgroupPluginFormatter()
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Any) -> None:
         self.verbose = asbool(kwargs.get("verbose", False))
         self.cgroup_mount = kwargs.get("cgroup_mount", "/sys/fs/cgroup")
         self.version = str(kwargs.get("version", "auto"))
@@ -154,9 +162,8 @@ class CgroupPlugin(InstrumentPlugin):
             commands.append(self.__record_cgroup_v2_usage(job_directory))
         return commands
 
-    def job_properties(self, job_id, job_directory: str) -> dict[str, Any]:
-        metrics = self.__read_metrics(self.__cgroup_metrics_file(job_directory))
-        return metrics
+    def job_properties(self, job_id: int, job_directory: str) -> dict[str, MetricValue]:
+        return self.__read_metrics(self.__cgroup_metrics_file(job_directory))
 
     def __record_cgroup_v1_usage(self, job_directory: str) -> str:
         return CGROUPSV1_TEMPLATE.format(
@@ -168,12 +175,14 @@ class CgroupPlugin(InstrumentPlugin):
             metrics=self.__cgroup_metrics_file(job_directory), cgroup_mount=self.cgroup_mount
         )
 
-    def __cgroup_metrics_file(self, job_directory):
+    def __cgroup_metrics_file(self, job_directory: str) -> str:
         return self._instrument_file_path(job_directory, "_metrics")
 
-    def __read_metrics(self, path):
-        metrics: dict[str, str] = {}
-        key = None
+    def __read_metrics(self, path: str) -> dict[str, MetricValue]:
+        metrics: dict[str, MetricValue] = {}
+        key: str | None = None
+        hierarchical_memory_limit: int | None = None
+        hierarchical_memsw_limit: int | None = None
         with open(path) as infile:
             for line in infile:
                 try:
@@ -183,19 +192,33 @@ class CgroupPlugin(InstrumentPlugin):
                     metric = None
                 if not metric:
                     continue
+                if metric.subkey == "memory.stat.hierarchical_memory_limit" and isinstance(metric.value, int):
+                    hierarchical_memory_limit = metric.value
+                elif metric.subkey == "memory.stat.hierarchical_memsw_limit" and isinstance(metric.value, int):
+                    hierarchical_memsw_limit = metric.value
                 self.__add_metric(metrics, metric)
+        if hierarchical_memory_limit is not None:
+            for mem_key in ("memory.limit_in_bytes", "memory.soft_limit_in_bytes"):
+                if isinstance(metrics.get(mem_key), int):
+                    metrics[mem_key] = min(metrics[mem_key], hierarchical_memory_limit)
+        if hierarchical_memsw_limit is not None and isinstance(metrics.get("memory.memsw.limit_in_bytes"), int):
+            metrics["memory.memsw.limit_in_bytes"] = min(
+                metrics["memory.memsw.limit_in_bytes"], hierarchical_memsw_limit
+            )
         return metrics
 
-    def __add_metric(self, metrics, metric):
-        if metric and (metric.subkey in self.params or self.verbose):
+    def __add_metric(self, metrics: dict[str, MetricValue], metric: Metric) -> None:
+        if metric.subkey in self.params or self.verbose:
             metrics[metric.subkey] = metric.value
 
-    def __read_key_value(self, line, key):
+    def __read_key_value(self, line: str, key: str | None) -> tuple[Metric | None, str]:
         if line.startswith("__") and line.endswith("__"):
             # line is the beginning of a new param
             key = line[2:][:-2]
             return (None, key)
-        elif line.count(" ") == 1:
+        if key is None:
+            raise ValueError("Metric value found before any metric key")
+        if line.count(" ") == 1:
             # line has a subkey
             subkey, value = line.split(" ", 1)
             subkey = ".".join((key, subkey))
@@ -203,10 +226,10 @@ class CgroupPlugin(InstrumentPlugin):
             # line does not have a subkey
             subkey = key
             value = line
-        value = self.__type_value(value)
-        return (Metric(key, subkey, value), key)
+        typed_value = self.__type_value(value)
+        return (Metric(key, subkey, typed_value), key)
 
-    def __type_value(self, value):
+    def __type_value(self, value: str) -> MetricValue:
         try:
             try:
                 return int(value)

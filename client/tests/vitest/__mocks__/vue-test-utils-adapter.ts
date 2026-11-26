@@ -7,6 +7,10 @@
  * Patterns handled:
  * - { global: localVue, pinia, router } → { global: { ...localVue, plugins: [pinia, router] } }
  * - { localVue, pinia, router } → { global: { ...localVue, plugins: [pinia, router] } }
+ * - { propsData, stubs } → { props, global: { stubs } }
+ *
+ * Any other top-level key VTU v2 does not read (e.g. v1's `mocks`, `provide`,
+ * `directives`) throws, so it can't be silently dropped.
  */
 // Import from the actual node_modules path to avoid circular alias resolution
 // @ts-ignore - Direct path import
@@ -28,7 +32,38 @@ function stubName(key: string): string {
     return camelized.charAt(0).toUpperCase() + camelized.slice(1);
 }
 
+// Top-level keys VTU v2 reads, plus the v1 keys translated below. VTU v2 silently
+// ignores any other top-level key (v1's `mocks`, `provide`, `directives`, ...).
+const KNOWN_MOUNT_OPTIONS = new Set([
+    "attachTo",
+    "attrs",
+    "data",
+    "global",
+    "props",
+    "propsData",
+    "shallow",
+    "slots",
+    "localVue",
+    "pinia",
+    "router",
+    "stubs",
+]);
+
+// v1 keys whose v2 replacement is not `global.<key>`.
+const RENAMED_MOUNT_OPTIONS: Record<string, string> = {
+    attachToDocument: "`attachTo`",
+    listeners: "`attrs` (as `onEvent` handlers)",
+    scopedSlots: "`slots`",
+};
+
 function adaptMountOptions(options: Record<string, any> = {}): Record<string, any> {
+    const unknown = Object.keys(options).filter((key) => !KNOWN_MOUNT_OPTIONS.has(key));
+    if (unknown.length > 0) {
+        const hints = unknown.map((key) => `\`${key}\` → ${RENAMED_MOUNT_OPTIONS[key] ?? `\`global.${key}\``}`);
+        throw new Error(
+            `Unsupported top-level mount option(s), which Vue Test Utils v2 ignores. Use instead: ${hints.join(", ")}.`,
+        );
+    }
     const normalized = { ...options };
     const pluginsToAdd: any[] = [];
 

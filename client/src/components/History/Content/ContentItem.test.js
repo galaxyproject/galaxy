@@ -1,9 +1,8 @@
 import { createTestingPinia } from "@pinia/testing";
-import { emittedArg, getLocalVue, suppressLucideVue2Deprecation } from "@tests/vitest/helpers";
+import { createTestRouter, emittedArg, getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { nextTick } from "vue";
-import { createMemoryHistory, createRouter } from "vue-router";
 
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 import { updateContentFields } from "@/components/History/model/queries";
@@ -16,7 +15,7 @@ vi.mock("@/components/History/model/queries");
 const { server, http } = useServerMock();
 
 const localVue = getLocalVue();
-const router = createRouter({ history: createMemoryHistory(), routes: [] });
+const router = createTestRouter();
 
 vi.mock("vue-router", async (importOriginal) => ({
     ...(await importOriginal()),
@@ -51,8 +50,6 @@ describe("ContentItem", () => {
     let wrapper;
 
     beforeEach(() => {
-        suppressLucideVue2Deprecation();
-
         server.use(
             http.get("/api/object_stores", ({ response }) => {
                 return response(200).json([]);
@@ -81,12 +78,6 @@ describe("ContentItem", () => {
             stubs: {
                 DatasetDetails: true,
                 vueTagsInput: false,
-            },
-            provide: {
-                store: {
-                    dispatch: vi.fn,
-                    getters: {},
-                },
             },
             pinia: createTestingPinia({ createSpy: vi.fn, stubActions: false }),
             router,
@@ -193,5 +184,21 @@ describe("ContentItem", () => {
         await nextTick();
         expect(emittedArg(wrapper, "update:selected", 1)).toBe(false);
         expect(wrapper.classes()).toEqual(expect.arrayContaining(["alert-info"]));
+    });
+
+    // A native <button> already turns Enter/Space into a click, so a keypress listener on
+    // top of @click toggles twice per key press, and the two toggles cancel each other out.
+    it("toggles the active highlight once per click", async () => {
+        await wrapper.setProps({ highlight: "active" });
+        const button = wrapper.get("button[title='Inputs/Outputs highlighted for this item']");
+        await button.trigger("click");
+        expect(wrapper.emitted("toggleHighlights")).toHaveLength(1);
+    });
+
+    it("leaves keyboard activation to the button's own click", async () => {
+        await wrapper.setProps({ highlight: "active" });
+        const button = wrapper.get("button[title='Inputs/Outputs highlighted for this item']");
+        await button.trigger("keypress", { key: "Enter" });
+        expect(wrapper.emitted("toggleHighlights")).toBeUndefined();
     });
 });

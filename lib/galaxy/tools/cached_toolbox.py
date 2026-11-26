@@ -16,7 +16,7 @@ from collections.abc import (
     Mapping,
 )
 from contextlib import contextmanager
-from enum import Enum
+from enum import StrEnum
 from typing import (
     Any,
     cast,
@@ -92,7 +92,7 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 
-class MaterializationReason(str, Enum):
+class MaterializationReason(StrEnum):
     DETAIL = "detail"
     DEPENDENCY = "dependency"
     EXECUTION = "execution"
@@ -707,8 +707,7 @@ class CachedToolBox(ToolBox):
         # ``_index_panel_items`` only returns placements when the index is
         # populated, so it is non-None here.
         assert self._tool_index is not None
-        missing = self._panel_ids_missing_from_index(placements)
-        if missing:
+        if missing := self._panel_ids_missing_from_index(placements):
             log.info(
                 "CachedToolBox fast panel init found %d panel ids missing from index; running populator",
                 len(missing),
@@ -1717,6 +1716,8 @@ class CachedToolBox(ToolBox):
                     self._remove_tool_in_memory(tool_id)
                 except Exception as e:
                     log.warning("Reconciling peer-removed index entry %s raised: %s", tool_id, e)
+            # Stubs took new entries in place, bypassing register_tool; their payloads rebuild without parsing.
+            self._invalidate_tool_caches()
 
     def _register_new_index_entries_as_stubs(self) -> None:
         """For every index entry not yet in ``_tools_by_id``, build a
@@ -2047,18 +2048,9 @@ class CachedToolBox(ToolBox):
     ) -> bool:
         """Check if tool exists, using index for fast lookup.
 
-        Honors ``tool_version`` + ``exact`` the same way the eager
-        ``AbstractToolBox.has_tool`` does — without that, the workflow
-        missing-tools check (``services/workflows.py``: ``has_tool(...,
-        exact=require_exact_tool_versions)``) silently passes any tool
-        whose id is in the index regardless of which version was
-        requested. ``test_run_workflow_with_missing_tool`` exercises
-        that surface by installing ``compose_text_param 0.1.0`` from
-        the toolshed and then asking the workflow runner to invoke a
-        workflow pinned to ``compose_text_param 0.0.1``: with the
-        version-blind lookup, ``has_tool`` answers ``True`` for 0.0.1,
-        the tool drops out of the missing-tools list, and the assertion
-        on the error message under-reports.
+        Honors ``tool_version`` + ``exact``: an exact request for a version
+        the index doesn't configure for ``tool_id`` answers ``False``
+        instead of walking lineage to another version.
         """
         if tool_id and self._tool_index:
             entries = self._tool_index.entries_by_version.get(tool_id)

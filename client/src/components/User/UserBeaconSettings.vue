@@ -20,6 +20,10 @@ import ExternalLink from "../ExternalLink.vue";
 import UtcDate from "../UtcDate.vue";
 import GAlert from "@/components/BaseComponents/GAlert.vue";
 
+const emit = defineEmits<{
+    (e: "reset"): void;
+}>();
+
 const BEACON_HISTORY_NAME = "Beacon Export 📡";
 
 const fields = [
@@ -139,7 +143,7 @@ onOpenModal();
         :fixed-height="enabled"
         show
         title="Manage Beacon"
-        @close="$emit('reset')">
+        @close="emit('reset')">
         <!-- Explanation text-->
         <p>
             The

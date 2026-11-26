@@ -1,4 +1,5 @@
 import { createTestingPinia } from "@pinia/testing";
+import { getLocalVue, withPlugins } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -55,9 +56,7 @@ describe("WorkflowRun.vue", () => {
             props: {
                 workflowId: run1WorkflowId,
             },
-            global: {
-                plugins: [createTestingPinia({ createSpy: vi.fn })],
-            },
+            global: withPlugins(getLocalVue(), createTestingPinia({ createSpy: vi.fn })),
         });
     });
 
@@ -126,6 +125,8 @@ describe("WorkflowRun.vue", () => {
             // Pinia re-activates the pinia of whichever app last used a store, so with the outer
             // beforeEach mount alive, useHistoryItemsStore() below could resolve to its store.
             wrapper.unmount();
+            // getLocalVue() activates its own pinia, so it goes before the test's.
+            const localVue = getLocalVue();
             const pinia = createTestingPinia({
                 createSpy: vi.fn,
                 initialState: {
@@ -136,7 +137,7 @@ describe("WorkflowRun.vue", () => {
             });
             return mount(WorkflowRun, {
                 props: { workflowId: run1WorkflowId, ...props },
-                global: { plugins: [pinia] },
+                global: withPlugins(localVue, pinia),
             });
         }
 

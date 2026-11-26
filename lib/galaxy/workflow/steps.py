@@ -54,6 +54,8 @@ def order_workflow_steps(steps, comments):
             sortable_comments = []
 
             for comment in comments:
+                if not comment.position:
+                    continue  # no geometry yet; laid out when the workflow is first drawn
                 if comment.type == "freehand":
                     freehand_comments.append(comment)
                 else:
@@ -76,6 +78,7 @@ def order_workflow_steps(steps, comments):
             # replace comments list with sorted comments
             ordered_comments = freehand_comments
             ordered_comments.extend(sortable_comments)
+            ordered_comments.extend(comment for comment in comments if not comment.position)
 
         # normalize steps by min_left and min_top
         for step in steps:

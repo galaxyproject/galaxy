@@ -16,7 +16,7 @@
                     <span class="fa fa-download" />
                 </GButton>
                 <GButton
-                    v-if="currentUser && currentHistoryId"
+                    v-if="!embed && currentUser && currentHistoryId"
                     v-g-tooltip.hover
                     transparent
                     title="Import Collection"
@@ -50,6 +50,7 @@ import { computed, ref, watch } from "vue";
 
 import { GalaxyApi } from "@/api";
 import { copyCollection } from "@/components/Markdown/services";
+import { useEmbed } from "@/composables/embed";
 import { getAppRoot } from "@/onload/loadConfig";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
@@ -63,6 +64,7 @@ const props = defineProps<{
     collectionId: string;
 }>();
 
+const embed = useEmbed();
 const userStore = useUserStore();
 const historyStore = useHistoryStore();
 

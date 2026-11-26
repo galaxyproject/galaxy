@@ -130,8 +130,8 @@
 
     /* lines */
     --color-border: var(--color-gray-300);
-    /* brand-tokens' ebony-clay-400: a blue-gray like today's border, dark enough for 3:1 */
-    --color-input: #8992b2;
+    /* the border GFormInput and GSelect draw, so legacy inputs reading this token match them */
+    --color-input: var(--color-gray-500);
     --color-ring: var(--color-blue-600);
 
     /* deprecated: use --color-background */

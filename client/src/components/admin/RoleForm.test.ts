@@ -132,7 +132,7 @@ describe("RoleForm.vue create mode", () => {
         await wrapper.find("#role-name").setValue("Test Role");
         await wrapper.find("#role-description").setValue("Test Description");
         const roleType = wrapper.findAllComponents(FormSelection).find((w) => w.props("id") === "role-type");
-        roleType!.vm.$emit("input", "user_tool_execute");
+        roleType!.vm.$emit("update:modelValue", "user_tool_execute");
         multiselect(wrapper, "role-groups").vm.$emit("update:modelValue", [{ id: "g1", name: "Group 1" }]);
         multiselect(wrapper, "role-users").vm.$emit("update:modelValue", [{ id: "u1", email: "user1@example.org" }]);
         await submit(wrapper);

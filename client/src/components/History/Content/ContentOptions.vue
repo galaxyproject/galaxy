@@ -10,9 +10,8 @@ import {
     faTrashRestore,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { ScanEye } from "@lucide/vue";
 import axios from "axios";
-//@ts-ignore deprecated package without types (vue 2, remove this comment on vue 3 migration)
-import { ScanEye } from "lucide-vue-next";
 import { computed, type Ref, ref } from "vue";
 
 import { getAppRoot } from "@/onload/loadConfig";
@@ -110,7 +109,7 @@ function onDisplay($event: MouseEvent) {
 </script>
 
 <template>
-    <span class="align-self-start btn-group align-items-baseline">
+    <span class="align-self-start btn-group align-items-center">
         <!-- Special case for collections -->
         <GButton
             v-if="isCollection && canShowCollectionDetails"
@@ -134,7 +133,7 @@ function onDisplay($event: MouseEvent) {
             transparent
             :href="displayUrl"
             @click.prevent.stop="onDisplay($event)">
-            <ScanEye absolute-stroke-width :size="16" />
+            <ScanEye non-scaling-stroke :size="16" />
         </GButton>
         <GButton
             v-if="writable && isHistoryItem"
@@ -175,7 +174,7 @@ function onDisplay($event: MouseEvent) {
                 size="sm"
                 variant="link"
                 no-caret
-                toggle-class="p-0 m-0"
+                toggle-class="p-0 m-0 d-flex align-items-center"
                 :aria-label="localize('Delete')">
                 <template v-slot:button-content>
                     <FontAwesomeIcon :icon="faTrash" />

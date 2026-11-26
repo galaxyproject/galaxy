@@ -18,6 +18,7 @@ from galaxy.model import store
 from galaxy.model.metadata import MetadataTempFilePathError
 from galaxy.util.hash_util import HashFunctionNameEnum
 from galaxy.util.unittest import TestCase
+from galaxy.util.unittest_utils import read_mock_emails
 
 OLD_UPDATE_TIME = datetime(2020, 1, 1)
 
@@ -50,6 +51,7 @@ class TestJobWrapperFinish(TestCase, UsesTools):
             out.write("output\n")
         self.app.config.retry_job_output_collection = 0
         self.app.config.calculate_dataset_hash = "never"
+        self.app.config.galaxy_infrastructure_url = "https://galaxy.example.org"
         self.app.job_metrics = job_metrics.JobMetrics()
         self.job = job
         self.dataset = dataset
@@ -165,6 +167,20 @@ class TestJobWrapperFinish(TestCase, UsesTools):
         assert committed[-1][:2] == (model.Job.states.OK, model.Dataset.states.OK)
         for job_state, dataset_state, _ in committed:
             assert (job_state == model.Job.states.OK) == (dataset_state == model.Dataset.states.OK)
+
+    def test_saved_email_action_no_longer_sends_email(self):
+        self.job.add_post_job_action(model.PostJobAction("EmailAction"))
+        self.app.model.context.commit()
+        email_dir = self._mock_emails_dir()
+        self._finish_and_record_commits()
+        assert read_mock_emails(email_dir) == []
+        assert self.job.state == model.Job.states.OK
+
+    def _mock_emails_dir(self):
+        email_dir = os.path.join(self.test_directory, "emails")
+        os.makedirs(email_dir)
+        self.app.config.smtp_server = f"mock_emails_to_path://{email_dir}"
+        return email_dir
 
     def _add_output_collection(self):
         session = self.app.model.context

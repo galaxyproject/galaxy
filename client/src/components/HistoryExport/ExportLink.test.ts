@@ -15,7 +15,10 @@ describe("ExportLink", () => {
     it("copies the export URL when the copy button is clicked", async () => {
         const wrapper = mount(ExportLink as object, {
             props: {
-                historyExport: { external_download_permanent_url: EXPORT_URL } as JobExportHistoryArchiveModel,
+                historyExport: {
+                    job_id: "job_1",
+                    external_download_permanent_url: EXPORT_URL,
+                } as JobExportHistoryArchiveModel,
             },
             global: { ...getLocalVue(), stubs: { JobInformation: true } },
         });

@@ -300,6 +300,8 @@ export default {
         cutoffMin(newVal) {
             this.update();
         },
+        // Not deep: update() always replaces jobs with a fresh array, and nothing changes
+        // a job's state in place.
         jobs(newVal) {
             const unfinishedJobs = [];
             const finishedJobs = [];

@@ -112,7 +112,9 @@ preferences:
     current_email: "#user-preferences-current-email"
     get_new_key: '.create-button'
     api_key_input: '[data-test-id="api-key-input"]'
+    api_key_input_of_type: '[data-test-id="api-key-input"][type="${type}"]'
     api_key_copy_button: '[data-description="copy api key"]'
+    api_key_show_hide_button: '[data-description="show or hide api key"]'
     object_store: '#select-preferred-object-store'
     delete_account: '#g-card-delete-account'
     delete_account_input: '#name-input'
@@ -253,6 +255,11 @@ dataset_display:
     tabular_rows: .dataset-display tbody tr
     tabular_row: '.dataset-display tbody tr:nth-child(${index})'
 
+export_to_another_galaxy:
+  selectors:
+    link: '[data-description="galaxy export link"]'
+    link_warning: '[data-description="galaxy export link warning"]'
+
 history_panel:
   menu:
     labels:
@@ -325,6 +332,7 @@ history_panel:
       download_button: '${_} .download-btn'
       info_button: '${_} .info-btn'
       highlight_button: '${_} .highlight-btn'
+      export_to_another_galaxy_button: '${_} [data-description="export to another galaxy"]'
       alltags: '${_} .stateless-tags .tag'
       tag_area_button: '${_} .stateless-tags .toggle-button'
       tag_area_input: '${_} .stateless-tags .headless-multiselect input'
@@ -407,6 +415,8 @@ history_panel:
     _: '#current-history-panel'
     search: '#current-history-panel .content-operations-filters [data-description="filter text input"]'
     search_reset: '#current-history-panel .content-operations-filters [data-description="reset query"]'
+    advanced_search_toggle: '#current-history-panel .content-operations-filters [data-description="toggle advanced search"]'
+    advanced_search_input: '#history-items-advanced-filter-${filter}'
     refresh_button: '.history-refresh-button'
     include_deleted_button: '[data-description="include deleted items button"]'
     include_hidden_button: '[data-description="include hidden items button"]'
@@ -505,8 +515,6 @@ edit_dataset_attributes:
     info_input: '[aria-labelledby="dataset-attributes-heading"] textarea#info'
     annotation_input: '[aria-labelledby="dataset-attributes-heading"] textarea#annotation'
     attribute_field: '[aria-labelledby="dataset-attributes-heading"] .ui-form-field[data-name]'
-    # a text metadata field on the Attributes tab, e.g. comment_lines
-    metadata_input: '[aria-labelledby="dataset-attributes-heading"] input#${name}'
     datatypes_tab: '.dataset-edit-datatype-tab'
     permissions_tab: '.dataset-edit-permissions-tab'
     # permission: DATASET_MANAGE_PERMISSIONS or DATASET_ACCESS
@@ -817,6 +825,9 @@ pages:
   view:
     selectors:
       history_link: '[data-description="history import link"][data-history-id="${history_id}"]'
+      history_imported:
+        type: xpath
+        selector: '//div[contains(@class, "text-success")][contains(., "Successfully Imported History")]'
 
   history:
     selectors:
@@ -983,9 +994,20 @@ window_manager:
     focused_title: '.window-manager-window.focused .window-manager-window-title'
     focus_overlay: '.window-manager-window .iframe-focus-overlay'
 
+credentials:
+  service:
+    selectors:
+      _: '[data-description="credentials service"][data-service-name="${service}"]'
+      toggle: '${_} [data-description="credentials service toggle"]'
+      expanded: '${_} > .g-collapse-shown'
+      create_group: '${_} [data-description="create credentials group"]'
+      group_name_input: '${_} [data-description="credentials group name input"]'
+      group_name_error: '${_} [data-description="credentials group name"] .invalid-feedback'
+
 tool_form:
   selectors:
     tool_version: '[data-description="galaxy tool version"]'
+    credentials_manage: '[data-description="manage tool credentials"]'
     options: '.tool-dropdown'
     execute: 'button#execute'
     parameter_div: 'div.ui-form-element[id="form-element-${parameter}"]'
@@ -1210,6 +1232,7 @@ workflow_run:
     run_error: '[data-description="workflow run error"]'
     input_div: "[step-label='${label}']"
     input_data_div: "[step-label='${label}'] .multiselect"
+    default_file_status: '.default-file-location'
     # TODO: put step labels in the DOM ideally
     subworkflow_step_icon: ".portlet-title-icon.fa-sitemap"
     run_workflow: "#run-workflow"
@@ -1217,6 +1240,10 @@ workflow_run:
     validation_error: ".validation-error"
     expand_form_link: '.workflow-expand-form-link'
     expanded_form: '.workflow-expanded-form'
+    # v-g-tooltip rewrites the button title, so match the label text.
+    simple_form_toggle:
+      type: xpath
+      selector: '//button[contains(., "Simple Form")]'
     current_history_indicator: '[data-description="current history indicator"]'
     not_current_history_indicator: '[data-description="not current history indicator"]'
     history_target_link: '[data-description="switch to history link"]'
@@ -1346,6 +1373,8 @@ workflow_editor:
     connect_icon: 'div.ui-form-element[id="form-element-${name}"] [data-connected]'
     collapse_icon: 'div.ui-form-element[id="form-element-${name}"] [data-collapsible]'
     edit_subworkflow: 'button[title="Edit this Subworkflow. You will need to upgrade this Workflow Step afterwards."]'
+    upgrade_subworkflow: 'button[title="Upgrade this Workflow Step to latest Subworkflow version."]'
+    latest_change: '.undo-redo-stack .action.past'
     node_title:
       type: xpath
       selector: '//span[@class="node-title" and text()="${title}"]'
@@ -1357,6 +1386,7 @@ workflow_editor:
       type: xpath
       selector: >
         //div[@id='form-element-__annotation']//textarea
+    default_location_input: '#__default_location'
     collection_type_select: '#form-element-collection_type'
     collection_type_select_toggle: '#form-element-collection_type .multiselect__select'
     # excludes the 0.4s fade-in, which Playwright counts as visible
@@ -1425,7 +1455,10 @@ workflow_editor:
     save_button: '#workflow-save-button'
     state_upgrade_modal: '[data-description="workflow state upgrade modal"]'
     state_upgrade_modal_close: '[data-description="workflow state upgrade modal"] .g-modal-close-button'
+    state_upgrade_modal_ok: '[data-description="workflow state upgrade modal ok"]'
+    state_upgrade_filled_defaults_toggle: '[data-description="workflow state upgrade filled defaults toggle"]'
     save_as_modal_close: '[data-description="save-as-modal"] .g-modal-close-button'
+    save_as_name_input: '[data-description="save-as name input"]'
     workflow_activity: '#activity-workflow-editor-workflows'
     workflow_activity_panel: ".activity-panel[data-description='Workflows']"
     workflow_activity_search: ".activity-panel[data-description='Workflows'] input"
@@ -1897,10 +1930,20 @@ gies:
     spinner: 'img#spinner'
     iframe: 'body iframe[seamless="seamless"]'
 
+another_galaxy_picker:
+  selectors:
+    select: '[data-description="picker select ${key}"]'
+    consent: '[data-description="picker consent"]'
+    send: '[data-description="picker send"]'
+
 upload_activity:
   selectors:
     activity: '#activity-upload'
     method_card: '[data-method-id="${method_id}"]'
+    galaxy_picker_server: '[data-description="galaxy picker server"]'
+    galaxy_picker_url: '[data-description="galaxy picker url"]'
+    galaxy_picker_open: '[data-description="galaxy picker open"]'
+    galaxy_picker_import_item: '[data-description="galaxy picker import item"]'
     local_file_input: '#local-file-input'
     paste_content_textarea: '.paste-textarea'
     add_another_dataset_button: '[data-test-id="add-another-dataset"]'

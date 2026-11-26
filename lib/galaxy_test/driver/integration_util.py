@@ -24,12 +24,17 @@ from unittest import (
     SkipTest,
 )
 from urllib.parse import urljoin
+from uuid import uuid4
 
 import pytest
 import requests
 
 from galaxy.app import UniverseApplication
 from galaxy.app_unittest_utils.fake_ai_provider import FakeAIProvider
+from galaxy.model import (
+    DynamicTool,
+    UserDynamicToolAssociation,
+)
 from galaxy.tool_util.verify.test_data import TestDataResolver
 from galaxy.util import safe_makedirs
 from galaxy.util.unittest import TestCase
@@ -42,6 +47,11 @@ from galaxy_test.base.api import (
     UsesApiTestCaseMixin,
     UsesCeleryTasks,
 )
+from galaxy_test.base.populators import (
+    DatasetPopulator,
+    WorkflowPopulator,
+)
+from galaxy_test.base.sse import SSELineListener
 from galaxy_test.base.testcase import host_port_and_url
 from .driver_util import GalaxyTestDriver
 
@@ -63,6 +73,25 @@ class CachedToolBoxIntegrationMixin:
     def handle_galaxy_config_kwds(cls, config):
         super().handle_galaxy_config_kwds(config)  # type: ignore[misc]
         config["use_cached_toolbox"] = True
+
+
+def store_user_tool_row(app: UniverseApplication, user_id: int, representation: dict[str, Any]) -> str:
+    """Store a user defined tool row the way an older Galaxy may have, bypassing today's validation."""
+    session = app.model.session
+    dynamic_tool = DynamicTool(
+        tool_format="GalaxyUserTool",
+        tool_id=representation["id"],
+        tool_version=representation["version"],
+        uuid=uuid4(),
+        value=representation,
+        public=False,
+        active=True,
+    )
+    session.add(dynamic_tool)
+    session.flush()
+    session.add(UserDynamicToolAssociation(user_id=user_id, dynamic_tool_id=dynamic_tool.id))
+    session.commit()
+    return str(dynamic_tool.uuid)
 
 
 def docker_run(image, name, *args, detach=True, remove=True, ports=None, env_vars: dict[str, str] | None = None):
@@ -272,6 +301,32 @@ class IntegrationInstance(UsesApiTestCaseMixin, UsesCeleryTasks):
 
 class IntegrationTestCase(IntegrationInstance, TestCase):
     """Unit TestCase with utilities for spinning up Galaxy."""
+
+
+class SSEIntegrationTestCase(IntegrationTestCase):
+    """IntegrationTestCase against a server with SSE updates enabled."""
+
+    dataset_populator: DatasetPopulator
+    workflow_populator: WorkflowPopulator
+    framework_tool_and_types = True
+
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
+        config["enable_sse_updates"] = True
+
+    def setUp(self):
+        super().setUp()
+        self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
+        self.workflow_populator = WorkflowPopulator(self.galaxy_interactor)
+
+    def _listener(self, api_key: str | None = None) -> SSELineListener:
+        """A started listener on the event stream of ``api_key``'s user, by default the test user."""
+        api_key = api_key or self.galaxy_interactor.api_key
+        assert api_key is not None
+        listener = SSELineListener(urljoin(self.url, "api/events/stream"), api_key)
+        listener.start()
+        return listener
 
 
 def integration_module_instance(clazz: type[IntegrationInstance]):

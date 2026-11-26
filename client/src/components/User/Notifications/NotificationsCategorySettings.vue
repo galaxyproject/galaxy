@@ -7,6 +7,11 @@ import { snakeCaseToTitleCase } from "@/utils/strings";
 import NotificationsChannelSettings from "./NotificationsChannelSettings.vue";
 import GCheckbox from "@/components/BaseComponents/GCheckbox.vue";
 
+const categoryLabelMap: Partial<Record<NotificationCategory, string>> = {
+    tool_execution_completed: "Tool runs",
+    workflow_execution_completed: "Workflow runs",
+};
+
 const categoryDescriptionMap: Partial<Record<NotificationCategory, string>> = {
     message: `
         You will receive these notifications only when your Galaxy administrators send you a message.
@@ -14,6 +19,10 @@ const categoryDescriptionMap: Partial<Record<NotificationCategory, string>> = {
     `,
     new_shared_item:
         "You will receive these notifications when someone shares an item with you i.e. a history, workflow, visualization, etc.",
+    tool_execution_completed:
+        "Receive a notification when a tool run needs attention and when it finishes, with one summary for a collection. You can also change this preference on the tool form.",
+    workflow_execution_completed:
+        "Receive a notification when a workflow needs attention and when it finishes. You can also change this preference on the workflow run form.",
     storage_operation:
         "You will receive these notifications when a bulk storage operation completes (including failed outcomes).",
 };
@@ -48,10 +57,12 @@ function onChannelChange(category: NotificationCategory, channel: NotificationCh
 </script>
 
 <template>
-    <div>
+    <div class="category-settings">
         <div class="category-header">
             <GCheckbox v-model="isCategoryEnabled" v-g-tooltip.hover :title="checkBoxTitle" switch>
-                <span v-localize class="category-title">{{ snakeCaseToTitleCase(category) }}</span>
+                <span v-localize class="category-title">{{
+                    categoryLabelMap[category] ?? snakeCaseToTitleCase(category)
+                }}</span>
             </GCheckbox>
         </div>
 
@@ -59,18 +70,31 @@ function onChannelChange(category: NotificationCategory, channel: NotificationCh
             {{ categoryDescription }}
         </div>
 
-        <div v-for="channel in supportedChannels" :key="channel">
-            <NotificationsChannelSettings
-                :preferences="preferences"
-                :category="category"
-                :is-category-enabled="isCategoryEnabled"
-                :channel="channel"
-                @onChange="onChannelChange" />
+        <div class="category-channels">
+            <div v-for="channel in supportedChannels" :key="channel">
+                <NotificationsChannelSettings
+                    :preferences="preferences"
+                    :category="category"
+                    :is-category-enabled="isCategoryEnabled"
+                    :channel="channel"
+                    @onChange="onChannelChange" />
+            </div>
         </div>
     </div>
 </template>
 
 <style scoped lang="scss">
+// Fill the card, so the channels line up at the bottom of cards that share a row.
+.category-settings {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.category-channels {
+    margin-top: auto;
+}
+
 .category-header {
     gap: 1rem;
     display: flex;

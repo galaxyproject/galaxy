@@ -223,7 +223,7 @@ onMounted(async () => {
                 </div>
 
                 <div>
-                    <GButton color="blue" size="small" @click="toggleDialog">
+                    <GButton color="blue" size="small" data-description="manage tool credentials" @click="toggleDialog">
                         {{ provideCredentialsButtonTitle }}
                     </GButton>
                 </div>

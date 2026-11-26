@@ -1,8 +1,8 @@
 import { computed } from "vue";
-import { RouterLink } from "vue-router";
+import { type RouteLocationRaw, RouterLink } from "vue-router";
 
 export interface ClickableProps {
-    to?: string;
+    to?: RouteLocationRaw;
     href?: string;
     disabled?: boolean;
 }

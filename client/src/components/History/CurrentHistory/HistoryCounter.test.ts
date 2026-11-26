@@ -1,4 +1,4 @@
-import { getLocalVue } from "@tests/vitest/helpers";
+import { getLocalVue, withPlugins } from "@tests/vitest/helpers";
 import { mount, shallowMount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { createPinia, setActivePinia } from "pinia";
@@ -220,7 +220,7 @@ describe("HistoryCounter — refresh button", () => {
         };
         const wrapper = mount(HistoryCounter, {
             props: { history, lastChecked: new Date() },
-            global: { ...localVue, plugins: [pinia] },
+            global: withPlugins(localVue, pinia),
         });
         await flushPromises();
         for (const [description, label] of [

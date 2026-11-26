@@ -10,7 +10,7 @@ from abc import (
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from galaxy.workflow.modules import SchedulingDependencies
+    from galaxy.workflow.scheduling_dependencies import SchedulingDependencies
 
 
 class WorkflowSchedulingPlugin(metaclass=ABCMeta):

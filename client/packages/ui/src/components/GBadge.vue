@@ -5,14 +5,9 @@
  */
 
 import { computed, useAttrs } from "vue";
-import { RouterLink } from "vue-router";
+import { type RouteLocationRaw, RouterLink } from "vue-router";
 
 import type { BadgeVariant, ColorVariant } from "./componentVariants";
-
-defineOptions({
-    // Under @vue/compat: let listeners such as @click fall through to the root element, as in Vue 3
-    compatConfig: { INSTANCE_LISTENERS: false },
-});
 
 const props = defineProps<{
     /** Color scheme; `outline-*` draws the color as border and text on the page background. Defaults to secondary */
@@ -20,7 +15,7 @@ const props = defineProps<{
     /** Fully rounded ends */
     pill?: boolean;
     /** Router link "to" prop. Renders the badge as a router-link */
-    to?: string;
+    to?: RouteLocationRaw;
     /** Href for an anchor. Renders the badge as an anchor */
     href?: string;
     /** Renders the badge as a `type="button"` button, for badges that act on click */
@@ -74,6 +69,8 @@ const variantClasses = computed(() => {
 </template>
 
 <style scoped lang="scss">
+@use "../styles/focus-ring" as *;
+
 .g-badge {
     display: inline-block;
     margin: 0;
@@ -110,9 +107,7 @@ button.g-badge {
     }
 
     &:focus-visible {
-        outline: 2px solid var(--color-blue-600);
-        outline-offset: 2px;
-        box-shadow: 0 0 0 2px var(--background-color);
+        @include focus-ring;
     }
 }
 

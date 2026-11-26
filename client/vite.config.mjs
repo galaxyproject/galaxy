@@ -10,6 +10,7 @@ import { defineConfig } from "vite";
 import { buildMetadataPlugin } from "./vite-plugin-build-metadata.js";
 import { galaxyDevServerPlugin } from "./vite-plugin-galaxy-dev-server.js";
 import { galaxyLegacyPlugin } from "./vite-plugin-galaxy-legacy.js";
+import { legacyLibrariesFirstPlugin } from "./vite-plugin-legacy-libraries-first.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const packageJson = JSON.parse(readFileSync(resolve(__dirname, "package.json"), "utf-8"));
@@ -57,10 +58,6 @@ export default defineConfig(({ command }) => ({
         // the vue-router 3 component, which renders nothing under Vue 3.
         dedupe: ["vue-router"],
         alias: [
-            // Use @vue/compat for Vue 2 compatibility mode
-            { find: "vue", replacement: "@vue/compat" },
-            // Also alias the direct Vue 2 dist path that some libraries use
-            { find: "vue/dist/vue.esm.js", replacement: "@vue/compat" },
             // galaxy-ui is internal-only (no library build) and always
             // resolved from source -- the main client consumes the .vue
             // files directly. Exact match: subpaths such as tokens.css resolve
@@ -92,6 +89,7 @@ export default defineConfig(({ command }) => ({
         __license__: JSON.stringify(packageJson.license),
     },
     plugins: [
+        legacyLibrariesFirstPlugin(),
         vue({
             template: {
                 compilerOptions: {
@@ -101,9 +99,10 @@ export default defineConfig(({ command }) => ({
                     // builds, where a leading comment turns a single-root component into a
                     // Fragment and breaks attribute fallthrough.
                     comments: false,
-                    // Enable Vue 3 compat mode
+                    // Templates compile with Vue 3 semantics. Runtime compat still lives in
+                    // src/compat-config.js.
                     compatConfig: {
-                        MODE: 2,
+                        MODE: 3,
                     },
                 },
             },
@@ -153,6 +152,7 @@ export default defineConfig(({ command }) => ({
                 libs: resolve(__dirname, "src/entry/libs.js"),
                 analysis: resolve(__dirname, "src/entry/analysis/index.ts"),
                 generic: resolve(__dirname, "src/entry/generic.js"),
+                widgets: resolve(__dirname, "src/entry/widgets/index.ts"),
             },
             output: {
                 entryFileNames: "[name].bundled.js",

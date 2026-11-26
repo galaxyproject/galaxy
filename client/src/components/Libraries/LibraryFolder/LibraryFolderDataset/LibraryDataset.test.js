@@ -26,9 +26,6 @@ const CANNOT_MODIFY_DATASET_ID = "cannot_modify_dataset_id";
 const CANNOT_MANAGE_DATASET_ID = "cannot_manage_dataset_id";
 const EXPECTED_DATASET_DATA = unrestrictedDatasetResponse;
 
-// setup() (not an options-API `render() { this.$slots }` method) -- the latter gets
-// routed through Vue compat's legacy `with(this)` render-context wrapping
-// (RENDER_FUNCTION compat), which breaks a hand-built component like this.
 const mockDatatypesProvider = {
     setup(_props, { slots }) {
         return () => slots.default?.({ loading: false, item: ["xml"] });

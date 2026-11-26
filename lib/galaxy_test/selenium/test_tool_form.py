@@ -585,6 +585,23 @@ class TestLoggedInToolForm(SeleniumTestCase, UsesUploadActivity):
         assert rerun["copied_from_job_id"] == original["id"]
 
     @selenium_test
+    def test_credentials_group_name_error(self):
+        self.home()
+        self.tool_open("credentials_test")
+        self.components.tool_form.credentials_manage.wait_for_and_click()
+        service = self.components.credentials.service._(service="test_service")
+        service.toggle.wait_for_and_click()
+        service.expanded.wait_for_visible()
+        service.create_group.wait_for_and_click()
+        service.group_name_input.wait_for_visible()
+        service.group_name_error.assert_absent_or_hidden()
+        self.screenshot("tool_form_credentials_new_group")
+
+        service.group_name_input.wait_for_and_clear_and_send_keys("ab")
+        assert service.group_name_error.wait_for_text() == "Group name must be at least 3 characters"
+        self.screenshot("tool_form_credentials_group_name_error")
+
+    @selenium_test
     def test_dataset_state_filtering(self):
         # upload an ok (HID 1) and a discarded (HID 2) dataset and run a tool
         # normally HID 2 would be selected but since it is discarded - it won't

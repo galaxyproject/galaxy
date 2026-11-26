@@ -255,10 +255,10 @@ defineExpose<UploadMethodComponent>({ prepareUpload, reset });
                     </label>
                     <UploadTableDbKeyCell
                         id="composite-dbkey"
-                        :value="currentItem?.dbkey ?? defaultDbKey"
+                        :model-value="currentItem?.dbkey ?? defaultDbKey"
                         :db-keys="listDbKeys"
                         :disabled="!configurationsReady || !currentItem"
-                        @input="onDbKeyInput" />
+                        @update:model-value="onDbKeyInput" />
                 </div>
             </div>
 

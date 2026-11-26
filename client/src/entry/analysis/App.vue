@@ -1,5 +1,5 @@
 <template>
-    <div id="app" :style="theme">
+    <div :style="theme">
         <div id="everything">
             <div id="background" />
             <template v-if="!embedded">
@@ -11,16 +11,16 @@
                     :logo-src="theme?.['--masthead-logo-img'] ?? config.logo_src"
                     :logo-src-secondary="theme?.['--masthead-logo-img-secondary'] ?? config.logo_src_secondary"
                     :window-tab="windowTab" />
-                <Alert
+                <GAlert
                     v-if="config.message_box_visible && config.message_box_content"
                     id="messagebox"
                     class="rounded-0 m-0 p-2"
-                    :variant="config.message_box_class || 'info'">
+                    :variant="alertVariant(config.message_box_class)">
                     <span class="fa fa-fw mr-1 fa-exclamation" />
                     <!-- eslint-disable-next-line vue/no-restricted-syntax -- message_box_content only comes from the operator's galaxy.yml, and sites put embeds and styled banners in it -->
                     <span v-no-sanitize-html="config.message_box_content"></span>
-                </Alert>
-                <Alert
+                </GAlert>
+                <GAlert
                     v-if="showInactivityWarning && config.inactivity_box_content"
                     id="inactivebox"
                     class="rounded-0 m-0 p-2"
@@ -30,14 +30,14 @@
                     <span>
                         <a class="ml-1" :href="resendUrl">Resend Verification</a>
                     </span>
-                </Alert>
+                </GAlert>
             </template>
 
-            <Alert v-if="(configLoadError || userLoadError) && !embedded" id="startup-load-error" variant="danger">
+            <GAlert v-if="(configLoadError || userLoadError) && !embedded" id="startup-load-error" variant="danger">
                 <div v-if="configLoadError">Unable to load the Galaxy configuration: {{ configLoadError }}</div>
                 <div v-if="userLoadError">Unable to load your user data: {{ userLoadError }}</div>
                 <button type="button" class="btn btn-link p-0" @click="retryStartupLoad">Retry</button>
-            </Alert>
+            </GAlert>
 
             <router-view @update:confirmation="confirmation = $event" />
         </div>
@@ -75,9 +75,10 @@ import { useNotificationsStore } from "@/stores/notificationsStore";
 import { useTourStore } from "@/stores/tourStore";
 import { useUserStore } from "@/stores/userStore";
 import { useWindowManagerStore } from "@/stores/windowManagerStore";
+import { alertVariant } from "@/utils/alertVariant";
 import { errorMessageAsString } from "@/utils/simple-error";
 
-import Alert from "@/components/Alert.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GToast from "@/components/BaseComponents/GToast.vue";
 import CommandPalette from "@/components/CommandPalette/CommandPalette.vue";
 import ConfirmDialog from "@/components/ConfirmDialog.vue";
@@ -245,7 +246,7 @@ onMounted(() => {
         if (config.interactivetools_enable) {
             useEntryPointStore().startWatchingEntryPoints();
         }
-        userStore.startWatchingStorageUsage();
+        void userStore.startWatchingStorageUsage();
         if (config.enable_notification_system) {
             useNotificationsStore().startWatchingNotifications();
         }

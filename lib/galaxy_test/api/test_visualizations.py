@@ -105,6 +105,12 @@ class TestVisualizationsApi(ApiTestCase, SharingApiTests):
         updated_viz = self._show_viz(viz_id)
         assert updated_viz["title"] == "New Name"
 
+    def test_show_anonymous_only_when_accessible(self):
+        viz_id, _ = self._create_viz()
+        self._assert_status_code_is(self._get(f"visualizations/{viz_id}", anon=True), 403)
+        self._publish_viz(viz_id)
+        self._assert_status_code_is(self._get(f"visualizations/{viz_id}", anon=True), 200)
+
     def _create_viz(self, **kwds):
         response = self._new_viz(**kwds)
         self._assert_status_code_is(response, 200)

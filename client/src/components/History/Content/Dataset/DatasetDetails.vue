@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { BLink } from "bootstrap-vue";
 import { computed } from "vue";
 
 import { hasDetails } from "@/api";
@@ -10,6 +9,7 @@ import type { ItemUrls } from ".";
 
 import DatasetActions from "./DatasetActions.vue";
 import DatasetMiscInfo from "./DatasetMiscInfo.vue";
+import GLink from "@/components/BaseComponents/GLink.vue";
 
 const datasetStore = useDatasetStore();
 
@@ -55,9 +55,9 @@ function toggleHighlights() {
                     </span>
                     <span v-if="result.genome_build" class="dbkey">
                         <label v-localize class="prompt">database</label>
-                        <BLink class="value" data-label="Database/Build" @click.stop="$emit('edit')">{{
+                        <GLink class="value" data-label="Database/Build" @click.stop="$emit('edit')">{{
                             result.genome_build
-                        }}</BLink>
+                        }}</GLink>
                     </span>
                     <DatasetMiscInfo
                         v-if="result.misc_info"

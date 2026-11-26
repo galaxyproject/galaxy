@@ -52,7 +52,7 @@ jobs:
         with:
           version-file: .tool-versions
           enable-cache: false
-          python-version: '3.10'
+          python-version: '3.11'
       - name: Install script dependencies
         run: uv tool install galaxy-release-util
       - name: Build Python packages

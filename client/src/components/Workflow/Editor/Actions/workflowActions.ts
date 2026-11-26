@@ -14,6 +14,29 @@ import type { defaultPosition } from "../composables/useDefaultStepPosition";
 import { fromSimple, type Workflow } from "../modules/model";
 import { cloneStepWithUniqueLabel, getLabelSet } from "./cloneStep";
 
+/** Moves the editor between the workflow states on either side of a refactor, which the server has already applied. */
+export class RefactorWorkflowAction extends UndoRedoAction {
+    private before: Workflow;
+    private after: Workflow;
+    private restore: (data: Workflow) => void;
+
+    constructor(before: Workflow, after: Workflow, restore: (data: Workflow) => void) {
+        super();
+        this.before = before;
+        this.after = after;
+        this.restore = restore;
+        this.name = "rework workflow";
+    }
+
+    undo() {
+        this.restore(this.before);
+    }
+
+    redo() {
+        this.restore(this.after);
+    }
+}
+
 export class LazySetValueAction<T> extends LazyUndoRedoAction {
     setValueHandler;
     showAttributesCallback;
@@ -361,7 +384,8 @@ export class RemoveFromSelectionAction extends ModifySelectionAction {
 }
 
 export class DuplicateSelectionAction extends CopyIntoWorkflowAction {
-    constructor(workflowId: string) {
+    /** `uniqueLabels: false` keeps the original labels, for restoring the same steps rather than copying them */
+    constructor(workflowId: string, { uniqueLabels = true }: { uniqueLabels?: boolean } = {}) {
         const stateStore = useWorkflowStateStore(workflowId);
         const commentStore = useWorkflowCommentStore(workflowId);
         const stepStore = useWorkflowStepStore(workflowId);
@@ -374,9 +398,8 @@ export class DuplicateSelectionAction extends CopyIntoWorkflowAction {
         ) as WorkflowComment[];
 
         const labelSet = getLabelSet(stepStore);
-        const steps = Object.fromEntries(
-            stepIds.map((id) => [id, cloneStepWithUniqueLabel(ensureDefined(stepStore.steps[id]), labelSet)]),
-        );
+        const cloneStep = (step: Step) => (uniqueLabels ? cloneStepWithUniqueLabel(step, labelSet) : cloneRaw(step));
+        const steps = Object.fromEntries(stepIds.map((id) => [id, cloneStep(ensureDefined(stepStore.steps[id]))]));
 
         const partialWorkflow = { comments, steps, name: "" };
 
@@ -400,7 +423,8 @@ export class DeleteSelectionAction extends UndoRedoAction {
         this.stateStore = useWorkflowStateStore(workflowId);
         this.connectionStore = useConnectionStore(workflowId);
 
-        this.storedSelectionAction = new DuplicateSelectionAction(workflowId);
+        // undo restores these exact steps, so they keep their labels
+        this.storedSelectionAction = new DuplicateSelectionAction(workflowId, { uniqueLabels: false });
         this.storedSelectionAction.position = { top: 0, left: 0 };
         this.storedSelectionAction.loadWorkflowOptions = {
             appendData: true,

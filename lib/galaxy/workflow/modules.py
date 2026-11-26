@@ -2,7 +2,6 @@
 Modules used in building workflows
 """
 
-import enum
 import json
 import logging
 import math
@@ -10,22 +9,22 @@ import re
 from collections import defaultdict
 from collections.abc import (
     Callable,
+    Collection,
     Iterable,
 )
-from dataclasses import dataclass
-from enum import Enum
+from enum import StrEnum
 from typing import (
     Any,
     cast,
     get_args,
     NamedTuple,
+    NotRequired,
     Protocol,
     TYPE_CHECKING,
     TypeAlias,
 )
 
 from typing_extensions import (
-    NotRequired,
     TypedDict,
 )
 
@@ -44,7 +43,6 @@ from galaxy.job_execution.compute_environment import ComputeEnvironment
 from galaxy.managers.credentials import _build_user_credentials_query
 from galaxy.managers.tool_source import get_or_create_tool_source
 from galaxy.model import (
-    DatasetCollection,
     DatasetInstance,
     DynamicTool,
     HistoryDatasetCollectionAssociation,
@@ -104,6 +102,7 @@ from galaxy.tools import (
     DatabaseOperationTool,
     DefaultToolState,
     get_safe_version,
+    get_safe_version_tool,
     Tool,
 )
 from galaxy.tools._types import (
@@ -120,10 +119,14 @@ from galaxy.tools.expressions import (
     do_eval,
     resolve_isolation_command,
 )
+from galaxy.tools.job_parameters import DATA_MANAGER_MODE
 from galaxy.tools.parameters import (
     check_param,
+    params_from_strings,
     params_to_incoming,
+    params_to_strings,
     populate_state,
+    ToolInputsT,
     visit_input_values,
 )
 from galaxy.tools.parameters.basic import (
@@ -139,6 +142,7 @@ from galaxy.tools.parameters.basic import (
     raw_to_galaxy,
     SelectToolParameter,
     TextToolParameter,
+    ToolParameter,
 )
 from galaxy.tools.parameters.grouping import (
     Conditional,
@@ -172,6 +176,11 @@ from galaxy.util.tool_shed.common_util import get_tool_shed_url_from_tool_shed_r
 from galaxy.util.tool_version import remove_version_from_guid
 from galaxy.workflow.map_over import (
     MapOverPlanner,
+)
+from galaxy.workflow.scheduling_dependencies import (
+    DependencyType,
+    SchedulingDependency,
+    ToolInputsNotReadyWithDependencies,
 )
 from galaxy.workflow.workflow_parameter_input_definitions import (
     check_validators,
@@ -527,10 +536,14 @@ class WorkflowModule:
     type: str
     name: str
 
-    def __init__(self, trans: "ProvidesHistoryContext", content_id=None, **kwds):
+    def __init__(self, trans: "ProvidesHistoryContext", content_id=None, view_only: bool = False, **kwds):
         self.trans = trans
         self.content_id = content_id
+        # Built to describe a step, never to run it, see ``ToolModule``.
+        self.view_only = view_only
         self.state = DefaultToolState()
+        # parameters the step gave no value for that got their default; set by check_and_update_state
+        self.filled_defaults: dict[str, Any] = {}
 
     # ---- Creating modules from various representations ---------------------
 
@@ -898,7 +911,7 @@ class SubWorkflowModule(WorkflowModule):
             for step in self.subworkflow.input_steps:
                 name = step.label
                 if not name:
-                    step_module = module_factory.from_workflow_step(self.trans, step)
+                    step_module = module_factory.from_workflow_step(self.trans, step, view_only=self.view_only)
                     name = f"{step.order_index}:{step_module.get_name()}"
                 input = InputDescription(
                     input_subworkflow_step_id=step.order_index,
@@ -920,7 +933,10 @@ class SubWorkflowModule(WorkflowModule):
 
     def get_modules(self):
         if self._modules is None:
-            self._modules = [module_factory.from_workflow_step(self.trans, step) for step in self.subworkflow.steps]
+            self._modules = [
+                module_factory.from_workflow_step(self.trans, step, view_only=self.view_only)
+                for step in self.subworkflow.steps
+            ]
         return self._modules
 
     @property
@@ -932,7 +948,9 @@ class SubWorkflowModule(WorkflowModule):
         return version_changes
 
     def check_and_update_state(self):
-        states = (m.check_and_update_state() for m in self.get_modules())
+        modules = self.get_modules()
+        states = [m.check_and_update_state() for m in modules]
+        self.filled_defaults = {f"Step {i + 1}": m.filled_defaults for i, m in enumerate(modules) if m.filled_defaults}
         # TODO: key ("Step N:") is not currently consumed in UI
         return {f"Step {i + 1}": upgrade_message for i, upgrade_message in enumerate(states) if upgrade_message} or None
 
@@ -1011,7 +1029,12 @@ class SubWorkflowModule(WorkflowModule):
         inputs, etc...
         """
         step = invocation_step.workflow_step
-        all_inputs = self.get_all_inputs()
+        # The subworkflow invocation receives only connected inputs, so only those can be mapped over.
+        # Evaluating an unconnected input would materialize its data default into the history on every
+        # scheduling pass while this step is delayed.
+        all_inputs = [
+            input_dict for input_dict in self.get_all_inputs() if input_dict["name"] in step.input_connections_by_name
+        ]
         collection_info = self.plan_map_over(progress, step, all_inputs)
 
         if collection_info:
@@ -1311,6 +1334,9 @@ class InputDataModule(InputModule):
         default = step.get_input_default_value(default_unset)
         if default is not default_unset:
             data_src["default"] = default
+            # A default supplies the value when the input is omitted. Tool data
+            # parameters cannot themselves be both optional and have a default.
+            data_src["optional"] = False
         input_param = DataToolParameter(None, data_src, self.trans)
         return dict(input=input_param)
 
@@ -1962,6 +1988,10 @@ class InputParameterModule(WorkflowModule):
 
     def step_state_to_tool_state(self, state):
         state = safe_loads(state)
+        if not isinstance(state, dict) or "parameter_type" not in state:
+            raise RequestParameterInvalidException(
+                f"Workflow parameter input step state must define 'parameter_type', got {state!r}"
+            )
         parameter_type = state["parameter_type"]
         default_set, default_value = False, None
         if "default" in state:
@@ -2507,7 +2537,7 @@ class PickValueModule(WorkflowModule):
         )
 
 
-class WorkflowToolRequestState(str, enum.Enum):
+class WorkflowToolRequestState(StrEnum):
     """Validity of the request_internal captured for a tool step.
 
     Persisted on ``ToolRequest.request_state``. Distinct from
@@ -2695,12 +2725,77 @@ def _log_workflow_tool_request_state(
         statsd_client.incr(f"galaxy.workflow_tool_request_state.{request_state.value}")
 
 
+class StepInputFormDefault(NamedTuple):
+    """A step input default that the editor's tool form shows as a parameter value."""
+
+    name: str
+    param: ToolParameter
+    parent: dict[str, Any]
+    value: Any
+
+
+def step_input_form_defaults(
+    inputs: ToolInputsT,
+    state_inputs: dict[str, Any],
+    defaults: dict[str, Any],
+    connected_input_names: Collection[str],
+    app,
+) -> list[StepInputFormDefault]:
+    """Find the step input defaults that the editor's tool form shows as parameter values.
+
+    These are defaults on parameters that are not data inputs, are not connected, do not change
+    other inputs (as conditional test parameters do) and are not set to a runtime value, and that
+    the parameter can convert. ``value`` is the default as the saved form state decodes it.
+    """
+    form_defaults: list[StepInputFormDefault] = []
+    if not defaults:
+        return form_defaults
+
+    def collect(input, prefixed_name, parent, value, **kwargs):
+        if (
+            prefixed_name not in defaults
+            or prefixed_name in connected_input_names
+            or isinstance(input, BaseDataToolParameter)
+            or input.refresh_on_change
+            or is_runtime_value(value)
+        ):
+            return
+        try:
+            # Round trip like the tool state, so a text or select default of 7 matches the form's "7".
+            param = {input.name: input}
+            saved = params_to_strings(param, {input.name: defaults[prefixed_name]}, app)
+            default = params_from_strings(param, saved, app)[input.name]
+        except Exception:
+            return
+        form_defaults.append(StepInputFormDefault(prefixed_name, input, parent, default))
+
+    visit_input_values(inputs, state_inputs, collect)
+    return form_defaults
+
+
+def same_form_value(form_value: Any, default: Any) -> bool:
+    """Compare a tool form value with a step input default, both decoded as the saved tool state.
+
+    An empty value (``None`` or ``""``) matches the other empty value, as the form may submit either.
+    """
+    if form_value in (None, "") and default in (None, ""):
+        return True
+    return form_value == default
+
+
 class ToolModule(WorkflowModule):
     type = "tool"
     name = "Tool"
 
     def __init__(
-        self, trans: "ProvidesHistoryContext", tool_id, tool_version=None, exact_tools=True, tool_uuid=None, **kwds
+        self,
+        trans: "ProvidesHistoryContext",
+        tool_id,
+        tool_version=None,
+        exact_tools=True,
+        tool_uuid=None,
+        step_user_defined_tool: DynamicTool | None = None,
+        **kwds,
     ):
         super().__init__(trans, content_id=tool_id, **kwds)
         self.tool_id = tool_id
@@ -2714,23 +2809,32 @@ class ToolModule(WorkflowModule):
             tool_like: ToolLike | None = None
             if trans.user and tool_uuid:
                 tool_like = trans.app.toolbox.get_unprivileged_tool_or_none(trans.user, tool_uuid=tool_uuid)
-            if not tool_like:
+            if not tool_like and self.view_only and step_user_defined_tool is not None:
+                # Whoever can view a workflow can view its steps, but only the owner of a
+                # user-defined tool can look it up. Describe the step with the tool it stores.
+                # This grants nothing: ``execute`` refuses view-only modules, and the tool
+                # still denies ``allow_user_access`` to everyone but its owner.
+                tool_like = trans.app.toolbox.dynamic_tool_to_tool(step_user_defined_tool)
+            elif not tool_like:
                 tool_like = trans.app.toolbox.get_tool(
                     tool_id, tool_version=tool_version, exact=exact_tools, tool_uuid=tool_uuid
                 )
+                if exact_tools and self.tool_version and not tool_uuid:
+                    # A different version stays only for the workflow-safe update check
+                    # below, which swaps it or drops it.
+                    named_tool = trans.app.toolbox.get_tool_at_version(tool_id, self.tool_version)
+                    if named_tool or (tool_like and str(tool_like.version) == self.tool_version):
+                        tool_like = named_tool
             if tool_like:
                 self.tool = trans.app.toolbox.materialize_tool(tool_like, reason="validation")
         if self.tool:
             current_tool_version = str(self.tool.version)
-            if exact_tools and self.tool_version and self.tool_version != current_tool_version:
-                safe_version = get_safe_version(self.tool, self.tool_version)
-                if safe_version:
-                    tool_like = trans.app.toolbox.get_tool(
-                        tool_id, tool_version=safe_version, exact=True, tool_uuid=tool_uuid
-                    )
-                    assert tool_like is not None
-                    self.tool = trans.app.toolbox.materialize_tool(tool_like, reason="validation")
-                else:
+            if self.tool_version and self.tool_version != current_tool_version:
+                # Prefer the workflow-safe update over the newest version, exact or not.
+                safe_tool = get_safe_version_tool(trans.app.toolbox, self.tool, self.tool_version)
+                if safe_tool:
+                    self.tool = trans.app.toolbox.materialize_tool(safe_tool, reason="validation")
+                elif exact_tools:
                     log.info(
                         f"Exact tool specified during workflow module creation for [{tool_id}] but couldn't find correct version [{tool_version}]."
                     )
@@ -2816,6 +2920,8 @@ class ToolModule(WorkflowModule):
         tool_version = step.tool_version
         tool_uuid = step.tool_uuid
         kwds["exact_tools"] = False
+        if kwds.get("view_only"):
+            kwds["step_user_defined_tool"] = step.user_defined_tool
         module = super().from_workflow_step(
             trans, step, tool_id=tool_id, tool_version=tool_version, tool_uuid=tool_uuid, **kwds
         )
@@ -3030,7 +3136,15 @@ class ToolModule(WorkflowModule):
 
     def check_and_update_state(self):
         if self.tool:
-            return self.tool.check_and_update_param_values(self.state.inputs, self.trans, workflow_building_mode=True)
+            # Parameters that only lacked a value get their default and are not upgrade problems, unless the tool
+            # version changed: then they may be new or renamed parameters, so they stay upgrade messages.
+            self.filled_defaults = {}
+            return self.tool.check_and_update_param_values(
+                self.state.inputs,
+                self.trans,
+                workflow_building_mode=True,
+                filled_defaults=None if self.version_changes else self.filled_defaults,
+            )
 
     def add_dummy_datasets(self, connections: Iterable[InputConnection] | None = None, steps=None):
         if self.tool:
@@ -3150,6 +3264,29 @@ class ToolModule(WorkflowModule):
     def get_runtime_inputs(self, step, connections: Iterable[WorkflowStepConnection] | None = None):
         return self.get_inputs()
 
+    def show_step_input_defaults(self, defaults: dict[str, Any], connected_input_names: Collection[str]) -> None:
+        """Write the step input defaults that replace the tool state at run time into the tool form state."""
+        if self.tool is None:
+            return
+        for form_default in step_input_form_defaults(
+            self.tool.inputs, self.state.inputs, defaults, connected_input_names, self.trans.app
+        ):
+            form_default.parent[form_default.param.name] = form_default.value
+
+    def step_input_defaults_changed_in_form(
+        self, defaults: dict[str, Any], connected_input_names: Collection[str]
+    ) -> set[str]:
+        """Return the names of the step input defaults whose tool form value the user changed."""
+        if self.tool is None:
+            return set()
+        return {
+            form_default.name
+            for form_default in step_input_form_defaults(
+                self.tool.inputs, self.state.inputs, defaults, connected_input_names, self.trans.app
+            )
+            if not same_form_value(form_default.parent.get(form_default.param.name), form_default.value)
+        }
+
     def compute_runtime_state(
         self, trans: "ProvidesHistoryContext", step=None, step_updates=None, replace_default_values=False
     ):
@@ -3192,11 +3329,14 @@ class ToolModule(WorkflowModule):
         invocation_step: "WorkflowInvocationStep",
         use_cached_job: bool = False,
     ) -> bool | None:
+        if self.view_only:
+            # ``self.tool`` may be a user-defined tool the user doesn't own.
+            raise exceptions.InternalServerError("A workflow module built for viewing cannot execute its step.")
         invocation = invocation_step.workflow_invocation
         step = invocation_step.workflow_step
         tool_id = step.effective_tool_id
         tool = trans.app.toolbox.get_tool(
-            tool_id, tool_version=step.tool_version, tool_uuid=step.tool_uuid, user=trans.user
+            tool_id, tool_version=self.get_version(), tool_uuid=step.tool_uuid, user=trans.user
         )
         if tool is None:
             raise ToolMissingException(f"Tool {tool_id} missing. Cannot execute workflow step.", tool_id=tool_id)
@@ -3205,6 +3345,12 @@ class ToolModule(WorkflowModule):
             # Invocation requests are checked on submit; this catches tools changed after scheduling.
             message = f"Specified tool [{tool.id}] in step {step.order_index + 1} is not workflow-compatible."
             raise exceptions.MessageException(message)
+        if any(step_input.default_value_set for step_input in step.inputs):
+            # Replacing default values creates a history dataset for each data default. A delayed step
+            # runs again on the next scheduling pass, so delay before that while connected inputs are not ready.
+            for input_dict in self.get_all_inputs():
+                if input_dict["name"] in step.input_connections_by_name:
+                    progress.replacement_for_input(trans, step, input_dict)
         self.state, step_errors = self.compute_runtime_state(
             trans, step, step_updates=progress.param_map.get(step.id), replace_default_values=True
         )
@@ -3215,10 +3361,12 @@ class ToolModule(WorkflowModule):
         tool_state = step.state
         assert tool_state is not None
         tool_inputs = tool.inputs.copy()
-        # Not strictly needed - but keep Tool state clean by stripping runtime
-        # metadata parameters from it.
-        if RUNTIME_STEP_META_STATE_KEY in tool_state.inputs:
-            del tool_state.inputs[RUNTIME_STEP_META_STATE_KEY]
+        # Only tool inputs and the data manager mode become job parameters. The stored step
+        # state can hold other keys, e.g. inputs of another version of the tool, and the
+        # runtime step metadata.
+        tool_state.inputs = {
+            name: value for name, value in tool_state.inputs.items() if name in tool_inputs or name == DATA_MANAGER_MODE
+        }
 
         all_inputs = self.get_all_inputs()
 
@@ -3415,9 +3563,10 @@ class ToolModule(WorkflowModule):
         except PartialJobExecution as pje:
             execution_tracker = pje.execution_tracker
 
-        except ToolInputsNotReadyException:
+        except ToolInputsNotReadyException as exc:
             delayed_why = f"tool [{tool.id}] inputs are not ready, this special tool requires inputs to be ready"
-            raise DelayedWorkflowEvaluation(why=delayed_why)
+            dependencies = exc.dependencies if isinstance(exc, ToolInputsNotReadyWithDependencies) else ()
+            raise DelayedWorkflowEvaluation(why=delayed_why, dependencies=dependencies) from exc
 
         progress.record_executed_job_count(len(execution_tracker.successful_jobs))
         step_outputs: dict[str, model.HistoryDatasetCollectionAssociation | model.HistoryDatasetAssociation] = {}
@@ -3621,38 +3770,6 @@ module_types = dict(
 module_factory = WorkflowModuleFactory(module_types)
 
 
-class DependencyType(str, Enum):
-    JOB = "job"
-    HDA = "hda"
-    DATASET_COLLECTION = "dataset_collection"
-    WORKFLOW_INVOCATION_STEP = "workflow_invocation_step"
-
-
-@dataclass(frozen=True)
-class SchedulingDependency:
-    dependency_type: DependencyType
-    id: int
-
-
-@dataclass(frozen=True)
-class SchedulingDependencies:
-    """What the next scheduling attempt of an invocation waits on."""
-
-    tracked: frozenset[SchedulingDependency]
-    # Why steps were delayed without a tracked dependency. The invocation is
-    # scheduled again on the next iteration and the reasons are logged.
-    untracked: tuple[str, ...]
-    # The iteration stopped before scheduling everything it could.
-    more_work: bool
-
-
-def unpopulated_collection_dependencies(collection: DatasetCollection) -> list[SchedulingDependency]:
-    return [
-        SchedulingDependency(DependencyType.DATASET_COLLECTION, collection_id)
-        for collection_id in collection.unpopulated_collection_ids()
-    ]
-
-
 class DelayedWorkflowEvaluation(Exception):
     def __init__(
         self,
@@ -3703,6 +3820,7 @@ class WorkflowModuleInjector:
         'state' else it is just obtained from the database.
         """
         step.upgrade_messages = {}
+        step.filled_defaults = {}
 
         # Make connection information available on each step by input name.
         step.setup_input_connections_by_name()
@@ -3728,6 +3846,7 @@ class WorkflowModuleInjector:
                 subworkflow,
                 param_map=unjsonified_subworkflow_param_map,
                 allow_tool_state_corrections=allow_tool_state_corrections,
+                view_only=kwargs.get("view_only", False),
             )
 
     def inject_all(self, workflow: Workflow, param_map=None, ignore_tool_missing_exception=False, **kwargs):
@@ -3750,6 +3869,7 @@ class WorkflowModuleInjector:
 
         # Fix any missing parameters
         step.upgrade_messages = step.module.check_and_update_state()
+        step.filled_defaults = step.module.filled_defaults
 
         return step_errors
 
@@ -3770,13 +3890,14 @@ def populate_module_and_state(
     param_map,
     allow_tool_state_corrections=False,
     module_injector=None,
+    view_only: bool = False,
 ):
     """Used by API but not web controller, walks through a workflow's steps
     and populates transient module and state attributes on each.
     """
     if module_injector is None:
         module_injector = WorkflowModuleInjector(trans, allow_tool_state_corrections)
-    module_injector.inject_all(workflow, param_map=param_map)
+    module_injector.inject_all(workflow, param_map=param_map, view_only=view_only)
     for step in workflow.steps:
         step_args = param_map.get(step.id, {})
         step_errors = module_injector.compute_runtime_state(step, step_args=step_args)

@@ -774,8 +774,7 @@ class ExtractionLabelIndex:
     def job_label_arg(self, job: Job) -> str | None:
         """Directive argument (``step="z"``) for a referenced job/ICJ, folding an
         element job to its ICJ step exactly as the seeding collector does."""
-        icj_assoc = job.implicit_collection_jobs_association
-        if icj_assoc is not None:
+        if (icj_assoc := job.implicit_collection_jobs_association) is not None:
             step = self.icj_to_step.get(icj_assoc.implicit_collection_jobs_id)
         else:
             step = self.job_to_step.get(job.id)

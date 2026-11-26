@@ -44,7 +44,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ['3.10', '3.14']
+        python-version: ['3.11', '3.14']
     defaults:
       run:
         shell: bash -l {0}
@@ -68,6 +68,7 @@ jobs:
         uses: astral-sh/setup-uv@v10.3.3
         with:
           version-file: galaxy root/.tool-versions
+          prune-cache: true
       - name: Install tox
         run: uv tool install tox --with tox-uv
       - name: Run tests

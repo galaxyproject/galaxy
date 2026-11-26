@@ -93,7 +93,7 @@ export const visualizationsProvider: CommandPaletteProvider = {
         }
         return storeFirstItems(visualizationList(), query, PALETTE_LIMITS.section, { cacheOnly: true });
     },
-    async searchScoped(_scope, query: string): Promise<ScopedSection[]> {
+    async searchScoped(_scope, query: string, _ctx, options): Promise<ScopedSection[]> {
         if (!query) {
             await ensureListHydrated(visualizationList());
             return [
@@ -101,7 +101,14 @@ export const visualizationsProvider: CommandPaletteProvider = {
                 { id: "latest", items: latestItems(), title: "Latest visualizations" },
             ];
         }
-        const items = await storeFirstItems(visualizationList(), query, PALETTE_LIMITS.section);
-        return [{ id: "results", items, title: "Visualizations" }];
+        const sectionsOf = (items: PaletteItem[]): ScopedSection[] => [
+            { id: "results", items, title: "Visualizations" },
+        ];
+        const onLocal = options?.onLocal;
+        const items = await storeFirstItems(visualizationList(), query, PALETTE_LIMITS.section, {
+            onLocal: onLocal && ((cached) => onLocal(sectionsOf(cached))),
+            signal: options?.signal,
+        });
+        return sectionsOf(items);
     },
 };

@@ -97,6 +97,9 @@ interface WorkflowOutput {
     uuid?: string | null;
 }
 
+/** Step-level input defaults, keyed by input name (the `in` block of a gxformat2 step). */
+export type StepInputDefaults = Record<string, { default?: unknown }>;
+
 export interface NewStep {
     annotation?: string;
     config_form?: { [index: string]: any };
@@ -104,6 +107,7 @@ export interface NewStep {
     id?: number;
     errors?: string[] | null;
     input_connections: StepInputConnection;
+    in?: StepInputDefaults;
     inputs: Array<InputTerminalSource>;
     label?: string | null;
     name: string;

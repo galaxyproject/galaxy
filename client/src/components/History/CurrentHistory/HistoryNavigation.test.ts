@@ -4,6 +4,7 @@ import { createPinia } from "pinia";
 import { describe, expect, it } from "vitest";
 
 import type { RegisteredUser } from "@/api";
+import type GButton from "@/components/BaseComponents/GButton.vue";
 import { useUserStore } from "@/stores/userStore";
 
 import HistoryNavigation from "./HistoryNavigation.vue";
@@ -38,10 +39,10 @@ describe("History Navigation", () => {
             },
         );
 
-        const createButton = wrapper.find("*[data-description='create new history']");
-        expect(createButton.attributes().disabled).toBeFalsy();
-        const switchButton = wrapper.find("*[data-description='switch to another history']");
-        expect(switchButton.attributes().disabled).toBeFalsy();
+        const createButton = wrapper.findComponent<typeof GButton>("*[data-description='create new history']");
+        expect(createButton.props("disabled")).toBe(false);
+        const switchButton = wrapper.findComponent<typeof GButton>("*[data-description='switch to another history']");
+        expect(switchButton.props("disabled")).toBe(false);
     });
 
     it("disables options for anonymous users", async () => {
@@ -50,9 +51,9 @@ describe("History Navigation", () => {
             histories: [],
         });
 
-        const createButton = wrapper.find("*[data-description='create new history']");
-        expect(createButton.attributes().disabled).toBeTruthy();
-        const switchButton = wrapper.find("*[data-description='switch to another history']");
-        expect(switchButton.attributes().disabled).toBeTruthy();
+        const createButton = wrapper.findComponent<typeof GButton>("*[data-description='create new history']");
+        expect(createButton.props("disabled")).toBe(true);
+        const switchButton = wrapper.findComponent<typeof GButton>("*[data-description='switch to another history']");
+        expect(switchButton.props("disabled")).toBe(true);
     });
 });

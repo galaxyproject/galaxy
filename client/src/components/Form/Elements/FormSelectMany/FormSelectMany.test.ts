@@ -16,7 +16,7 @@ vi.mock("@/components/Form/Elements/FormSelectMany/worker/selectMany");
 
 function mountSelectMany(props: Partial<InstanceType<typeof FormSelectMany>["$props"]>) {
     return mount(FormSelectMany as any, {
-        props: { options: [], value: [], ...props },
+        props: { options: [], modelValue: [], ...props },
         pinia,
         global: localVue,
     });
@@ -56,7 +56,7 @@ function generateOptionsFromArrays(matrix: Array<Array<string>>): SelectOption[]
 
 /** gets the latest input event value and reflects it to props */
 async function emittedInput(wrapper: ReturnType<typeof mountSelectMany>) {
-    const emittedEvents = wrapper.emitted("input");
+    const emittedEvents = wrapper.emitted("update:modelValue");
 
     if (!emittedEvents) {
         return undefined;
@@ -68,7 +68,7 @@ async function emittedInput(wrapper: ReturnType<typeof mountSelectMany>) {
         return undefined;
     }
 
-    await wrapper.setProps({ ...wrapper.props(), value: latestValue });
+    await wrapper.setProps({ ...wrapper.props(), modelValue: latestValue });
     return latestValue;
 }
 
@@ -84,7 +84,7 @@ async function search(wrapper: ReturnType<typeof mountSelectMany>, value: string
 describe("FormSelectMany", () => {
     it("keeps custom label actions beside the option button", async () => {
         const wrapper = mount(FormSelectMany as any, {
-            props: { options: [{ label: "Dataset", value: "dataset" }], value: [] },
+            props: { options: [{ label: "Dataset", value: "dataset" }], modelValue: [] },
             slots: { "label-area": '<button class="rename" @click.stop>Rename dataset</button>' },
             pinia,
             global: localVue,
@@ -93,9 +93,9 @@ describe("FormSelectMany", () => {
         expect(select.attributes("aria-label")).toBe("Select Dataset");
         expect(select.find(".rename").exists()).toBe(false);
         await wrapper.get(".rename").trigger("click");
-        expect(wrapper.emitted("input")).toBeUndefined();
+        expect(wrapper.emitted("update:modelValue")).toBeUndefined();
         await select.trigger("click");
-        expect(wrapper.emitted("input")?.[0]).toEqual([["dataset"]]);
+        expect(wrapper.emitted("update:modelValue")?.[0]).toEqual([["dataset"]]);
     });
 
     it("displays all options", async () => {
@@ -134,7 +134,7 @@ describe("FormSelectMany", () => {
 
     it("displays selected values in the selected column", async () => {
         const options = generateOptionsFromArrays([["foo", "bar", "baz"], ["@"], ["galaxy"], [".com", ".org"]]);
-        const wrapper = mountSelectMany({ options, value: ["foo@galaxy.com", "foo@galaxy.org"] });
+        const wrapper = mountSelectMany({ options, modelValue: ["foo@galaxy.com", "foo@galaxy.org"] });
 
         {
             const selectedOptions = wrapper.findAll(selectors.selectedOptions);
@@ -167,7 +167,7 @@ describe("FormSelectMany", () => {
 
     it("shows the amount of selected options", async () => {
         const options = generateOptionsFromArrays([["foo", "bar", "baz"], ["@"], ["galaxy"], [".com", ".org"]]);
-        const wrapper = mountSelectMany({ options, value: ["foo@galaxy.com", "foo@galaxy.org"] });
+        const wrapper = mountSelectMany({ options, modelValue: ["foo@galaxy.com", "foo@galaxy.org"] });
 
         {
             const selectedCount = wrapper.find(selectors.selectedCount);
@@ -192,7 +192,7 @@ describe("FormSelectMany", () => {
 
     it("selects all options", async () => {
         const options = generateOptionsFromArrays([["foo", "bar", "baz"], ["@"], ["galaxy"], [".com", ".org"]]);
-        const wrapper = mountSelectMany({ options, value: ["foo@galaxy.com", "foo@galaxy.org"] });
+        const wrapper = mountSelectMany({ options, modelValue: ["foo@galaxy.com", "foo@galaxy.org"] });
 
         const selectAllButton = wrapper.find(selectors.selectAll);
         await selectAllButton.trigger("click");

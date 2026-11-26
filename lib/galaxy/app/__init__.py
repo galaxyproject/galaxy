@@ -51,6 +51,7 @@ from galaxy.job_metrics import JobMetrics
 from galaxy.jobs.manager import JobManager
 from galaxy.managers.admin_extensions import AdminExtensionsManager
 from galaxy.managers.api_keys import ApiKeyManager
+from galaxy.managers.change_events import ChangeEventPublisher
 from galaxy.managers.citations import CitationsManager
 from galaxy.managers.collections import DatasetCollectionManager
 from galaxy.managers.dbkeys import GenomeBuilds
@@ -71,6 +72,7 @@ from galaxy.managers.library_datasets import LibraryDatasetsManager
 from galaxy.managers.notification import NotificationManager
 from galaxy.managers.object_store_instances import UserObjectStoreResolverImpl
 from galaxy.managers.roles import RoleManager
+from galaxy.managers.run_notifications import RunNotificationMonitor
 from galaxy.managers.session import GalaxySessionManager
 from galaxy.managers.sse import (
     SSEConnectionGaugeEmitter,
@@ -116,6 +118,11 @@ from galaxy.model.tags import GalaxyTagHandler
 from galaxy.model.tool_shed_install import (
     HasToolBox,
     mapping as install_mapping,
+)
+from galaxy.model.user_quota_updates import (
+    send_user_quota_updates_on_commit,
+    UserQuotaUpdateBatcher,
+    UserQuotaUpdates,
 )
 from galaxy.objectstore import (
     BaseObjectStore,
@@ -844,7 +851,7 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
 
         # SSE dispatcher must be registered before NotificationManager so Lagom
         # can auto-inject the Optional[SSEEventDispatcher] constructor arg.
-        self._register_singleton(
+        sse_dispatcher = self._register_singleton(
             SSEEventDispatcher,
             SSEEventDispatcher(
                 queue_worker=getattr(self, "queue_worker", None),
@@ -852,6 +859,16 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
                 statsd_client=self.execution_timer_factory.galaxy_statsd_client,
             ),
         )
+
+        def send_user_quota_updates(updates: UserQuotaUpdates) -> None:
+            sse_dispatcher.user_quota_update(sorted(updates.user_ids), broadcast=updates.broadcast)
+
+        self.user_quota_update_batcher = UserQuotaUpdateBatcher(send_user_quota_updates)
+        if self.config.enable_sse_updates:
+            send_user_quota_updates_on_commit(self.model.session, self.user_quota_update_batcher.add)
+        self.haltables.insert(0, ("user quota updates", self.user_quota_update_batcher.flush))
+        if self.config.enable_sse_updates:
+            ChangeEventPublisher(self[SSEEventDispatcher]).register(self.model.session)
         self.notification_manager = self._register_singleton(NotificationManager)
         self.interactivetool_manager = InteractiveToolManager(self)
 
@@ -1028,9 +1045,12 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication, InstallationT
         startup_timer = ExecutionTimer()
         super().__init__(fsmon=True, **kwargs)
         self.haltables = [
+            # Before the queue worker, which sends them
+            ("user quota updates", self.user_quota_update_batcher.flush),
             ("queue worker", self._shutdown_queue_worker),
             ("file watcher", self._shutdown_watcher),
             ("database heartbeat", self._shutdown_database_heartbeat),
+            ("run notification monitor", self._shutdown_run_notification_monitor),
             ("SSE connection gauge emitter", self._shutdown_sse_connection_gauge_emitter),
             ("history audit monitor", self._shutdown_history_audit_monitor),
             ("workflow scheduler", self._shutdown_scheduling_manager),
@@ -1155,8 +1175,7 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication, InstallationT
             scheduling_manager.WorkflowSchedulingManager, scheduling_manager.WorkflowSchedulingManager(self)
         )
 
-        # Initialize workflow completion monitoring (manager is always available,
-        # but monitor only runs on workflow scheduler processes)
+        # Monitor workflow completion on workflow handlers.
         self.workflow_completion_manager = WorkflowCompletionManager(self)
         self.workflow_completion_hook_registry = self._register_singleton(
             WorkflowCompletionHookRegistry, WorkflowCompletionHookRegistry(self)
@@ -1195,6 +1214,9 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication, InstallationT
         )
         self.database_heartbeat.add_change_callback(self.watchers.change_state)
         self.database_heartbeat.add_change_callback(self._on_config_watcher_change)
+        if self.is_webapp and (self.config.enable_notification_system or self.config.smtp_server):
+            run_notification_monitor = self._register_singleton(RunNotificationMonitor)
+            self.database_heartbeat.add_change_callback(run_notification_monitor.on_role_change)
         self.application_stack.register_postfork_function(self.database_heartbeat.start)
 
         # History audit monitor for SSE-based history updates. The monitor only
@@ -1278,6 +1300,10 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication, InstallationT
 
     def _shutdown_database_heartbeat(self):
         self.database_heartbeat.shutdown()
+
+    def _shutdown_run_notification_monitor(self):
+        if self.is_webapp and (self.config.enable_notification_system or self.config.smtp_server):
+            self[RunNotificationMonitor].shutdown()
 
     def _shutdown_sse_connection_gauge_emitter(self):
         if self.sse_connection_gauge_emitter is not None:

@@ -16,6 +16,7 @@ from galaxy.model import (
     HistoryDatasetAssociation,
     HistoryDatasetCollectionAssociation,
     InpDataDictT,
+    tag_strings,
 )
 from galaxy.tool_util.cwl.util import set_basename_and_derived_properties
 from galaxy.tool_util_models.parameters import (
@@ -101,15 +102,12 @@ def input_extra_files_path(
     """Return where a tool finds an input dataset's extra files on disk, if it has any.
 
     YAML tools get this as ``extra_files_path`` and XML tools as
-    ``$input.extra_files_path``. Rewriting the path makes Pulsar stage the
-    folder and fail the job if it is missing, so only call that for a folder
-    that exists.
+    ``$input.extra_files_path``.
     """
+    if compute_environment is not None:
+        return compute_environment.input_extra_files_path(dataset)
     extra_files_path: str = dataset.extra_files_path
-    if not os.path.exists(extra_files_path):
-        return None
-    rewrite: str | None = compute_environment.input_extra_files_rewrite(dataset) if compute_environment else None
-    return rewrite or extra_files_path
+    return extra_files_path if os.path.exists(extra_files_path) else None
 
 
 def is_list_like(collection_type: str) -> bool:
@@ -133,7 +131,7 @@ def setup_for_reference_data(
         table = app.tool_data_tables.get(table_name)
         if table is None:
             raise ValueError(f"Data table {table_name} is not configured")
-        if not trusted and not table.user_accessible:
+        if not table.readable_by(trusted=trusted):
             raise ValueError(f"Data table {table_name} is not available to user-defined tools")
         entry = next((row for row in table.get_named_fields_list() if row.get("value") == value), None)
         if entry is None:
@@ -230,8 +228,11 @@ def setup_for_runtimeify(
             "class": "Directory" if is_directory else "File",
             "location": f"step_input://{index}",
             "format": hda_entry.extension,
-            # A deferred dataset has no local file to measure.
-            "size": hda_entry.dataset.get_size(calculate_size=not hda_entry.has_deferred_data),
+            # Measure only a size that is unknown: a deferred dataset has no local file, and remote
+            # evaluation has no object store, so a recorded size (0 included) is used as is.
+            "size": hda_entry.dataset.get_size(
+                calculate_size=hda_entry.dataset.file_size is None and not hda_entry.has_deferred_data
+            ),
             "listing": [],
         }
         if hda_entry.has_deferred_data:
@@ -291,7 +292,7 @@ def _adapt_from_hdca(
     return collection_to_runtime(
         hdca.collection,
         name=hdca.name,
-        tags=[str(t) for t in hdca.tags],
+        tags=hdca.make_tag_string_list(),
         adapt_dataset=adapt_dataset,
         compute_environment=compute_environment,
     )
@@ -311,7 +312,7 @@ def _adapt_from_dce(
     return collection_to_runtime(
         dce.child_collection,
         name=dce.element_identifier,
-        tags=[str(t) for t in dce.auto_propagated_tags],
+        tags=tag_strings(dce.auto_propagated_tags),
         adapt_dataset=adapt_dataset,
         compute_environment=compute_environment,
         columns=dce.columns,  # pass columns for sample_sheet:* types
@@ -409,7 +410,7 @@ def _element_to_runtime(
         return _build_collection_runtime_dict(
             element.child_collection,
             name=element.element_identifier,
-            tags=list(element.auto_propagated_tags) if element.auto_propagated_tags else [],
+            tags=tag_strings(element.auto_propagated_tags),
             adapt_dataset=adapt_dataset,
             compute_environment=compute_environment,
             columns=element.columns,  # pass columns for sample_sheet:* types

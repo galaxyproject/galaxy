@@ -2,7 +2,7 @@ import logging
 import os
 from datetime import (
     datetime,
-    timezone,
+    UTC,
 )
 from json import (
     dumps,
@@ -81,6 +81,7 @@ from galaxy.tools.fetch.workbooks import (
     ParsedFetchWorkbook,
     ParseFetchWorkbook,
 )
+from galaxy.tools.job_parameters import TARGET_DATATYPE
 from galaxy.tools.parameters.pagination import OptionsPaginationT
 from galaxy.util.hash_util import (
     HashFunctionNameEnum,
@@ -121,7 +122,7 @@ log = logging.getLogger(__name__)
 # Tool search bypasses the fulltext for the following list of terms
 SEARCH_RESERVED_TERMS_FAVORITES = ["#favs", "#favorites", "#favourites"]
 
-ICON_CACHE_MAX_AGE = 2592000  # 30 days
+ICON_CACHE_MAX_AGE = 86400  # 1 day
 
 
 class FormDataApiRoute(APIContentTypeRoute):
@@ -134,6 +135,19 @@ class JsonApiRoute(APIContentTypeRoute):
 
 class PNGIconResponse(FileResponse):
     media_type = "image/png"
+
+
+def _etag_matches(if_none_match: str, file_hash: str) -> bool:
+    """Weak comparison of an If-None-Match header against an opaque tag."""
+    for candidate in if_none_match.split(","):
+        candidate = candidate.strip()
+        if candidate == "*":
+            return True
+        if candidate.startswith("W/"):
+            candidate = candidate[2:]
+        if candidate.strip('"') == file_hash:
+            return True
+    return False
 
 
 FetchWorkbookTypeQueryParam: FetchWorkbookType = Query(
@@ -269,29 +283,29 @@ class FetchTools:
 
         # Get file modification time
         file_stat = os.stat(tool_icon_path)
-        last_modified = datetime.fromtimestamp(file_stat.st_mtime, tz=timezone.utc).strftime(
-            "%a, %d %b %Y %H:%M:%S GMT"
-        )
-
-        # Check If-Modified-Since
-        if_modified_since = request.headers.get("If-Modified-Since")
-        if if_modified_since == last_modified:
-            return Response(status_code=304)
+        last_modified = datetime.fromtimestamp(file_stat.st_mtime, tz=UTC).strftime("%a, %d %b %Y %H:%M:%S GMT")
 
         # Generate ETag based on file content
         file_hash = memory_bound_hexdigest(hash_func_name=HashFunctionNameEnum.md5, path=tool_icon_path)
         etag = f'"{file_hash}"'
+        cache_headers = {
+            # The icon URL is not versioned, so the icon may change under the same URL.
+            "Cache-Control": f"public, max-age={ICON_CACHE_MAX_AGE}",
+            "ETag": etag,
+            "Last-Modified": last_modified,
+        }
 
-        # Check If-None-Match (ETag)
-        if_none_match = request.headers.get("If-None-Match", "").split(",")
-        if any(etag.strip() == e.strip(' W/"') for e in if_none_match):  # Handle weak ETags
-            return Response(status_code=304)
+        # If-None-Match takes precedence over If-Modified-Since (RFC 9110, section 13.2.2)
+        if_none_match = request.headers.get("If-None-Match")
+        if if_none_match is not None:
+            if _etag_matches(if_none_match, file_hash):
+                return Response(status_code=304, headers=cache_headers)
+        elif request.headers.get("If-Modified-Since") == last_modified:
+            return Response(status_code=304, headers=cache_headers)
 
         # Serve the file with caching headers
         response = PNGIconResponse(tool_icon_path)
-        response.headers["Cache-Control"] = f"public, max-age={ICON_CACHE_MAX_AGE}, immutable"
-        response.headers["ETag"] = etag
-        response.headers["Last-Modified"] = last_modified
+        response.headers.update(cache_headers)
         return response
 
     @router.post("/api/file_landings", public=True, allow_cors=True)
@@ -997,7 +1011,7 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         self.history_manager.error_unless_mutable(target_history)
 
         # Make the target datatype available to the converter
-        params["__target_datatype__"] = target_type
+        params[TARGET_DATATYPE] = target_type
         vars = converter.handle_input(trans, params, history=target_history)
         return self.service._handle_inputs_output_to_api_response(trans, converter, target_history, vars)
 

@@ -6,6 +6,10 @@ from sqlalchemy import update
 
 from galaxy import model
 from galaxy.model.unittest_utils.utils import random_email
+from galaxy.model.user_quota_updates import (
+    send_user_quota_updates_on_commit,
+    UserQuotaUpdates,
+)
 from galaxy.objectstore import (
     BaseObjectStore,
     build_object_store_from_config,
@@ -554,6 +558,32 @@ class TestCalculateUsage(BaseModelTestCase):
             ("alt_source", 0),
         ]
 
+    def test_relabel_announces_the_usage_change_to_the_owner(self):
+        quota_agent = DatabaseQuotaAgent(self.model)
+        d = self._add_dataset(10)
+        sent: list[UserQuotaUpdates] = []
+        remove = send_user_quota_updates_on_commit(self.model.session, sent.append)
+        try:
+            quota_agent.relabel_quota_for_dataset(d.dataset, None, "alt_source")
+            self.model.session.commit()
+        finally:
+            remove()
+
+        assert sent == [UserQuotaUpdates(user_ids={self.u.id})]
+
+    def test_adjusting_a_new_user_announces_nothing(self):
+        sent: list[UserQuotaUpdates] = []
+        remove = send_user_quota_updates_on_commit(self.model.session, sent.append)
+        try:
+            user = model.User(email=random_email(), password="password")
+            self.model.session.add(user)
+            user.adjust_total_disk_usage(10, None)
+            self.model.session.commit()
+        finally:
+            remove()
+
+        assert sent == []
+
     def _refresh_user_and_assert_disk_usage_is(self, usage, label=None):
         u = self.u
         self.model.context.refresh(u)
@@ -642,6 +672,27 @@ class TestQuota(BaseModelTestCase):
         self._add_user_quota(u, quota)
 
         self._assert_user_quota_is(u, 52, label1)
+
+    def test_replacing_quota_associations_announces_to_old_and_new_users(self):
+        old_user, old_member, new_user, new_member = (self._new_user() for _ in range(4))
+        quota = model.Quota(name=f"replaced associations {uuid.uuid4()}", amount=10)
+        self._add_user_quota(old_user, quota)
+        self._add_group_quota(old_member, quota)
+        new_group = model.Group(name=f"new group {uuid.uuid4()}")
+        self.persist(new_group, model.UserGroupAssociation(new_member, new_group))
+        sent: list[UserQuotaUpdates] = []
+        remove = send_user_quota_updates_on_commit(self.model.session, sent.append)
+        try:
+            self.quota_agent.set_entity_quota_associations(quotas=[quota], users=[new_user], groups=[new_group])
+        finally:
+            remove()
+
+        assert sent == [UserQuotaUpdates(user_ids={old_user.id, old_member.id, new_user.id, new_member.id})]
+
+    def _new_user(self):
+        user = model.User(email=random_email(), password="password")
+        self.persist(user)
+        return user
 
     def _add_group_quota(self, user, quota):
         group = model.Group()

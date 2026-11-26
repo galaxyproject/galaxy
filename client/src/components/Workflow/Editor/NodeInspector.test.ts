@@ -18,6 +18,7 @@ describe("NodeInspector", () => {
             global: {
                 plugins: [createTestingPinia({ createSpy: vi.fn })],
                 stubs: { FormTool: true, FormDefault: true, IdleLoad: true, DraggableSeparator: true },
+                provide: { workflowId: "mock-workflow" },
             },
         });
         const inspectorStore = useWorkflowNodeInspectorStore();

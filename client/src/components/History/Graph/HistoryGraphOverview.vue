@@ -6,11 +6,10 @@ import { computed, ref } from "vue";
 import type { GraphEdge } from "@/components/Graph/types";
 
 import type { HistoryGraphNode } from "./historyGraphMapper";
-import { historyNodeColor } from "./historyNodeColor";
 
+import HistoryGraphCanvas from "./HistoryGraphCanvas.vue";
 import HistoryGraphNodeDetails from "./HistoryGraphNodeDetails.vue";
 import GAlert from "@/components/BaseComponents/GAlert.vue";
-import GraphView from "@/components/Graph/GraphView.vue";
 
 interface Props {
     nodes: HistoryGraphNode[];
@@ -63,13 +62,11 @@ function onNodeSelected(node: HistoryGraphNode | null) {
 <template>
     <div class="history-graph-overview">
         <div class="graph-pane rounded border" :class="{ 'with-details': !!selectedNode }">
-            <GraphView
+            <HistoryGraphCanvas
                 :nodes="nodes"
                 :edges="edges"
                 :focus-node-id="focusNodeId"
-                :node-color="historyNodeColor"
-                show-scroll-overlays
-                @nodeSelected="onNodeSelected" />
+                @node-selected="onNodeSelected" />
         </div>
         <div v-if="selectedNode" class="details-pane mt-2">
             <HistoryGraphNodeDetails :node="selectedNode" />
@@ -82,8 +79,6 @@ function onNodeSelected(node: HistoryGraphNode | null) {
 </template>
 
 <style lang="scss" scoped>
-@import "@/style/scss/theme/blue.scss";
-
 // Fixed 70/30 split: graph on top, details below. `overflow: hidden` on the
 // container keeps internal overflow from pushing the page, and `min-height: 0`
 // on the flex items lets them honour their flex-basis instead of stretching.
@@ -137,17 +132,5 @@ function onNodeSelected(node: HistoryGraphNode | null) {
     min-height: 0;
     overflow-y: auto;
     overflow-x: hidden;
-}
-
-/* Tool request nodes use the primary header colour (no dataset state). */
-:deep(.node-tool-request) .graph-node-header {
-    background: $brand-primary;
-    color: $white;
-}
-
-/* Dataset/collection node headers use state-driven colouring via data-state. */
-:deep(.node-dataset) .graph-node-header,
-:deep(.node-collection) .graph-node-header {
-    color: $text-color;
 }
 </style>

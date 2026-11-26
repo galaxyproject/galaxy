@@ -120,6 +120,21 @@ export async function fromSimple(
         });
     }
 
+    const steps = Object.values(data.steps);
+    // only a workflow imported without any layout is laid out; a partial layout someone arranged is kept
+    const unlaid = !appendData && steps.length > 0 && steps.every((step) => !step.position);
+    // anything without a position waits at the origin (for an unlaid workflow, until the graph has node sizes)
+    steps.forEach((step) => {
+        step.position ??= { left: 0, top: 0 };
+    });
+    data.comments.forEach((comment) => {
+        comment.position ??= [0, 0];
+        comment.size ??= [0, 0];
+    });
+    if (unlaid) {
+        stateStore.needsInitialLayout = true;
+    }
+
     Object.values(data.steps).map((step) => {
         stepStore.addStep(step, appendData, options?.createConnections ?? true);
     });

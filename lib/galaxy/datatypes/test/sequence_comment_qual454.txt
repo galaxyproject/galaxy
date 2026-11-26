@@ -1,0 +1,6 @@
+;~ fhr: 0.3
+;~ title: quality scores
+>seq1
+40 40 39 38 37 35
+>seq2
+30 30 28

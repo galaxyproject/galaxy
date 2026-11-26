@@ -8,7 +8,7 @@
             <FontAwesomeIcon :icon="icon" class="cell-option-icon" />
         </div>
         <div v-else-if="logo" class="my-2 mx-3 align-self-start">
-            <Img class="cell-option-logo" :src="logo" :alt="title" />
+            <img class="cell-option-logo" :src="logo" :alt="title" />
         </div>
     </ButtonPlain>
 </template>

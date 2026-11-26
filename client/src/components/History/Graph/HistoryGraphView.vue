@@ -20,12 +20,12 @@ import { useHistoryGraph } from "./useHistoryGraph";
 
 import HistoryGraphOverview from "./HistoryGraphOverview.vue";
 import HistoryGraphReport from "./HistoryGraphReport.vue";
+import HistoryGraphState from "./HistoryGraphState.vue";
 import HistoryGraphToolExecutions from "./HistoryGraphToolExecutions.vue";
 import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import NavigationTitle from "@/components/Common/NavigationTitle.vue";
 import HistoryDatasetsBadge from "@/components/History/HistoryDatasetsBadge.vue";
-import LoadingSpan from "@/components/LoadingSpan.vue";
 import UtcDate from "@/components/UtcDate.vue";
 
 interface Props {
@@ -87,16 +87,12 @@ watch(activeTab, (val) => {
 
 <template>
     <div class="history-graph-view">
-        <GAlert v-if="error" variant="danger" show>{{ error }}</GAlert>
-        <LoadingSpan v-else-if="loading" message="Loading history graph" />
-        <GAlert v-else-if="graphNodes.length === 0" show variant="info" class="m-3">
-            This history is empty. Add datasets or run tools to populate it.
-        </GAlert>
-        <GAlert v-else-if="toolExecutionNodes.length === 0" show variant="info" class="m-3">
-            No History Graph available. Please ensure that the History contains tool executions, and note that Galaxy
-            started capturing the required tool execution data with release 26.1.
-        </GAlert>
-        <template v-else>
+        <HistoryGraphState
+            :error="error"
+            :loading="loading"
+            :node-count="graphNodes.length"
+            :execution-count="toolExecutionNodes.length"
+            empty-message="This history is empty. Add datasets or run tools to populate it.">
             <NavigationTitle
                 :icon="faBezierCurve"
                 :title="`History Graph: ${historyName}`"
@@ -169,7 +165,7 @@ watch(activeTab, (val) => {
                 <HistoryGraphToolExecutions v-show="activeTab === 'tool-requests'" :nodes="toolExecutionNodes" />
                 <HistoryGraphReport v-if="reportEverActive" v-show="activeTab === 'report'" :history-id="historyId" />
             </div>
-        </template>
+        </HistoryGraphState>
     </div>
 </template>
 

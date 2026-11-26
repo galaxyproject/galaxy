@@ -238,16 +238,13 @@ function createFakeHistory(overrides = {}) {
 }
 ```
 
-**Suppressing Warnings**: Use helpers to suppress known console warnings:
-
-```typescript
-import { suppressBootstrapVueWarnings, suppressLucideVue2Deprecation } from "@tests/vitest/helpers";
-
-beforeEach(() => {
-    suppressBootstrapVueWarnings();
-    suppressLucideVue2Deprecation();
-});
-```
+**Console warnings fail tests**: Any `console.warn` or `console.error` fails the test
+that logged it, Vue and Vue Router warnings included. Fix the cause (a missing router,
+plugin or prop in the mount, a wrong mock) instead of suppressing the message.
+`tests/vitest/setup.ts` lets through only the compat deprecations of the Vue 2 libraries
+and the flags `compat-config.js` turns on, and prop warnings on test-utils stub elements.
+When a test checks a warning the code logs on purpose, spy on the console in that test and
+assert the message.
 
 #### API Mocking with MSW
 

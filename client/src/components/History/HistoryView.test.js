@@ -1,11 +1,10 @@
 import { getFakeRegisteredUser } from "@tests/test-data";
-import { getLocalVue, suppressLucideVue2Deprecation } from "@tests/vitest/helpers";
+import { createTestRouter, getLocalVue } from "@tests/vitest/helpers";
 import { setupMockConfig } from "@tests/vitest/mockConfig";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { HttpResponse } from "msw";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { createRouter, createWebHistory } from "vue-router";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import { setupSelectableMock } from "@/components/ObjectStore/mockServices";
@@ -84,10 +83,7 @@ async function createWrapper(localVue, currentUserId, history, itemOverrides = {
         }),
     );
 
-    const router = createRouter({
-        history: createWebHistory(),
-        routes: [{ path: "/history/:id", component: { template: "<div />" } }],
-    });
+    const router = createTestRouter([{ path: "/history/:id", component: { template: "<div />" } }]);
     await router.push(`/history/${history.id}`);
     await router.isReady();
 
@@ -117,7 +113,6 @@ async function createWrapper(localVue, currentUserId, history, itemOverrides = {
 describe("History center panel View", () => {
     beforeEach(() => {
         localVue = getLocalVue();
-        suppressLucideVue2Deprecation();
     });
 
     it.each([false, true])("restores an item after a rate-limited deletion (recursive: %s)", async (recursive) => {

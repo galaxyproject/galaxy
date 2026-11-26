@@ -1,3 +1,5 @@
+import { faGlobe } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { advanceToJustBeforeTooltipHoverDelay, advanceTooltipHoverDelay } from "@tests/vitest/tooltipTestUtils";
 import { mount } from "@vue/test-utils";
 import purify from "dompurify";
@@ -236,6 +238,55 @@ describe("vGTooltip", () => {
         wrapper.unmount();
     });
 
+    test("shows the title of a Font Awesome icon and hides its native tooltip meanwhile", async () => {
+        // Font Awesome renders the title prop as the icon's <title> element, not as a title attribute.
+        const wrapper = mount(
+            defineComponent({
+                components: { FontAwesomeIcon },
+                directives: { "g-tooltip": vGTooltip },
+                setup: () => ({ faGlobe }),
+                template: `<FontAwesomeIcon v-g-tooltip.hover title="Published workflow" :icon="faGlobe" />`,
+            }),
+            { attachTo: document.body },
+        );
+        const iconTitle = wrapper.get("title");
+
+        wrapper.element.dispatchEvent(new Event("mouseenter"));
+        expect(iconTitle.text()).toBe("");
+        await advanceTooltipHoverDelay(DEFAULT_TOOLTIP_HOVER_DELAY_MS);
+        expect(getRenderedTooltip()?.textContent).toBe("Published workflow");
+
+        wrapper.element.dispatchEvent(new Event("mouseleave"));
+        expect(iconTitle.text()).toBe("Published workflow");
+        expect(wrapper.attributes("title")).toBeUndefined();
+        // The <title> already names the icon through aria-labelledby.
+        expect(wrapper.attributes("aria-label")).toBeUndefined();
+        wrapper.unmount();
+    });
+
+    test("shows a Font Awesome icon's title after it changes", async () => {
+        const wrapper = mount(
+            defineComponent({
+                components: { FontAwesomeIcon },
+                directives: { "g-tooltip": vGTooltip },
+                props: { title: { type: String, required: true } },
+                setup: () => ({ faGlobe }),
+                template: `<FontAwesomeIcon v-g-tooltip.hover :title="title" :icon="faGlobe" />`,
+            }),
+            { attachTo: document.body, props: { title: "Uploading" } },
+        );
+        wrapper.element.dispatchEvent(new Event("mouseenter"));
+        wrapper.element.dispatchEvent(new Event("mouseleave"));
+
+        await wrapper.setProps({ title: "Upload failed" });
+        expect(wrapper.get("title").text()).toBe("Upload failed");
+
+        wrapper.element.dispatchEvent(new Event("mouseenter"));
+        await advanceTooltipHoverDelay(DEFAULT_TOOLTIP_HOVER_DELAY_MS);
+        expect(getRenderedTooltip()?.textContent).toBe("Upload failed");
+        wrapper.unmount();
+    });
+
     describe("with a controlled show value", () => {
         function mountControlled(show: boolean) {
             return mount(
@@ -279,6 +330,60 @@ describe("vGTooltip", () => {
             expect(getRenderedTooltip()).not.toBeNull();
 
             wrapper.unmount();
+        });
+    });
+
+    describe("on an element with its own description", () => {
+        function mountDescribedInput(describedBy: string) {
+            return mount(
+                defineComponent({
+                    directives: { "g-tooltip": vGTooltip },
+                    props: {
+                        title: { type: String, required: true },
+                        describedBy: { type: String, required: true },
+                    },
+                    template: `<input v-g-tooltip="title" :aria-describedby="describedBy" />`,
+                }),
+                { props: { title: "Tooltip text", describedBy }, attachTo: document.body },
+            );
+        }
+
+        test("adds its id to the existing description and removes only that id", async () => {
+            const wrapper = mountDescribedInput("field-help");
+            const describedBy = wrapper.attributes("aria-describedby") ?? "";
+            const tooltipId = describedBy.split(" ")[1];
+
+            expect(tooltipId).toMatch(/^g-tooltip-/);
+            expect(describedBy).toBe(`field-help ${tooltipId}`);
+
+            // An update of the tooltip does not add the id twice
+            await wrapper.setProps({ title: "Changed text" });
+            expect(wrapper.attributes("aria-describedby")).toBe(`field-help ${tooltipId}`);
+
+            // The element's own description can change while the tooltip is mounted
+            await wrapper.setProps({ describedBy: "field-help field-error" });
+            expect(wrapper.attributes("aria-describedby")).toBe(`field-help field-error ${tooltipId}`);
+
+            vGTooltip.unmounted?.(wrapper.element as HTMLElement, bindingForCleanup(), unusedVNode, null);
+            expect(wrapper.attributes("aria-describedby")).toBe("field-help field-error");
+            wrapper.unmount();
+        });
+
+        test("keeps the description of a menu toggle", () => {
+            const host = document.createElement("div");
+            host.setAttribute("title", "More options");
+            const toggle = document.createElement("button");
+            toggle.setAttribute("aria-haspopup", "menu");
+            toggle.setAttribute("aria-describedby", "menu-help");
+            host.appendChild(toggle);
+            document.body.appendChild(host);
+
+            vGTooltip.mounted?.(host, bindingForCleanup(), unusedVNode, null);
+            expect(toggle.getAttribute("aria-describedby")).toMatch(/^menu-help g-tooltip-\d+$/);
+            expect(host.hasAttribute("aria-describedby")).toBe(false);
+
+            vGTooltip.unmounted?.(host, bindingForCleanup(), unusedVNode, null);
+            expect(toggle.getAttribute("aria-describedby")).toBe("menu-help");
         });
     });
 
@@ -353,6 +458,24 @@ describe("vGTooltip", () => {
 
             vGTooltip.unmounted?.(wrapper.element as HTMLElement, bindingForCleanup(), unusedVNode, null);
             expect(toggle.attributes("aria-label")).toBeUndefined();
+            wrapper.unmount();
+        });
+
+        test("links the description to the toggle instead of the element", async () => {
+            const wrapper = mountDropdown(
+                `<GDropdown v-g-tooltip title="More options"><template v-slot:button-content><svg /></template></GDropdown>`,
+            );
+            const toggle = wrapper.get(".dropdown-toggle");
+            const describedBy = toggle.attributes("aria-describedby");
+
+            expect(describedBy).toMatch(/^g-tooltip-/);
+            expect(wrapper.attributes("aria-describedby")).toBeUndefined();
+
+            await toggle.trigger("click");
+            expect(toggle.attributes("aria-describedby")).toBe(describedBy);
+
+            vGTooltip.unmounted?.(wrapper.element as HTMLElement, bindingForCleanup(), unusedVNode, null);
+            expect(toggle.attributes("aria-describedby")).toBeUndefined();
             wrapper.unmount();
         });
 

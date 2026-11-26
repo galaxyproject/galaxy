@@ -96,7 +96,7 @@ async function onMarkAllAsRead() {
     transition: all 0.3s ease;
 }
 
-.notifications-box-list-enter {
+.notifications-box-list-enter-from {
     opacity: 0;
     transform: translateY(-2rem);
 }

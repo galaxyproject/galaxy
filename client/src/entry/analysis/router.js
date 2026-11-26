@@ -12,12 +12,14 @@ import LoginRoutes from "@/entry/analysis/routes/login-routes";
 import StorageRoutes from "@/entry/analysis/routes/storage-routes";
 import { getAppRoot } from "@/onload/loadConfig";
 import { requireAuth, requireAuthForUploadMethod } from "@/router/guards";
+import { pageProps, workflowProps } from "@/router/publishedProps";
 import { parseBool } from "@/utils/utils";
 
 import { patchRouterPush } from "./router-push";
 
 import CenterFrame from "./modules/CenterFrame.vue";
 import AboutGalaxy from "@/components/AboutGalaxy.vue";
+import AnotherGalaxyPicker from "@/components/AnotherGalaxy/AnotherGalaxyPicker.vue";
 import AvailableDatatypes from "@/components/AvailableDatatypes/AvailableDatatypes.vue";
 import CitationsList from "@/components/Citation/CitationsList.vue";
 import ClientError from "@/components/ClientError.vue";
@@ -156,9 +158,8 @@ export function getRouter(Galaxy) {
                 path: "/published/page",
                 component: PageView,
                 props: (route) => ({
-                    pageId: route.query.id,
+                    ...pageProps(route.query.id, route.query),
                     embed: route.query.embed ? parseBool(route.query.embed) : undefined,
-                    showHeading: route.query.heading ? parseBool(route.query.heading) : undefined,
                     displayOnly: route.query.displayOnly === "true",
                 }),
             },
@@ -171,18 +172,16 @@ export function getRouter(Galaxy) {
                 path: "/published/workflow",
                 component: WorkflowPublished,
                 props: (route) => ({
-                    id: route.query.id,
-                    version: route.query.version,
-                    zoom: route.query.zoom ? parseFloat(route.query.zoom) : undefined,
+                    ...workflowProps(route.query.id, route.query),
                     embed: route.query.embed ? parseBool(route.query.embed) : undefined,
-                    showButtons: route.query.buttons ? parseBool(route.query.buttons) : undefined,
-                    showAbout: route.query.about ? parseBool(route.query.about) : undefined,
-                    showHeading: route.query.heading ? parseBool(route.query.heading) : undefined,
-                    showMinimap: route.query.minimap ? parseBool(route.query.minimap) : undefined,
-                    showZoomControls: route.query.zoom_controls ? parseBool(route.query.zoom_controls) : undefined,
-                    initialX: route.query.initialX ? parseInt(route.query.initialX) : undefined,
-                    initialY: route.query.initialY ? parseInt(route.query.initialY) : undefined,
                 }),
+            },
+            /** Opened in a popup by another Galaxy to choose items to import there */
+            {
+                path: "/pick/another-galaxy",
+                component: AnotherGalaxyPicker,
+                beforeEnter: requireAuth,
+                props: (route) => ({ returnTo: route.query.return, nonce: route.query.nonce }),
             },
             {
                 name: "error",

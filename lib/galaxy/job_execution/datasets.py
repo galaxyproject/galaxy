@@ -40,6 +40,7 @@ class DatasetPath:
         mutable=True,
         dataset_uuid=None,
         object_store_id=None,
+        fallback_path=None,
     ):
         self.dataset_id = dataset_id
         self.dataset_uuid = dataset_uuid
@@ -49,6 +50,9 @@ class DatasetPath:
         self.false_extra_files_path = false_extra_files_path
         self.false_metadata_path = false_metadata_path
         self.mutable = mutable
+        # Path the tool may have written the output to, used when a ``from_work_dir``
+        # false_path doesn't resolve to exactly one file.
+        self.fallback_path = fallback_path
 
     def __str__(self):
         if self.false_path is None:

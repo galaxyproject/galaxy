@@ -337,7 +337,6 @@ const {
         <div v-else-if="wizard.isCurrent('rule-builder')" style="width: 100%">
             <RuleCollectionBuilder
                 ref="collectionCreator"
-                grid-implementation="ag"
                 :import-type="creatingWhat"
                 :elements-type="ruleBuilderModalEntryProps.selectionType"
                 :initial-elements="ruleBuilderElements"

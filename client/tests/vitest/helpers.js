@@ -9,7 +9,7 @@
 import flushPromises from "flush-promises";
 import { createPinia, setActivePinia } from "pinia";
 import { expect, vi } from "vitest";
-import { createRouter, createWebHistory } from "vue-router";
+import { createMemoryHistory, createRouter } from "vue-router";
 
 import { localizationPlugin } from "@/components/plugins/localization";
 import _l from "@/utils/localization";
@@ -57,7 +57,7 @@ export function getLocalVue(instrumentLocalization = false) {
     } catch {
         // Some tests fully replace the "vue-router" module with vi.mock() using a
         // factory that only defines useRoute/useRouter, without createRouter /
-        // createWebHistory. Skip the default router there rather than blowing up
+        // createMemoryHistory. Skip the default router there rather than blowing up
         // every test in the file; those tests already provide their own routing
         // stubs for whatever they need.
     }
@@ -71,14 +71,6 @@ export function getLocalVue(instrumentLocalization = false) {
             "b-tooltip": mockedDirective,
             "b-popover": mockedDirective,
         },
-        stubs: {
-            // bootstrap-vue components render for real (through the compat shim in
-            // patches/bootstrap-vue), so tests assert on the markup users get.
-            // Stubbing them hid real bugs, like pagination links with no click
-            // listener.
-            Portal: true,
-            PortalTarget: true,
-        },
     };
 
     return config;
@@ -86,37 +78,6 @@ export function getLocalVue(instrumentLocalization = false) {
 
 export function suppressDebugConsole() {
     vi.spyOn(console, "debug").mockImplementation(() => {});
-}
-
-export function suppressBootstrapVueWarnings() {
-    const originalWarn = console.warn;
-    vi.spyOn(console, "warn").mockImplementation((msg) => {
-        if (!String(msg).includes("BootstrapVue warn")) {
-            originalWarn(msg);
-        }
-    });
-}
-
-export function suppressErrorForCustomIcons() {
-    const originalError = console.error;
-    vi.spyOn(console, "error").mockImplementation((msg) => {
-        if (!String(msg).includes("Could not find one or more icon(s)")) {
-            originalError(msg);
-        }
-    });
-}
-
-export function suppressLucideVue2Deprecation() {
-    const originalWarn = console.warn;
-    vi.spyOn(console, "warn").mockImplementation((msg) => {
-        if (String(msg).includes("[Lucide Vue] This package will be deprecated")) {
-            return;
-        }
-        if (String(msg).includes("[Vue warn]")) {
-            return;
-        }
-        originalWarn(msg);
-    });
 }
 
 export function suppressExpectedErrorMessages(expectedMessages = []) {
@@ -232,14 +193,15 @@ export function expectConfigurationRequest(http, config) {
 }
 
 /**
- * Create a test router for Vue 3.
- * For Vue Test Utils v2, pass this to mount options: { global: { plugins: [router] } }
+ * Create a test router for Vue 3, with a catch-all route after `routes` so links
+ * and navigation to paths the test doesn't define still resolve. Memory history
+ * keeps it independent of window.location, which some tests point elsewhere.
+ * Pass it as mount's `router` option, or in `global.plugins`.
  */
 export function createTestRouter(routes = []) {
-    // Add a catch-all route to prevent "No match found" warnings
     const defaultRoutes = [{ path: "/:pathMatch(.*)*", name: "not-found", component: { template: "<div></div>" } }];
     return createRouter({
-        history: createWebHistory(),
+        history: createMemoryHistory(),
         routes: [...routes, ...defaultRoutes],
     });
 }

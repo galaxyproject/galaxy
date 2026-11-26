@@ -20,14 +20,17 @@ import { Services } from "@/components/Workflow/services";
 import { getWorkflowFull } from "@/components/Workflow/workflows.services";
 import { getAppRoot } from "@/onload/loadConfig";
 import { useDatatypesMapperStore } from "@/stores/datatypesMapperStore";
+import { useUndoRedoStore } from "@/stores/undoRedoStore";
 import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
 import { useWorkflowStepStore } from "@/stores/workflowStepStore";
 
 import { getModule, getVersions, saveWorkflow } from "./modules/services";
-import { getStateUpgradeMessages } from "./modules/utilities";
+import { getFilledDefaults, getStateUpgradeMessages } from "./modules/utilities";
 
 import Index from "./Index.vue";
+import RefactorConfirmationModal from "./RefactorConfirmationModal.vue";
 import SaveChangesModal from "./SaveChangesModal.vue";
+import StateUpgradeModal from "./StateUpgradeModal.vue";
 import ActivityBar from "@/components/ActivityBar/ActivityBar.vue";
 import GFormInput from "@/components/BaseComponents/Form/GFormInput.vue";
 import GAlert from "@/components/BaseComponents/GAlert.vue";
@@ -78,6 +81,9 @@ const activityBarStub = defineComponent({
 function editorStubs() {
     return {
         ActivityBar: activityBarStub,
+        // The real textarea, so the save-as tests go through bootstrap-vue's value/update v-model.
+        // An auto-stub wouldn't carry its legacy compatConfig and would take modelValue instead.
+        BFormTextarea: false,
         WorkflowGraph: {
             template: "<div />",
             props: ["datatypesMapper"],
@@ -119,6 +125,7 @@ const { server, http } = useServerMock();
 
 const mockGetAppRoot = vi.mocked(getAppRoot);
 const mockGetStateUpgradeMessages = vi.mocked(getStateUpgradeMessages);
+const mockGetFilledDefaults = vi.mocked(getFilledDefaults);
 const mockLoadWorkflow = vi.mocked(getWorkflowFull);
 const mockGetVersions = vi.mocked(getVersions);
 const mockSaveWorkflow = vi.mocked(saveWorkflow);
@@ -141,6 +148,7 @@ describe("Index", () => {
         mockLoadWorkflow.mockResolvedValue({ steps: {}, comments: [], tags: [] });
         mockGetVersions.mockResolvedValue([]);
         mockGetStateUpgradeMessages.mockImplementation(() => []);
+        mockGetFilledDefaults.mockImplementation(() => []);
         mockGetAppRoot.mockImplementation(() => GET_APP_ROOT_PREFIX);
         mockUnprivilegedToolsRequest(server, http);
     });
@@ -410,10 +418,7 @@ describe("Index", () => {
             mockSaveWorkflow.mockResolvedValue({ version: 1 });
 
             wrapper.findComponent(GFormInput).vm.$emit("update:modelValue", "My New Workflow");
-            // vue-test-utils' auto-stub for `BFormTextarea` declares its own v-model
-            // config (`{ prop: "value", event: "update" }`), so the emit event to
-            // drive `v-model="saveAsAnnotation"` is "update", not "input".
-            wrapper.findComponent(BFormTextarea).vm.$emit("update", "A description");
+            await wrapper.findComponent(BFormTextarea).find("textarea").setValue("A description");
             await nextTick();
 
             wrapper.findComponent<typeof GModal>("[data-description='save-as-modal']").vm.$emit("ok");
@@ -447,8 +452,7 @@ describe("Index", () => {
 
         it("resets save-as fields when the modal is cancelled", async () => {
             wrapper.findComponent(GFormInput).vm.$emit("update:modelValue", "My New Workflow");
-            wrapper.findComponent(BFormTextarea).vm.$emit("update", "A description");
-            await nextTick();
+            await wrapper.findComponent(BFormTextarea).find("textarea").setValue("A description");
 
             expect(wrapper.findComponent(GFormInput).props("modelValue")).toBe("My New Workflow");
 
@@ -456,7 +460,7 @@ describe("Index", () => {
             await nextTick();
 
             expect(wrapper.findComponent(GFormInput).props("modelValue")).toBeNull();
-            expect(wrapper.findComponent({ name: "BFormTextarea" }).props("value")).toBeNull();
+            expect(wrapper.findComponent(BFormTextarea).find("textarea").element.value).toBe("");
         });
 
         it("prevents navigation only if hasChanges", async () => {
@@ -482,14 +486,14 @@ describe("Index", () => {
                 await flushPromises();
 
                 // save button is disabled initially until a change is made
-                expect(wrapper.find("#workflow-save-button").attributes("disabled")).toBeTruthy();
+                expect(wrapper.findComponent<typeof GButton>("#workflow-save-button").props("disabled")).toBe(true);
 
                 // simulate WorkflowGraph making a change to enable the Save button
                 wrapper.findComponent(WorkflowGraph).vm.$emit("onChange");
                 await nextTick();
 
                 // save button is now enabled
-                expect(wrapper.find("#workflow-save-button").attributes("disabled")).toBeFalsy();
+                expect(wrapper.findComponent<typeof GButton>("#workflow-save-button").props("disabled")).toBe(false);
 
                 wrapper.findComponent<typeof GButton>("#workflow-save-button").vm.$emit("click");
                 await flushPromises();
@@ -572,6 +576,93 @@ describe("Index", () => {
         function emitDataChanged(wrapper: VueWrapper, stepId: number, data: object) {
             wrapper.findComponent(NodeInspector).vm.$emit("dataChanged", stepId, data);
         }
+
+        function refactoredWorkflow(label: string, version: number) {
+            const step = {
+                id: 0,
+                type: "tool",
+                label,
+                name: label,
+                content_id: "cat1",
+                tool_id: "cat1",
+                tool_state: {},
+                input_connections: {},
+                inputs: [],
+                outputs: [],
+                position: { left: 0, top: 0 },
+                workflow_outputs: [],
+            };
+            return { name: label, annotation: "", tags: [], version, comments: [], steps: { 0: step } };
+        }
+
+        function stepLabels() {
+            return Object.values(stepStore.steps).map((step) => step.label);
+        }
+
+        async function refactorTo(wrapper: VueWrapper, label: string, version: number) {
+            wrapper
+                .findComponent(RefactorConfirmationModal)
+                .vm.$emit("onRefactor", { workflow: refactoredWorkflow(label, version) });
+            await flushPromises();
+        }
+
+        it("undoes and redoes refactors as unsaved changes, without losing the newest version", async () => {
+            const { wrapper } = await mountWithSteps(2);
+            const undoRedoStore = useUndoRedoStore("workflow_id");
+            await refactorTo(wrapper, "first refactor", 2);
+            expect(stepLabels()).toEqual(["first refactor"]);
+            expect(stateStore.hasChanges).toBe(false);
+            expect(undoRedoStore.undoStackLength).toBe(1);
+            await refactorTo(wrapper, "second refactor", 3);
+            expect(undoRedoStore.undoStackLength).toBe(2);
+
+            undoRedoStore.undo();
+            await nextTick();
+            expect(stepLabels()).toEqual(["first refactor"]);
+            expect(stateStore.hasChanges).toBe(true);
+            expect(wrapper.findComponent(WorkflowGraph).exists()).toBe(true);
+
+            undoRedoStore.undo();
+            await nextTick();
+            expect(stepLabels()).toEqual(["step 0", "step 1"]);
+
+            undoRedoStore.redo();
+            undoRedoStore.redo();
+            await nextTick();
+            expect(stepLabels()).toEqual(["second refactor"]);
+        });
+
+        it("keeps tags set after a refactor when undoing it", async () => {
+            const { wrapper } = await mountWithSteps(1);
+            const undoRedoStore = useUndoRedoStore("workflow_id");
+            await refactorTo(wrapper, "refactored", 2);
+            wrapper.findComponent(WorkflowAttributes).vm.$emit("tags", ["kept"]);
+
+            undoRedoStore.undo();
+            await nextTick();
+            expect(stepLabels()).toEqual(["step 0"]);
+            expect(wrapper.findComponent(WorkflowAttributes).props("tags")).toEqual(["kept"]);
+        });
+
+        it("replays edits made after a refactor when rolling the history over it", async () => {
+            const { wrapper } = await mountWithSteps(1);
+            const undoRedoStore = useUndoRedoStore("workflow_id");
+            await refactorTo(wrapper, "refactored", 2);
+            const refactor = undoRedoStore.nextUndoAction!;
+            const setLabel = (label: string) => stepStore.updateStep({ ...stepStore.getStep(0)!, label });
+            undoRedoStore
+                .action()
+                .onRun(() => setLabel("edited"))
+                .onUndo(() => setLabel("refactored"))
+                .apply();
+
+            undoRedoStore.rollBackTo(refactor);
+            expect(stepLabels()).toEqual(["step 0"]);
+
+            const edit = undoRedoStore.redoActionStack[0]!;
+            undoRedoStore.rollForwardTo(edit);
+            expect(stepLabels()).toEqual(["edited"]);
+        });
 
         it("skips superseded form edits and applies the latest module response", async () => {
             const { wrapper, stepIds } = await mountWithSteps(1);
@@ -692,6 +783,23 @@ describe("Index", () => {
             expect(stateStore.hasChanges).toBe(true);
 
             resolveVersions([]);
+            await flushPromises();
+            expect(stateStore.hasChanges).toBe(true);
+        });
+
+        it("shows filled defaults once loading settles, so accepting them isn't reset", async () => {
+            const filled = [{ stepIndex: "0", name: "cat1", details: ["filled"], iconType: "tool", label: "" }];
+            mockGetFilledDefaults.mockImplementation(() => filled);
+            const wrapper = await mountWithPendingVersions();
+            const modal = wrapper.findComponent(StateUpgradeModal);
+            expect(modal.props("filledDefaults")).toEqual([]);
+
+            resolveVersions([]);
+            await flushPromises();
+            expect(modal.props("filledDefaults")).toEqual(filled);
+            expect(stateStore.hasChanges).toBe(false);
+
+            modal.vm.$emit("accept");
             await flushPromises();
             expect(stateStore.hasChanges).toBe(true);
         });

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { storeToRefs } from "pinia";
-import { computed, toRefs } from "vue";
+import { computed } from "vue";
 
 import { type ConfirmDialogOptions, useConfirmDialog } from "@/composables/confirmDialog";
 import { useWorkflowStores } from "@/composables/workflowStores";
@@ -55,7 +55,7 @@ const {
     danglingGates,
     duplicateLabels,
     missingMetadata,
-} = toRefs(props.lintData);
+} = props.lintData;
 
 /** Renders the celebratory reaction when all critical and non-critical best practice issues are resolved. */
 const showSuccessReaction = computed(

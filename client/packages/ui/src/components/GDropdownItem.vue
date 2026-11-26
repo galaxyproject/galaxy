@@ -2,6 +2,7 @@
 /** Replaces BDropdownItem. Always an <a>, since Selenium finds items by link text and "a.dropdown-item". */
 
 import { computed, inject } from "vue";
+import { RouterLink } from "vue-router";
 
 import { dropdownHideKey } from "./dropdownContext";
 
@@ -23,6 +24,8 @@ const props = withDefaults(
         title?: string;
         /** Leave the menu open after a click, for menus where several items are picked in a row */
         keepOpen?: boolean;
+        /** Makes the item a menu checkbox (role="menuitemcheckbox") with this checked state */
+        checked?: boolean;
     }>(),
     {
         to: undefined,
@@ -33,6 +36,7 @@ const props = withDefaults(
         variant: undefined,
         title: undefined,
         keepOpen: false,
+        checked: undefined,
     },
 );
 
@@ -41,6 +45,10 @@ const emit = defineEmits<{
 }>();
 
 const hideDropdown = inject(dropdownHideKey, () => {});
+
+const isCheckbox = computed(() => props.checked !== undefined);
+const role = computed(() => (isCheckbox.value ? "menuitemcheckbox" : "menuitem"));
+const ariaChecked = computed(() => (isCheckbox.value ? (props.checked ? "true" : "false") : undefined));
 
 const classes = computed(() => ({
     "dropdown-item": true,
@@ -67,18 +75,19 @@ function onClick(event: MouseEvent) {
 
 <template>
     <!-- A disabled item is a plain anchor: RouterLink navigates before any click handler here could cancel it -->
-    <router-link
+    <RouterLink
         v-if="to && !disabled"
         :class="classes"
         :to="to"
         :target="target"
         :title="title"
         :aria-current="active ? 'true' : undefined"
-        role="menuitem"
+        :role="role"
+        :aria-checked="ariaChecked"
         tabindex="-1"
         @click="onClick">
         <slot />
-    </router-link>
+    </RouterLink>
     <a
         v-else
         :class="classes"
@@ -87,7 +96,8 @@ function onClick(event: MouseEvent) {
         :title="title"
         :aria-disabled="disabled || undefined"
         :aria-current="active ? 'true' : undefined"
-        role="menuitem"
+        :role="role"
+        :aria-checked="ariaChecked"
         tabindex="-1"
         @click="onClick">
         <slot />

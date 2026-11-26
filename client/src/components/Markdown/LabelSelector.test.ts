@@ -13,9 +13,9 @@ const LABELS: WorkflowLabel[] = [
     { label: "output_b", type: "output" },
 ];
 
-function mountSelector(value?: WorkflowLabel, labels = LABELS) {
+function mountSelector(modelValue?: WorkflowLabel, labels = LABELS) {
     return mount(LabelSelector as object, {
-        props: { hasLabels: labels.length > 0, labels, labelTitle: "Input", value },
+        props: { hasLabels: labels.length > 0, labels, labelTitle: "Input", modelValue },
         global: localVue,
     });
 }
@@ -40,7 +40,7 @@ describe("LabelSelector", () => {
     it("emits the chosen label", async () => {
         const wrapper = mountSelector();
         await radios(wrapper)[1]!.setValue(true);
-        expect(wrapper.emitted("input")?.[0]).toEqual([LABELS[1]]);
+        expect(wrapper.emitted("update:modelValue")?.[0]).toEqual([LABELS[1]]);
     });
 
     it("checks the radio of the current value", () => {

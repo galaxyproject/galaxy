@@ -25,6 +25,10 @@ const props = defineProps<{
     editButtonConfig?: { tooltip?: string; icon?: IconDefinition; label: string; disabled?: boolean };
 }>();
 
+const emit = defineEmits<{
+    (e: "onEdit"): void;
+}>();
+
 // Refs and data
 const markdownObjects = ref<any[]>([]);
 const markdownErrors = ref<any[]>([]);
@@ -126,7 +130,7 @@ onMounted(() => {
                             :disabled="editButtonConfig?.disabled"
                             outline
                             color="blue"
-                            @click="$emit('onEdit')">
+                            @click="emit('onEdit')">
                             {{ editButtonConfig?.label || "Edit" }}
                             <FontAwesomeIcon :icon="editButtonConfig?.icon || faEdit" />
                         </GButton>

@@ -1,5 +1,5 @@
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 from typing import (
     Literal,
 )
@@ -40,7 +40,7 @@ class StoredItem(Model):
     update_time: datetime = UpdateTimeField
 
 
-class StoredItemOrderBy(str, Enum):
+class StoredItemOrderBy(StrEnum):
     """Available options for sorting Stored Items results."""
 
     NAME_ASC = "name-asc"

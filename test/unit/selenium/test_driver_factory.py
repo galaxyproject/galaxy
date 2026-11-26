@@ -195,6 +195,15 @@ class TestConfiguredDriverPlaywright:
         assert PLAYWRIGHT_REMOTE_UNSUPPORTED_MESSAGE in str(exc_info.value)
 
     @skip_unless_playwright_browser_cached()
+    def test_playwright_launch_failure_does_not_block_next_driver(self, monkeypatch, tmp_path):
+        with monkeypatch.context() as m:
+            m.setenv("PLAYWRIGHT_BROWSERS_PATH", str(tmp_path))
+            with pytest.raises(Exception, match="Executable doesn't exist"):
+                configured_driver(backend_type="playwright", headless=True)
+        driver = configured_driver(backend_type="playwright", headless=True)
+        driver.quit()
+
+    @skip_unless_playwright_browser_cached()
     def test_playwright_has_page_attribute(self):
         """Playwright driver impl should have page attribute."""
         driver = configured_driver(backend_type="playwright", headless=True)

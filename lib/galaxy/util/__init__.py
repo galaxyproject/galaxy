@@ -32,7 +32,7 @@ from collections.abc import (
 )
 from datetime import (
     datetime,
-    timezone,
+    UTC,
 )
 from decimal import Decimal
 from email.message import EmailMessage
@@ -45,6 +45,7 @@ from typing import (
     cast,
     Literal,
     overload,
+    Self,
     TYPE_CHECKING,
     TypeVar,
     Union,
@@ -62,16 +63,13 @@ from boltons.iterutils import (
     default_enter,
     remap,
 )
-from typing_extensions import (
-    Self,
-)
 
 
 def now() -> datetime:
     """
     Return the current time in UTC without any timezone information.
     """
-    return datetime.now(timezone.utc).replace(tzinfo=None)
+    return datetime.now(UTC).replace(tzinfo=None)
 
 
 try:
@@ -161,6 +159,7 @@ from .path import (  # noqa: F401
     safe_relpath,
     StrPath,
 )
+from .renamed_temporary_file import RenamedTemporaryFile
 from .rst_to_html import rst_to_html  # noqa: F401
 
 if TYPE_CHECKING:
@@ -1812,7 +1811,7 @@ def size_to_bytes(size, binary: bool = False):
         raise ValueError(f"Unknown multiplier '{multiple}' in '{size}'")
 
 
-def send_mail(frm, to, subject, body, config, html=None, reply_to=None):
+def send_mail(frm, to, subject, body, config, html=None, reply_to=None, timeout=None):
     """
     Sends an email.
 
@@ -1837,6 +1836,8 @@ def send_mail(frm, to, subject, body, config, html=None, reply_to=None):
 
     :type  reply_to: str
     :param reply_to: Reply-to address (Default None)
+
+    :param timeout: SMTP socket timeout in seconds, or None to use the socket default.
     """
     smtp_server = config.smtp_server
     if smtp_server and isinstance(smtp_server, str) and smtp_server.startswith("mock_emails_to_path://"):
@@ -1850,7 +1851,11 @@ def send_mail(frm, to, subject, body, config, html=None, reply_to=None):
             "reply_to": reply_to,
         }
         email_json = json.to_json_string(email_dict)
-        with open(path, "w") as f:
+        if os.path.isdir(path):
+            # One file per email, named in sending order, so tests can tell how many were sent.
+            path = os.path.join(path, f"{time.time_ns()}-{uuid.uuid4().hex}.json")
+        # Move the email into place once written, so tests polling for it never read a partial one.
+        with RenamedTemporaryFile(path, mode="w") as f:
             f.write(email_json)
         return
 
@@ -1875,9 +1880,9 @@ def send_mail(frm, to, subject, body, config, html=None, reply_to=None):
 
     smtp_ssl = asbool(getattr(config, "smtp_ssl", False))
     if smtp_ssl:
-        s = smtplib.SMTP_SSL(config.smtp_server)
+        s = smtplib.SMTP_SSL(config.smtp_server, **({"timeout": timeout} if timeout is not None else {}))
     else:
-        s = smtplib.SMTP(config.smtp_server)
+        s = smtplib.SMTP(config.smtp_server, **({"timeout": timeout} if timeout is not None else {}))
     try:
         if not smtp_ssl:
             try:
@@ -2130,7 +2135,7 @@ def check_github_api_response_rate_limit(response):
         message = "GitHub API rate limit exceeded."
         rate_limit_reset_UTC_timestamp = response.headers.get("X-RateLimit-Reset")
         if rate_limit_reset_UTC_timestamp:
-            rate_limit_reset_datetime = datetime.fromtimestamp(int(rate_limit_reset_UTC_timestamp), tz=timezone.utc)
+            rate_limit_reset_datetime = datetime.fromtimestamp(int(rate_limit_reset_UTC_timestamp), tz=UTC)
             message += f" The rate limit window will reset at {rate_limit_reset_datetime.isoformat()}."
         raise Exception(message)
 

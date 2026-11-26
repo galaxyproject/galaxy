@@ -1,0 +1,22 @@
+<tool id="CONVERTER_pearson_fasta_to_fasta" name="Convert Pearson FASTA to FASTA" version="1.0.0" profile="16.04">
+    <!-- <description>__NOT_USED_CURRENTLY_FOR_CONVERTERS__</description> -->
+    <!-- Used on the metadata edit page. -->
+    <requirements>
+        <requirement type="package" version="3.7">python</requirement>
+    </requirements>
+    <command>python '$__tool_directory__/pearson_fasta_to_fasta_converter.py' '$input' '$output'</command>
+    <inputs>
+        <param name="input" type="data" format="pearson_fasta" label="Pearson FASTA file"/>
+    </inputs>
+    <outputs>
+        <data name="output" format="fasta"/>
+    </outputs>
+    <tests>
+        <test>
+            <param name="input" ftype="pearson_fasta" value="1.pearson_fasta"/>
+            <output name="output" ftype="fasta" value="1.pearson_fasta_to_fasta.fasta"/>
+        </test>
+    </tests>
+    <help>
+    </help>
+</tool>

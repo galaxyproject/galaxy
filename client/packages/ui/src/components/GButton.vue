@@ -8,7 +8,7 @@ import type { Placement } from "@floating-ui/dom";
 import { faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed, ref, useAttrs } from "vue";
-import type { RouterLink } from "vue-router";
+import type { RouteLocationRaw, RouterLink } from "vue-router";
 
 import { useClickableElement } from "../composables/clickableElement";
 import { useCurrentTitle } from "../composables/currentTitle";
@@ -17,17 +17,12 @@ import { type ComponentColor, type ComponentSize, type ComponentVariantClassList
 
 import GTooltip from "./GTooltip.vue";
 
-defineOptions({
-    // Under @vue/compat: let undeclared listeners (@blur, @mouseout) fall through to the element, as in Vue 3
-    compatConfig: { INSTANCE_LISTENERS: false },
-});
-
 const props = withDefaults(
     defineProps<{
         /** Href to set on the underlying 'a' element. Using this will turn the element into an anchor, not affecting the styling */
         href?: string;
         /** Router link "to" prop. Using this will turn the element into a router-link, not affecting the styling  */
-        to?: string;
+        to?: RouteLocationRaw;
         /** Which color scheme to use for the component. Not setting this will make the button appear grey */
         color?: ComponentColor;
         /** Outline variant of the button. Can be used together with the `pressed` state */
@@ -58,6 +53,13 @@ const props = withDefaults(
         loading?: boolean;
     }>(),
     {
+        href: undefined,
+        to: undefined,
+        color: undefined,
+        title: undefined,
+        disabledTitle: undefined,
+        size: undefined,
+        tooltipPlacement: undefined,
         // An absent Boolean prop would cast to false; undefined marks a button that is not a toggle.
         pressed: undefined,
     },
@@ -141,6 +143,7 @@ const buttonElementRef = useResolveElement(buttonRef);
 <template>
     <component
         :is="baseComponent"
+        v-bind="anchorAttributes"
         ref="buttonRef"
         class="g-button"
         :data-title="currentTitle"
@@ -151,7 +154,6 @@ const buttonElementRef = useResolveElement(buttonRef);
         :aria-disabled="props.disabled || undefined"
         :aria-busy="props.loading || undefined"
         :aria-pressed="ariaPressed"
-        v-bind="{ ...anchorAttributes, ...$attrs }"
         @click="onClick">
         <FontAwesomeIcon v-if="props.loading" :icon="faSpinner" spin aria-hidden="true" />
         <slot></slot>
@@ -166,6 +168,8 @@ const buttonElementRef = useResolveElement(buttonRef);
 </template>
 
 <style scoped lang="scss">
+@use "../styles/focus-ring" as *;
+
 .g-button {
     display: inline-flex;
     gap: var(--spacing-1);
@@ -195,11 +199,8 @@ const buttonElementRef = useResolveElement(buttonRef);
         z-index: 999;
     }
 
-    // Page-background gap keeps the ring clear of the fill and of grouped neighbours; outline survives forced colors.
     &:focus-visible {
-        outline: 2px solid var(--color-blue-600);
-        outline-offset: 2px;
-        box-shadow: 0 0 0 2px var(--background-color);
+        @include focus-ring;
         z-index: 999;
     }
 

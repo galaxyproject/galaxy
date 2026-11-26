@@ -11,6 +11,7 @@ from typing import (
     Any,
     cast,
 )
+from urllib.parse import urljoin
 from uuid import uuid4
 
 import pytest
@@ -433,6 +434,13 @@ class TestWorkflowsApi(BaseWorkflowsApiTestCase, ChangeDatatypeTests):
         response = get(workflows_url)
         response.raise_for_status()
         assert response.json()["name"] == "test_preview"
+        tool_step = response.json()["steps"][2]
+        assert tool_step["tool_id"] == "cat1"
+        assert tool_step["inputs"][0] == {
+            "label": "Concatenate Dataset",
+            "type": "data",
+            "value": "Output 'output' from Step 1.",
+        }
 
     @skip_without_tool("export_remote")
     def test_download_workflow_with_missing_file_source(self):
@@ -1144,6 +1152,120 @@ steps:
             check_label_and_uuid(order_index, step_dict)
             assert step_dict["position"] == original_positions[order_index]
 
+    def _save_from_editor(self, workflow_id, editor_workflow):
+        """PUT an editor-style workflow back with the keys and flag the workflow editor sends on save."""
+        client_keys = ["steps", "report", "license", "creator", "annotation", "name", "comments", "tags"]
+        client_keys += ["readme", "help", "logo_url", "doi"]
+        put_response = self.workflow_populator.update_workflow_fields(
+            workflow_id,
+            {"workflow": {key: editor_workflow.get(key) for key in client_keys}, "from_tool_form": True},
+        )
+        self._assert_status_code_is(put_response, 200)
+
+    def _change_editor_tool_form(self, editor_step, inputs):
+        """Change tool form values the way the workflow editor does: build the module, then update the step."""
+        module = self.workflow_populator.build_module("tool", content_id=editor_step["content_id"], inputs=inputs)
+        for key in ["inputs", "outputs", "config_form", "tool_state", "errors"]:
+            editor_step[key] = module[key]
+
+    @skip_without_tool("random_lines1")
+    def test_update_from_editor_keeps_data_step_input_default(self, test_http_server):
+        location = test_http_server.get_url(
+            remote_url="https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bed",
+            body="chr1\t147962192\t147962580\tCCDS989.1_cds_0_0_chr1_147962193_r\t0\t-\n",
+        )
+        workflow_id = self._upload_yaml_workflow(f"""
+class: GalaxyWorkflow
+steps:
+  random_lines:
+    tool_id: random_lines1
+    in:
+      input:
+        default:
+          class: File
+          basename: a file
+          format: txt
+          location: {location}
+      num_lines:
+        default: 2
+""")
+        data_default = self._download_workflow(workflow_id)["steps"]["0"]["in"]["input"]
+        editor_workflow = self._download_workflow(workflow_id, style="editor")
+        form_inputs = {"num_lines": "3", "input": {"__class__": "RuntimeValue"}}
+        self._change_editor_tool_form(editor_workflow["steps"]["0"], form_inputs)
+        self._save_from_editor(workflow_id, editor_workflow)
+
+        assert self._download_workflow(workflow_id)["steps"]["0"]["in"] == {"input": data_default}
+
+    @skip_without_tool("gx_text")
+    def test_update_from_editor_keeps_numeric_text_step_input_default(self):
+        workflow_id = self._upload_yaml_workflow("""
+class: GalaxyWorkflow
+steps:
+  text_step:
+    tool_id: gx_text
+    in:
+      parameter:
+        default: 7
+""")
+        self._save_from_editor(workflow_id, self._download_workflow(workflow_id, style="editor"))
+
+        assert self._download_workflow(workflow_id)["steps"]["0"].get("in") == {"parameter": {"default": 7}}
+
+    @skip_without_tool("gx_int")
+    def test_update_from_editor_keeps_connected_step_input_default(self):
+        # Format 2 drops a default next to a source, so connect the input in the native format.
+        workflow = self._download_workflow(self._upload_yaml_workflow("""
+class: GalaxyWorkflow
+inputs:
+  int_input:
+    type: int
+    optional: true
+steps:
+  int_step:
+    tool_id: gx_int
+    in:
+      parameter:
+        default: 7
+"""))
+        int_step = workflow["steps"]["1"]
+        int_step["input_connections"] = {"parameter": {"id": 0, "output_name": "output"}}
+        int_step["tool_state"] = json.dumps(
+            {**json.loads(int_step["tool_state"]), "parameter": {"__class__": "ConnectedValue"}}
+        )
+        workflow_id = self.workflow_populator.create_workflow(workflow)
+        assert self._download_workflow(workflow_id)["steps"]["1"]["in"] == {"parameter": {"default": 7}}
+        self._save_from_editor(workflow_id, self._download_workflow(workflow_id, style="editor"))
+
+        saved_step = self._download_workflow(workflow_id)["steps"]["1"]
+        assert saved_step["in"] == {"parameter": {"default": 7}}
+        assert "parameter" in saved_step["input_connections"]
+
+    @skip_without_tool("gx_int")
+    def test_update_from_editor_keeps_subworkflow_step_input_default(self):
+        workflow_id = self._upload_yaml_workflow("""
+class: GalaxyWorkflow
+steps:
+  nested:
+    run:
+      class: GalaxyWorkflow
+      inputs:
+        int_input:
+          type: int
+      steps:
+        int_step:
+          tool_id: gx_int
+          in:
+            parameter: int_input
+    in:
+      int_input:
+        default: 7
+""")
+        assert self._download_workflow(workflow_id)["steps"]["0"]["in"] == {"int_input": {"default": 7}}
+        self._save_from_editor(workflow_id, self._download_workflow(workflow_id, style="editor"))
+
+        assert self._download_workflow(workflow_id)["steps"]["0"].get("in") == {"int_input": {"default": 7}}
+
     def test_update_tags(self):
         workflow_object = self.workflow_populator.load_workflow(name="test_import")
         workflow_id = self.__test_upload(workflow=workflow_object).json()["id"]
@@ -1294,6 +1416,122 @@ steps:
             assert not workflow["has_upgrade_messages"]
             assert workflow["steps"][1]["inputs"][0]["value"] == {"__class__": "ConnectedValue"}
 
+    def _assert_runs_with_num_lines_default(self, workflow_id: str):
+        with self.dataset_populator.test_history() as history_id:
+            assert not self._download_workflow(workflow_id, style="run", history_id=history_id)["has_upgrade_messages"]
+            hda = self.dataset_populator.new_dataset(history_id, content="a\nb\nc\n", wait=True)
+            # runs without allow_tool_state_corrections, which bioblend leaves off
+            invocation_id = self.workflow_populator.invoke_workflow_and_assert_ok(
+                workflow_id, history_id=history_id, inputs={"0": self._ds_entry(hda)}
+            )
+            self.workflow_populator.wait_for_invocation_and_jobs(history_id, workflow_id, invocation_id)
+            # the job used the num_lines default of 1
+            assert len(self.dataset_populator.get_history_dataset_content(history_id).splitlines()) == 1
+
+    @skip_without_tool("random_lines1")
+    def test_missing_tool_state_values_are_filled_defaults(self):
+        # Format 2 may leave out parameters that have defaults; those are filled, not upgrade problems
+        workflow_id = self.workflow_populator.upload_yaml_workflow(
+            """
+class: GalaxyWorkflow
+inputs:
+  input1: data
+steps:
+  lines:
+    tool_id: random_lines1
+    in:
+      input: input1
+""",
+            client_convert=False,
+            fill_defaults=False,
+        )
+        editor = self._download_workflow(workflow_id, style="editor")
+        assert not any(editor["upgrade_messages"].values())
+        assert "num_lines" in editor["filled_defaults"]["1"]
+        self._assert_runs_with_num_lines_default(workflow_id)
+
+    @skip_without_tool("random_lines1")
+    def test_missing_tool_state_values_in_a_subworkflow_are_filled_defaults(self):
+        workflow_id = self.workflow_populator.upload_yaml_workflow(
+            """
+class: GalaxyWorkflow
+inputs:
+  input1: data
+steps:
+  nested:
+    run:
+      class: GalaxyWorkflow
+      inputs:
+        inner_input: data
+      steps:
+        lines:
+          tool_id: random_lines1
+          in:
+            input: inner_input
+    in:
+      inner_input: input1
+""",
+            client_convert=False,
+            fill_defaults=False,
+        )
+        editor = self._download_workflow(workflow_id, style="editor")
+        assert not any(editor["upgrade_messages"].values())
+        assert "num_lines" in editor["filled_defaults"]["1"]["Step 2"]
+        self._assert_runs_with_num_lines_default(workflow_id)
+
+    @skip_without_tool("multiple_versions_changes")
+    def test_filled_defaults_after_a_tool_version_change_need_corrections(self):
+        # 0.05 isn't installed, so 0.2 runs, and its new floattest parameter has no stored value
+        workflow_id = self.workflow_populator.upload_yaml_workflow(
+            """
+class: GalaxyWorkflow
+inputs: {}
+steps:
+  multiple_versions_changes:
+    tool_id: multiple_versions_changes
+    tool_version: "0.05"
+    state:
+      inttest: 1
+""",
+            client_convert=False,
+            fill_defaults=False,
+        )
+        editor = self._download_workflow(workflow_id, style="editor")
+        assert "floattest" in editor["upgrade_messages"]["0"]
+        assert "0" not in editor["filled_defaults"]
+        with self.dataset_populator.test_history() as history_id:
+            # 0.05 isn't installed, so without this the invocation is refused before the state check
+            request: dict[str, Any] = {"history_id": history_id, "require_exact_tool_versions": False}
+            response = self.workflow_populator.invoke_workflow_raw(workflow_id, request)
+            self._assert_status_code_is(response, 400)
+            assert "upgrade messages" in response.json()["err_msg"]
+            request["allow_tool_state_corrections"] = True
+            self.workflow_populator.invoke_workflow_raw(workflow_id, request, assert_ok=True)
+
+    @skip_without_tool("random_lines1")
+    def test_replaced_tool_state_values_are_upgrade_messages(self):
+        workflow_id = self.workflow_populator.upload_yaml_workflow(
+            """
+class: GalaxyWorkflow
+inputs:
+  input1: data
+steps:
+  lines:
+    tool_id: random_lines1
+    in:
+      input: input1
+    state:
+      num_lines: not-a-number
+""",
+            client_convert=False,
+            fill_defaults=False,
+        )
+        editor = self._download_workflow(workflow_id, style="editor")
+        assert "num_lines" in editor["upgrade_messages"]["1"]
+        assert "num_lines" not in editor["filled_defaults"].get("1", {})
+        with self.dataset_populator.test_history() as history_id:
+            assert self._download_workflow(workflow_id, style="run", history_id=history_id)["has_upgrade_messages"]
+
     def test_refactor(self):
         workflow_id = self.workflow_populator.upload_yaml_workflow("""
 class: GalaxyWorkflow
@@ -1331,6 +1569,33 @@ steps:
         # this time dry_run was default of False, so the label is indeed changed
         workflow_dict = self.workflow_populator.download_workflow(workflow_id)
         assert workflow_dict["steps"]["0"]["label"] == "new_label"
+
+    def test_refactor_keeps_unlaid_workflow_unplaced(self):
+        workflow_id = self.workflow_populator.upload_yaml_workflow(
+            """
+class: GalaxyWorkflow
+inputs:
+  test_input: data
+steps:
+  first_cat:
+    tool_id: cat
+    in:
+      input1: test_input
+""",
+            client_convert=False,
+        )
+        actions = [
+            {"action_type": "add_input", "type": "data", "label": "new_input"},
+            {
+                "action_type": "update_step_position",
+                "step": {"order_index": 1},
+                "position_shift": {"left": 50, "top": 0},
+            },
+        ]
+        self.workflow_populator.refactor_workflow(workflow_id, actions).raise_for_status()
+        editor = self.workflow_populator.download_workflow(workflow_id, style="editor")
+        # one placed step would stop the editor's first layout, stacking the rest at the origin
+        assert [step["position"] for step in editor["steps"].values()] == [None] * 3
 
     def test_refactor_specific_version(self):
         """Test that refactoring can target a specific workflow version."""
@@ -1564,7 +1829,7 @@ steps:
         upgrade_result = refactor_result["action_executions"][0]
         assert upgrade_result["action"]["action_type"] == "upgrade_all_steps"
         message_one, message_two = upgrade_result["messages"]
-        assert message_one["message"] == "No value found for 'floattest'. Using default: '1.0'."
+        assert message_one["message"] == "Default for 'floattest': '1.0'."
         assert message_one["input_name"] == "floattest"
         assert message_two["message"] == "The selected case is unavailable/invalid. Using default: 'b'."
         assert message_two["input_name"] == "cond|bool_to_select"
@@ -1600,8 +1865,8 @@ steps:
         assert upgrade_result["action"]["action_type"] == "upgrade_all_steps"
         message_one, message_two, message_three = upgrade_result["messages"]
         assert message_one["input_name"] == "inttest"
-        assert message_one["message"] == "No value found for 'inttest'. Using default: '1'."
-        assert message_two["message"] == "No value found for 'floattest'. Using default: '1.0'."
+        assert message_one["message"] == "Default for 'inttest': '1'."
+        assert message_two["message"] == "Default for 'floattest': '1.0'."
         assert message_two["input_name"] == "floattest"
         assert message_three["message"] == "The selected case is unavailable/invalid. Using default: 'b'."
         assert message_three["input_name"] == "cond|bool_to_select"
@@ -2392,6 +2657,8 @@ steps:
         uploaded_workflow_id = self.workflow_populator.simple_workflow("test_for_export_format2")
         downloaded_workflow = self._download_workflow(uploaded_workflow_id, style="format2")
         assert downloaded_workflow["class"] == "GalaxyWorkflow"
+        # The revision index is not part of the format2 schema, which forbids extra keys.
+        assert "version" not in downloaded_workflow
 
     def test_export_format2_comments(self):
         # Build a native workflow with comments
@@ -2554,6 +2821,53 @@ steps:
             job_details = self.dataset_populator.get_job_details(job["id"], full=True).json()
             assert sorted(job_details["outputs"].keys()) == ["AA", "CC"]
 
+    @skip_without_tool("simple_constructs")
+    def test_export_editor_unhashable_multiple_select_value(self):
+        # a list holding a dict (e.g. a conditional-shaped value) can never match a select option
+        workflow = {
+            "a_galaxy_workflow": "true",
+            "format-version": "0.1",
+            "name": "unhashable select value",
+            "annotation": "",
+            "steps": {
+                "0": {
+                    "id": 0,
+                    "type": "tool",
+                    "tool_id": "simple_constructs",
+                    "tool_state": json.dumps({"check_select": [{"value": "x"}]}),
+                    "input_connections": {},
+                }
+            },
+        }
+        workflow_id = self.workflow_populator.create_workflow(workflow)
+        downloaded_workflow = self._download_workflow(workflow_id, style="editor")
+        assert "invalid options" in downloaded_workflow["upgrade_messages"]["0"]["check_select"]
+
+    def test_import_parameter_input_without_parameter_type(self):
+        workflow = {
+            "a_galaxy_workflow": "true",
+            "format-version": "0.1",
+            "name": "parameter input without parameter_type",
+            "annotation": "",
+            "steps": {
+                "0": {
+                    "id": 0,
+                    "type": "parameter_input",
+                    "label": "skip",
+                    "tool_state": json.dumps({"parameter_definition": {"parameter_type": "boolean"}}),
+                    "input_connections": {},
+                }
+            },
+        }
+        response = self.workflow_populator.create_workflow_response(workflow)
+        self._assert_status_code_is(response, 400)
+        assert "parameter_type" in response.json()["err_msg"]
+
+    def test_import_without_annotation(self):
+        workflow = {"a_galaxy_workflow": "true", "format-version": "0.1", "name": "no annotation", "steps": {}}
+        workflow_id = self.workflow_populator.create_workflow(workflow)
+        assert self._download_workflow(workflow_id)["annotation"] == ""
+
     @skip_without_tool("collection_type_source")
     def test_export_editor_collection_type_source(self):
         workflow_id = self._upload_yaml_workflow(WORKFLOW_LIST_PAIRED_INPUT_TO_TYPE_SOURCE)
@@ -2602,6 +2916,12 @@ steps:
         steps = workflow_description["steps"]
         missing_tool_steps = [v for v in steps.values() if v["tool_id"] == "cat_missing_tool"]
         assert len(missing_tool_steps) == 1
+
+        editor_steps = self._download_workflow(workflow_id, style="editor")["steps"]
+        missing_tool_steps = [v for v in editor_steps.values() if v["content_id"] == "cat_missing_tool"]
+        assert len(missing_tool_steps) == 1
+        assert missing_tool_steps[0]["errors"] == "Tool is not installed"
+        assert missing_tool_steps[0]["tool_version"] == "1.0.0"
 
     def test_import_no_tool_id(self):
         # Import works with missing tools, but not with absent content/tool id.
@@ -3509,10 +3829,65 @@ steps:
       input1: empty_output/out_file1
     state:
       col: 2
-      col_names: 'B'
+      col_names: 2
 """,
                 history_id=history_id,
             )
+
+    @skip_without_tool("column_param")
+    def test_empty_file_data_column_requires_column_number(self):
+        with self.dataset_populator.test_history() as history_id:
+            summary = self._run_workflow(
+                """class: GalaxyWorkflow
+steps:
+  empty_output:
+    tool_id: empty_output
+    outputs:
+      out_file1:
+        change_datatype: tabular
+  column_param:
+    tool_id: column_param
+    in:
+      input1: empty_output/out_file1
+    state:
+      col: '2;id'
+      col_names: 2
+""",
+                history_id=history_id,
+                wait=True,
+                assert_ok=False,
+            )
+            column_param_job = next(job for job in summary.jobs if job["tool_id"] == "column_param")
+            job = self.dataset_populator.get_job_details(column_param_job["id"], full=True).json()
+            assert job["state"] == "error"
+            assert job["command_line"] is None
+
+    @skip_without_tool("column_param")
+    def test_data_column_label_resolved_to_column_number(self):
+        with self.dataset_populator.test_history() as history_id:
+            summary = self._run_workflow(
+                """class: GalaxyWorkflow
+inputs:
+  tabular_input: data
+steps:
+  cat1:
+    tool_id: cat1
+    in:
+      input1: tabular_input
+  column_param:
+    tool_id: column_param
+    in:
+      input1: cat1/out_file1
+    state:
+      col: 1
+      col_names: 'c2: B'
+""",
+                test_data={"tabular_input": {"type": "File", "file_type": "tabular", "content": "A\tB\n1\t2\n"}},
+                history_id=history_id,
+            )
+            column_param_job = next(job for job in summary.jobs if job["tool_id"] == "column_param")
+            job = self.dataset_populator.get_job_details(column_param_job["id"], full=True).json()
+            assert 'echo "col_names 2" >>' in job["command_line"]
 
     @skip_without_tool("column_param_list")
     def test_comma_separated_columns(self):
@@ -3532,7 +3907,7 @@ steps:
       input1: empty_output/out_file1
     state:
       col: '2,3'
-      col_names: 'B'
+      col_names: 'c2,c3'
 """,
                 history_id=history_id,
             )
@@ -3557,13 +3932,13 @@ steps:
       input1: empty_output/out_file1
     state:
       col: '2,3\n'
-      col_names: 'B\n'
+      col_names: '2\n'
 """,
                 history_id=history_id,
             )
             job = self.dataset_populator.get_job_details(job_summary.jobs[0]["id"], full=True).json()
             assert "col 2,3" in job["command_line"]
-            assert 'echo "col_names B" >>' in job["command_line"]
+            assert 'echo "col_names 2" >>' in job["command_line"]
 
     @skip_without_tool("column_param")
     def test_runtime_data_column_parameter(self):
@@ -4377,6 +4752,43 @@ input_b:
             input_b_content = open(self.test_data_resolver.get_filename("2.bed")).read()
             assert picked_content == input_b_content
 
+    @skip_without_tool("color_param")
+    def test_run_workflow_non_color_connected_to_color_param(self):
+        self._assert_non_color_connection_fails_job("color_param", "color_default")
+
+    @skip_without_tool("color_param_string_method")
+    def test_run_workflow_non_color_connected_to_color_param_string_method(self):
+        self._assert_non_color_connection_fails_job("color_param_string_method", "color")
+
+    def _assert_non_color_connection_fails_job(self, tool_id: str, param_name: str):
+        with self.dataset_populator.test_history() as history_id:
+            summary = self._run_workflow(
+                f"""class: GalaxyWorkflow
+inputs:
+  color:
+    type: text
+steps:
+  color_param:
+    tool_id: {tool_id}
+    in:
+      {param_name}: color
+""",
+                test_data="""
+color:
+  value: "#fff'; id; '"
+  type: raw
+""",
+                history_id=history_id,
+                wait=True,
+                assert_ok=False,
+            )
+            invocation = self.workflow_populator.get_invocation(summary.invocation_id, step_details=True)
+            jobs = [job for step in invocation["steps"] for job in step["jobs"]]
+            assert len(jobs) == 1
+            job = self.dataset_populator.get_job_details(jobs[0]["id"], full=True).json()
+            assert job["state"] == "error"
+            assert not job["command_line"]
+
     def test_run_workflow_simple_conditional_step(self):
         with self.dataset_populator.test_history() as history_id:
             summary = self._run_workflow(
@@ -4446,6 +4858,28 @@ should_run:
             for step in invocation_details["steps"]:
                 if step["workflow_step_label"] == "identifier_multiple_in_conditional":
                     assert sum(1 for j in step["jobs"] if j["state"] == "skipped") == 1
+
+    @skip_without_tool("template_macro_undeclared_name")
+    def test_run_workflow_step_state_keys_not_tool_inputs(self):
+        with self.dataset_populator.test_history() as history_id:
+            summary = self._run_workflow(
+                """class: GalaxyWorkflow
+steps:
+  macro_tool:
+    tool_id: template_macro_undeclared_name
+    state:
+      declared: declared value
+      undeclared: marker
+      macro_text: marker
+""",
+                history_id=history_id,
+            )
+            output = self.dataset_populator.get_history_dataset_content(history_id)
+            assert output.splitlines() == ["text from the template macro", "declared value"]
+            job = summary.jobs_for_tool("template_macro_undeclared_name")[0]
+            job_details = self.dataset_populator.get_job_details(job["id"], full=True).json()
+            assert "undeclared" not in job_details["params"]
+            assert "macro_text" not in job_details["params"]
 
     def test_run_workflow_invalid_when_expression(self):
         with self.dataset_populator.test_history() as history_id:
@@ -7413,6 +7847,35 @@ steps:
         assert message["reason"] == "dataset_failed"
         assert message["workflow_step_id"] == 1
 
+    @skip_without_tool("job_properties")
+    @skip_without_tool("gx_text")
+    def test_workflow_failed_parameter_input_not_ok(self, history_id):
+        summary = self._run_workflow(
+            """
+class: GalaxyWorkflow
+steps:
+  job_props:
+    tool_id: job_properties
+    state:
+      thebool: true
+      failbool: true
+  consume_param:
+    tool_id: gx_text
+    in:
+      parameter: job_props/out_file1
+""",
+            history_id=history_id,
+            assert_ok=False,
+            wait=True,
+        )
+        invocation = self.workflow_populator.get_invocation(summary.invocation_id)
+        assert invocation["state"] == "failed"
+        assert len(invocation["messages"]) == 1
+        message = invocation["messages"][0]
+        assert message["reason"] == "dataset_failed"
+        assert message["workflow_step_id"] == 1
+        assert message["dependent_workflow_step_id"] == 0
+
     @skip_without_tool("__RELABEL_FROM_FILE__")
     def test_workflow_failed_with_message_exception(self, history_id):
         summary = self._run_workflow(
@@ -9009,6 +9472,54 @@ data_input:
             assert dataset_details["file_ext"] == "txt"
             assert "chr1" in dataset_details["peek"]
 
+    def _editor_data_input_step(self, workflow_id: str) -> tuple[dict[str, Any], dict[str, Any]]:
+        editor = self._download_workflow(workflow_id, style="editor")
+        return editor, next(step for step in editor["steps"].values() if step["type"] == "data_input")
+
+    def test_default_file_location_editor_round_trip(self, test_http_server):
+        location = _default_file_location(test_http_server)
+        workflow_id = self._upload_yaml_workflow(WORKFLOW_WITH_DEFAULT_FILE_DATASET_INPUT.format(location=location))
+        editor, input_step = self._editor_data_input_step(workflow_id)
+        original_default = {"class": "File", "basename": "a file", "format": "txt", "location": location}
+        assert input_step["in"]["input"]["default"] == original_default
+        # Saving the editor dict unchanged must keep the whole default, metadata included.
+        self._assert_status_code_is(self._update_workflow(workflow_id, editor), 200)
+        reopened, reopened_input = self._editor_data_input_step(workflow_id)
+        assert reopened_input["in"]["input"]["default"] == original_default
+
+        del reopened_input["in"]["input"]
+        self._assert_status_code_is(self._update_workflow(workflow_id, reopened), 200)
+        _, cleared_input = self._editor_data_input_step(workflow_id)
+        assert not cleared_input.get("in")
+
+    def test_optional_data_input_with_default_file_location_runs(self, test_http_server):
+        location = _default_file_location(test_http_server)
+        workflow_id = self._upload_yaml_workflow(WORKFLOW_WITH_DEFAULT_FILE_DATASET_INPUT.format(location=location))
+        editor, input_step = self._editor_data_input_step(workflow_id)
+        # A data parameter cannot be both optional and have a default; the run form must still build.
+        input_step["tool_state"]["optional"] = "true"
+        self._assert_status_code_is(self._update_workflow(workflow_id, editor), 200)
+        with self.dataset_populator.test_history() as history_id:
+            self.dataset_populator.new_dataset(history_id, content="alternative input", file_type="txt", wait=True)
+            run_model = self._download_workflow(workflow_id, style="run", history_id=history_id)
+            run_input = next(step for step in run_model["steps"] if step["step_type"] == "data_input")["inputs"][0]
+            assert run_input["value"] is None
+            assert run_input["default_location"] == location
+            self.workflow_populator.invoke_workflow_and_wait(workflow_id, history_id=history_id, inputs={})
+            assert "chr1" in self.dataset_populator.get_history_dataset_content(history_id)
+
+    def test_tool_step_default_file_survives_editor_round_trip(self, test_http_server):
+        location = _default_file_location(test_http_server)
+        workflow_id = self._upload_yaml_workflow(
+            WORKFLOW_WITH_STEP_DEFAULT_FILE_DATASET_INPUT.format(location=location)
+        )
+        editor = self._download_workflow(workflow_id, style="editor")
+        original_in = next(step for step in editor["steps"].values() if step["type"] == "tool")["in"]
+        assert original_in["input1"]["default"]["location"] == location
+        self._assert_status_code_is(self._update_workflow(workflow_id, editor), 200)
+        reopened = self._download_workflow(workflow_id, style="editor")
+        assert next(step for step in reopened["steps"].values() if step["type"] == "tool")["in"] == original_in
+
     def test_run_with_default_file_dataset_input_and_explicit_input(self, test_http_server):
         with self.dataset_populator.test_history() as history_id:
             run_response = self._run_workflow(
@@ -9043,6 +9554,123 @@ default_file_input:
             )
             content = self.dataset_populator.get_history_dataset_content(history_id)
             assert "chr1" in content
+
+    def _history_contents_named(self, history_id: str, name: str) -> list[dict]:
+        contents = self.dataset_populator.get_history_contents(history_id)
+        return [c for c in contents if c["name"] == name]
+
+    def test_run_subworkflow_step_with_default_file_over_several_passes(self, test_http_server):
+        with self.dataset_populator.test_history() as history_id:
+            self._run_workflow(
+                f"""
+class: GalaxyWorkflow
+inputs:
+  outer_input: data
+outputs:
+  out:
+    outputSource: subworkflow/out
+steps:
+  subworkflow:
+    in:
+      inner_input: outer_input
+      inner_data:
+        default:
+          class: File
+          basename: a file
+          format: txt
+          location: {_default_file_location(test_http_server)}
+    run:
+      class: GalaxyWorkflow
+      inputs:
+        inner_input: data
+        inner_data:
+          type: data
+          optional: true
+      outputs:
+        out:
+          outputSource: cat_list/out_file1
+      steps:
+        split:
+          tool_id: split
+          in:
+            input1: inner_input
+        cat_list:
+          tool_id: cat_list
+          in:
+            input1: split/output
+test_data:
+  outer_input:
+    value: 1.bed
+    type: File
+    file_type: txt
+""",
+                history_id=history_id,
+                wait=True,
+                assert_ok=True,
+            )
+            default_datasets = self._history_contents_named(history_id, "a file")
+            assert not default_datasets, default_datasets
+
+    def test_run_delayed_tool_step_with_default_file(self, test_http_server):
+        with self.dataset_populator.test_history() as history_id:
+            self._run_workflow(
+                f"""
+class: GalaxyWorkflow
+inputs:
+  outer_input: data
+steps:
+  split:
+    tool_id: split
+    in:
+      input1: outer_input
+  create_10:
+    tool_id: create_10
+    in:
+      input1: split/output
+      input2:
+        default:
+          class: File
+          basename: a file
+          format: txt
+          location: {_default_file_location(test_http_server)}
+test_data:
+  outer_input:
+    value: 1.bed
+    type: File
+    file_type: txt
+""",
+                history_id=history_id,
+                wait=True,
+                assert_ok=True,
+            )
+            default_datasets = self._history_contents_named(history_id, "a file")
+            assert len(default_datasets) == 1, default_datasets
+
+    def test_run_tool_step_with_default_file_and_pending_parameter_connection(self, test_http_server):
+        with self.dataset_populator.test_history() as history_id:
+            self._run_workflow(
+                f"""
+class: GalaxyWorkflow
+steps:
+  forty_two:
+    tool_id: expression_forty_two
+  cat:
+    tool_id: cat_data_and_sleep
+    in:
+      sleep_time: forty_two/out1
+      input1:
+        default:
+          class: File
+          basename: a file
+          format: txt
+          location: {_default_file_location(test_http_server)}
+""",
+                history_id=history_id,
+                wait=True,
+                assert_ok=True,
+            )
+            default_datasets = self._history_contents_named(history_id, "a file")
+            assert len(default_datasets) == 1, default_datasets
 
     def test_conditional_skip_on_database_operation_collection_output(self):
         with self.dataset_populator.test_history() as history_id:
@@ -11697,13 +12325,6 @@ input:
             result = self.dataset_populator.get_history_dataset_content(history_id)
             assert result.count("\n") == 4
 
-    @skip_without_tool("random_lines1")
-    def test_defaults_editor(self):
-        workflow_id = self._upload_yaml_workflow(WORKFLOW_ONE_STEP_DEFAULT, publish=True)
-        workflow_object = self._download_workflow(workflow_id, style="editor")
-        put_response = self._update_workflow(workflow_id, workflow_object)
-        assert put_response.status_code == 200
-
     @skip_without_tool("multi_data_optional")
     def test_invalid_collection_input_rejected(self):
         valid_collection_type = """
@@ -12844,6 +13465,113 @@ outer_input:
         with self._different_user():
             import_response = self.__import_workflow(workflow_id)
             self._assert_status_code_is(import_response, 403)
+
+    def test_user_defined_tool_published_workflow_viewable_by_other_users(self):
+        with self.dataset_populator.user_tool_execute_permissions():
+            workflow_id, unprivileged_tool = self._publish_user_defined_tool_workflow()
+            owner_views = self._user_defined_tool_step_views(workflow_id, step="1")
+        assert owner_views["editor"]["errors"] is None
+        assert [i["name"] for i in owner_views["editor"]["inputs"]] == ["input"]
+        assert [o["name"] for o in owner_views["editor"]["outputs"]] == ["output"]
+        assert owner_views["export"]["tool_representation"]["shell_command"] == TOOL_WITH_SHELL_COMMAND["shell_command"]
+        assert owner_views["preview"]["label"] == "Base command tool"
+        with self._different_user(), self.dataset_populator.user_tool_execute_permissions():
+            assert self._user_defined_tool_step_views(workflow_id, step="1") == owner_views
+        with self._different_user("udt_viewer_without_role@bx.psu.edu"):
+            assert self._user_defined_tool_step_views(workflow_id, step="1") == owner_views
+        with self._different_user(anon=True):
+            assert self._user_defined_tool_step_views(workflow_id, step="1") == owner_views
+        # These pages are served outside the API, to browser sessions.
+        workflow = self._get(f"workflows/{workflow_id}").json()
+        with self._browser_session("udt_browser_viewer@bx.psu.edu") as session:
+            display_response = session.get(urljoin(self.url, f"u/{workflow['owner']}/w/{workflow['slug']}"))
+            self._assert_status_code_is(display_response, 200)
+            image_response = session.get(urljoin(self.url, f"workflow/gen_image?id={workflow_id}"))
+            self._assert_status_code_is(image_response, 200)
+            assert "Base command tool" in image_response.text
+
+    def test_user_defined_tool_in_published_subworkflow_viewable_by_other_users(self):
+        with self.dataset_populator.user_tool_execute_permissions():
+            unprivileged_tool = self.dataset_populator.create_unprivileged_tool(
+                UserToolSource(**TOOL_WITH_SHELL_COMMAND)
+            )
+            subworkflow = self._build_user_defined_tool_run_workflow_dict("basecommand", unprivileged_tool["uuid"])
+            workflow = self._build_user_defined_tool_run_workflow_dict("basecommand", unprivileged_tool["uuid"])
+            workflow["steps"]["1"] = {
+                "id": 1,
+                "type": "subworkflow",
+                "subworkflow": subworkflow,
+                "input_connections": {"input": {"id": 0, "output_name": "output", "input_subworkflow_step_id": 0}},
+                "workflow_outputs": [{"output_name": "udt_output", "label": "outer_output"}],
+                "uuid": str(uuid4()),
+            }
+            workflow_id = self.workflow_populator.create_workflow(workflow, publish=True)
+            owner_views = self._user_defined_tool_step_views(workflow_id, step="1")
+        assert owner_views["editor"]["errors"] is None
+        assert [o["name"] for o in owner_views["editor"]["outputs"]] == ["udt_output"]
+        assert owner_views["export"]["subworkflow"]["steps"]["1"]["tool_representation"]["id"] == "basecommand"
+        assert owner_views["preview"]["inputs"][1]["label"] == "Base command tool"
+        with self._different_user(), self.dataset_populator.user_tool_execute_permissions():
+            assert self._user_defined_tool_step_views(workflow_id, step="1") == owner_views
+            with self.dataset_populator.test_history() as history_id:
+                self._assert_user_defined_tool_workflow_not_invocable(workflow_id, history_id)
+
+    def test_user_defined_tool_published_workflow_not_runnable_by_other_users(self):
+        with self.dataset_populator.user_tool_execute_permissions():
+            workflow_id, unprivileged_tool = self._publish_user_defined_tool_workflow()
+        tool_uuid = unprivileged_tool["uuid"]
+        # The role is not enough: every way to run the tool requires owning it.
+        with self._different_user(), self.dataset_populator.user_tool_execute_permissions():
+            # Viewing the workflow first must not make its tool usable.
+            self._user_defined_tool_step_views(workflow_id, step="1")
+            with self.dataset_populator.test_history() as history_id:
+                hda = self._assert_user_defined_tool_workflow_not_invocable(workflow_id, history_id)
+                run_form_response = self.workflow_populator.download_workflow_raw(
+                    workflow_id, style="run", history_id=history_id
+                )
+                self._assert_status_code_is(run_form_response, 403)
+                assert "Import the workflow to run it" in run_form_response.json()["err_msg"]
+                run_response = self.dataset_populator.run_tool_raw(
+                    None, {"input": {"src": "hda", "id": hda["id"]}}, history_id, tool_uuid=tool_uuid
+                )
+                self._assert_status_code_is(run_response, 404)
+                request_response = self.dataset_populator.tool_request_raw(
+                    None, {"input": {"src": "hda", "id": hda["id"]}}, history_id, tool_uuid=tool_uuid
+                )
+                self._assert_status_code_is(request_response, 404)
+                create_response = self._post(
+                    "workflows",
+                    data={"workflow": json.dumps(self._build_user_defined_workflow_dict(tool_uuid=tool_uuid))},
+                )
+                self._assert_status_code_is(create_response, 404)
+                assert self.dataset_populator.history_jobs_for_tool(history_id, "basecommand") == []
+
+    def _assert_user_defined_tool_workflow_not_invocable(self, workflow_id: str, history_id: str) -> dict[str, Any]:
+        hda = self.dataset_populator.new_dataset(history_id, content="abc", wait=True)
+        invocation_response = self.workflow_populator.invoke_workflow_raw(
+            workflow_id,
+            {"history_id": history_id, "inputs": {"0": self._ds_entry(hda)}, "inputs_by": "step_index"},
+        )
+        self._assert_status_code_is(invocation_response, 403)
+        assert "user-defined tools owned by another user (basecommand)" in invocation_response.json()["err_msg"]
+        assert self._get("invocations", data={"history_id": history_id}).json() == []
+        assert self.dataset_populator.history_jobs_for_tool(history_id, "basecommand") == []
+        return hda
+
+    def _publish_user_defined_tool_workflow(self) -> tuple[str, dict[str, Any]]:
+        unprivileged_tool = self.dataset_populator.create_unprivileged_tool(UserToolSource(**TOOL_WITH_SHELL_COMMAND))
+        workflow_id = self.workflow_populator.create_workflow(
+            self._build_user_defined_tool_run_workflow_dict("basecommand", unprivileged_tool["uuid"]),
+            publish=True,
+        )
+        return workflow_id, unprivileged_tool
+
+    def _user_defined_tool_step_views(self, workflow_id: str, step: str) -> dict[str, Any]:
+        """The step as the workflow editor, the published page and the download show it."""
+        editor_step = self.workflow_populator.download_workflow(workflow_id, style="editor")["steps"][step]
+        export_step = self.workflow_populator.download_workflow(workflow_id, style="export")["steps"][step]
+        preview_step = self.workflow_populator.download_workflow(workflow_id, style="preview")["steps"][int(step)]
+        return {"editor": editor_step, "export": export_step, "preview": preview_step}
 
     def test_refactor_upgrade_all_steps_keeps_user_defined_tool_step(self):
         with self.dataset_populator.user_tool_execute_permissions():

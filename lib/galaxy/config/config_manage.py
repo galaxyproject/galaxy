@@ -565,6 +565,8 @@ _ATTR_TYPE_OVERRIDES: dict[str, dict[str, str]] = {
         "tool_label_filters": "list[str]",
         "tool_section_filters": "list[str]",
         "toolbox_filter_base_modules": "list[str]",
+        "user_defined_tool_allowed_containers": "list[str]",
+        "user_defined_tool_denied_containers": "list[str]",
         "user_library_import_symlink_allowlist": "list[str]",
         "user_tool_filters": "list[str]",
         "user_tool_label_filters": "list[str]",
@@ -580,6 +582,7 @@ _ATTR_TYPE_OVERRIDES: dict[str, dict[str, str]] = {
         "file_source_templates": "list[dict[str, Any]] | None",
         "object_store_templates": "list[dict[str, Any]] | None",
         "subdomain_switcher": "list[dict[str, str]]",
+        "another_galaxy_servers": "list[dict[str, str]]",
         # Stored as float despite int schema type
         "object_store_cache_size": "float",
         # Converted from int (days) to timedelta by _process_config

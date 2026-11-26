@@ -1,6 +1,6 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getFakeRegisteredUser } from "@tests/test-data";
-import { createTestRouter, getLocalVue, suppressBootstrapVueWarnings } from "@tests/vitest/helpers";
+import { createTestRouter, getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
@@ -113,7 +113,6 @@ function interceptRequests() {
 
 describe("HistoryList", () => {
     beforeEach(() => {
-        suppressBootstrapVueWarnings();
         vi.clearAllMocks();
         failSecond = false;
         vi.mocked(getSharedHistories).mockResolvedValue({ data: SHARED, total: 2 } as never);
@@ -243,7 +242,6 @@ function isBusy(wrapper: SortableWrapper) {
 
 describe("HistoryList sorting", () => {
     beforeEach(() => {
-        suppressBootstrapVueWarnings();
         vi.mocked(getMyHistories).mockReset();
         vi.mocked(getMyHistories).mockResolvedValueOnce(historiesResponse(["b", "a"]) as never);
     });

@@ -15,7 +15,7 @@ import BarChart from "./Charts/BarChart.vue";
 import OverviewPage from "./OverviewPage.vue";
 import SelectedItemActions from "./SelectedItemActions.vue";
 import WarnDeletedDatasets from "./WarnDeletedDatasets.vue";
-import Alert from "@/components/Alert.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import FilterObjectStoreLink from "@/components/Common/FilterObjectStoreLink.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
@@ -131,7 +131,7 @@ function onUndelete(datasetId: string) {
 </script>
 <template>
     <OverviewPage class="history-storage-overview" title="History Storage Overview">
-        <Alert v-if="loadError" :message="loadError" variant="error" />
+        <GAlert v-if="loadError" variant="danger">{{ loadError }}</GAlert>
         <template v-else>
             <p class="text-justify">
                 Here you will find some Graphs displaying the storage taken by datasets in your history:
@@ -148,6 +148,7 @@ function onUndelete(datasetId: string) {
             <div v-else>
                 <BarChart
                     v-if="topNDatasetsBySizeData"
+                    v-bind="byteFormattingForChart"
                     data-description="chart history top datasets by size"
                     :description="
                         localize(
@@ -155,8 +156,7 @@ function onUndelete(datasetId: string) {
                         )
                     "
                     :data="topNDatasetsBySizeData"
-                    :enable-selection="true"
-                    v-bind="byteFormattingForChart">
+                    :enable-selection="true">
                     <template v-slot:title>
                         <b>{{ localize("Top 50 Datasets by Size") }}</b>
                     </template>
@@ -183,6 +183,7 @@ function onUndelete(datasetId: string) {
 
                 <BarChart
                     v-if="activeVsDeletedTotalSizeData"
+                    v-bind="byteFormattingForChart"
                     data-description="chart history datasets by active"
                     :title="localize('Active vs Deleted Total Size')"
                     :description="
@@ -191,8 +192,7 @@ function onUndelete(datasetId: string) {
                         )
                     "
                     :data="activeVsDeletedTotalSizeData"
-                    :enable-selection="false"
-                    v-bind="byteFormattingForChart" />
+                    :enable-selection="false" />
             </div>
         </template>
     </OverviewPage>

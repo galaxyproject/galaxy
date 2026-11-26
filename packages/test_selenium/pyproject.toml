@@ -7,7 +7,7 @@ dynamic = ["readme"]
 name = "galaxy-test-selenium"
 version = "27.0.dev0"
 description = "Galaxy Selenium tests"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 license = "MIT"
 license-files = [
     "LICENSE",
@@ -21,7 +21,7 @@ dependencies = [
     "galaxy-selenium",
     "galaxy-test-base",
     "galaxy-util",
-    "gxformat2>=0.28.0",
+    "gxformat2>=0.29.2",
     "pytest",
     "PyYAML",
     "requests",
@@ -34,7 +34,6 @@ classifiers = [
     "Natural Language :: English",
     "Operating System :: POSIX",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",

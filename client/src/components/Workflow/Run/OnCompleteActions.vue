@@ -3,7 +3,6 @@ import { BFormGroup } from "bootstrap-vue";
 import { computed, reactive, ref, watch } from "vue";
 
 import type { WriteStoreToPayload } from "@/api/exports";
-import { useConfig } from "@/composables/config";
 import { useFileSources } from "@/composables/fileSources";
 
 import ExportOnCompleteWizard from "./ExportOnCompleteWizard.vue";
@@ -14,31 +13,24 @@ import FileSourceNameSpan from "@/components/FileSources/FileSourceNameSpan.vue"
 import FormCard from "@/components/Form/FormCard.vue";
 
 interface OnCompleteAction {
-    send_notification?: Record<string, never>;
     export_to_file_source?: WriteStoreToPayload;
 }
 
 interface ComponentState {
-    sendNotification: boolean;
     exportEnabled: boolean;
     exportConfig: WriteStoreToPayload;
 }
 
 interface Props {
-    value: OnCompleteAction[];
+    modelValue: OnCompleteAction[];
 }
 
 const props = defineProps<Props>();
 const emit = defineEmits<{
-    (e: "input", value: OnCompleteAction[]): void;
+    (e: "update:modelValue", value: OnCompleteAction[]): void;
 }>();
 
-const { config, isConfigLoaded } = useConfig();
 const { hasWritable: hasWritableFileSources } = useFileSources({ exclude: ["rdm"] });
-
-const notificationSystemEnabled = computed(
-    () => isConfigLoaded.value && config.value?.enable_notification_system === true,
-);
 
 const showExportWizard = ref(false);
 
@@ -51,22 +43,20 @@ const defaultExportConfig: WriteStoreToPayload = {
 };
 
 const state = reactive<ComponentState>({
-    sendNotification: false,
     exportEnabled: false,
     exportConfig: { ...defaultExportConfig },
 });
 
-// Initialize state from value prop (Vue 2 style v-model)
+// Initialize state from the modelValue prop
 watch(
-    () => props.value,
+    () => props.modelValue,
     (newValue) => {
         if (newValue && newValue.length > 0) {
-            state.sendNotification = newValue.some((a) => "send_notification" in a);
             const exportAction = newValue.find((a) => "export_to_file_source" in a);
             if (exportAction && exportAction.export_to_file_source) {
                 const incoming = exportAction.export_to_file_source;
                 // Only update exportConfig if content actually changed, to avoid circular watcher loop:
-                // state change → emit("input") → props.value update → state change → ...
+                // state change → emit("update:modelValue") → props.modelValue update → state change → ...
                 if (JSON.stringify(incoming) !== JSON.stringify(state.exportConfig)) {
                     state.exportEnabled = true;
                     state.exportConfig = { ...incoming };
@@ -79,7 +69,7 @@ watch(
 
 // Emit changes when state changes
 watch(
-    () => [state.sendNotification, state.exportEnabled, state.exportConfig],
+    () => [state.exportEnabled, state.exportConfig],
     () => {
         emitOnComplete();
     },
@@ -88,13 +78,10 @@ watch(
 
 function emitOnComplete() {
     const actions: OnCompleteAction[] = [];
-    if (state.sendNotification) {
-        actions.push({ send_notification: {} });
-    }
     if (state.exportEnabled && state.exportConfig.target_uri) {
         actions.push({ export_to_file_source: { ...state.exportConfig } });
     }
-    emit("input", actions);
+    emit("update:modelValue", actions);
 }
 
 function onExportConfigured(config: WriteStoreToPayload) {
@@ -121,22 +108,9 @@ const exportSummary = computed(() => {
 </script>
 
 <template>
-    <FormCard title="Completion Actions">
+    <FormCard v-if="hasWritableFileSources" title="Completion Actions">
         <template v-slot:body>
             <p class="text-muted">Configure actions to run automatically when this workflow invocation completes.</p>
-
-            <BFormGroup v-if="notificationSystemEnabled">
-                <!-- align-items-start keeps the switch beside the title line, not centred on both lines -->
-                <GCheckbox
-                    v-model="state.sendNotification"
-                    switch
-                    class="align-items-start"
-                    data-test-id="send-notification-checkbox">
-                    <span class="font-weight-bold">Send notification</span>
-                    <br />
-                    <small class="text-muted"> Receive a notification when the workflow completes. </small>
-                </GCheckbox>
-            </BFormGroup>
 
             <BFormGroup v-if="hasWritableFileSources">
                 <div class="d-flex align-items-start">

@@ -169,10 +169,7 @@ class TestDataset(UsesUploadActivity, SeleniumTestCase):
         for name, value in assigned.items():
             self.form_element_set_value(name, value)
         self.screenshot("dataset_edit_attributes_interval_columns")
-        edit_dataset_attributes = self.components.edit_dataset_attributes
-        edit_dataset_attributes.save_button.wait_for_and_click()
-        edit_dataset_attributes.alert.wait_for_visible()
-        assert edit_dataset_attributes.alert.has_class("alert-success")
+        self._click_and_assert_success_alert(self.components.edit_dataset_attributes.save_button)
         details = self.dataset_populator.get_history_dataset_details(history_id, hid=1)
         assert {name: str(details[f"metadata_{name}"]) for name in columns} == assigned
 
@@ -198,11 +195,9 @@ class TestDataset(UsesUploadActivity, SeleniumTestCase):
         self.history_panel_wait_for_hid_ok(hid)
         self.history_panel_item_edit(hid=hid)
         edit_dataset_attributes = self.components.edit_dataset_attributes
-        comment_lines = edit_dataset_attributes.metadata_input(name="comment_lines")
-        comment_lines.wait_for_and_clear_and_send_keys("3")
+        self.form_element_set_value("comment_lines", "3")
         self._click_and_assert_success_alert(edit_dataset_attributes.save_button)
-        # form saves store text metadata as a string
-        assert int(comment_lines_metadata()) == 3
+        assert comment_lines_metadata() == 3
         self.screenshot("dataset_edit_attributes_metadata_saved")
 
         edit_dataset_attributes.auto_detect_metadata_button.wait_for_and_click()
@@ -217,5 +212,5 @@ class TestDataset(UsesUploadActivity, SeleniumTestCase):
         # reopen and check the form shows the re-detected value
         self.home()
         self.history_panel_item_edit(hid=hid)
-        assert comment_lines.wait_for_value() == "0"
+        assert self.form_element_value("comment_lines") == "0"
         self.screenshot("dataset_edit_attributes_metadata_auto_detected")

@@ -5,20 +5,22 @@ import { getLocalVue, nth } from "@tests/vitest/helpers";
 import { setupMockConfig } from "@tests/vitest/mockConfig";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { Toast } from "@/composables/toast";
 import type { GalaxyConfiguration } from "@/stores/configurationStore";
 import Filtering, { equals } from "@/utils/filtering";
 
 import type { GridConfig, RowData } from "./configs/types";
 
 import MountTarget from "./GridList.vue";
+import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 
 vi.useFakeTimers();
 
 setupMockConfig({ disabled: false, enabled: true });
 
-vi.mock("vue-router");
+vi.mock("@/composables/toast");
 
 const localVue = getLocalVue();
 
@@ -108,6 +110,10 @@ function createTarget(propsData: TargetProps) {
 }
 
 describe("GridList", () => {
+    beforeEach(() => {
+        vi.mocked(Toast.error).mockClear();
+    });
+
     it("basic rendering", async () => {
         const testGrid = createTestGrid();
         const wrapper = createTarget({
@@ -309,12 +315,96 @@ describe("GridList", () => {
         vi.runAllTimers();
         await flushPromises();
 
-        fast.resolve([[{ id: "fast-row" }], 1]);
+        fast.resolve([[{ id: "fast-row", link: "link-fast", operation: "operation-fast" }], 1]);
         await flushPromises();
-        slow.resolve([[{ id: "slow-row" }], 1]);
+        slow.resolve([[{ id: "slow-row", link: "link-slow", operation: "operation-slow" }], 1]);
         await flushPromises();
 
         expect(wrapper.find("[data-description='grid cell 0-0']").text()).toBe("fast-row");
+    });
+
+    it("saves the tag edits of a row one after another", async () => {
+        const testGrid = createTestGrid();
+        const saves = [deferred<void>(), deferred<void>()];
+        const tagsHandler = vi.fn((_row: RowData) => saves[tagsHandler.mock.calls.length - 1]!.promise);
+        testGrid.fields.push({ key: "tags", title: "tags", type: "tags", handler: tagsHandler });
+        const wrapper = createTarget({ gridConfig: testGrid, limit: 1 });
+        await flushPromises();
+
+        const tags = wrapper.findComponent(StatelessTags);
+        tags.vm.$emit("update:modelValue", ["first"]);
+        tags.vm.$emit("update:modelValue", ["first", "second"]);
+        await flushPromises();
+        expect(tagsHandler).toHaveBeenCalledTimes(1);
+        expect(tagsHandler.mock.calls[0]![0].tags).toEqual(["first"]);
+        expect(tags.props("modelValue")).toEqual(["first", "second"]);
+
+        saves[0]!.resolve();
+        await flushPromises();
+        expect(tagsHandler).toHaveBeenCalledTimes(2);
+        expect(tagsHandler.mock.calls[1]![0].tags).toEqual(["first", "second"]);
+        saves[1]!.resolve();
+        await flushPromises();
+        expect(tags.props("modelValue")).toEqual(["first", "second"]);
+    });
+
+    it("reports a failed tag save and reloads the grid", async () => {
+        const testGrid = createTestGrid();
+        const tagsHandler = vi.fn(async (_row: RowData) => {
+            throw new Error("save failed");
+        });
+        testGrid.fields.push({ key: "tags", title: "tags", type: "tags", handler: tagsHandler });
+        const wrapper = createTarget({ gridConfig: testGrid, limit: 1 });
+        await flushPromises();
+        expect(testGrid.getData).toHaveBeenCalledTimes(1);
+
+        wrapper.findComponent(StatelessTags).vm.$emit("update:modelValue", ["first"]);
+        await flushPromises();
+
+        expect(tagsHandler).toHaveBeenCalledTimes(1);
+        expect(Toast.error).toHaveBeenCalledWith("Failed to save tags: save failed");
+        expect(testGrid.getData).toHaveBeenCalledTimes(2);
+    });
+
+    it("keeps the tags of rows without an id apart", async () => {
+        const testGrid = createTestGrid();
+        const tagsHandler = vi.fn(async (_row: RowData) => {});
+        testGrid.fields = [{ key: "tags", title: "tags", type: "tags", handler: tagsHandler }];
+        testGrid.getData = vi.fn(async (): Promise<[RowData[], number]> => [[{ tags: ["a"] }, { tags: ["b"] }], 2]);
+        const wrapper = createTarget({ gridConfig: testGrid });
+        await flushPromises();
+
+        const [firstTags, secondTags] = wrapper.findAllComponents(StatelessTags);
+        secondTags!.vm.$emit("update:modelValue", ["b", "edited"]);
+        await flushPromises();
+
+        expect(firstTags!.props("modelValue")).toEqual(["a"]);
+        expect(secondTags!.props("modelValue")).toEqual(["b", "edited"]);
+    });
+
+    it("saves the tag edits of a row without an id one after another", async () => {
+        const testGrid = createTestGrid();
+        const saves = [deferred<void>(), deferred<void>()];
+        const tagsHandler = vi.fn((_row: RowData) => saves[tagsHandler.mock.calls.length - 1]!.promise);
+        testGrid.fields = [{ key: "tags", title: "tags", type: "tags", handler: tagsHandler }];
+        testGrid.getData = vi.fn(async (): Promise<[RowData[], number]> => [[{ tags: ["a"] }], 1]);
+        const wrapper = createTarget({ gridConfig: testGrid });
+        await flushPromises();
+
+        const tags = wrapper.findComponent(StatelessTags);
+        tags.vm.$emit("update:modelValue", ["first"]);
+        tags.vm.$emit("update:modelValue", ["first", "second"]);
+        await flushPromises();
+        expect(tagsHandler).toHaveBeenCalledTimes(1);
+        expect(tags.props("modelValue")).toEqual(["first", "second"]);
+
+        saves[0]!.resolve();
+        await flushPromises();
+        expect(tagsHandler).toHaveBeenCalledTimes(2);
+        expect(tagsHandler.mock.calls[1]![0].tags).toEqual(["first", "second"]);
+        saves[1]!.resolve();
+        await flushPromises();
+        expect(tags.props("modelValue")).toEqual(["first", "second"]);
     });
 
     it("pagination", async () => {

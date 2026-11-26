@@ -1,8 +1,7 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue } from "@tests/vitest/helpers";
+import { getLocalVue, withPlugins } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import { describe, expect, it, vi } from "vitest";
-import Vue from "vue";
 
 import { useServerMock } from "@/api/client/__mocks__";
 
@@ -12,8 +11,6 @@ vi.mock("@/onload", () => ({
     getAppRoot: () => "/",
 }));
 
-Vue.directive("localize", {});
-
 const { server, http } = useServerMock();
 
 describe("MarkdownVitessce.vue", () => {
@@ -22,6 +19,7 @@ describe("MarkdownVitessce.vue", () => {
             props: {
                 content: "{invalid",
             },
+            global: getLocalVue(),
             pinia: createTestingPinia({ createSpy: vi.fn }),
         });
         expect(wrapper.text()).toContain("SyntaxError");
@@ -48,6 +46,7 @@ describe("MarkdownVitessce.vue", () => {
             props: {
                 content: JSON.stringify(content),
             },
+            global: getLocalVue(),
         });
         expect(wrapper.text()).toContain("Data for rendering this Vitessce Dashboard is not yet available.");
     });
@@ -70,6 +69,7 @@ describe("MarkdownVitessce.vue", () => {
             props: {
                 content: JSON.stringify(content),
             },
+            global: getLocalVue(),
         });
         const config = wrapper.vm.visualizationConfig;
         expect(config.dataset_content.datasets[0].files[0].url).toBe("/api/datasets/123/display");
@@ -112,8 +112,7 @@ describe("MarkdownVitessce.vue", () => {
                 content: JSON.stringify(content),
             },
             global: {
-                ...localVue,
-                plugins: [...(localVue.plugins ?? []), pinia],
+                ...withPlugins(localVue, pinia),
                 components: {
                     ...(localVue.components ?? {}),
                     VisualizationWrapper: {

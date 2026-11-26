@@ -2,38 +2,12 @@
 import vue from "@vitejs/plugin-vue";
 import path from "path";
 import { fileURLToPath } from "url";
-import { defineConfig, type Plugin } from "vite";
+import { defineConfig } from "vite";
 
 import { i18nPlugin } from "./tests/vitest/test-plugin";
 import { yamlPlugin } from "./tests/vitest/yaml-plugin";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-
-/**
- * Plugin to redirect portal-vue imports to our mock.
- * portal-vue uses Vue.extend which doesn't exist in Vue 3.
- */
-function portalVueMockPlugin(): Plugin {
-    const mockPath = path.resolve(__dirname, "./tests/vitest/__mocks__/portal-vue.js");
-    return {
-        name: "portal-vue-mock",
-        enforce: "pre",
-        resolveId(source, importer) {
-            // Intercept any import of portal-vue
-            if (source === "portal-vue" || source.includes("node_modules/portal-vue")) {
-                return mockPath;
-            }
-            return null;
-        },
-        // Also handle load for files that slip through
-        load(id) {
-            if (id.includes("node_modules/portal-vue")) {
-                return `export * from "${mockPath}"; export { default } from "${mockPath}";`;
-            }
-            return null;
-        },
-    };
-}
 
 // List of modules that need to be transformed
 const modulesToTransform = [
@@ -60,6 +34,9 @@ const modulesToTransform = [
     // @vueuse reaches Vue through vue-demi's `export * from "vue"`.
     "vue-demi",
     "@vueuse",
+    // Icons call `inject()`, which only finds the rendering component through
+    // the same Vue instance.
+    "@lucide/vue",
     // The `vue` alias below points at compat's ESM build; inline it too so it's
     // one transformed module (with plugin-vue's feature-flag defines) rather
     // than a second copy Node loads on its own.
@@ -68,14 +45,13 @@ const modulesToTransform = [
 
 export default defineConfig({
     plugins: [
-        portalVueMockPlugin(), // Must be first to intercept portal-vue imports
         vue({
             template: {
                 compilerOptions: {
                     // Match the app build, see vite.config.mjs.
                     comments: false,
                     compatConfig: {
-                        MODE: 2,
+                        MODE: 3,
                     },
                 },
             },
@@ -113,15 +89,6 @@ export default defineConfig({
                 inline: modulesToTransform,
             },
         },
-        // Force these modules through Vite's transform pipeline
-        deps: {
-            optimizer: {
-                web: {
-                    // Exclude portal-vue from pre-bundling so our plugin can intercept it
-                    exclude: ["portal-vue"],
-                },
-            },
-        },
         // Use thread pool for faster test execution
         pool: "threads",
         // Test file patterns
@@ -144,8 +111,18 @@ export default defineConfig({
             vue: path.resolve(__dirname, "node_modules/@vue/compat/dist/vue.esm-bundler.js"),
             // Use ESM version of bootstrap-vue so Vite can transform its imports
             "bootstrap-vue": path.resolve(__dirname, "node_modules/bootstrap-vue/esm/index.js"),
-            // Mock portal-vue for Vue 3 compatibility (used by bootstrap-vue)
-            "portal-vue": path.resolve(__dirname, "./tests/vitest/__mocks__/portal-vue.js"),
+            // vue-fontawesome's Node entry is CJS, whose require("vue") loads a second Vue
+            // instance, so icons never re-render. Its ESM build imports the aliased Vue.
+            "@fortawesome/vue-fontawesome": path.resolve(
+                __dirname,
+                "node_modules/@fortawesome/vue-fontawesome/index.es.js",
+            ),
+            // @lucide/vue's Node entry is CJS too, whose `require("vue")` skips the `vue` alias.
+            "@lucide/vue": path.resolve(__dirname, "node_modules/@lucide/vue/dist/esm/lucide-vue.mjs"),
+            // portal-vue (bootstrap-vue's toasts) resolves to its UMD build here, which reads
+            // `Vue.extend` off the `vue` module namespace. Its ESM build, which the app uses,
+            // imports compat's default export instead.
+            "portal-vue": "portal-vue/dist/portal-vue.esm.js",
             // Match former Jest's module name mapping
             "@": path.resolve(__dirname, "./src"),
             "@tests": path.resolve(__dirname, "./tests"),
@@ -155,8 +132,6 @@ export default defineConfig({
             "viz/trackster$": path.resolve(__dirname, "./tests/vitest/__mocks__/trackster.js"),
             // Handle i18n imports
             "^i18n!(.*)": path.resolve(__dirname, "./tests/vitest/__mocks__/localization.js"),
-            // Handle handsontable
-            handsontable: "handsontable/dist/handsontable.js",
         },
         // Ensure .vue files are resolved
         extensions: [".js", ".ts", ".json", ".vue", ".yml", ".txt"],

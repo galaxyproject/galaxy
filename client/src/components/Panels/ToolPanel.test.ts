@@ -1,5 +1,5 @@
 import { getFakeRegisteredUser } from "@tests/test-data";
-import { getLocalVue } from "@tests/vitest/helpers";
+import { getLocalVue, withPlugins } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
@@ -150,10 +150,7 @@ describe("ToolPanel", () => {
                 workflow: false,
                 useSearchWorker: false,
             },
-            global: {
-                ...localVue,
-                plugins: [...(localVue.plugins ?? []), pinia],
-            },
+            global: withPlugins(localVue, pinia),
         });
 
         await flushPromises();

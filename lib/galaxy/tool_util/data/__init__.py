@@ -27,13 +27,13 @@ from tempfile import NamedTemporaryFile
 from typing import (
     Any,
     BinaryIO,
+    NotRequired,
     overload,
     TYPE_CHECKING,
     Union,
 )
 
 from typing_extensions import (
-    NotRequired,
     Protocol,
     TypedDict,
 )
@@ -382,6 +382,10 @@ class ToolDataTable(Dictifiable):
 
     def is_current_version(self, other_version):
         return self._loaded_content_version == other_version
+
+    def readable_by(self, *, trusted: bool) -> bool:
+        """Whether a tool of the given trust may read this table's entries."""
+        return trusted or self.user_accessible
 
     def get_fields(self) -> list[list[str]]:
         raise NotImplementedError("Abstract method")
@@ -1396,8 +1400,7 @@ class ToolDataTableManager(Dictifiable):
             log.debug(message, exc_info=True)
             return [], message
         self.to_xml_file(destination, table_elems)
-        names = list(staging.data_tables)
-        if names:
+        if names := list(staging.data_tables):
             try:
                 self.reload_tables(names)
             except Exception as exc:

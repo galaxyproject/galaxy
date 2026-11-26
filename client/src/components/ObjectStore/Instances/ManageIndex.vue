@@ -52,10 +52,10 @@ const { ConfigurationTestSummaryModal, showTestResults, testResults, test, testi
 <template>
     <div>
         <ConfigurationTestSummaryModal
-            :value="showTestResults"
+            :model-value="showTestResults"
             :error="testingError"
             :test-results="testResults"
-            @input="(v: boolean) => (showTestResults = v)" />
+            @update:model-value="(v: boolean) => (showTestResults = v)" />
 
         <ManageIndexHeader header="Galaxy Storage" :message="message" create-route="/object_store_instances/create" />
 

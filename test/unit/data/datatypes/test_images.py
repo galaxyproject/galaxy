@@ -109,6 +109,7 @@ test_tiff_depth_0 = __create_test(Tiff, "im1_uint8.tif", depth=0)  # axes: YXS
 test_tiff_depth_25 = __create_test(Tiff, "im7_uint8.tif", depth=25)  # axes: ZYX
 test_tiff_frames_0 = __create_test(Tiff, "im1_uint8.tif", frames=0)  # axes: YXS
 test_tiff_frames_5 = __create_test(Tiff, "im8_uint16.tif", frames=5)  # axes: TYX
+test_tiff_bigtiff_axes_yx = __create_test(Tiff, "bigtiff_le.tif", axes="YX", width=8, height=8)
 
 
 @__test(Tiff, "im_empty.tif")
@@ -158,6 +159,8 @@ def test_tiff_sniff():
         "im8_uint16.tif",
         "im6_uint8.tif",
         "im3_b.tif",
+        "bigtiff_le.tif",
+        "bigtiff_be.tif",
     ):
         fname = get_test_fname(filename)
         assert not Dicom().sniff(fname), f"filename: {filename}"

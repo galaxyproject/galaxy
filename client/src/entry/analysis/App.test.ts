@@ -91,12 +91,12 @@ it("applies the user's theme, falling back to the first configured theme", async
     user.currentTheme = "red";
     const wrapper = shallowMount(App, { localVue, router, pinia });
     await flushPromises();
-    expect(wrapper.find("#app").attributes("style")).toContain("--masthead-color: red");
+    expect(wrapper.attributes("style")).toContain("--masthead-color: red");
 
     // @ts-expect-error -- createTestingPinia makes getters writable
     user.currentTheme = "missing";
     await flushPromises();
-    expect(wrapper.find("#app").attributes("style")).toContain("--masthead-color: blue");
+    expect(wrapper.attributes("style")).toContain("--masthead-color: blue");
     wrapper.unmount();
 });
 
@@ -177,5 +177,17 @@ it("shows the inactivity warning for an inactive user when activation is on", as
     galaxy.instance.user = { id: "user-id", get: (key: string) => (key === "active" ? false : undefined) };
     const { wrapper } = await mountAt("/");
     expect(wrapper.find("#inactivebox").text()).toContain("Please verify your email.");
+    wrapper.unmount();
+});
+
+it("announces an error message box as an alert", async () => {
+    galaxy.instance.config.message_box_visible = true;
+    galaxy.instance.config.message_box_content = "Maintenance tonight";
+    galaxy.instance.config.message_box_class = "error";
+    const { pinia, localVue, router } = mountApp();
+    await router.push("/");
+    const wrapper = shallowMount(App, { localVue, router, pinia, global: { stubs: { GAlert: false } } });
+    await flushPromises();
+    expect(wrapper.get("#messagebox").attributes("role")).toBe("alert");
     wrapper.unmount();
 });

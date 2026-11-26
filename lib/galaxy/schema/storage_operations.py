@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 from typing import (
     Any,
 )
@@ -32,18 +32,18 @@ class Model(BaseModel):
     model_config = ConfigDict(populate_by_name=True, use_enum_values=True, protected_namespaces=())
 
 
-class StorageOperationMode(str, Enum):
+class StorageOperationMode(StrEnum):
     move = "move"
 
 
-class StorageOperationRunState(str, Enum):
+class StorageOperationRunState(StrEnum):
     pending = "pending"
     running = "running"
     completed = "completed"
     failed = "failed"
 
 
-class StorageOperationRunItemState(str, Enum):
+class StorageOperationRunItemState(StrEnum):
     pending = "pending"
     running = "running"
     succeeded = "succeeded"
@@ -51,7 +51,7 @@ class StorageOperationRunItemState(str, Enum):
     skipped = "skipped"
 
 
-class DatasetStorageOperationFailureReasonCode(str, Enum):
+class DatasetStorageOperationFailureReasonCode(StrEnum):
     dataset_not_found = "dataset_not_found"
     invalid_target_object_store = "invalid_target_object_store"
     missing_source_object_store = "missing_source_object_store"

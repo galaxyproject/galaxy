@@ -1,26 +1,25 @@
 <script setup lang="ts">
-import { BFormDatepicker, BFormInput, BInputGroup, BInputGroupAppend } from "bootstrap-vue";
+import { BFormDatepicker, BInputGroup, BInputGroupAppend } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
 import type { ErrorType, ValidFilter } from "@/utils/filtering";
 
-type FilterType = string | boolean | undefined;
+import GFormInput from "../BaseComponents/Form/GFormInput.vue";
 
 interface Props {
     name: string;
     identifier: any;
     error?: ErrorType;
     filter: ValidFilter<any>;
-    filters: {
-        [k: string]: FilterType;
-    };
+    /** Text values only: `FilterMenu` routes Boolean filters to `FilterMenuBoolean` */
+    filters: Record<string, string | undefined>;
     disabled?: boolean;
 }
 
 const props = defineProps<Props>();
 
 const emit = defineEmits<{
-    (e: "change", name: string, value: FilterType): void;
+    (e: "change", name: string, value: string | undefined): void;
     (e: "on-enter"): void;
     (e: "on-esc"): void;
 }>();
@@ -87,11 +86,11 @@ watch(
 
         <BInputGroup>
             <!---------------------------- GREATER THAN ---------------------------->
-            <BFormInput
+            <GFormInput
                 :id="`${props.identifier}-advanced-filter-${localNameGt}`"
                 v-model="localValueGt"
                 v-g-tooltip.focus.v-danger="hasError(localNameGt)"
-                size="sm"
+                size="small"
                 :state="hasError(localNameGt) ? false : null"
                 :placeholder="localPlaceholder('gt')"
                 :disabled="props.disabled"
@@ -104,11 +103,11 @@ watch(
             <!--------------------------------------------------------------------->
 
             <!---------------------------- LESSER THAN ---------------------------->
-            <BFormInput
+            <GFormInput
                 :id="`${props.identifier}-advanced-filter-${localNameLt}`"
                 v-model="localValueLt"
                 v-g-tooltip.focus.v-danger="hasError(localNameLt)"
-                size="sm"
+                size="small"
                 :state="hasError(localNameLt) ? false : null"
                 :placeholder="localPlaceholder('lt')"
                 :disabled="props.disabled"

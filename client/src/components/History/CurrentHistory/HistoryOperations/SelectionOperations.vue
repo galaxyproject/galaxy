@@ -121,10 +121,10 @@
             <p v-localize>Apply the following tags to {{ numSelected }} items:</p>
             <StatelessTags
                 :key="showAddTagsModal"
-                :value="selectedTags"
+                :model-value="selectedTags"
                 class="tags"
                 list-in-flow
-                @input="(tags) => (selectedTags = tags)" />
+                @update:model-value="(tags) => (selectedTags = tags)" />
             <GTip class="mt-2" :tips="['Press Enter after typing each tag.']" />
         </GModal>
         <GModal
@@ -138,10 +138,10 @@
             <p v-localize>Remove the following tags from {{ numSelected }} items:</p>
             <StatelessTags
                 :key="showRemoveTagsModal"
-                :value="selectedTags"
+                :model-value="selectedTags"
                 class="tags"
                 list-in-flow
-                @input="(tags) => (selectedTags = tags)" />
+                @update:model-value="(tags) => (selectedTags = tags)" />
             <GTip class="mt-2" :tips="['Press Enter after typing each tag.']" />
         </GModal>
         <StorageOperationWizardModal
@@ -157,6 +157,7 @@
             v-model:show="collectionModalShow"
             :history-id="history.id"
             :collection-type="collectionModalType"
+            :extended-collection-type="extendedCollectionType"
             :file-sources-configured="config.file_sources_configured"
             :filter-text="filterText"
             :selected-items="collectionSelection"
@@ -226,6 +227,7 @@ export default {
         isMultiViewItem: { type: Boolean, required: true },
         totalItemsInQuery: { type: Number, default: 0 },
     },
+    emits: ["update:show-selection", "update:operation-running", "operation-error"],
     setup() {
         const { config, isConfigLoaded } = useConfig();
         const { confirm } = useConfirmDialog();
@@ -273,6 +275,8 @@ export default {
             collectionModalShow: false,
             collectionModalType: null,
             collectionSelection: undefined,
+            // Only sample sheet builders read it, and the selection builds plain lists.
+            extendedCollectionType: {},
             selectedTags: [],
         };
     },

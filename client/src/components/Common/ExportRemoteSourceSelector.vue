@@ -46,12 +46,12 @@ const fileNameDescription = localize("Give the exported file a name.");
             <BFormGroup id="fieldset-directory" label-for="directory" :description="directoryDescription" class="mt-3">
                 <FilesInput
                     id="directory"
-                    :value="props.directory"
+                    :model-value="props.directory"
                     mode="directory"
                     :require-writable="true"
                     :filter-options="props.filterOptions"
                     data-test-id="export-destination-input"
-                    @input="emit('update:directory', $event)"
+                    @update:model-value="emit('update:directory', $event)"
                     @navigated="emit('navigated')" />
             </BFormGroup>
 

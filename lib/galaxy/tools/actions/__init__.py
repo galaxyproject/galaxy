@@ -22,7 +22,6 @@ from galaxy.exceptions import (
     AuthenticationRequired,
     ItemAccessibilityException,
     RequestParameterInvalidException,
-    ToolInputsNotReadyException,
 )
 from galaxy.job_execution.actions.post import ActionBox
 from galaxy.job_execution.output_format import (
@@ -67,6 +66,12 @@ from galaxy.tools.execution_helpers import (
     on_text_for_dataset_and_collections,
     ToolExecutionCache,
 )
+from galaxy.tools.job_parameters import (
+    CHROM_INFO,
+    DBKEY,
+    element_identifier_parameter,
+    is_element_identifier_parameter,
+)
 from galaxy.tools.parameters import update_dataset_ids
 from galaxy.tools.parameters.basic import (
     BaseDataToolParameter,
@@ -81,6 +86,10 @@ from galaxy.tools.parameters.wrapped import (
 )
 from galaxy.util import ExecutionTimer
 from galaxy.util.template import fill_template
+from galaxy.workflow.scheduling_dependencies import (
+    input_readiness_dependencies,
+    ToolInputsNotReadyWithDependencies,
+)
 
 if TYPE_CHECKING:
     from galaxy.model import (
@@ -346,9 +355,17 @@ class DefaultToolAction(ToolAction):
                 for ext in extensions:
                     if ext:
                         if ext in ("auto", "_sniff_"):
-                            if set(summary.states) & set(Dataset.non_ready_states):
-                                raise ToolInputsNotReadyException(
-                                    f"Extension '{ext}' not yet resolved, cannot use dataset collection as input"
+                            # A member that finished without resolving its datatype
+                            # must not hide another one that may still resolve.
+                            dependencies = input_readiness_dependencies(
+                                collection,
+                                states=(*Dataset.non_ready_states, Dataset.states.PAUSED),
+                                extensions=(ext,),
+                            )
+                            if dependencies:
+                                raise ToolInputsNotReadyWithDependencies(
+                                    f"Extension '{ext}' not yet resolved, cannot use dataset collection as input",
+                                    dependencies=dependencies,
                                 )
                         datatype = trans.app.datatypes_registry.get_datatype_by_extension(ext)
                         if not datatype:
@@ -541,7 +558,7 @@ class DefaultToolAction(ToolAction):
         # the input extensions, now it should just give "input" as the output
         # format.
         input_ext = "data" if Version(str(tool.profile)) < Version("16.04") else "input"
-        input_dbkey = incoming.get("dbkey", "?")
+        input_dbkey = incoming.get(DBKEY, "?")
         for name, data in reversed(list(inp_data.items())):
             if not data:
                 data = NoneDataset(datatypes_registry=app.datatypes_registry)
@@ -560,14 +577,14 @@ class DefaultToolAction(ToolAction):
 
             identifier = getattr(data, "element_identifier", None)
             if identifier is not None:
-                incoming[f"{name}|__identifier__"] = identifier
+                incoming[element_identifier_parameter(name)] = identifier
 
         # Collect chromInfo dataset and add as parameters to incoming
         chrom_info, db_dataset = execution_cache.get_chrom_info(tool.id, input_dbkey)
 
         if db_dataset:
-            inp_data.update({"chromInfo": db_dataset})
-        incoming["chromInfo"] = chrom_info
+            inp_data.update({CHROM_INFO: db_dataset})
+        incoming[CHROM_INFO] = chrom_info
 
         if not completed_job:
             # Determine output dataset permission/roles list
@@ -581,12 +598,19 @@ class DefaultToolAction(ToolAction):
                 access_action = app.security_agent.get_action("access")
                 if access_action in default_history_permissions and access_action not in output_permissions:
                     output_permissions[access_action] = default_history_permissions[access_action]
+                    # This restriction comes from the history defaults, not from the inputs, so the
+                    # history's default managers (usually the user) must be able to lift it again.
+                    manage_action = app.security_agent.get_action("manage permissions")
+                    output_managers = output_permissions.setdefault(manage_action, [])
+                    for role in default_history_permissions.get(manage_action, []):
+                        if role.id not in output_managers:
+                            output_managers.append(role.id)
             else:
                 # No valid inputs, we will use history defaults
                 output_permissions = default_history_permissions
 
         # Add the dbkey to the incoming parameters
-        incoming["dbkey"] = input_dbkey
+        incoming[DBKEY] = input_dbkey
         incoming["__input_ext"] = input_ext
         # wrapped params are used by change_format action and by output.label; only perform this wrapping once, as needed
         wrapped_params = self._wrapped_params(trans, tool, incoming, inp_data)
@@ -685,7 +709,8 @@ class DefaultToolAction(ToolAction):
             if completed_job:
                 data.blurb = completed_data.blurb
                 data.peek = completed_data.peek
-                data._metadata = completed_data._metadata
+                # Copy metadata files into rows this output owns, so purging completed_data keeps them.
+                data.metadata = completed_data.metadata
             else:
                 data.blurb = "queued"
             # Set output label
@@ -927,7 +952,7 @@ class DefaultToolAction(ToolAction):
                     if pja.action_type in ActionBox.immediate_actions:
                         ActionBox.execute(trans.app, trans.sa_session, pja, current_job, replacement_dict)
             for p in old_job.parameters:
-                if p.name.endswith("|__identifier__"):
+                if is_element_identifier_parameter(p.name):
                     current_job.parameters.append(p.copy())
             remapped_hdas = self.__remap_data_inputs(old_job=old_job, current_job=current_job)
             for jtod in old_job.output_datasets:

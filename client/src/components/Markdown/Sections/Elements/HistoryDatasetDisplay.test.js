@@ -8,6 +8,7 @@ import { reactive, ref } from "vue";
 import { useServerMock } from "@/api/client/__mocks__";
 import { copyDataset } from "@/api/datasets";
 import { testDatatypesMapper } from "@/components/Datatypes/test_fixtures";
+import { embedKey } from "@/composables/embed";
 import { Toast } from "@/composables/toast";
 import { useDatatypesMapperStore } from "@/stores/datatypesMapperStore";
 
@@ -71,14 +72,14 @@ describe("HistoryDatasetDisplay", () => {
     const text = { item_data: "some text" };
     const textMetaData = { extension: "txt", name: "someName", state: "ok", peek: "needs a peek" };
 
-    async function mountTarget(datasetId, metaData, content, propsData = {}) {
+    async function mountTarget(datasetId, metaData, content, propsData = {}, provide = {}) {
         server.resetHandlers();
         server.use(
             http.get("/api/datasets/{dataset_id}", ({ response }) => response(200).json(metaData)),
             http.get("/api/datasets/{dataset_id}/get_content_as_text", ({ response }) => response(200).json(content)),
         );
         wrapper = mount(HistoryDatasetDisplay, {
-            global: localVue,
+            global: { ...localVue, provide },
             propsData: { datasetId, ...propsData },
             pinia: setUpDatatypesStore(),
         });
@@ -127,6 +128,11 @@ describe("HistoryDatasetDisplay", () => {
         expect(wrapper.find(".card-header").exists()).toBe(true);
         await wrapper.setProps({ embedded: true });
         expect(wrapper.find(".card-header").exists()).toBe(false);
+    });
+
+    it("offers no import when embedded", async () => {
+        await mountTarget(textDatasetId, textMetaData, text, {}, { [embedKey]: ref(true) });
+        expect(wrapper.find(SELECTORS.IMPORT_BUTTON).exists()).toBe(false);
     });
 
     it("should expand dataset", async () => {

@@ -18,31 +18,27 @@ const { server, http } = useServerMock();
 setupMockConfig({});
 
 async function init(wrapper, data) {
+    await wrapper.find("#select-btn").trigger("click");
     // the file dialog modal should exist
     const filesDialogComponent = wrapper.findComponent(FilesDialog);
     expect(filesDialogComponent.exists()).toBe(true);
-    filesDialogComponent.vm.callback({ url: data.url });
-    // HACK: URL implementation in test environment is not the same as global node
-    wrapper.vm.pathChunks = [...data.pathChunks];
+    filesDialogComponent.props("callback")({ url: data.url });
     await flushPromises();
     await validateLatestEmittedPath(wrapper, data.url);
 }
 
 async function validateLatestEmittedPath(wrapper, expectedPath) {
-    const latestPath = emittedArg(wrapper, "input", -1);
+    const latestPath = emittedArg(wrapper, "update:modelValue", -1);
     expect(latestPath).toBe(expectedPath);
 
     // also manually change prop value to be able to test the value being displayed
-    await wrapper.setProps({ value: latestPath });
+    await wrapper.setProps({ modelValue: latestPath });
     const fullPathDisplayed = wrapper.find("[data-description='directory full path']");
     expect(fullPathDisplayed.text()).toBe(`Directory Path:${expectedPath}`);
 }
 
 describe("DirectoryPathEditableBreadcrumb", () => {
     let wrapper;
-    let spyOnUrlSet;
-    let spyOnAddPath;
-    let spyOnUpdateURL;
 
     const testingData = {
         url: "gxfiles://directory/subdirectory",
@@ -55,7 +51,6 @@ describe("DirectoryPathEditableBreadcrumb", () => {
 
     const testingDataWithSpecialChars = {
         url: "gxfiles://directory/sub directory/with%20percent",
-        pathChunks: [{ pathChunk: "directory" }, { pathChunk: "sub%20directory" }, { pathChunk: "with%2520percent" }],
     };
 
     const saveNewChunk = async (path) => {
@@ -71,27 +66,20 @@ describe("DirectoryPathEditableBreadcrumb", () => {
         return input;
     };
 
-    beforeEach(async () => {
-        spyOnUrlSet = vi.spyOn(FormDirectory.methods, "setUrl");
-        spyOnAddPath = vi.spyOn(FormDirectory.methods, "addPath");
-        spyOnUpdateURL = vi.spyOn(FormDirectory.methods, "updateURL");
+    async function mountFormDirectory(modelValue) {
+        wrapper?.unmount();
+        wrapper = mount(FormDirectory, { props: { modelValue }, global: localVue, pinia: createPinia() });
+        await flushPromises();
+    }
 
+    beforeEach(async () => {
         server.use(
             http.get("/api/remote_files/plugins", ({ response }) => {
                 return response(200).json(rootResponse);
             }),
         );
 
-        const pinia = createPinia();
-
-        wrapper = mount(FormDirectory, {
-            props: {
-                value: null,
-            },
-            global: localVue,
-            pinia,
-        });
-        await flushPromises();
+        await mountFormDirectory(null);
     });
     afterEach(async () => {
         if (wrapper) {
@@ -102,8 +90,7 @@ describe("DirectoryPathEditableBreadcrumb", () => {
 
     it("should render Breadcrumb", async () => {
         await init(wrapper, testingData);
-        // after initial folder is chosen, setUrl() should be called and modal disappear
-        expect(spyOnUrlSet).toHaveBeenCalled();
+        // after the initial folder is chosen, the modal disappears
         expect(wrapper.findComponent(FilesDialog).exists()).toBe(false);
         expect(wrapper.find("ol.breadcrumb").exists()).toBe(true);
 
@@ -142,7 +129,6 @@ describe("DirectoryPathEditableBreadcrumb", () => {
         const input = await saveNewChunk(validPath);
 
         await flushPromises();
-        expect(spyOnAddPath).toHaveBeenCalled();
         // after new entry is entered the value of input should be an empty string
         expect(input.element.value).toBe("");
 
@@ -162,20 +148,63 @@ describe("DirectoryPathEditableBreadcrumb", () => {
         await validateLatestEmittedPath(wrapper, testingData.url);
     });
 
-    it("should update new path", async () => {
-        await init(wrapper, testingData);
-        // enter a new path chunk
-        expect(spyOnUpdateURL).toHaveBeenCalled();
-        await saveNewChunk(validPath);
-        await flushPromises();
-
-        expect(spyOnUpdateURL).toHaveBeenCalled();
-    });
-
     it("should retain special characters in path", async () => {
         // the init function itself validates that the emits and path display
         // retain special characters in the url
         await init(wrapper, testingDataWithSpecialChars);
+    });
+
+    it("shows the directory it is mounted with, without changing the value", async () => {
+        const value = "gxfiles://directory/sub directory/with%percent";
+        await mountFormDirectory(value);
+
+        const pathChunks = wrapper.findAll("li.breadcrumb-item button.regular-path-chunk");
+        expect(pathChunks.map((chunk) => chunk.text())).toEqual(["directory", "sub directory", "with%percent"]);
+        expect(wrapper.find(".pathname").text()).toBe("gxfiles:");
+        expect(wrapper.emitted("update:modelValue")).toBeUndefined();
+    });
+
+    it("builds paths without an empty folder at a file source root", async () => {
+        await mountFormDirectory("gxftp://");
+        expect(wrapper.findAll("button.regular-path-chunk").length).toBe(0);
+
+        await saveNewChunk(validPath);
+        await flushPromises();
+        await validateLatestEmittedPath(wrapper, `gxftp://${validPath}`);
+    });
+
+    it("clears a value it cannot parse when mounting", async () => {
+        await mountFormDirectory("not a directory uri");
+
+        expect(wrapper.emitted("update:modelValue")).toEqual([[undefined]]);
+        expect(wrapper.find("#select-btn").exists()).toBe(true);
+    });
+
+    it("shows a directory the parent sets after mounting", async () => {
+        await mountFormDirectory("gxfiles://directory/subdirectory");
+        const input = wrapper.find("#path-input-breadcrumb");
+        await input.setValue("unsaved");
+
+        await wrapper.setProps({ modelValue: "gxftp://other" });
+
+        const pathChunks = wrapper.findAll("li.breadcrumb-item button.regular-path-chunk");
+        expect(pathChunks.map((chunk) => chunk.text())).toEqual(["other"]);
+        expect(wrapper.find(".pathname").text()).toBe("gxftp:");
+        expect(input.element.value).toBe("");
+        expect(wrapper.emitted("update:modelValue")).toBeUndefined();
+    });
+
+    it("shows the Select button when the parent clears the value", async () => {
+        await mountFormDirectory("gxfiles://directory/subdirectory");
+
+        await wrapper.setProps({ modelValue: null });
+
+        expect(wrapper.find("#select-btn").exists()).toBe(true);
+        expect(wrapper.find("ol.breadcrumb").exists()).toBe(false);
+    });
+
+    it("does not load the files dialog before Select is clicked", () => {
+        expect(wrapper.findComponent(FilesDialog).exists()).toBe(false);
     });
 
     it("should save on blur", async () => {
@@ -188,7 +217,6 @@ describe("DirectoryPathEditableBreadcrumb", () => {
         await input.trigger("blur");
         await flushPromises();
 
-        expect(spyOnAddPath).toHaveBeenCalled();
         expect(input.element.value).toBe("");
         expect(wrapper.findAll("li.breadcrumb-item").length).toBe(testingData.expectedNumberOfPaths + 1);
         await validateLatestEmittedPath(wrapper, `${testingData.url}/${validPath}`);

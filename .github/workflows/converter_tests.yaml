@@ -35,7 +35,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ['3.10']
+        python-version: ['3.11']
     steps:
       - if: github.event_name == 'schedule'
         run: |
@@ -56,6 +56,7 @@ jobs:
         with:
           version-file: galaxy root/.tool-versions
           python-version: ${{ matrix.python-version }}
+          prune-cache: true
       - name: Move test data
         run: rsync -av --remove-source-files --exclude .git galaxy-test-data/ 'galaxy root/test-data/'
       - name: Install planemo
@@ -68,6 +69,8 @@ jobs:
           echo "Checking only the following converters:"
           cat tool_list.txt
       - name: Lint converters
+        env:
+          DATATYPES_CONF: ${{ github.workspace }}/galaxy root/lib/galaxy/config/sample/datatypes_conf.xml.sample
         run: |
           mapfile -t TOOL_ARRAY < tool_list.txt
           planemo lint --skip CitationsMissing,HelpEmpty,HelpMissing --report_level warn "${TOOL_ARRAY[@]}"

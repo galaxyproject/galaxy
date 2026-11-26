@@ -158,7 +158,7 @@ interface Props {
      */
     dimWhenUnselected?: boolean;
 
-    /** Tooltip text for select checkbox
+    /** Tooltip text and accessible name for the select checkbox; defaults to "Select <title>"
      * @default ""
      */
     selectTitle?: string;
@@ -397,7 +397,16 @@ function measureTitle() {
     titleClamped.value = !!props.titleNLines && !!link && link.scrollHeight > link.clientHeight + 1;
 }
 
-const selectLabel = computed(() => props.selectTitle || localize("Select for bulk actions"));
+/**
+ * Accessible name and tooltip of the select checkbox: the select title if given, else one naming this card
+ */
+const selectLabel = computed(() => {
+    if (props.selectTitle) {
+        return props.selectTitle;
+    }
+    const cardTitle = typeof props.title === "object" ? props.title.label : localize(props.title);
+    return cardTitle ? `${localize("Select")} ${cardTitle}` : localize("Select for bulk actions");
+});
 
 const hasExtraActions = computed(() => props.extraActions?.some((ea) => ea.visible ?? true) ?? false);
 
@@ -718,11 +727,11 @@ function onKeyDown(event: KeyboardEvent) {
                                     <template v-for="indicator in props.indicators" :key="indicator.id">
                                         <GButton
                                             v-if="(indicator.visible ?? true) && !indicator.disabled"
+                                            v-bind="variantToColor(indicator.variant || 'link')"
                                             :id="getIndicatorId(props.id, indicator.id)"
                                             v-g-tooltip.hover
                                             class="inline-icon-button"
                                             :title="localize(indicator.title)"
-                                            v-bind="variantToColor(indicator.variant || 'link')"
                                             :size="sizeToGSize(indicator.size || 'sm')"
                                             :to="indicator.to"
                                             :href="indicator.href"
@@ -839,10 +848,10 @@ function onKeyDown(event: KeyboardEvent) {
                             :id="getElementId(props.id, 'tags')"
                             inline
                             :clickable="props.tagsEditable"
-                            :value="props.tags"
+                            :model-value="props.tags"
                             :disabled="!props.tagsEditable"
                             :max-visible-tags="props.maxVisibleTags"
-                            @input="emit('tagsUpdate', $event)"
+                            @update:model-value="emit('tagsUpdate', $event)"
                             @tag-click="emit('tagClick', $event)" />
                     </slot>
 
@@ -875,11 +884,11 @@ function onKeyDown(event: KeyboardEvent) {
                                     <template v-for="sa in props.secondaryActions" :key="sa.id">
                                         <GButton
                                             v-if="sa.visible ?? true"
+                                            v-bind="variantToColor(sa.variant || 'outline-primary')"
                                             :id="getActionId(props.id, sa.id)"
                                             v-g-tooltip.hover
                                             :disabled="sa.disabled"
                                             :title="localize(sa.title)"
-                                            v-bind="variantToColor(sa.variant || 'outline-primary')"
                                             :size="sizeToGSize(sa.size || 'sm')"
                                             :to="sa.to"
                                             :href="sa.href"
@@ -904,11 +913,11 @@ function onKeyDown(event: KeyboardEvent) {
                                         <template v-for="pa in props.primaryActions" :key="pa.id">
                                             <GButton
                                                 v-if="pa.visible ?? true"
+                                                v-bind="variantToColor(pa.variant || 'primary')"
                                                 :id="getActionId(props.id, pa.id)"
                                                 v-g-tooltip.hover
                                                 :disabled="pa.disabled"
                                                 :title="localize(pa.title)"
-                                                v-bind="variantToColor(pa.variant || 'primary')"
                                                 :size="sizeToGSize(pa.size || 'sm')"
                                                 :to="pa.to"
                                                 :href="pa.href"
