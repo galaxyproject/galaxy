@@ -13279,7 +13279,7 @@ export interface components {
         ExportRecordData: {
             /**
              * Ignore Errors
-             * @description Last resort. If True, skip serialization errors caused by missing provenance (e.g. orphan implicit collection job associations, null job param refs from older histories that pre-date collections) instead of failing. Exported data may be incomplete or corrupt.
+             * @description Last resort. If True, skip serialization errors caused by missing provenance (e.g. orphan implicit collection job associations, null job param refs from older histories that pre-date collections) instead of failing. For history exports, datasets in state ok whose file cannot be found in the object store are exported as discarded, without file contents. Exported data may be incomplete or corrupt.
              */
             ignore_errors?: boolean | null;
             /**
@@ -29342,7 +29342,7 @@ export interface components {
             bco_override_xref?: components["schemas"]["XrefItem"][] | null;
             /**
              * Ignore Errors
-             * @description Last resort. If True, skip serialization errors caused by missing provenance (e.g. orphan implicit collection job associations, null job param refs from older histories that pre-date collections) instead of failing. Exported data may be incomplete or corrupt.
+             * @description Last resort. If True, skip serialization errors caused by missing provenance (e.g. orphan implicit collection job associations, null job param refs from older histories that pre-date collections) instead of failing. For history exports, datasets in state ok whose file cannot be found in the object store are exported as discarded, without file contents. Exported data may be incomplete or corrupt.
              */
             ignore_errors?: boolean | null;
             /**
@@ -29378,7 +29378,7 @@ export interface components {
         WriteStoreToPayload: {
             /**
              * Ignore Errors
-             * @description Last resort. If True, skip serialization errors caused by missing provenance (e.g. orphan implicit collection job associations, null job param refs from older histories that pre-date collections) instead of failing. Exported data may be incomplete or corrupt.
+             * @description Last resort. If True, skip serialization errors caused by missing provenance (e.g. orphan implicit collection job associations, null job param refs from older histories that pre-date collections) instead of failing. For history exports, datasets in state ok whose file cannot be found in the object store are exported as discarded, without file contents. Exported data may be incomplete or corrupt.
              */
             ignore_errors?: boolean | null;
             /**

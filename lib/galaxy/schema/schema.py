@@ -2266,7 +2266,9 @@ class WriteStoreToPayload(StoreExportPayload):
             "Last resort. If True, skip serialization errors caused by missing "
             "provenance (e.g. orphan implicit collection job associations, null "
             "job param refs from older histories that pre-date collections) "
-            "instead of failing. Exported data may be incomplete or corrupt."
+            "instead of failing. For history exports, datasets in state ok whose "
+            "file cannot be found in the object store are exported as discarded, "
+            "without file contents. Exported data may be incomplete or corrupt."
         ),
     )
 

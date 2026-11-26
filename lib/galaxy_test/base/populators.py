@@ -2415,14 +2415,20 @@ class BaseDatasetPopulator(BasePopulator):
         return response.json()
 
     def export_history_to_uri_async(
-        self, history_id: str, target_uri: str, model_store_format: str = "tgz", include_files: bool = True
+        self,
+        history_id: str,
+        target_uri: str,
+        model_store_format: str = "tgz",
+        include_files: bool = True,
+        ignore_errors: bool | None = None,
     ):
         url = f"histories/{history_id}/write_store"
-        download_response = self._post(
-            url,
-            dict(target_uri=target_uri, include_files=include_files, model_store_format=model_store_format),
-            json=True,
+        payload: dict[str, Any] = dict(
+            target_uri=target_uri, include_files=include_files, model_store_format=model_store_format
         )
+        if ignore_errors is not None:
+            payload["ignore_errors"] = ignore_errors
+        download_response = self._post(url, payload, json=True)
         api_asserts.assert_status_code_is_ok(download_response)
         task_ok = self.wait_on_task(download_response)
         assert task_ok, f"Task: Writing history to {target_uri} task failed"
