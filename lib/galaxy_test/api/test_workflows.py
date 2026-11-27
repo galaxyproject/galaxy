@@ -7495,6 +7495,151 @@ input1:
             assert content["history_content_type"] == "dataset_collection", content
             assert name == "the_dataset_list suffix", name
 
+    @skip_without_tool("cat")
+    def test_run_rename_based_on_repeat_input_on_mapped_over_collection(self):
+        with self.dataset_populator.test_history() as history_id:
+            self._run_jobs(
+                """
+class: GalaxyWorkflow
+inputs:
+  input1:
+    type: collection
+    collection_type: list
+  input2: data
+steps:
+  first_cat:
+    tool_id: cat
+    state:
+      input1:
+        $link: input1
+      queries:
+        - input2:
+            $link: input2
+    outputs:
+      out_file1:
+        rename: "#{input2} and #{queries_0.input2 | basename} suffix"
+""",
+                test_data="""
+input1:
+  collection_type: list
+  name: the_dataset_list
+  elements:
+    - identifier: el1
+      value: 1.fastq
+      type: File
+input2:
+  value: 1.fasta
+  type: File
+  name: fasta2.fasta
+""",
+                history_id=history_id,
+            )
+            content = self.dataset_populator.get_history_collection_details(
+                history_id, hid=4, wait=True, assert_ok=True
+            )
+            assert content["history_content_type"] == "dataset_collection", content
+            assert content["name"] == "fasta2.fasta and fasta2 suffix", content["name"]
+
+    @skip_without_tool("mapper2")
+    def test_run_rename_based_on_conditional_and_unmapped_inputs_on_mapped_over_collection(self):
+        with self.dataset_populator.test_history() as history_id:
+            self._run_jobs(
+                """
+class: GalaxyWorkflow
+inputs:
+  fasta_input: data
+  fastq_input:
+    type: collection
+    collection_type: list
+steps:
+  mapping:
+    tool_id: mapper2
+    state:
+      fastq_input:
+        fastq_input_selector: single
+        fastq_input1:
+          $link: fastq_input
+      reference:
+        $link: fasta_input
+    outputs:
+      out_file1:
+        rename: "#{fastq_input.fastq_input1} and #{reference} suffix"
+""",
+                test_data="""
+fasta_input:
+  value: 1.fasta
+  type: File
+  name: fasta1
+  file_type: fasta
+fastq_input:
+  collection_type: list
+  name: the_fastq_list
+  elements:
+    - identifier: el1
+      value: 1.fastqsanger
+      type: File
+      ext: fastqsanger
+""",
+                history_id=history_id,
+            )
+            content = self.dataset_populator.get_history_collection_details(
+                history_id, hid=4, wait=True, assert_ok=True
+            )
+            assert content["history_content_type"] == "dataset_collection", content
+            assert content["name"] == "the_fastq_list and fasta1 suffix", content["name"]
+
+    @skip_without_tool("validation_empty_dataset")
+    def test_run_rename_based_on_multiple_input_on_mapped_over_collection(self):
+        with self.dataset_populator.test_history() as history_id:
+            self._run_jobs(
+                """
+class: GalaxyWorkflow
+inputs:
+  input1:
+    type: collection
+    collection_type: list
+  bed1: data
+  bed2: data
+steps:
+  validate:
+    tool_id: validation_empty_dataset
+    in:
+      input1: input1
+      input_mult:
+        - bed1
+        - bed2
+    outputs:
+      out_file1:
+        rename: "#{input_mult}, #{input_mult1} and #{input_mult2} suffix"
+""",
+                test_data="""
+input1:
+  collection_type: list
+  name: the_dataset_list
+  elements:
+    - identifier: el1
+      value: 1.bed
+      type: File
+      ext: txt
+bed1:
+  value: 1.bed
+  type: File
+  name: first.bed
+  file_type: txt
+bed2:
+  value: 2.bed
+  type: File
+  name: second.bed
+  file_type: txt
+""",
+                history_id=history_id,
+            )
+            content = self.dataset_populator.get_history_collection_details(
+                history_id, hid=5, wait=True, assert_ok=True
+            )
+            assert content["history_content_type"] == "dataset_collection", content
+            assert content["name"] == "first.bed, first.bed and second.bed suffix", content["name"]
+
     @skip_without_tool("collection_creates_pair")
     def test_run_rename_collection_output(self):
         with self.dataset_populator.test_history() as history_id:

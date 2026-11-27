@@ -2663,7 +2663,23 @@ class ToolModule(WorkflowModule):
         progress.set_step_outputs(invocation_step, step_outputs, already_persisted=not invocation_step.is_new)
 
         if collection_info:
-            step_inputs = mapping_params.param_template
+            # Inputs by prefixed name (``queries_0|input2``) for #{input} in new names, with mapped-over
+            # inputs as their collections.
+            step_inputs: dict[str, Any] = {}
+
+            def add_input(input: ToolParameter, prefixed_name: str, value: Any, **kwargs: Any) -> None:
+                if not (isinstance(input, DataToolParameter) and isinstance(value, list)):
+                    step_inputs[prefixed_name] = value
+                    return
+                # Name multiple="true" data inputs like a job's input datasets (galaxy.tools.actions):
+                # ``name`` for the first dataset, and ``name1``, ``name2``, ... for each one.
+                step_inputs[prefixed_name] = value[0] if value else None
+                for i, item in enumerate(value, start=1):
+                    step_inputs[f"{prefixed_name}{i}"] = item
+
+            # Without jobs (empty collection) there are only placeholders in the step's tool state to read.
+            if execution_tracker.param_combinations:
+                visit_input_values(tool_inputs, execution_tracker.param_combinations[0], add_input)
             step_inputs.update(collection_info.collections)
 
             self._handle_mapped_over_post_job_actions(
