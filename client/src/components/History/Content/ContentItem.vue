@@ -13,7 +13,6 @@ import { computed, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
 import type { ItemUrls } from "@/components/History/Content/Dataset/index";
-import { updateContentFields } from "@/components/History/model/queries";
 import { useWindowAwareNavigation } from "@/composables/windowAwareNavigation";
 import { useEntryPointStore } from "@/stores/entryPointStore";
 import DATASET_STATES from "@/utils/datasetStates";
@@ -21,6 +20,7 @@ import localize from "@/utils/localization";
 import { clearDrag } from "@/utils/setDrag";
 
 import { getContentItemState, isContentItemPurged, type State, STATES } from "./model/states";
+import { useContentItemTagSaves } from "./useContentItemTagSaves";
 
 import CollectionDescription from "./Collection/CollectionDescription.vue";
 import ContentExpirationIndicator from "./ContentExpirationIndicator.vue";
@@ -94,6 +94,11 @@ const entryPointStore = useEntryPointStore();
 
 const contentItem = ref<HTMLElement | null>(null);
 const subItemsVisible = ref(false);
+const onTags = useContentItemTagSaves(
+    () => props.item,
+    (item) => props.getItemKey(item),
+    (item, tags) => emit("tag-change", item, tags),
+);
 
 const itemIsRunningInteractiveTool = computed(() => {
     // If our dataset id is in the entrypOintStore it's a running it
@@ -286,11 +291,6 @@ function onView() {
 
 function onShowCollectionInfo() {
     router.push(itemUrls.value.showDetails!);
-}
-
-function onTags(newTags: string[]) {
-    emit("tag-change", props.item, newTags);
-    updateContentFields(props.item, { tags: newTags });
 }
 
 function onTagClick(tag: string) {
