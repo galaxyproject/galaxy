@@ -125,6 +125,19 @@ class CollectionTypeDescription:
 
         return self.collection_type[: -(len(subcollection_type) + 1)]
 
+    def split_collection_type(self, subcollection_type: str) -> str:
+        """Literal type this collection is split into when mapped over an input of ``subcollection_type``."""
+        collection_type = self.collection_type
+        if collection_type.endswith(f":{subcollection_type}"):
+            return subcollection_type
+        if subcollection_type == "paired_or_unpaired":
+            return "paired" if collection_type.endswith("paired") else "single_datasets"
+        if subcollection_type.endswith(":paired_or_unpaired"):
+            # X:paired_or_unpaired consumes X and X:paired
+            as_plain = subcollection_type[: -len(":paired_or_unpaired")]
+            return f"{as_plain}:paired" if collection_type.endswith(f":{as_plain}:paired") else as_plain
+        return subcollection_type
+
     def can_map_over(self, other_collection_type) -> bool:
         """Asymmetric nesting check: can this collection be mapped over to
         feed an input requiring ``other_collection_type``?

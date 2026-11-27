@@ -615,15 +615,45 @@ def test_map_over_paired_or_unpaired_with_list_of_lists(target_history: TargetHi
 
 @requires_tool_id("collection_list_paired_or_unpaired")
 def test_map_over_list_paired_or_unpaired_with_list_of_lists(
-    target_history: TargetHistory, required_tool: RequiredTool
+    target_history: TargetHistory, required_tool: RequiredTool, dataset_populator: DatasetPopulator
 ):
     hdca = target_history.with_example_list_of_lists()
+    options = _build_hdca_options(dataset_populator, "collection_list_paired_or_unpaired", target_history.id, "f1")
+    map_over_type = options[hdca.id]["map_over_type"]
     execute = required_tool.execute().with_inputs(
-        {"f1": {"batch": True, "values": [{"map_over_type": "list", **hdca.src_dict}]}}
+        {"f1": {"batch": True, "values": [{"map_over_type": map_over_type, **hdca.src_dict}]}}
     )
     execute.assert_has_n_jobs(1).assert_creates_n_implicit_collections(1)
     output_collection = execute.assert_creates_implicit_collection(0)
-    assert output_collection.details["collection_type"] == "list"
+    output_collection.assert_collection_type_is("list")
+    output_collection.assert_has_dataset_element("test0")
+    assert map_over_type == "list"
+
+
+@requires_tool_id("collection_list_paired_or_unpaired")
+def test_map_over_list_paired_or_unpaired_with_list_of_list_of_pairs(
+    target_history: TargetHistory, required_tool: RequiredTool, dataset_populator: DatasetPopulator
+):
+    hdca = target_history.with_example_list_of_list_of_pairs()
+    options = _build_hdca_options(dataset_populator, "collection_list_paired_or_unpaired", target_history.id, "f1")
+    map_over_type = options[hdca.id]["map_over_type"]
+    execute = required_tool.execute().with_inputs(
+        {"f1": {"batch": True, "values": [{"map_over_type": map_over_type, **hdca.src_dict}]}}
+    )
+    execute.assert_has_n_jobs(1).assert_creates_n_implicit_collections(1)
+    output_collection = execute.assert_creates_implicit_collection(0)
+    output_collection.assert_collection_type_is("list")
+    output_collection.assert_has_dataset_element("test0").with_contents_stripped("123\n456\n789\n0ab")
+    assert map_over_type == "list:paired"
+
+
+@requires_tool_id("__SAMPLE_SHEET_TO_TABULAR__")
+def test_build_does_not_list_list_of_lists_mapped_over_sample_sheet(
+    target_history: TargetHistory, required_tool: RequiredTool, dataset_populator: DatasetPopulator
+):
+    hdca = target_history.with_example_list_of_lists()
+    options = _build_hdca_options(dataset_populator, "__SAMPLE_SHEET_TO_TABULAR__", target_history.id, "input")
+    assert hdca.id not in options
 
 
 @requires_tool_id("collection_list_or_nested_list_input")
@@ -670,6 +700,12 @@ def test_simple_subcollection_mapping(
     output_collection = execute.assert_creates_implicit_collection(0)
     output_collection.assert_has_dataset_element("test0").with_contents_stripped("123\n456")
     output_collection.assert_has_dataset_element("test1").with_contents_stripped("789\n0ab")
+
+
+def _build_hdca_options(dataset_populator: DatasetPopulator, tool_id: str, history_id: str, input_name: str):
+    tool_state = dataset_populator.build_tool_state(tool_id, history_id)
+    tool_input = next(i for i in tool_state["inputs"] if i["name"] == input_name)
+    return {option["id"]: option for option in tool_input["options"]["hdca"]}
 
 
 @requires_tool_id("collection_paired_or_unpaired")

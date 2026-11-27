@@ -3159,15 +3159,8 @@ class DataCollectionToolParameter(BaseDataToolParameter):
             if column_definitions_ok:
                 entries.append(("direct", hdca, match.implicit_conversion, None))
         if hdca.visible:
-            can_map = history_query.can_map_over(hdca)
-            if can_map:
-                subcollection_type = can_map.collection_type
-                collection_type = hdca.collection.collection_type
-                if subcollection_type == "paired_or_unpaired" and not collection_type.endswith("paired_or_unpaired"):
-                    if collection_type.endswith("paired"):
-                        subcollection_type = "paired"
-                    else:
-                        subcollection_type = "single_datasets"
+            subcollection_type = history_query.map_over_type(hdca)
+            if subcollection_type:
                 entries.append(("multirun", hdca, match.implicit_conversion, subcollection_type))
         return entries or None
 
