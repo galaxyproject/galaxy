@@ -95,7 +95,7 @@ def recalculate_user_disk_usage(
         log.error("Recalculate user disk usage task received without user_id.")
 
 
-@galaxy_task(ignore_result=True, action="purge a history dataset")
+@galaxy_task(action="purge a history dataset")
 def purge_hda(
     hda_manager: HDAManager, hda_id: int, task_user_id: Optional[int] = None, preserve_owner_update_time: bool = False
 ):

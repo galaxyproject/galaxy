@@ -56,6 +56,7 @@ class TestPurgeDatasetsIntegration(integration_util.IntegrationTestCase):
         self._assert_status_code_is_ok(purge_response)
         purge_result = purge_response.json()
         assert purge_result["success_count"] == 1
+        self._wait_on_purge_tasks(purge_result)
 
     def _purge_hda_using_bulk(self, hda_id):
         payload = {
@@ -75,6 +76,12 @@ class TestPurgeDatasetsIntegration(integration_util.IntegrationTestCase):
         self._assert_status_code_is_ok(purge_response)
         purge_result = purge_response.json()
         assert purge_result["success_count"] == 1
+        self._wait_on_purge_tasks(purge_result)
+
+    def _wait_on_purge_tasks(self, purge_result: dict):
+        # The HDA is marked purged before the purge task removes its file.
+        assert len(purge_result["purge_tasks"]) == 1
+        self.dataset_populator.wait_on_purge_tasks(purge_result)
 
     def _get_underlying_dataset_on_disk(self, hda_id: str) -> Optional[str]:
         detailed_response = self._get(f"datasets/{hda_id}", admin=True).json()

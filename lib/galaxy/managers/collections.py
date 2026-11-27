@@ -8,6 +8,7 @@ from typing import (
 )
 from zipfile import ZipFile
 
+from celery.result import AsyncResult
 from sqlalchemy.orm import (
     joinedload,
     Query,
@@ -447,13 +448,16 @@ class DatasetCollectionManager:
     def collection_builder_for(self, dataset_collection):
         return builder.BoundCollectionBuilder(dataset_collection)
 
-    def delete(self, trans: ProvidesHistoryContext, instance_type, id, recursive=False, purge=False):
+    def delete(
+        self, trans: ProvidesHistoryContext, instance_type, id, recursive=False, purge=False
+    ) -> list[AsyncResult]:
+        """Delete a collection instance, returning the purge tasks of any datasets purged asynchronously."""
         dataset_collection_instance = self.get_dataset_collection_instance(
             trans, instance_type, id, check_ownership=True
         )
         dataset_collection_instance.deleted = True
         trans.sa_session.add(dataset_collection_instance)
-        async_result = None
+        purge_tasks: list[AsyncResult] = []
         if recursive:
             for dataset in dataset_collection_instance.collection.dataset_instances:
                 try:
@@ -468,9 +472,11 @@ class DatasetCollectionManager:
 
                 if purge and not dataset.purged:
                     async_result = self.hda_manager.purge(dataset, user=trans.user)
+                    if async_result is not None:
+                        purge_tasks.append(async_result)
 
         trans.sa_session.commit()
-        return async_result
+        return purge_tasks
 
     def update(self, trans: ProvidesHistoryContext, instance_type, id, payload):
         dataset_collection_instance = self.get_dataset_collection_instance(

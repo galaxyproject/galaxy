@@ -11,6 +11,7 @@ from typing import (
     Union,
 )
 
+from celery.result import AsyncResult
 from pydantic import (
     ConfigDict,
     Field,
@@ -295,6 +296,14 @@ class DeleteDatasetBatchResult(Model):
         description=(
             "A list of dataset IDs and the corresponding error message if something "
             "went wrong while processing the dataset."
+        ),
+    )
+    purge_tasks: list[AsyncTaskResultSummary] = Field(
+        default=[],
+        title="Purge Tasks",
+        description=(
+            "Background tasks purging the datasets. Wait for them to finish to know that the "
+            "underlying files have been removed. Empty if purging finished during the request."
         ),
     )
 
@@ -792,6 +801,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         """
         success_count = 0
         errors: list[DatasetErrorMessage] = []
+        purge_tasks: list[AsyncTaskResultSummary] = []
         for dataset in payload.datasets:
             try:
                 manager = self.dataset_manager_by_type[dataset.src]
@@ -801,7 +811,9 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
                 if dataset.src == DatasetSourceType.hda:
                     self.hda_manager.error_if_uploading(dataset_instance)
                 if payload.purge:
-                    manager.purge(dataset_instance, flush=True)
+                    purge_result = manager.purge(dataset_instance, flush=True)
+                    if isinstance(purge_result, AsyncResult):
+                        purge_tasks.append(async_task_summary(purge_result))
                 else:
                     manager.delete(dataset_instance, flush=False)
                 success_count += 1
@@ -815,7 +827,9 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
 
         if success_count:
             trans.sa_session.commit()
-        return DeleteDatasetBatchResult.model_construct(success_count=success_count, errors=errors)
+        return DeleteDatasetBatchResult.model_construct(
+            success_count=success_count, errors=errors, purge_tasks=purge_tasks
+        )
 
     def get_structured_content(
         self,
