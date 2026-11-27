@@ -75,6 +75,10 @@ class ToolOutputBase(Dictifiable):
     def output_discover_patterns(self) -> list[str]:
         return []
 
+    @property
+    def filter_expressions(self) -> list[str]:
+        return [(filter.text or "").strip() for filter in self.filters]
+
     @abc.abstractmethod
     def to_model(self) -> ToolOutputModel: ...
 
@@ -171,6 +175,7 @@ class ToolOutput(ToolOutputBase):
             name=self.name,
             label=self.label,
             hidden=self.hidden,
+            filters=self.filter_expressions,
             format=self.format,
             format_source=self.format_source,
             metadata_source=self.metadata_source,
@@ -249,6 +254,7 @@ class ToolExpressionOutput(ToolOutputBase):
             name=self.name,
             label=self.label,
             hidden=self.hidden,
+            filters=self.filter_expressions,
         )
 
 
@@ -384,6 +390,7 @@ class ToolOutputCollection(ToolOutputBase):
             name=self.name,
             label=self.label,
             hidden=self.hidden,
+            filters=self.filter_expressions,
             format=self.default_format,
             format_source=self.format_source,
             metadata_source=self.metadata_source,

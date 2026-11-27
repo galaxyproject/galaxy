@@ -7,7 +7,7 @@ import { canMutateHistory as canMutateHistoryMethod } from "@/api";
 import type { JobRequest, JobResponse } from "@/api/jobs";
 import type { ToolFormConfig } from "@/api/tools";
 import type { FormData, FormInputNode } from "@/components/Form/composables/useFormState";
-import type { DataOption } from "@/components/Form/Elements/FormData/types";
+import { type DataOption, mergeDataOptions } from "@/components/Form/Elements/FormData/types";
 import { findInputByDottedName } from "@/components/Form/utilities";
 import { useToast } from "@/composables/toast";
 import { useUserToolCredentials } from "@/composables/userToolCredentials";
@@ -308,7 +308,7 @@ async function onSearchChange(payload: { name: string; src: string; query: strin
 
 /**
  * Merge a freshly fetched page of options (from load-more or search) into
- * the matching parameter's option list, de-duplicating by ``id``/``src``.
+ * the matching parameter's option list, de-duplicating by ``src``/``id``/``map_over_type``.
  * Both callers merge rather than replace so the dropdown never empties out
  * from under an open multiselect (which would unmount its focused input),
  * and so a beyond-the-page selection stays visible. Refreshes the form
@@ -328,9 +328,7 @@ function mergeFetchedOptions(name: string, src: string, data: ToolFormConfig) {
     const newOptionsBySrc = newInput.options as Record<string, DataOption[]> | undefined;
     const existing = targetOptionsBySrc?.[src] ?? [];
     const incoming = newOptionsBySrc?.[src] ?? [];
-    const seen = new Set(existing.map((o) => `${o.id}_${o.src}`));
-    const merged = existing.concat(incoming.filter((o) => !seen.has(`${o.id}_${o.src}`)));
-    target.options = { ...target.options, [src]: merged };
+    target.options = { ...target.options, [src]: mergeDataOptions(existing, incoming) };
     if (newInput.options_meta && newInput.options_meta[src]) {
         target.options_meta = {
             ...(target.options_meta || {}),

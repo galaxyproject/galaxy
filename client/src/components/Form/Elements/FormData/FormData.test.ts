@@ -6,10 +6,11 @@ import { dispatchEvent, emittedArg, getLocalVue, nth } from "@tests/vitest/helpe
 import { mount } from "@vue/test-utils";
 import { describe, expect, it, vi } from "vitest";
 
+import type { SampleSheetColumnDefinition } from "@/api";
 import { useServerMock } from "@/api/client/__mocks__";
 import { testDatatypesMapper, typesAndMappingResponse } from "@/components/Datatypes/test_fixtures";
 import { useDatatypesMapperStore } from "@/stores/datatypesMapperStore";
-import { useEventStore } from "@/stores/eventStore";
+import { type EventData, useEventStore } from "@/stores/eventStore";
 
 import MountTarget from "./FormData.vue";
 
@@ -63,6 +64,54 @@ const defaultOptions = {
         { id: "hdca6", hid: 6, name: "hdcaName6", src: "hdca" },
     ],
 };
+
+function droppedHdca(collectionType: string, columnDefinitions?: SampleSheetColumnDefinition[]): EventData {
+    return {
+        id: "dropped",
+        hid: 9,
+        name: "dropped",
+        history_content_type: "dataset_collection",
+        collection_type: collectionType,
+        column_definitions: columnDefinitions,
+    };
+}
+
+function droppedCollectionElement(collectionType: string): EventData {
+    return {
+        id: "dropped",
+        element_identifier: "inner",
+        element_type: "dataset_collection",
+        object: { id: "child", collection_type: collectionType },
+    };
+}
+
+/** Drops an item on an empty collection input; returns the emitted value, or the alert if refused. */
+async function dropOnCollectionInput(
+    collectionTypes: string[] | null,
+    item: EventData,
+    props: Record<string, unknown> = {},
+) {
+    const wrapper = createTarget({
+        modelValue: null,
+        options: { hdca: [] },
+        type: "data_collection",
+        collectionTypes,
+        ...props,
+    });
+    await wrapper.vm.$nextTick();
+    const before = wrapper.emitted("update:modelValue")?.length ?? 0;
+    eventStore.setDragData(item);
+    dispatchEvent(wrapper, "dragenter");
+    dispatchEvent(wrapper, "drop");
+    const inputs = wrapper.emitted("update:modelValue")?.slice(before) ?? [];
+    const alerts = wrapper.emitted("alert") ?? [];
+    if (alerts.length) {
+        expect(inputs).toHaveLength(0);
+        return { alert: alerts[0]![0] };
+    }
+    expect(inputs).toHaveLength(1);
+    return inputs[0]![0];
+}
 
 const SELECT_OPTIONS = ".multiselect__element";
 const SELECTED_VALUE = ".multiselect__option--selected";
@@ -499,6 +548,150 @@ describe("FormData", () => {
         expect(wrapper.emitted("alert")).toBeUndefined();
     });
 
+    describe("dropped collections are matched to collection inputs like the server lists them", () => {
+        it.each([
+            ["list:list", ["list"], "list"],
+            ["list", null, null],
+            ["list:list", ["list", "list:list"], null],
+            ["sample_sheet:paired", ["paired"], "paired"],
+            ["list", [], null],
+            ["paired", ["paired_or_unpaired"], null],
+            ["list", ["list:paired_or_unpaired"], null],
+            ["list:paired", ["list:paired_or_unpaired"], null],
+            ["sample_sheet", ["list"], null],
+            ["list", ["paired_or_unpaired"], "single_datasets"],
+            ["list:paired", ["paired_or_unpaired"], "paired"],
+            ["list:list:list", ["list", "list:list"], "list:list"],
+            ["list:list", ["paired_or_unpaired"], "single_datasets"],
+            ["list:list:paired", ["paired_or_unpaired"], "paired"],
+            ["list:list", ["list:paired_or_unpaired"], "list"],
+            ["list:list:paired", ["list:paired_or_unpaired"], "list:paired"],
+            ["list:list:list", ["list:paired_or_unpaired"], "list"],
+            ["list:list:paired_or_unpaired", ["list:paired_or_unpaired"], "list:paired_or_unpaired"],
+            ["list:list", ["list:paired_or_unpaired", "paired_or_unpaired"], "list"],
+            ["list:list", ["sample_sheet", "list"], "list"],
+        ])(
+            "uses a dropped %s on a %j input with map_over_type %s",
+            async (collectionType, collectionTypes, mapOverType) => {
+                const value = await dropOnCollectionInput(collectionTypes, droppedHdca(collectionType));
+                expect(value).toEqual({
+                    batch: mapOverType !== null,
+                    product: false,
+                    values: [{ id: "dropped", map_over_type: mapOverType, src: "hdca" }],
+                });
+            },
+        );
+
+        it.each([
+            ["paired", ["list:paired_or_unpaired"]],
+            ["list:paired_or_unpaired", ["paired"]],
+            ["paired_or_unpaired", ["paired"]],
+            ["list:list", ["sample_sheet"]],
+            ["list:list", ["sample_sheet", "sample_sheet:paired_or_unpaired"]],
+        ])("refuses a dropped %s on a %j input", async (collectionType, collectionTypes) => {
+            const value = await dropOnCollectionInput(collectionTypes, droppedHdca(collectionType));
+            expect(value).toEqual({
+                alert: expect.stringContaining("dataset collection is not a valid input for"),
+            });
+        });
+
+        it.each([
+            ["list", ["list"], null],
+            ["list:list", ["list", "list:list"], null],
+            ["list:list", ["list"], "list"],
+            ["list", ["paired_or_unpaired"], "single_datasets"],
+            ["list:list", ["list:paired_or_unpaired"], "list"],
+        ])(
+            "uses a dropped element holding a %s on a %j input with map_over_type %s",
+            async (collectionType, collectionTypes, mapOverType) => {
+                const value = await dropOnCollectionInput(collectionTypes, droppedCollectionElement(collectionType));
+                expect(value).toEqual({
+                    batch: mapOverType !== null,
+                    product: false,
+                    values: [{ id: "dropped", map_over_type: mapOverType, src: "dce" }],
+                });
+            },
+        );
+
+        it.each([
+            ["paired", ["list"]],
+            ["paired_or_unpaired", ["paired"]],
+            ["list:list", ["sample_sheet"]],
+        ])("refuses a dropped element holding a %s on a %j input", async (collectionType, collectionTypes) => {
+            const value = await dropOnCollectionInput(collectionTypes, droppedCollectionElement(collectionType));
+            expect(value).toEqual({
+                alert: expect.stringContaining("dataset collection is not a valid input for"),
+            });
+        });
+
+        it("keeps a dropped element mapped over after the form refreshes its options", async () => {
+            const wrapper = createTarget({
+                modelValue: null,
+                options: { hdca: [] },
+                type: "data_collection",
+                collectionTypes: ["list"],
+            });
+            await wrapper.vm.$nextTick();
+            eventStore.setDragData(droppedCollectionElement("list:list"));
+            dispatchEvent(wrapper, "dragenter");
+            dispatchEvent(wrapper, "drop");
+            const dropped = emittedArg(wrapper, "update:modelValue", -1);
+            // the server lists the selected element without its map-over type
+            await wrapper.setProps({
+                modelValue: dropped,
+                options: { hdca: [], dce: [{ id: "dropped", hid: -1, name: "inner", src: "dce", tags: [] }] },
+            });
+            expect(emittedArg(wrapper, "update:modelValue", -1)).toEqual({
+                batch: true,
+                product: false,
+                values: [{ id: "dropped", map_over_type: "list", src: "dce" }],
+            });
+        });
+
+        describe("on a sample_sheet input with column definitions", () => {
+            const columnDefinitions: SampleSheetColumnDefinition[] = [
+                { name: "condition", type: "string", optional: false },
+            ];
+            const props = { extendedCollectionType: { columnDefinitions } };
+
+            it("uses a dropped sample_sheet with the same column definitions", async () => {
+                const value = await dropOnCollectionInput(
+                    ["sample_sheet"],
+                    droppedHdca("sample_sheet", columnDefinitions),
+                    props,
+                );
+                expect(value).toEqual({
+                    batch: false,
+                    product: false,
+                    values: [{ id: "dropped", map_over_type: null, src: "hdca" }],
+                });
+            });
+
+            it("refuses a dropped sample_sheet with other column definitions", async () => {
+                const otherColumns: SampleSheetColumnDefinition[] = [
+                    { name: "other", type: "string", optional: false },
+                ];
+                const value = await dropOnCollectionInput(
+                    ["sample_sheet"],
+                    droppedHdca("sample_sheet", otherColumns),
+                    props,
+                );
+                expect(value).toEqual({
+                    alert: "dataset collection has incompatible column definitions for this parameter.",
+                });
+            });
+
+            it("maps a dropped list:list over a list type without checking column definitions, like the server", async () => {
+                const value = await dropOnCollectionInput(["list", "sample_sheet"], droppedHdca("list:list"), props);
+                expect(value).toEqual({
+                    batch: true,
+                    product: false,
+                    values: [{ id: "dropped", map_over_type: "list", src: "hdca" }],
+                });
+            });
+        });
+    });
+
     it("linked and unlinked batch mode handling", async () => {
         const wrapper = createTarget({
             modelValue: null,
@@ -601,6 +794,168 @@ describe("FormData", () => {
         const selectedValues = wrapper.findAll(SELECTED_VALUE);
         expect(selectedValues.length).toBe(1);
         expect(nth(selectedValues, 0).text()).toContain("999: OldDataset");
+    });
+
+    describe("collection listed directly and mapped over", () => {
+        // An input accepting list and list:list lists a list:list collection twice.
+        const nested = { id: "hdca9", hid: 9, name: "nested", src: "hdca", tags: [] };
+        const nestedOptions = { hdca: [nested, { ...nested, map_over_type: "list" }] };
+        const directValue = {
+            batch: false,
+            product: false,
+            values: [{ id: "hdca9", map_over_type: null, src: "hdca" }],
+        };
+        const mapOverValue = {
+            batch: true,
+            product: false,
+            values: [{ id: "hdca9", map_over_type: "list", src: "hdca" }],
+        };
+
+        it("selecting the map-over entry emits it", async () => {
+            const wrapper = createTarget({
+                type: "data_collection",
+                modelValue: { values: [{ id: "hdca9", src: "hdca" }] },
+                options: nestedOptions,
+            });
+            expect(emittedArg(wrapper, "update:modelValue", 0)).toEqual(directValue);
+            await wrapper.vm.$nextTick();
+            await openMultiselect(wrapper);
+            const selectedValues = wrapper.findAll(SELECTED_VALUE);
+            expect(selectedValues.length).toBe(1);
+            expect(nth(selectedValues, 0).text()).toBe("9: nested");
+            await openMultiselect(wrapper);
+            const elements = wrapper.findAll(SELECT_OPTIONS);
+            expect(elements.length).toBe(2);
+            expect(nth(elements, 1).text()).toContain("9: nested (one job per list)");
+            await nth(elements, 1).find("span").trigger("click");
+            expect(wrapper.emitted("update:modelValue")!.length).toEqual(2);
+            expect(emittedArg(wrapper, "update:modelValue", 1)).toEqual(mapOverValue);
+            await wrapper.setProps({ modelValue: mapOverValue });
+            await openMultiselect(wrapper);
+            const reselected = wrapper.findAll(SELECTED_VALUE);
+            expect(reselected.length).toBe(1);
+            expect(nth(reselected, 0).text()).toContain("9: nested (one job per list)");
+            expect(wrapper.emitted("update:modelValue")!.length).toEqual(2);
+        });
+
+        it("shows only the map-over entry selected for a map-over value", async () => {
+            const wrapper = createTarget({
+                type: "data_collection",
+                modelValue: { values: [{ id: "hdca9", src: "hdca", map_over_type: "list" }] },
+                options: nestedOptions,
+            });
+            expect(emittedArg(wrapper, "update:modelValue", 0)).toEqual(mapOverValue);
+            await wrapper.vm.$nextTick();
+            await openMultiselect(wrapper);
+            const selectedValues = wrapper.findAll(SELECTED_VALUE);
+            expect(selectedValues.length).toBe(1);
+            expect(nth(selectedValues, 0).text()).toContain("9: nested (one job per list)");
+        });
+
+        it("resolves a value with an unlisted map-over type to the direct entry", async () => {
+            const wrapper = createTarget({
+                type: "data_collection",
+                modelValue: { values: [{ id: "hdca9", src: "hdca", map_over_type: "paired" }] },
+                options: nestedOptions,
+            });
+            expect(emittedArg(wrapper, "update:modelValue", 0)).toEqual(directValue);
+            await wrapper.vm.$nextTick();
+            await openMultiselect(wrapper);
+            const selectedValues = wrapper.findAll(SELECTED_VALUE);
+            expect(selectedValues.length).toBe(1);
+            expect(nth(selectedValues, 0).text()).toBe("9: nested");
+        });
+
+        it("leaves collections on a dataset input unlabelled", async () => {
+            const wrapper = createTarget({
+                modelValue: { values: [{ id: "hdca9", src: "hdca", map_over_type: "list" }] },
+                options: { hdca: [{ ...nested, map_over_type: "list" }] },
+            });
+            await wrapper.vm.$nextTick();
+            await openMultiselect(wrapper);
+            expect(wrapper.find(SELECTED_VALUE).text()).toBe("9: nested");
+        });
+
+        it("names what each mapped-over job receives", async () => {
+            const pairs = { id: "hdca10", hid: 10, name: "pairs", src: "hdca", map_over_type: "paired" };
+            const wrapper = createTarget({
+                type: "data_collection",
+                modelValue: null,
+                optional: true,
+                options: { hdca: [nested, { ...nested, map_over_type: "single_datasets" }, pairs] },
+            });
+            await wrapper.vm.$nextTick();
+            await openMultiselect(wrapper);
+            const labels = wrapper.findAll(SELECT_OPTIONS).map((element) => element.text());
+            expect(labels).toEqual([
+                "Nothing selected",
+                "9: nested",
+                "9: nested (one job per dataset)",
+                "10: pairs (one job per dataset pair)",
+            ]);
+        });
+    });
+
+    describe("dropped collection mapped over by the server", () => {
+        const dropped = { id: "hdca7", hid: 7, name: "dropped", src: "hdca", tags: [] };
+
+        function dragCollection(wrapper: ReturnType<typeof createTarget>, collectionType: string, event: string) {
+            eventStore.setDragData({
+                id: "hdca7",
+                hid: 7,
+                name: "dropped",
+                history_content_type: "dataset_collection",
+                collection_type: collectionType,
+            });
+            dispatchEvent(wrapper, event);
+        }
+
+        it.each([
+            ["a multiple dataset input", { multiple: true }, "list:list", "list", "7: dropped"],
+            [
+                "a collection input",
+                { type: "data_collection", collectionTypes: ["list", "list:list"] },
+                "list:list:list",
+                "list:list",
+                "7: dropped (one job per nested list)",
+            ],
+        ])(
+            "appears once on %s after the server lists it",
+            async (_, targetProps, collectionType, mapOverType, label) => {
+                const wrapper = createTarget({ ...targetProps, modelValue: null, options: { hdca: [] } });
+                dragCollection(wrapper, collectionType, "dragenter");
+                dragCollection(wrapper, collectionType, "drop");
+                await wrapper.setProps({ modelValue: emittedArg(wrapper, "update:modelValue", -1) });
+                await wrapper.setProps({ options: { hdca: [{ ...dropped, map_over_type: mapOverType }] } });
+                await openMultiselect(wrapper);
+                const labels = wrapper.findAll(SELECT_OPTIONS).map((element) => element.text());
+                expect(labels).toEqual([label]);
+                expect(emittedArg(wrapper, "update:modelValue", -1)).toEqual({
+                    batch: true,
+                    product: false,
+                    values: [{ id: "hdca7", src: "hdca", map_over_type: mapOverType }],
+                });
+            },
+        );
+
+        it("selects the listed entry on drop and warns when it is dragged again", async () => {
+            const wrapper = createTarget({
+                modelValue: null,
+                multiple: true,
+                options: { hdca: [{ ...dropped, map_over_type: "list" }] },
+            });
+            dragCollection(wrapper, "list:list", "dragenter");
+            dragCollection(wrapper, "list:list", "drop");
+            const value = emittedArg(wrapper, "update:modelValue", -1);
+            expect(value).toEqual({
+                batch: true,
+                product: false,
+                values: [{ id: "hdca7", src: "hdca", map_over_type: "list" }],
+            });
+            await wrapper.setProps({ modelValue: value });
+            dragCollection(wrapper, "list:list", "dragenter");
+            expect(emittedArg(wrapper, "alert", -1)).toBe("dropped is already selected.");
+        });
     });
 
     it("tagging filter", async () => {
@@ -838,6 +1193,22 @@ describe("FormData batch hint", () => {
             /^The supplied input will be .*mapped over this tool: one job per paired_or_unpaired collection\.$/,
         );
         expect(wrapper.find(`${BATCH_INFO} code`).text()).toBe("paired_or_unpaired");
+    });
+
+    it.each([
+        ["single_datasets", "dataset"],
+        ["paired", "dataset pair"],
+        ["list:list", "nested list"],
+    ])("names the same job unit in the selected %s row and the hint", async (mapOverType, unit) => {
+        const wrapper = createTarget({
+            type: "data_collection",
+            modelValue: { values: [{ id: "hdca9", src: "hdca", map_over_type: mapOverType }] },
+            options: { hdca: [{ id: "hdca9", hid: 9, name: "samples", src: "hdca", map_over_type: mapOverType }] },
+        });
+        await wrapper.vm.$nextTick();
+        await openMultiselect(wrapper);
+        expect(wrapper.find(SELECTED_VALUE).text()).toBe(`9: samples (one job per ${unit})`);
+        expect(batchInfoText(wrapper)).toMatch(new RegExp(`mapped over this tool: one job per ${unit}\\.$`));
     });
 
     it("names no job unit when several selected collections map over", async () => {
