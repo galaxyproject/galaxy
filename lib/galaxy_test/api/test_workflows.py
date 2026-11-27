@@ -1561,6 +1561,35 @@ steps:
         with self.dataset_populator.test_history() as history_id:
             assert self._download_workflow(workflow_id, style="run", history_id=history_id)["has_upgrade_messages"]
 
+    @skip_without_tool("gx_conditional_boolean")
+    def test_missing_conditional_selector_reports_dropped_values(self):
+        workflow_id = self.workflow_populator.upload_yaml_workflow(
+            """
+class: GalaxyWorkflow
+steps:
+  conditional:
+    tool_id: gx_conditional_boolean
+    state:
+      conditional_parameter:
+        integer_parameter: 5
+""",
+            client_convert=False,
+            fill_defaults=False,
+        )
+        editor = self._download_workflow(workflow_id, style="editor")
+        selector = "conditional_parameter|test_parameter"
+        message = editor["upgrade_messages"]["0"][selector]
+        assert "conditional_parameter|integer_parameter" in message
+        assert selector not in editor["filled_defaults"].get("0", {})
+        with self.dataset_populator.test_history() as history_id:
+            assert self._download_workflow(workflow_id, style="run", history_id=history_id)["has_upgrade_messages"]
+            request: dict[str, Any] = {"history_id": history_id}
+            response = self.workflow_populator.invoke_workflow_raw(workflow_id, request)
+            self._assert_status_code_is(response, 400)
+            assert "upgrade messages" in response.json()["err_msg"]
+            request["allow_tool_state_corrections"] = True
+            self.workflow_populator.invoke_workflow_raw(workflow_id, request, assert_ok=True)
+
     def test_refactor(self):
         workflow_id = self.workflow_populator.upload_yaml_workflow("""
 class: GalaxyWorkflow

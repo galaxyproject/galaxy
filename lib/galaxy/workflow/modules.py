@@ -148,6 +148,7 @@ from galaxy.tools.parameters.grouping import (
     Conditional,
     ConditionalWhen,
     Repeat,
+    Section,
 )
 from galaxy.tools.parameters.meta import to_decoded_json
 from galaxy.tools.parameters.options import ParameterOption
@@ -197,7 +198,10 @@ if TYPE_CHECKING:
     )
     from galaxy.model.dataset_collections import matching
     from galaxy.schema.invocation import InvocationMessageUnion
-    from galaxy.structured_app import StructuredApp
+    from galaxy.structured_app import (
+        MinimalManagerApp,
+        StructuredApp,
+    )
     from galaxy.work.context import WorkRequestContext
     from galaxy.workflow.run import WorkflowProgress
 
@@ -2776,6 +2780,45 @@ def same_form_value(form_value: Any, default: Any) -> bool:
     return form_value == default
 
 
+def _conditional_state_warnings(
+    inputs: ToolInputsT, state: dict[str, Any], app: "MinimalManagerApp", prefix: str = ""
+) -> dict[str, str]:
+    """Find conditional values that decoding will discard without a stored selector."""
+    warnings: dict[str, str] = {}
+    for input in inputs.values():
+        if not isinstance(input, (Conditional, Repeat, Section)):
+            continue
+        value = safe_loads(state.get(input.name))
+        name = f"{prefix}{input.name}"
+        if isinstance(input, Conditional) and isinstance(value, dict):
+            test_param = input.test_param
+            assert test_param is not None
+            try:
+                selector = test_param.value_from_basic(value.get(test_param.name), app, ignore_errors=True)
+                case = input.cases[input.get_current_case(selector)]
+            except (ValueError, TypeError, AttributeError):
+                case = None
+            if test_param.name not in value:
+                allowed = set(case.inputs) if case else set()
+                dropped = sorted(set(value) - allowed - {"__current_case__"})
+                if dropped:
+                    keys = ", ".join(f"'{name}|{key}'" for key in dropped)
+                    selected = f"case '{case.value}'" if case else "no valid case"
+                    warnings[f"{name}|{test_param.name}"] = (
+                        f"Conditional selector '{name}|{test_param.name}' was missing. "
+                        f"Values for {keys} were dropped when selecting {selected}."
+                    )
+            if case:
+                warnings.update(_conditional_state_warnings(case.inputs, value, app, f"{name}|"))
+        elif isinstance(input, Repeat) and isinstance(value, list):
+            for index, item in enumerate(value):
+                if isinstance(item, dict):
+                    warnings.update(_conditional_state_warnings(input.inputs, item, app, f"{name}_{index}|"))
+        elif isinstance(input, Section) and isinstance(value, dict):
+            warnings.update(_conditional_state_warnings(input.inputs, value, app, f"{name}|"))
+    return warnings
+
+
 class ToolModule(WorkflowModule):
     type = "tool"
     name = "Tool"
@@ -2836,6 +2879,8 @@ class ToolModule(WorkflowModule):
         self.runtime_post_job_actions: dict[str, Any] = {}
         self.workflow_outputs: list[dict[str, Any]] = []
         self.version_changes: list[str] = []
+        self._conditional_state_warnings: dict[str, str] = {}
+        self._unvalidated_state: dict[str, Any] = {}
 
     # ---- Creating modules from various representations ---------------------
 
@@ -2953,6 +2998,16 @@ class ToolModule(WorkflowModule):
         return module
 
     # ---- Saving in various forms ------------------------------------------
+
+    def get_state(self, nested=True):
+        state = super().get_state(nested=nested)
+        if self._conditional_state_warnings:
+            # Keep the original groups until review so reload can still detect lost values.
+            state = {
+                **state,
+                **{name: value if nested else json.dumps(value) for name, value in self._unvalidated_state.items()},
+            }
+        return state
 
     def save_to_step(self, step: WorkflowStep, detached=False):
         super().save_to_step(step, detached=detached)
@@ -3132,12 +3187,18 @@ class ToolModule(WorkflowModule):
             # Parameters that only lacked a value get their default and are not upgrade problems, unless the tool
             # version changed: then they may be new or renamed parameters, so they stay upgrade messages.
             self.filled_defaults = {}
-            return self.tool.check_and_update_param_values(
+            messages = self.tool.check_and_update_param_values(
                 self.state.inputs,
                 self.trans,
                 workflow_building_mode=True,
                 filled_defaults=None if self.version_changes else self.filled_defaults,
             )
+            messages.update(self._conditional_state_warnings)
+            for name in self._conditional_state_warnings:
+                self.filled_defaults.pop(name, None)
+            self._conditional_state_warnings = {}
+            self._unvalidated_state = {}
+            return messages
 
     def add_dummy_datasets(self, connections: Iterable[InputConnection] | None = None, steps=None):
         if self.tool:
@@ -3181,6 +3242,17 @@ class ToolModule(WorkflowModule):
         Sub-classes should supply a `default_state` method which contains the
         initial state `dict` with key, value pairs for all available attributes.
         """
+        state = dict(safe_loads(state) or {})
+        self._conditional_state_warnings = {}
+        self._unvalidated_state = {}
+        if self.tool and not kwds.get("from_tool_form", False):
+            self._conditional_state_warnings = _conditional_state_warnings(self.tool.inputs, state, self.trans.app)
+            if self._conditional_state_warnings:
+                self._unvalidated_state = {
+                    name: safe_loads(value)
+                    for name, value in state.items()
+                    if isinstance(self.tool.inputs.get(name), (Conditional, Repeat, Section))
+                }
         super().recover_state(state, **kwds)
         if kwds.get("fill_defaults", False) and self.tool:
             self.compute_runtime_state(self.trans, step=None, step_updates=None)
