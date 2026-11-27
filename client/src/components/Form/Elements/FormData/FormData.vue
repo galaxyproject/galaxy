@@ -12,7 +12,6 @@ import {
     isCollectionElement,
     isDatasetElement,
     isDCE,
-    isHDCA,
     isHistoryItem,
     type SampleSheetColumnDefinition,
 } from "@/api";
@@ -29,8 +28,16 @@ import { type EventData, useEventStore } from "@/stores/eventStore";
 import localize from "@/utils/localization";
 import { orList } from "@/utils/strings";
 
+import { matchCollectionType } from "./collectionMatch";
 import type { DataOption, ExtendedCollectionType } from "./types";
-import { containsDataOption, DEFAULT_OPTIONS_PAGE_SIZE, isDataOption } from "./types";
+import {
+    containsDataOption,
+    DEFAULT_OPTIONS_PAGE_SIZE,
+    findDataOption,
+    isDataOption,
+    isSameItem,
+    itemUniqueKey,
+} from "./types";
 import { BATCH, isBatchSelection, SOURCE, VARIANTS } from "./variants";
 
 import FormSelection from "../FormSelection.vue";
@@ -161,6 +168,11 @@ const validSrcs = computed(() => {
 });
 
 /**
+ * Collection types a collection input is restricted to, or null (unset or empty) if it accepts any collection
+ */
+const restrictedCollectionTypes = computed(() => (props.collectionTypes?.length ? props.collectionTypes : null));
+
+/**
  * Provides the currently shown source type
  */
 const currentSource = computed(() => (currentVariant.value ? currentVariant.value.src : null));
@@ -173,9 +185,7 @@ const currentValue = computed({
         const value: Array<DataOption> = [];
         if (props.value) {
             for (const v of props.value.values) {
-                const foundEntry = formattedOptions.value.find(
-                    (entry) => entry.value && entry.value.id === v.id && entry.value.src === v.src,
-                );
+                const foundEntry = findDataOption(formattedOptions.value, v, (entry) => entry.value);
                 if (foundEntry && foundEntry.value) {
                     value.push(foundEntry.value);
                     if (!currentVariant.value?.multiple) {
@@ -228,20 +238,14 @@ const mapsOver = computed(
 );
 
 /**
- * What each mapped over job receives for a single selected collection, e.g. a "dataset pair",
- * a `paired_or_unpaired` (`code`) collection or a dataset; unknown for multiple selections
+ * What each mapped over job receives for a single selected collection; unknown for multiple selections
  */
-const mapOverUnit = computed((): { code?: string; text: string } | null => {
+const mapOverUnit = computed((): MapOverUnit | null => {
     const [single, ...rest] = currentValue.value ?? [];
     if (!mapsOver.value || !single || rest.length > 0) {
         return null;
     }
-    const type = single.map_over_type;
-    if (!type || type === "single_datasets") {
-        return { text: localize("dataset") };
-    }
-    const label = COLLECTION_TYPE_TO_LABEL[type];
-    return label ? { text: localize(label.toLowerCase()) } : { code: type, text: localize("collection") };
+    return mapOverUnitFor(single.map_over_type);
 });
 
 /**
@@ -268,12 +272,11 @@ const formattedOptions = computed(() => {
         const result: Array<SelectOption> = [];
         options.forEach((option) => {
             const newOption = {
-                label: `${option.hid}: ${option.name}`,
+                label: `${option.hid}: ${option.name}${mapOverSuffix(option)}`,
                 value: option || null,
             };
             if (option.keep) {
-                const keepKey = `${option.id}_${option.src}`;
-                keepOptions[keepKey] = newOption;
+                keepOptions[itemUniqueKey(option)] = newOption;
             } else {
                 const accepted = !props.tag || option.tags?.includes(props.tag);
                 if (accepted) {
@@ -288,28 +291,33 @@ const formattedOptions = computed(() => {
             const otherOptions = [...pinnedForOther, ...(props.options[otherSource] || [])];
             if (Array.isArray(otherOptions)) {
                 otherOptions.forEach((option) => {
-                    const keepKey = `${option.id}_${option.src}`;
+                    const keepKey = itemUniqueKey(option);
                     const sourceLabel = getSourceLabel(getSourceType(option));
+                    // the server lists a selected element without the map-over type it was dropped with
+                    const mapOverType = option.map_over_type || keepOptions[keepKey]?.value?.map_over_type;
                     const newOption = {
                         label: `${option.name} (as ${sourceLabel})`,
-                        value: option || null,
+                        value: mapOverType ? { ...option, map_over_type: mapOverType } : option,
                     };
                     keepOptions[keepKey] = newOption;
                 });
             }
         }
         // Populate keep-options from cache
-        Object.entries(keepOptions).forEach(([key, option]) => {
-            if (option.value && getSourceType(option.value) === currentSource.value) {
-                // check if option (with same id) is already in result, if yes replace it with keepOption
-                const existingOptionIndex = result.findIndex((v) => v.value?.id === option.value?.id);
+        Object.values(keepOptions).forEach((option) => {
+            const keepValue = option.value;
+            if (keepValue && getSourceType(keepValue) === currentSource.value) {
+                // check if the same option is already in result, if yes replace it with keepOption
+                const key = itemUniqueKey(keepValue);
+                const existingOptionIndex = result.findIndex((v) => v.value && itemUniqueKey(v.value) === key);
                 if (existingOptionIndex >= 0) {
                     const existingOption = result[existingOptionIndex];
-                    if (existingOption?.value && shouldPreferCanonicalOption(existingOption.value, option.value)) {
+                    if (existingOption?.value && shouldPreferCanonicalOption(existingOption.value, keepValue)) {
                         return;
                     }
                     result[existingOptionIndex] = option;
-                } else {
+                } else if (!result.some((v) => v.value && isSameItem(v.value, keepValue))) {
+                    // the server's entry for the same item knows how it maps over, so it stands in for this one
                     result.unshift(option);
                 }
             }
@@ -468,8 +476,10 @@ function createValue(val?: Array<DataOption> | DataOption | null) {
     if (val) {
         let values = Array.isArray(val) ? val : [val];
 
-        // Remove duplicates based on item.id
-        values = values.filter((value, index, self) => index === self.findIndex((v) => v.id === value.id));
+        // Remove duplicates
+        values = values.filter(
+            (value, index, self) => index === self.findIndex((v) => itemUniqueKey(v) === itemUniqueKey(value)),
+        );
 
         if (variant.value && values.length > 0 && values[0]) {
             const isMultiple = values.length > 1;
@@ -510,6 +520,33 @@ function createValue(val?: Array<DataOption> | DataOption | null) {
     } else {
         return null;
     }
+}
+
+type MapOverUnit = { code?: string; text: string };
+
+/**
+ * What each mapped over job receives for a map-over type, e.g. a "dataset pair", a
+ * `paired_or_unpaired` (`code`) collection or a dataset
+ */
+function mapOverUnitFor(mapOverType?: string | null): MapOverUnit {
+    // ``single_datasets`` is also the server's map-over type for a plain list fed to a ``paired_or_unpaired`` input
+    if (!mapOverType || mapOverType === "single_datasets") {
+        return { text: localize("dataset") };
+    }
+    const label = COLLECTION_TYPE_TO_LABEL[mapOverType];
+    return label ? { text: localize(label.toLowerCase()) } : { code: mapOverType, text: localize("collection") };
+}
+
+/**
+ * Tells a collection input's map-over option apart from its direct option. Collections on a
+ * dataset input all map over, so they carry no suffix.
+ */
+function mapOverSuffix(option: DataOption): string {
+    if (props.type !== "data_collection" || !option.map_over_type) {
+        return "";
+    }
+    const { code, text } = mapOverUnitFor(option.map_over_type);
+    return ` (${localize("one job per")} ${code ? `${code} ` : ""}${text})`;
 }
 
 /**
@@ -578,20 +615,8 @@ function handleIncoming(incoming: SingleOrMultipleHistoryItems, partial = true) 
                 if (!newValue) {
                     return false;
                 }
-                // Verify that new value has corresponding option
-                const keepKey = `${newValue.id}_${newValue.src}`;
-                const existingOptions = props.options && props.options[newValue.src];
-                const foundOption = existingOptions && existingOptions.find((option) => option.id === newValue.id);
-                if (!foundOption && !isInKeepOptions(keepKey, newValue)) {
-                    keepOptions[keepKey] = {
-                        label: `${newValue.hid || "Selected"}: ${newValue.name}`,
-                        value: newValue,
-                    };
-                    // this is used to trigger an update on formattedOptions
-                    keepOptionsUpdate.value++;
-                }
-                // Add new value to list
-                incomingValues.push(newValue);
+                // Add the server-listed option (which knows how it maps over), keeping unlisted ones
+                incomingValues.push(normalizeOption(newValue));
             });
             let hasDuplicates = false;
             if (incomingValues.length > 0 && incomingValues[0]) {
@@ -628,7 +653,7 @@ function handleIncoming(incoming: SingleOrMultipleHistoryItems, partial = true) 
 }
 
 function toDataOption(item: HistoryOrCollectionItem): DataOption | null {
-    const { newSrc, datasetCollectionDataset } = getElementAttributes(item);
+    const { newSrc, datasetCollectionDataset, collectionType } = getElementAttributes(item);
 
     // for name, somehow even though schema says otherwise, DCESummary can return a name
     const newName = "name" in item && typeof item.name === "string" ? item.name : null;
@@ -651,20 +676,22 @@ function toDataOption(item: HistoryOrCollectionItem): DataOption | null {
         keep: true,
         tags: [],
     };
-    if (isHistoryItem(v) && isHDCA(v) && props.collectionTypes?.length > 0) {
-        const itemCollectionType = v.collection_type;
-        if (!props.collectionTypes.includes(itemCollectionType as CollectionType)) {
-            const mapOverType = props.collectionTypes.find((collectionType) =>
-                itemCollectionType.endsWith(collectionType),
-            );
-            if (!mapOverType) {
-                return null;
-            }
+    if (collectionType && restrictedCollectionTypes.value) {
+        const match = matchCollectionType(collectionType, restrictedCollectionTypes.value);
+        if (!match) {
+            return null;
+        }
+        if (match.mapOverType) {
             newValue["batch"] = true;
-            newValue["map_over_type"] = mapOverType;
+            newValue["map_over_type"] = match.mapOverType;
         }
     }
     return newValue;
+}
+
+/** Server-listed option for a value built on the client, preferring one mapped over the same way */
+function findExistingOption(value: DataOption): DataOption | undefined {
+    return findDataOption(props.options?.[value.src] ?? [], value, (option) => option);
 }
 
 /**
@@ -672,18 +699,17 @@ function toDataOption(item: HistoryOrCollectionItem): DataOption | null {
  * Returns the canonical option if found, otherwise returns the uploaded option.
  */
 function normalizeOption(option: DataOption): DataOption {
-    const keepKey = `${option.id}_${option.src}`;
-    const existingOptions = props.options?.[option.src];
-    const foundOption = existingOptions?.find((existing) => existing.id === option.id);
+    const foundOption = findExistingOption(option);
 
     if (foundOption) {
         return foundOption;
     }
 
     // Cache new option in keepOptions if not already present
+    const keepKey = itemUniqueKey(option);
     if (!isInKeepOptions(keepKey, option)) {
         keepOptions[keepKey] = {
-            label: `${option.hid || "Selected"}: ${option.name}`,
+            label: `${option.hid || "Selected"}: ${option.name}${mapOverSuffix(option)}`,
             value: option,
         };
         keepOptionsUpdate.value++;
@@ -919,41 +945,32 @@ function canAcceptSrc(
         if (!collectionType) {
             // Should always be set if item is dataset collection
             throw Error("Item is a dataset collection of unknown type.");
-        } else if (!props.collectionTypes) {
+        }
+        const inputTypes = restrictedCollectionTypes.value;
+        if (!inputTypes) {
             // if no collection_type is set all collections are valid
             return true;
-        } else {
-            if (props.collectionTypes.includes(collectionType as CollectionType)) {
-                // Check column_definitions compatibility for sample sheets
-                if (
-                    props.extendedCollectionType?.columnDefinitions &&
-                    !columnDefinitionsCompatible(columnDefinitions, props.extendedCollectionType.columnDefinitions)
-                ) {
-                    $emit("alert", "dataset collection has incompatible column definitions for this parameter.");
-                    return false;
-                }
-                return true;
-            }
-            if (props.collectionTypes.some((element) => collectionType.endsWith(element))) {
-                // Check column_definitions compatibility for sample sheets
-                if (
-                    props.extendedCollectionType?.columnDefinitions &&
-                    !columnDefinitionsCompatible(columnDefinitions, props.extendedCollectionType.columnDefinitions)
-                ) {
-                    $emit("alert", "dataset collection has incompatible column definitions for this parameter.");
-                    return false;
-                }
-                return true;
-            } else {
-                $emit(
-                    "alert",
-                    `${collectionTypeToText(collectionType)} dataset collection is not a valid input for ${orList(
-                        props.collectionTypes,
-                    )} type dataset collection parameter.`,
-                );
-                return false;
-            }
         }
+        const match = matchCollectionType(collectionType, inputTypes);
+        if (!match) {
+            $emit(
+                "alert",
+                `${collectionTypeToText(collectionType)} dataset collection is not a valid input for ${orList(
+                    inputTypes,
+                )} type dataset collection parameter.`,
+            );
+            return false;
+        }
+        // like the server, only directly used sample sheets must have compatible column_definitions
+        if (
+            match.mapOverType === null &&
+            props.extendedCollectionType?.columnDefinitions &&
+            !columnDefinitionsCompatible(columnDefinitions, props.extendedCollectionType.columnDefinitions)
+        ) {
+            $emit("alert", "dataset collection has incompatible column definitions for this parameter.");
+            return false;
+        }
+        return true;
     } else {
         throw Error("Unknown history content type.");
     }
@@ -1034,7 +1051,8 @@ function onDragEnter(evt: DragEvent) {
                 }
                 // Check if the item is already in the current value
                 const option = toDataOption(item);
-                const isAlreadyInValue = containsDataOption(currentValue.value ?? [], option);
+                const listedOption = option && (findExistingOption(option) ?? option);
+                const isAlreadyInValue = containsDataOption(currentValue.value ?? [], listedOption);
                 if (isAlreadyInValue) {
                     highlightingState = "warning";
                     $emit("alert", `${getNameForItem(item)} is already selected.`);
@@ -1102,9 +1120,7 @@ const matchedValues = computed(() => {
             if ("src" in entry && entry.src) {
                 const pageOptions = props.options[entry.src] || [];
                 const pinnedOptions = (props.pinned && props.pinned[entry.src]) || [];
-                const option =
-                    pageOptions.find((v) => v.id === entry.id && v.src === entry.src) ||
-                    pinnedOptions.find((v) => v.id === entry.id && v.src === entry.src);
+                const option = findDataOption([...pageOptions, ...pinnedOptions], entry, (v) => v);
                 if (option) {
                     const accepted = !props.tag || option.tags?.includes(props.tag);
                     if (accepted) {

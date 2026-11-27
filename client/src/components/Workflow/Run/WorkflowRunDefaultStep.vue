@@ -39,7 +39,7 @@ import { storeToRefs } from "pinia";
 import { computed, onBeforeUnmount, ref, watch } from "vue";
 
 import type { FormData, FormInputNode } from "@/components/Form/composables/useFormState";
-import type { DataOption } from "@/components/Form/Elements/FormData/types";
+import { type DataOption, mergeDataOptions } from "@/components/Form/Elements/FormData/types";
 import { findInputByDottedName, visitInputs } from "@/components/Form/utilities";
 import WorkflowIcons from "@/components/Workflow/icons";
 import { useHistoryItemsStore } from "@/stores/historyItemsStore";
@@ -220,18 +220,7 @@ function mergeFetchedOptions(name: string, src: string, newModel: { inputs: Step
     }
     const existing = (target.options as Record<string, DataOption[]> | undefined)?.[src] || [];
     const newOptions = (incoming.options as Record<string, DataOption[]> | undefined)?.[src] || [];
-    const seen = new Set(existing.map((option) => `${option.id}_${option.src}`));
-    const merged = existing.concat(
-        newOptions.filter((option) => {
-            const key = `${option.id}_${option.src}`;
-            if (seen.has(key)) {
-                return false;
-            }
-            seen.add(key);
-            return true;
-        }),
-    );
-    target.options = { ...target.options, [src]: merged };
+    target.options = { ...target.options, [src]: mergeDataOptions(existing, newOptions) };
     if (incoming.options_meta && incoming.options_meta[src]) {
         target.options_meta = {
             ...(target.options_meta || {}),
