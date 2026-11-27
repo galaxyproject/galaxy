@@ -17,7 +17,10 @@ from galaxy.exceptions import (
     MalformedContents,
     RequestParameterInvalidException,
 )
-from .util import MockDataset
+from .util import (
+    MockDataset,
+    MockMetadata,
+)
 
 
 @pytest.mark.parametrize("datatype", [CSV(), TSV()], ids=["csv", "tsv"])
@@ -113,8 +116,7 @@ def test_delimited_dataprovider_rejects_unclosed_quote(tmp_path, datatype):
     dataset = MockDataset(id=1)
     dataset.set_file_name(str(source))
     cast(Any, dataset).datatype = datatype
-    dataset.metadata.delimiter = delimiter
-    dataset.metadata.column_types = ["str", "int"]
+    dataset.metadata = MockMetadata(delimiter=delimiter, column_types=["str", "int"])
     with pytest.raises(MalformedContents, match="CSV reader error - line"):
         list(datatype.dataset_column_dataprovider(dataset, indeces=[0, 1], limit=2))
 
