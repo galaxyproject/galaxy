@@ -140,6 +140,30 @@ def test_data_meta_filter_on_a_table_that_is_not_installed_still_loads(table_sel
     assert param.get_options(trans, {}) == []
 
 
+def test_named_column_filter_with_unconfigured_table_fails_with_actionable_error(table_select):
+    xml = '<options from_data_table="refs_missing"><filter type="static_value" column="name" value="x"/></options>'
+    with pytest.raises(ValueError, match="data table 'refs_missing' is not configured on this server"):
+        table_select(xml)
+
+
+def test_numeric_column_filter_with_unconfigured_table_loads(table_select):
+    xml = '<options from_data_table="refs_missing"><filter type="static_value" column="1" value="x"/></options>'
+    param, trans = table_select(xml)
+    assert param.to_dict(trans)["options"] == []
+
+
+def test_named_column_filter_with_unknown_table_column_lists_available_columns(table_select):
+    xml = '<options from_data_table="refs"><filter type="static_value" column="nosuchcolumn" value="x"/></options>'
+    with pytest.raises(ValueError, match="is not a column of data table 'refs'; available columns"):
+        table_select(xml)
+
+
+def test_unconfigured_data_table_logs_warning_at_parse_time(table_select, caplog):
+    with caplog.at_level(logging.WARNING, logger="galaxy.tools.parameters.dynamic_options"):
+        table_select('<options from_data_table="refs_missing"/>')
+    assert any(record.levelno == logging.WARNING and "refs_missing" in record.message for record in caplog.records)
+
+
 def test_non_table_dropdown_keeps_duplicate_values(table_select):
     _, trans = table_select()
     tool = cast("Tool", Bunch(app=trans.app, profile=26.1, ref_lines=["hg38\tFirst\n", "hg38\tSecond\n"]))

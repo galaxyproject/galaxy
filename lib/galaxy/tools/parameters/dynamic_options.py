@@ -670,7 +670,18 @@ class DynamicOptions:
         self._tool_data_table = None
         self.elem = elem
         self.column_elem = elem.find("column")
-        self.tool_data_table  # noqa: B018 Need to touch tool data table once to populate self.columns
+        # Need to touch tool data table once to populate self.columns
+        table = self.tool_data_table
+        if self.tool_data_table_name and table is None and getattr(self.tool_param, "tool", None) is not None:
+            log.warning(
+                "Tool '%s' (parameter '%s') references data table '%s', which is not configured on this "
+                "server; the dynamic options of this parameter will be empty until the table is configured. "
+                "Check tool_data_table_conf.xml / shed_tool_data_table_conf.xml and make sure the "
+                "corresponding data manager has been installed and run.",
+                getattr(self.tool_param.tool, "name", None),
+                getattr(self.tool_param, "name", None),
+                self.tool_data_table_name,
+            )
 
         # Options are defined by parsing tabular text data from a data file
         # on disk, a dataset, or the value of another parameter
@@ -1047,7 +1058,35 @@ class DynamicOptions:
         if column_spec in self.columns:
             return self.columns[column_spec]
         # Int?
-        return int(column_spec)
+        try:
+            return int(column_spec)
+        except ValueError:
+            raise ValueError(self._invalid_column_spec_message(column_spec)) from None
+
+    def _invalid_column_spec_message(self, column_spec) -> str:
+        """Build an actionable error message for a column spec that is neither a known
+        column name nor a valid integer index."""
+        tool = getattr(self.tool_param, "tool", None)
+        tool_name = getattr(tool, "name", None) if tool is not None else None
+        param_name = getattr(self.tool_param, "name", None)
+        where = f" in tool '{tool_name}' (parameter '{param_name}')" if tool_name else ""
+        available = sorted(self.columns) if self.columns else "none"
+        if self.tool_data_table_name:
+            if self.tool_data_table is None:
+                return (
+                    f"Column specification {column_spec!r}{where} cannot be resolved: data table "
+                    f"'{self.tool_data_table_name}' is not configured on this server. Configure the table "
+                    f"(tool_data_table_conf.xml / install and run the corresponding data manager) or use "
+                    f"a numeric column index."
+                )
+            return (
+                f"Column specification {column_spec!r}{where} is not a column of data table "
+                f"'{self.tool_data_table_name}'; available columns: {available}."
+            )
+        return (
+            f"Column specification {column_spec!r}{where} is neither a defined <column> name "
+            f"(available: {available}) nor a valid integer index."
+        )
 
 
 REQUEST_METHODS = Literal["GET", "POST"]
