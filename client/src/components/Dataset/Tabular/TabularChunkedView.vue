@@ -14,6 +14,7 @@ interface TabularChunk {
     ck_data: string;
     offset: number;
     data_line_offset: number;
+    column_names?: (string | null)[];
 }
 
 interface TabularDataset extends HDADetailed {
@@ -37,14 +38,15 @@ const tabularData = reactive<{ rows: string[][] }>({
     rows: [],
 });
 
+// Column names from the server, the same ones the dataset peek shows. Every chunk carries them.
+const chunkColumnNames = ref<(string | null)[]>();
+
 const columns = computed(() => {
     const columns = Array(props.options.metadata_columns);
-    // for each column_name, inject header
-    if (props.options.metadata_column_names && props.options.metadata_column_names?.length > 0) {
-        props.options.metadata_column_names.forEach((column_name, index) => {
-            columns[index] = column_name;
-        });
-    }
+    const columnNames = chunkColumnNames.value ?? props.options.metadata_column_names ?? [];
+    columnNames.forEach((columnName, index) => {
+        columns[index] = columnName ?? undefined;
+    });
     return columns;
 });
 
@@ -62,10 +64,24 @@ const fieldKeys = computed(() => {
     return Array.from({ length: columns.value.length }, (_, index) => `column_${index}`);
 });
 
+const headers = computed(() => {
+    return fieldKeys.value.map((key, index) => {
+        const name = columns.value[index];
+        const label = name ? `Column ${index + 1}: ${name}` : `Column ${index + 1}`;
+        return { key, number: index + 1, name, label, title: `${label}. Galaxy metadata, not part of the file.` };
+    });
+});
+
+function headSlot(key: string) {
+    return `head(${key})`;
+}
+
 const fields = computed<TableField[]>(() => {
-    return fieldKeys.value.map((key, index) => ({
-        key,
-        label: columns.value[index] || `Column ${index + 1}`,
+    return headers.value.map((header, index) => ({
+        key: header.key,
+        // plain-text label; the head slot in the template renders the number and the name
+        label: header.label,
+        headerClass: "column-index-header",
         cellClass: columnStyle.value[index],
     }));
 });
@@ -101,6 +117,9 @@ watch(y, (newY) => {
 });
 
 function processChunk(chunk: TabularChunk) {
+    if (chunk.column_names) {
+        chunkColumnNames.value = chunk.column_names;
+    }
     // parsedChunk is a 2d array of strings
     let parsedChunk = [];
     try {
@@ -194,14 +213,28 @@ onMounted(() => {
 <template>
     <div>
         <!-- TODO loading spinner locked to top right -->
-        <GTable
-            compact
-            hover
-            striped
-            head-variant="dark"
-            :fields="fields"
-            :hide-header="props.options.file_ext === 'tabular'"
-            :items="tableRows"
-            :load-more-loading="loading" />
+        <GTable compact hover striped :fields="fields" :items="tableRows" :load-more-loading="loading">
+            <!-- same markup as column_index_header_cell() in lib/galaxy/datatypes/tabular.py -->
+            <template v-for="header in headers" v-slot:[headSlot(header.key)]>
+                <span :key="header.key" class="column-index" :title="header.title">
+                    <span class="column-number">{{ header.number }}</span>
+                    <span v-if="header.name" class="column-name">{{ header.name }}</span>
+                </span>
+            </template>
+        </GTable>
     </div>
 </template>
+
+<style scoped lang="scss">
+@import "@/style/scss/theme/blue.scss";
+@import "@/style/scss/_column-index.scss";
+
+:deep(.g-table thead th.column-index-header) {
+    @include column-index-header;
+    padding: 0.25rem 0.75rem;
+    font-size: 0.85em;
+}
+:deep(.g-table tbody td) {
+    @include column-index-data-cell;
+}
+</style>

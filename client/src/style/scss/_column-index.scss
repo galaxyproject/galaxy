@@ -1,0 +1,27 @@
+// Galaxy's column index above tabular peeks and previews: the column number and, when known,
+// the column name. It is styled like spreadsheet column letters, apart from the dataset's lines.
+// Expects the theme variables (theme/blue.scss) to be imported first.
+@mixin column-index-header {
+    color: $text-muted;
+    background: $gray-300;
+    font-weight: normal;
+    text-align: left;
+    border-bottom: 1px solid $border-color;
+    // copied table text holds only the dataset's lines
+    user-select: none;
+    // mark where each column starts, like spreadsheet gridlines
+    border-right: 1px solid $border-color;
+
+    &:last-child {
+        border-right: none;
+    }
+}
+
+// lighter column lines through the data rows, so adjacent cells stay apart
+@mixin column-index-data-cell {
+    border-right: 1px solid $gray-300;
+
+    &:last-child {
+        border-right: none;
+    }
+}

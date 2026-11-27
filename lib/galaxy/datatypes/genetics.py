@@ -40,7 +40,10 @@ from galaxy.datatypes.sniff import (
     build_sniff_from_prefix,
     FilePrefix,
 )
-from galaxy.datatypes.tabular import Tabular
+from galaxy.datatypes.tabular import (
+    column_index_header_cell,
+    Tabular,
+)
 from galaxy.datatypes.text import Html
 from galaxy.util import (
     nice_size,
@@ -158,7 +161,7 @@ class GenomeGraphs(Tabular):
             out.append("<tr>")
             if hasheader:
                 for i, name in enumerate(d[0].split()):
-                    out.append(f"<th>{i + 1}.{name}</th>")
+                    out.append(column_index_header_cell(str(i + 1), name))
                 d.pop(0)
                 out.append("</tr>")
             for row in d:
