@@ -86,11 +86,11 @@ class MapOverPlanner:
                 if not progress.subworkflow_structure and history_query.direct_match(data):
                     continue
 
-                subcollection_type_description = history_query.can_map_over(data) or None
+                map_over_type = history_query.map_over_type(data)
+                subcollection_type_description = (
+                    dataset_collection_type_descriptions.for_collection_type(map_over_type) if map_over_type else None
+                )
                 if subcollection_type_description:
-                    subcollection_type_description = self._concrete_subcollection_type(
-                        subcollection_type_description, data
-                    )
                     subcollection_type_description = self._consume_outer_structure(
                         subcollection_type_description, remaining_outer_types
                     )
@@ -133,21 +133,6 @@ class MapOverPlanner:
             )
             remaining_outer_types.pop(0)
         return remaining_outer_types
-
-    def _concrete_subcollection_type(self, subcollection_type_description, data):
-        """Translate paired_or_unpaired to a concrete mapping type for flat collections.
-
-        Mirrors ``DataCollectionToolParameter._classify_hdca`` in
-        ``galaxy.tools.parameters.basic``, which the API tool execution path
-        uses.
-        """
-        subcollection_type = subcollection_type_description.collection_type
-        input_collection_type = data.collection.collection_type
-        if subcollection_type == "paired_or_unpaired" and not input_collection_type.endswith("paired_or_unpaired"):
-            type_descriptions = self.trans.app.dataset_collection_manager.collection_type_descriptions
-            concrete_type = "paired" if input_collection_type.endswith("paired") else "single_datasets"
-            subcollection_type_description = type_descriptions.for_collection_type(concrete_type)
-        return subcollection_type_description
 
     def _consume_outer_structure(self, subcollection_type_description, remaining_outer_types: list[str]):
         """Fold outer levels reserved by ``_reserve_outer_structure`` into the mapping.

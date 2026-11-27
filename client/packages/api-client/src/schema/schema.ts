@@ -26066,6 +26066,11 @@ export interface components {
         /** ToolOutputBoolean */
         ToolOutputBoolean: {
             /**
+             * Filters
+             * @description Raw filter expressions from the tool definition. All must evaluate to true for the output to be produced. An empty list means the output is unconditional.
+             */
+            filters?: string[];
+            /**
              * Hidden
              * @description Hide the output in the history. The dataset is still created and usable by other tools and workflows.
              */
@@ -26110,6 +26115,11 @@ export interface components {
                       | components["schemas"]["ToolProvidedMetadataDatasetCollection"]
                   )[]
                 | null;
+            /**
+             * Filters
+             * @description Raw filter expressions from the tool definition. All must evaluate to true for the output to be produced. An empty list means the output is unconditional.
+             */
+            filters?: string[];
             /**
              * Format
              * @description Default datatype extension assigned to collection elements.
@@ -26164,6 +26174,11 @@ export interface components {
                   )[]
                 | null;
             /**
+             * Filters
+             * @description Raw filter expressions from the tool definition. All must evaluate to true for the output to be produced. An empty list means the output is unconditional.
+             */
+            filters?: string[];
+            /**
              * Format
              * @description Galaxy datatype extension assigned when the command always produces a fixed representation. Use `format_source` instead when the datatype depends on an input.
              */
@@ -26213,6 +26228,11 @@ export interface components {
         /** ToolOutputFloat */
         ToolOutputFloat: {
             /**
+             * Filters
+             * @description Raw filter expressions from the tool definition. All must evaluate to true for the output to be produced. An empty list means the output is unconditional.
+             */
+            filters?: string[];
+            /**
              * Hidden
              * @description Hide the output in the history. The dataset is still created and usable by other tools and workflows.
              */
@@ -26236,6 +26256,11 @@ export interface components {
         /** ToolOutputInteger */
         ToolOutputInteger: {
             /**
+             * Filters
+             * @description Raw filter expressions from the tool definition. All must evaluate to true for the output to be produced. An empty list means the output is unconditional.
+             */
+            filters?: string[];
+            /**
              * Hidden
              * @description Hide the output in the history. The dataset is still created and usable by other tools and workflows.
              */
@@ -26258,6 +26283,11 @@ export interface components {
         };
         /** ToolOutputText */
         ToolOutputText: {
+            /**
+             * Filters
+             * @description Raw filter expressions from the tool definition. All must evaluate to true for the output to be produced. An empty list means the output is unconditional.
+             */
+            filters?: string[];
             /**
              * Hidden
              * @description Hide the output in the history. The dataset is still created and usable by other tools and workflows.

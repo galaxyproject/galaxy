@@ -160,6 +160,19 @@ describe("WorkflowRunDefaultStep", () => {
         ]);
     });
 
+    it("keeps both entries of a collection loaded on the same page", async () => {
+        const listed = { id: "hdca1", hid: 1, name: "listed", src: "hdca" };
+        const nested = { id: "hdca9", hid: 9, name: "nested", src: "hdca" };
+        const nestedMapped = { ...nested, map_over_type: "list" };
+        const collectionInput = (hdca: object[]) => ({ name: "f1", type: "data_collection", options: { hdca } });
+        vi.mocked(getTool).mockResolvedValue({ inputs: [collectionInput([nested, nestedMapped])] });
+        const wrapper = mountStep({ inputs: [collectionInput([listed])] });
+        const form = wrapper.findComponent({ name: "FormDisplay" });
+        form.vm.$emit("load-more", { name: "f1", src: "hdca", offset: 1, limit: 2 });
+        await flushPromises();
+        expect(form.props("inputs")[0].options.hdca).toEqual([listed, nested, nestedMapped]);
+    });
+
     it("debounces option searches and cancels them when unmounted", async () => {
         const wrapper = mountStep();
         const form = wrapper.findComponent({ name: "FormDisplay" });

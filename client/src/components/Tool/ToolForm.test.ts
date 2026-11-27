@@ -234,4 +234,24 @@ describe("ToolForm", () => {
         expect(wrapper.findComponent(ToolCard).props("disabled")).toBe(false);
         clearToasts();
     });
+
+    it("keeps a map-over option loaded on a later page", async () => {
+        const nested = { id: "hdca9", hid: 9, name: "nested", src: "hdca" };
+        const nestedMapped = { ...nested, map_over_type: "list" };
+        const collectionInput = (hdca: object[]) => ({ name: "f1", type: "data_collection", options: { hdca } });
+        useBuildResponse({ inputs: [collectionInput([nested])] });
+        mountToolForm();
+        await flushPromises();
+        server.use(
+            http.untyped.post("/api/tools/tool_id/build", () => {
+                return HttpResponse.json(buildResponse({ inputs: [collectionInput([nested, nestedMapped])] }));
+            }),
+        );
+
+        wrapper.findComponent(FormDisplay).vm.$emit("load-more", { name: "f1", src: "hdca", offset: 1, limit: 1 });
+        await flushPromises();
+
+        const inputs = wrapper.findComponent(FormDisplay).props("inputs") as ReturnType<typeof collectionInput>[];
+        expect(inputs[0]!.options.hdca).toEqual([nested, nestedMapped]);
+    });
 });
