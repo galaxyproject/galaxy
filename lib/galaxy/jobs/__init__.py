@@ -2649,6 +2649,8 @@ class MinimalJobWrapper(HasResourceParameters):
             if dataset.purged:
                 # Purge, in case job wrote directly to object store
                 dataset.full_delete()
+                # Setting metadata above wrote the metadata files of outputs purged while the job ran
+                dataset.purge_metadata_files()
 
         # Calculate dataset hash - only if the job completed successfully,
         # otherwise dataset files may be missing/invalid (e.g. failed fetch from 404 URL).

@@ -1,9 +1,11 @@
 import os
 from collections.abc import Callable
 
+from galaxy import model
 from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
     DatasetPopulator,
+    wait_on,
 )
 from galaxy_test.driver import integration_util
 
@@ -134,6 +136,43 @@ class TestPurgeDatasetsIntegration(integration_util.IntegrationTestCase):
             self.test_history_id, content_id=hdca_id, wait=False
         )
         assert details["deleted"]
+
+    def test_purge_hda_removes_metadata_files(self):
+        self._expect_metadata_files_purged_on(
+            lambda hda_id: self.dataset_populator.delete_dataset(self.test_history_id, hda_id, purge=True)
+        )
+
+    def test_purge_history_removes_metadata_files(self):
+        self._expect_metadata_files_purged_on(lambda hda_id: self.dataset_populator.purge_history(self.test_history_id))
+
+    def test_storage_cleanup_removes_metadata_files(self):
+        def cleanup(hda_id):
+            self.dataset_populator.delete_dataset(self.test_history_id, hda_id)
+            cleanup_response = self._delete("storage/datasets", data={"item_ids": [hda_id]}, json=True)
+            self._assert_status_code_is_ok(cleanup_response)
+            assert cleanup_response.json()["success_item_count"] == 1
+
+        self._expect_metadata_files_purged_on(cleanup)
+
+    def _expect_metadata_files_purged_on(self, purge_operation: Callable):
+        bam = self.dataset_populator.new_bam_dataset(self.test_history_id, self.test_data_resolver)
+        session = self._app.model.session
+        hda = session.get(model.HistoryDatasetAssociation, self._app.security.decode_id(bam["id"]))
+        assert hda
+        metadata_file_id = hda.metadata.bam_index.id
+        index_path = hda.metadata.bam_index.get_file_name()
+        assert os.path.isfile(index_path)
+
+        purge_operation(bam["id"])
+
+        def metadata_file_purged():
+            session.expire_all()
+            metadata_file = session.get(model.MetadataFile, metadata_file_id)
+            assert metadata_file
+            return metadata_file.purged or None
+
+        wait_on(metadata_file_purged, "metadata file to become purged", timeout=10)
+        assert not os.path.exists(index_path)
 
     def _get_underlying_dataset_on_disk(self, hda_id: str) -> str | None:
         detailed_response = self._get(f"datasets/{hda_id}", admin=True).json()
