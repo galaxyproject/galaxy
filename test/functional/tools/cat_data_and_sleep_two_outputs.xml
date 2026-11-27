@@ -1,0 +1,15 @@
+<tool id="cat_data_and_sleep_two_outputs" name="Copy a dataset to two outputs (after sleep)" version="0.1.0">
+    <command><![CDATA[
+        sleep '$sleep_time' &&
+        cat '$input1' > '$out_file1' &&
+        cat '$input1' > '$out_file2'
+    ]]></command>
+    <inputs>
+        <param name="sleep_time" type="integer" value="0" />
+        <param name="input1" type="data" />
+    </inputs>
+    <outputs>
+        <data name="out_file1" format_source="input1" />
+        <data name="out_file2" format_source="input1" />
+    </outputs>
+</tool>

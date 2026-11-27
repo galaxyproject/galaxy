@@ -1,6 +1,8 @@
 import os
 from collections.abc import Callable
 
+from sqlalchemy import select
+
 from galaxy import model
 from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
@@ -190,3 +192,48 @@ class TestPurgeDatasetsWithoutCeleryIntegration(TestPurgeDatasetsIntegration):
         super().handle_galaxy_config_kwds(config)
         config["enable_celery_tasks"] = False
         config["metadata_strategy"] = "directory"
+
+
+class TestPurgeOutputWhileJobRunningIntegration(integration_util.IntegrationTestCase):
+    dataset_populator: DatasetPopulator
+    framework_tool_and_types = True
+
+    def setUp(self):
+        super().setUp()
+        self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
+
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
+        config["allow_user_dataset_purge"] = True
+        # Extended metadata sets metadata in the job, which doesn't know the output was purged.
+        config["metadata_strategy"] = "extended"
+
+    def test_purge_output_while_job_running_removes_metadata_files(self):
+        history_id = self.dataset_populator.new_history()
+        bam = self.dataset_populator.new_bam_dataset(history_id, self.test_data_resolver)
+        response = self.dataset_populator.run_tool(
+            "cat_data_and_sleep_two_outputs",
+            {"input1": {"src": "hda", "id": bam["id"]}, "sleep_time": 5},
+            history_id,
+        )
+        job_id = response["jobs"][0]["id"]
+        purged_output = next(output for output in response["outputs"] if output["output_name"] == "out_file1")
+        self.dataset_populator.wait_for_job(job_id, ok_states=["running"])
+        self.dataset_populator.delete_dataset(history_id, purged_output["id"], purge=True, wait_for_purge=True)
+        self.dataset_populator.wait_for_job(job_id, assert_ok=True)
+
+        session = self._app.model.session
+        session.expire_all()
+        metadata_files = session.scalars(
+            select(model.MetadataFile).where(
+                model.MetadataFile.hda_id == self._app.security.decode_id(purged_output["id"])
+            )
+        ).all()
+        assert metadata_files
+        for metadata_file in metadata_files:
+            assert metadata_file.purged
+            object_store, alt_name = metadata_file._object_store_and_alt_name()
+            assert not object_store.exists(
+                metadata_file, extra_dir="_metadata_files", extra_dir_at_root=True, alt_name=alt_name
+            )
