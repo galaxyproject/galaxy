@@ -274,6 +274,10 @@ class HDAManager(
         user = hda.history.user if hda.history is not None else None
         self.mark_purged(user, [hda], preserve_owner_update_time=preserve_owner_update_time)
         super().purge(hda, flush=flush)
+        assert hda.dataset
+        hda.dataset.purge_metadata_files(user=user)
+        if flush:
+            self.session().commit()
 
     def mark_purged(self, user: model.User | None, hdas, preserve_owner_update_time: bool = False):
         """

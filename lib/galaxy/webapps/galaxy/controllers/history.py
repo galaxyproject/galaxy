@@ -235,10 +235,12 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
                 if hda.dataset.user_can_purge:
                     try:
                         hda.dataset.full_delete(user=hda.user)
+                        hda.dataset.purge_metadata_files(user=hda.user)
                         trans.log_event(
                             f"Dataset id {hda.dataset.id} has been purged upon the purge of HDA id {hda.id}"
                         )
                         trans.sa_session.add(hda.dataset)
+                        trans.sa_session.commit()
                     except Exception:
                         log.exception(f"Unable to purge dataset ({hda.dataset.id}) on purge of hda ({hda.id}):")
                 count += 1
