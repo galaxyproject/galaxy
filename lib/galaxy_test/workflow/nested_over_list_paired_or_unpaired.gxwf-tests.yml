@@ -8,7 +8,7 @@
       elements:
         - identifier: outer1
           class: Collection
-          type: list
+          collection_type: list
           elements:
             - identifier: inner1
               class: File
@@ -38,11 +38,11 @@
       elements:
         - identifier: outer1
           class: Collection
-          type: list:paired
+          collection_type: list:paired
           elements:
             - identifier: inner1
               class: Collection
-              type: paired
+              collection_type: paired
               elements:
                 - identifier: forward
                   class: File
