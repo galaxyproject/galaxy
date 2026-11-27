@@ -1,5 +1,7 @@
+import logging
 from typing import cast
 
+import lxml.etree
 import pytest
 
 from galaxy.app import MinimalGalaxyApplication
@@ -64,3 +66,37 @@ def test_conflicting_shed_data_table_halts_startup_with_fix(tmp_path, shed_first
     if not shed_first:
         assert "iuc/data_manager_example revision abc123" in message
     assert f"remove the <table name=\"testalpha\"> element from '{shed_tool_data_table_config}'" in message
+
+
+def test_missing_non_optional_source_does_not_block_other_tables(tmp_path, caplog):
+    (tmp_path / "testalpha.loc").write_text("data1\tdata1name\t/data1\n")
+    tool_data_table_config = tmp_path / "tool_data_table_conf.xml"
+    tool_data_table_config.write_text(TOOL_DATA_TABLE_CONF_XML.format(tool_data_path=tmp_path))
+    missing = tmp_path / "missing_tool_data_table_conf.xml"
+    config = GalaxyAppConfiguration(
+        override_tempdir=False,
+        tool_data_path=str(tmp_path),
+        tool_data_table_config_path=",".join([str(missing), str(tool_data_table_config)]),
+    )
+    app = StubApp(config)
+    with caplog.at_level(logging.ERROR, logger="galaxy.tool_util.data"):
+        MinimalGalaxyApplication._configure_tool_data_tables(app, from_shed_config=False)
+    # Tables from healthy sources are loaded despite the missing non-optional source
+    assert "testalpha" in app._tool_data_tables.data_tables
+    # and the misconfiguration stays loudly visible in the logs
+    error_records = [record for record in caplog.records if record.levelno == logging.ERROR]
+    assert error_records
+    assert str(missing) in error_records[0].getMessage()
+
+
+def test_corrupt_source_still_blocks(tmp_path):
+    bad_source = tmp_path / "corrupt_tool_data_table_conf.xml"
+    bad_source.write_text("<tables><table name='testalpha'>")
+    config = GalaxyAppConfiguration(
+        override_tempdir=False,
+        tool_data_path=str(tmp_path),
+        tool_data_table_config_path=str(bad_source),
+    )
+    app = StubApp(config)
+    with pytest.raises(lxml.etree.XMLSyntaxError):
+        MinimalGalaxyApplication._configure_tool_data_tables(app, from_shed_config=False)

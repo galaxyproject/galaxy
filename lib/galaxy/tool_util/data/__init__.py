@@ -1421,9 +1421,26 @@ class ToolDataTableManager(Dictifiable):
             try:
                 elements = util.parse_xml(source.filename).getroot().findall("table")
             except OSError as exc:
-                if not source.optional or exc.errno != errno.ENOENT:
-                    raise
-                continue
+                if exc.errno == errno.ENOENT:
+                    # A missing source must not abort loading of every other table
+                    # (e.g. a down CVMFS mount): skip just this source, but keep
+                    # the misconfiguration loudly visible in the logs.
+                    if source.optional:
+                        log.debug(
+                            "Optional tool data table config source %r does not exist; skipping it.",
+                            source.filename,
+                        )
+                    else:
+                        log.error(
+                            "Tool data table config source %r does not exist; tables "
+                            "defined there will not be available. Check "
+                            "tool_data_table_config_path in the Galaxy configuration "
+                            "and restore the file.",
+                            source.filename,
+                            exc_info=True,
+                        )
+                    continue
+                raise
             source_elements.append((source, elements))
             for element in elements:
                 name = element.get("name")
