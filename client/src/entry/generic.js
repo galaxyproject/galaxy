@@ -3,7 +3,8 @@
 import "@/compat-config";
 
 import { initGalaxyInstance } from "@/app";
+import { onDomReady } from "@/utils/onDomReady";
 
-window.addEventListener("load", async () => {
+onDomReady(async () => {
     await initGalaxyInstance();
 });

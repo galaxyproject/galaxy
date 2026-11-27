@@ -967,6 +967,8 @@
                                 invocation: {inputs: {i: {type: collection, ref: C_AS_UNPAIRED_n}}}
                                 output: o
     tests:
+        tool_runtime:
+            api_test: "test_tool_execute.py::test_map_over_paired_or_unpaired_with_list_of_lists"
         workflow_editor: "accepts list:list -> paired_or_unpaired connection"
 
 - example:
