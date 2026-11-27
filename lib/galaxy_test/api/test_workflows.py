@@ -9574,62 +9574,87 @@ test_data:
         # Each scheduling attempt precreates the output collection, and a delayed attempt must
         # not leave that collection, or the hid it took, in the history.
         with self.dataset_populator.test_history() as history_id:
-            urls = [
-                test_http_server.get_url(
-                    remote_url="https://raw.githubusercontent.com/galaxyproject/galaxy/release_26.0/test-data/1.bed",
-                    body="chr1\t147962192\t147962580\n",
-                    sleep_ms=3000,
-                )
-                for _ in range(2)
-            ]
-            hdas = self.dataset_populator.fetch_hdas(
-                history_id, [{"src": "url", "url": url, "ext": "auto"} for url in urls], wait=False
+            slow_hdas = self._fetch_slow_auto_hdas(history_id, test_http_server)
+            contents, tool_step = self._run_list_paired_mapped_over_paired(history_id, [slow_hdas])
+            self._assert_single_output_collection(contents, tool_step)
+
+    @skip_without_tool("collection_paired_test")
+    def test_partially_delayed_mapped_over_step_runs_every_element(self, test_http_server):
+        # The first pair is ready, so its job is built before the slow second pair delays the step.
+        with self.dataset_populator.test_history() as history_id:
+            ready_hdas = self.dataset_populator.fetch_hdas(
+                history_id, [{"src": "pasted", "paste_content": "chr1\t1\t2\n", "ext": "bed"} for _ in range(2)]
             )
-            create_response = self._post(
-                "dataset_collections",
-                {
-                    "history_id": history_id,
-                    "instance_type": "history",
-                    "collection_type": "list:paired",
-                    "copy_elements": True,
-                    "element_identifiers": [
-                        {
-                            "name": "pair",
-                            "src": "new_collection",
-                            "collection_type": "paired",
-                            "element_identifiers": [
-                                {"name": "forward", "src": "hda", "id": hdas[0]["id"]},
-                                {"name": "reverse", "src": "hda", "id": hdas[1]["id"]},
-                            ],
-                        }
-                    ],
-                },
-                json=True,
+            slow_hdas = self._fetch_slow_auto_hdas(history_id, test_http_server)
+            contents, tool_step = self._run_list_paired_mapped_over_paired(history_id, [ready_hdas, slow_hdas])
+            self._assert_single_output_collection(contents, tool_step)
+            assert [job["state"] for job in tool_step["jobs"]] == ["ok", "ok"], tool_step
+
+    def _fetch_slow_auto_hdas(self, history_id: str, test_http_server) -> list[dict[str, Any]]:
+        urls = [
+            test_http_server.get_url(
+                remote_url="https://raw.githubusercontent.com/galaxyproject/galaxy/release_26.0/test-data/1.bed",
+                body="chr1\t147962192\t147962580\n",
+                sleep_ms=3000,
             )
-            self._assert_status_code_is(create_response, 200)
-            workflow_id = self.workflow_populator.upload_yaml_workflow(WORKFLOW_LIST_PAIRED_MAPPED_OVER_PAIRED)
-            invocation_response = self.workflow_populator.invoke_workflow(
-                workflow_id, history_id=history_id, inputs={"0": {"src": "hdca", "id": create_response.json()["id"]}}
-            )
-            self._assert_status_code_is(invocation_response, 200)
-            invocation_id = invocation_response.json()["id"]
-            self.workflow_populator.wait_for_invocation_and_jobs(history_id, workflow_id, invocation_id)
-            contents = self._get(f"histories/{history_id}/contents").json()
-            output_collections = [
-                item
-                for item in contents
-                if item["history_content_type"] == "dataset_collection"
-                and (item["name"] or "").startswith("collection_paired_test")
-            ]
-            assert len(output_collections) == 1, output_collections
-            assert output_collections[0]["populated_state"] == "ok", output_collections
-            hids = sorted(item["hid"] for item in contents)
-            assert hids == list(range(1, len(hids) + 1)), hids
-            invocation = self.workflow_populator.get_invocation(invocation_id, step_details=True)
-            tool_step = next(step for step in invocation["steps"] if step["order_index"] == 1)
-            assert [output["id"] for output in tool_step["output_collections"].values()] == [
-                output_collections[0]["id"]
-            ], tool_step
+            for _ in range(2)
+        ]
+        return self.dataset_populator.fetch_hdas(
+            history_id, [{"src": "url", "url": url, "ext": "auto"} for url in urls], wait=False
+        )
+
+    def _run_list_paired_mapped_over_paired(
+        self, history_id: str, pairs: list[list[dict[str, Any]]]
+    ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+        create_response = self._post(
+            "dataset_collections",
+            {
+                "history_id": history_id,
+                "instance_type": "history",
+                "collection_type": "list:paired",
+                "copy_elements": True,
+                "element_identifiers": [
+                    {
+                        "name": f"pair{i}",
+                        "src": "new_collection",
+                        "collection_type": "paired",
+                        "element_identifiers": [
+                            {"name": "forward", "src": "hda", "id": hdas[0]["id"]},
+                            {"name": "reverse", "src": "hda", "id": hdas[1]["id"]},
+                        ],
+                    }
+                    for i, hdas in enumerate(pairs)
+                ],
+            },
+            json=True,
+        )
+        self._assert_status_code_is(create_response, 200)
+        workflow_id = self.workflow_populator.upload_yaml_workflow(WORKFLOW_LIST_PAIRED_MAPPED_OVER_PAIRED)
+        invocation_response = self.workflow_populator.invoke_workflow(
+            workflow_id, history_id=history_id, inputs={"0": {"src": "hdca", "id": create_response.json()["id"]}}
+        )
+        self._assert_status_code_is(invocation_response, 200)
+        invocation_id = invocation_response.json()["id"]
+        self.workflow_populator.wait_for_invocation_and_jobs(history_id, workflow_id, invocation_id)
+        contents = self._get(f"histories/{history_id}/contents").json()
+        invocation = self.workflow_populator.get_invocation(invocation_id, step_details=True)
+        tool_step = next(step for step in invocation["steps"] if step["order_index"] == 1)
+        return contents, tool_step
+
+    def _assert_single_output_collection(self, contents: list[dict[str, Any]], tool_step: dict[str, Any]) -> None:
+        output_collections = [
+            item
+            for item in contents
+            if item["history_content_type"] == "dataset_collection"
+            and (item["name"] or "").startswith("collection_paired_test")
+        ]
+        assert len(output_collections) == 1, output_collections
+        assert output_collections[0]["populated_state"] == "ok", output_collections
+        hids = sorted(item["hid"] for item in contents)
+        assert hids == list(range(1, len(hids) + 1)), hids
+        assert [output["id"] for output in tool_step["output_collections"].values()] == [
+            output_collections[0]["id"]
+        ], tool_step
 
     def test_run_tool_step_with_default_file_and_pending_parameter_connection(self, test_http_server):
         with self.dataset_populator.test_history() as history_id:

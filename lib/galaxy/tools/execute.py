@@ -394,7 +394,15 @@ def _execute(
 
             skip = slice_params.pop("__when_value__", None) is False
             # Slices skipped by the tracker make the loop position differ from job_index.
-            execute_single_job(execution_slice, completed_jobs.get(execution_slice.job_index), skip=skip)
+            try:
+                execute_single_job(execution_slice, completed_jobs.get(execution_slice.job_index), skip=skip)
+            except ToolInputsNotReadyException:
+                # Earlier slices of a workflow step already built their jobs. Queue them and
+                # schedule the remaining slices in a later iteration, as for a capped iteration.
+                if invocation_step is None or not execution_tracker.successful_jobs:
+                    raise
+                has_remaining_jobs = True
+                break
             history = execution_slice.history or history
             jobs_executed += 1
 
