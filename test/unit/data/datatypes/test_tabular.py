@@ -13,8 +13,14 @@ from galaxy.datatypes.tabular import (
     Tabular,
     TSV,
 )
-from galaxy.exceptions import RequestParameterInvalidException
-from .util import MockDataset
+from galaxy.exceptions import (
+    MalformedContents,
+    RequestParameterInvalidException,
+)
+from .util import (
+    MockDataset,
+    MockMetadata,
+)
 
 
 @pytest.mark.parametrize("datatype", [CSV(), TSV()], ids=["csv", "tsv"])
@@ -60,6 +66,71 @@ def test_delimited_metadata_empty_input(tmp_path, datatype):
     assert dataset.metadata.column_types == []
     assert dataset.metadata.columns == 0
     assert dataset.metadata.column_names == []
+
+
+@pytest.mark.parametrize(
+    "datatype, content, value",
+    [
+        (CSV(), 'name,count,score\n"alpha, one",1,1.5\n"say ""hi""",2,2.5\nbeta,,3.5\n', "alpha, one"),
+        (TSV(), 'name\tcount\tscore\n"alpha\tone"\t1\t1.5\n"say ""hi"""\t2\t2.5\nbeta\t\t3.5\n', "alpha\tone"),
+    ],
+    ids=["csv", "tsv"],
+)
+def test_delimited_dataprovider_parses_quoted_values(tmp_path, datatype, content, value):
+    source = tmp_path / f"input.{datatype.file_ext}"
+    source.write_text(content)
+    dataset = MockDataset(id=1)
+    dataset.set_file_name(str(source))
+    cast(Any, dataset).datatype = datatype
+    datatype.set_meta(dataset)
+    rows = list(datatype.dataset_column_dataprovider(dataset, indeces=[0, 1, 2]))
+    assert rows[1:] == [[value, 1, 1.5], ['say "hi"', 2, 2.5], ["beta", None, 3.5]]
+
+
+@pytest.mark.parametrize(
+    "datatype, content",
+    [
+        (CSV(), 'name,count\n"first\nnext",1\n\nsecond,2\n'),
+        (TSV(), 'name\tcount\n"first\nnext"\t1\n\nsecond\t2\n'),
+    ],
+    ids=["csv", "tsv"],
+)
+def test_delimited_dataprovider_keeps_quoted_newlines_in_their_record(tmp_path, datatype, content):
+    source = tmp_path / f"input.{datatype.file_ext}"
+    source.write_text(content)
+    dataset = MockDataset(id=1)
+    dataset.set_file_name(str(source))
+    cast(Any, dataset).datatype = datatype
+    datatype.set_meta(dataset)
+    rows = list(datatype.dataset_column_dataprovider(dataset, indeces=[0, 1]))
+    assert rows == [["name", None], ["first\nnext", 1], ["second", 2]]
+    rows = list(datatype.dataset_column_dataprovider(dataset, indeces=[0, 1], offset=1, limit=1))
+    assert rows == [["first\nnext", 1]]
+
+
+@pytest.mark.parametrize("datatype", [CSV(), TSV()], ids=["csv", "tsv"])
+def test_delimited_dataprovider_rejects_unclosed_quote(tmp_path, datatype):
+    source = tmp_path / f"input.{datatype.file_ext}"
+    delimiter = datatype.dialect.delimiter
+    source.write_text(f'name{delimiter}count\n"first{delimiter}1\n' + f"row{delimiter}2\n" * 30000)
+    dataset = MockDataset(id=1)
+    dataset.set_file_name(str(source))
+    cast(Any, dataset).datatype = datatype
+    dataset.metadata = MockMetadata(delimiter=delimiter, column_types=["str", "int"])
+    with pytest.raises(MalformedContents, match="CSV reader error - line"):
+        list(datatype.dataset_column_dataprovider(dataset, indeces=[0, 1], limit=2))
+
+
+def test_tabular_dataprovider_ignores_quotes(tmp_path):
+    source = tmp_path / "input.tabular"
+    source.write_text('"alpha\tone"\t1\n')
+    datatype = Tabular()
+    dataset = MockDataset(id=1)
+    dataset.set_file_name(str(source))
+    cast(Any, dataset).datatype = datatype
+    datatype.set_meta(dataset)  # type: ignore [arg-type]
+    rows = list(datatype.dataset_column_dataprovider(dataset, indeces=[0, 1]))  # type: ignore [arg-type]
+    assert rows == [['"alpha', 'one"']]
 
 
 def test_tabular_set_meta_large_file():

@@ -3,11 +3,16 @@ Providers that provide lists of lists generally where each line of a source
 is further subdivided into multiple data (e.g. columns from a line).
 """
 
+import csv
 import logging
 import re
 from urllib.parse import unquote_plus
 
-from . import line
+from galaxy.exceptions import MalformedContents
+from . import (
+    base,
+    line,
+)
 
 _TODO = """
 move ColumnarDataProvider parsers to more sensible location
@@ -20,6 +25,36 @@ log = logging.getLogger(__name__)
 
 
 # ----------------------------------------------------------------------------- base classes
+class CSVRecordDataProvider(base.DataProvider):
+    """
+    Data provider that joins the lines of its source into the records of a
+    `csv` dialect, so newlines inside quoted values stay in their record.
+    """
+
+    def __init__(self, source, dialect, **kwargs):
+        """
+        :param dialect: `csv` dialect used to find where each record ends.
+        :type dialect: csv.Dialect
+        """
+        super().__init__(source, **kwargs)
+        self.dialect = dialect
+
+    def __iter__(self):
+        record: list[str] = []
+        reader = csv.reader(self.collect_lines(super().__iter__(), record), self.dialect)
+        try:
+            for _ in reader:
+                yield "".join(record)
+                record.clear()
+        except csv.Error as e:
+            raise MalformedContents(f"CSV reader error - line {reader.line_num}: {e}")
+
+    def collect_lines(self, lines, record):
+        for source_line in lines:
+            record.append(source_line)
+            yield source_line
+
+
 class ColumnarDataProvider(line.RegexLineDataProvider):
     """
     Data provider that provide a list of columns from the lines of its source.
@@ -52,6 +87,7 @@ class ColumnarDataProvider(line.RegexLineDataProvider):
         parse_columns=True,
         deliminator="\t",
         filters=None,
+        dialect=None,
         **kwargs,
     ):
         """
@@ -87,10 +123,15 @@ class ColumnarDataProvider(line.RegexLineDataProvider):
         :param deliminator: character(s) used to split each row/line of the source. Optional: defaults to the tab character.
         :type deliminator: str
 
+        :param dialect: `csv` dialect for reading records, which may span lines. Optional: defaults to splitting lines at `deliminator`.
+        :type dialect: csv.Dialect or None
+
         .. note:: that the subclass constructors are passed kwargs - so they're
                   params (limit, offset, etc.) are also applicable here.
         """
         # TODO: other columnar formats: csv, etc.
+        if dialect:
+            source = CSVRecordDataProvider(source, dialect)
         super().__init__(source, **kwargs)
 
         # IMPLICIT: if no indeces, column_count, or column_types passed: return all columns
@@ -108,6 +149,7 @@ class ColumnarDataProvider(line.RegexLineDataProvider):
             self.selected_column_indeces = list(range(self.column_count))
 
         self.deliminator = deliminator
+        self.dialect = dialect
 
         # how/whether to parse each column value
         self.parsers = {}
@@ -268,7 +310,10 @@ class ColumnarDataProvider(line.RegexLineDataProvider):
         :type line: str
         """
         # TODO: too much going on in this loop - the above should all be precomputed AMAP...
-        all_columns = line.split(self.deliminator)
+        if self.dialect:
+            all_columns = next(csv.reader([line], self.dialect))
+        else:
+            all_columns = line.split(self.deliminator)
         # if no indeces were passed to init, return all columns
         selected_indeces = self.selected_column_indeces or list(range(len(all_columns)))
         parsed_columns = []

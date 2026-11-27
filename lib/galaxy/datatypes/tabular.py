@@ -94,6 +94,7 @@ class TabularData(Text):
     CHUNKABLE = True
     data_line_offset = 0
     max_peek_columns = 50
+    dialect: type[csv.Dialect] | None = None
 
     MetadataElement(
         name="comment_lines",
@@ -373,26 +374,26 @@ class TabularData(Text):
         """Uses column settings that are passed in"""
         dataset_source = DatasetDataProvider(dataset)
         delimiter = dataset.metadata.delimiter
-        return ColumnarDataProvider(dataset_source, deliminator=delimiter, **settings)
+        return ColumnarDataProvider(dataset_source, deliminator=delimiter, dialect=self.dialect, **settings)
 
     @dataproviders.decorators.dataprovider_factory("dataset-column", ColumnarDataProvider.settings)
     def dataset_column_dataprovider(self, dataset: DatasetProtocol, **settings) -> DatasetColumnarDataProvider:
         """Attempts to get column settings from dataset.metadata"""
         delimiter = dataset.metadata.delimiter
-        return DatasetColumnarDataProvider(dataset, deliminator=delimiter, **settings)
+        return DatasetColumnarDataProvider(dataset, deliminator=delimiter, dialect=self.dialect, **settings)
 
     @dataproviders.decorators.dataprovider_factory("dict", DictDataProvider.settings)
     def dict_dataprovider(self, dataset: DatasetProtocol, **settings) -> DictDataProvider:
         """Uses column settings that are passed in"""
         dataset_source = DatasetDataProvider(dataset)
         delimiter = dataset.metadata.delimiter
-        return DictDataProvider(dataset_source, deliminator=delimiter, **settings)
+        return DictDataProvider(dataset_source, deliminator=delimiter, dialect=self.dialect, **settings)
 
     @dataproviders.decorators.dataprovider_factory("dataset-dict", DictDataProvider.settings)
     def dataset_dict_dataprovider(self, dataset: DatasetProtocol, **settings) -> DatasetDictDataProvider:
         """Attempts to get column settings from dataset.metadata"""
         delimiter = dataset.metadata.delimiter
-        return DatasetDictDataProvider(dataset, deliminator=delimiter, **settings)
+        return DatasetDictDataProvider(dataset, deliminator=delimiter, dialect=self.dialect, **settings)
 
 
 @dataproviders.decorators.has_dataproviders
@@ -1392,9 +1393,7 @@ class BaseCSV(TabularData):
     See the Python module csv for documentation of dialect settings
     """
 
-    @property
-    def dialect(self):
-        raise NotImplementedError
+    dialect: type[csv.Dialect]
 
     @property
     def strict_width(self):
