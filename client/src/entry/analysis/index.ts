@@ -7,6 +7,7 @@ import { installStaleCacheRetryInterceptor } from "@/api/staleCacheRetry";
 import { initGalaxyInstance } from "@/app";
 import { initSentry } from "@/app/addons/sentry";
 import { initWebhooks } from "@/app/addons/webhooks";
+import { onDomReady } from "@/utils/onDomReady";
 
 import { getRouter } from "./router";
 
@@ -22,7 +23,7 @@ const pinia = createPinia();
 installPendingRequestsInterceptor();
 installStaleCacheRetryInterceptor();
 
-window.addEventListener("load", async () => {
+onDomReady(async () => {
     // Create Galaxy object
     const Galaxy = await initGalaxyInstance();
 
