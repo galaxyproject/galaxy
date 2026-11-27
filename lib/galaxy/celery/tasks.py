@@ -110,6 +110,9 @@ def cached_create_tool_from_representation(
     tool_source_class: TOOL_SOURCE_CLASS,
     tool_dir: str | None = None,
     tool_id: str | None = None,
+    # Unused in the body, it only keys the cache: queue_jobs sets per-revision state on the
+    # tool, so revisions with identical source must not share one object between threads.
+    dynamic_tool_id: int | None = None,
 ):
     return create_tool_from_representation(
         app=app,
@@ -603,6 +606,7 @@ def queue_jobs(request: QueueJobs, app: MinimalManagerApp, job_submitter: JobSub
         tool_dir=request.tool_source.tool_dir,
         tool_source_class=tool_source_class,
         tool_id=request.tool_source.tool_id,
+        dynamic_tool_id=request.dynamic_tool_id,
     )
 
     job_submitter.queue_jobs(

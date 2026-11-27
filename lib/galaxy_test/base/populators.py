@@ -1353,6 +1353,7 @@ class BaseDatasetPopulator(BasePopulator):
         preferred_object_store_id: str | None = None,
         tool_uuid: str | None = None,
         send_notification: bool = False,
+        use_cached_jobs: bool = False,
     ) -> Response:
         payload: dict[str, Any] = {
             "history_id": history_id,
@@ -1365,6 +1366,8 @@ class BaseDatasetPopulator(BasePopulator):
             payload["tool_uuid"] = tool_uuid
         if send_notification:
             payload["send_notification"] = True
+        if use_cached_jobs:
+            payload["use_cached_jobs"] = True
         if preferred_object_store_id is not None:
             payload["preferred_object_store_id"] = preferred_object_store_id
         response = self._post("jobs", data=payload, json=True)

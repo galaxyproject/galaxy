@@ -595,6 +595,7 @@ class FastAPIJobs:
                 param_dump=param_dump,
                 job_state=payload.state,
                 history_id=payload.history_id,
+                dynamic_tool_id=tool.dynamic_tool_id,
             )
             if job:
                 jobs.append(job)
