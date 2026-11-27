@@ -2800,7 +2800,10 @@ def _conditional_state_warnings(
                 case = None
             if test_param.name not in value:
                 allowed = set(case.inputs) if case else set()
-                dropped = sorted(set(value) - allowed - {"__current_case__"})
+                # Runtime placeholders do not contain stored values to lose.
+                dropped = sorted(
+                    key for key in set(value) - allowed - {"__current_case__"} if not is_runtime_value(value[key])
+                )
                 if dropped:
                     keys = ", ".join(f"'{name}|{key}'" for key in dropped)
                     selected = f"case '{case.value}'" if case else "no valid case"

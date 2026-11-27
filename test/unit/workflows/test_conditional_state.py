@@ -152,3 +152,28 @@ class TestConditionalState(tools_support.UsesTools):
 
         assert not loaded.check_and_update_state()
         assert loaded.state.inputs["conditional_parameter"]["integer_parameter"] == 5
+
+    @pytest.mark.parametrize("placeholder", ["RuntimeValue", "ConnectedValue"])
+    def test_missing_selector_with_runtime_placeholder_does_not_require_review(self, placeholder):
+        self._init_tool_for_path("test/functional/tools/collection_paired_conditional_structured_like.xml")
+        imported = self._module({"cond": {"input1": {"__class__": placeholder}}}, fill_defaults=True)
+        loaded = self._module(imported.get_state())
+
+        assert not loaded.check_and_update_state()
+
+    def test_runtime_placeholder_does_not_hide_other_lost_values(self):
+        self._init_inputs()
+        imported = self._module(
+            {
+                "conditional_parameter": {
+                    "integer_parameter": 5,
+                    "boolean_parameter": {"__class__": "RuntimeValue"},
+                }
+            }
+        )
+        loaded = self._module(imported.get_state())
+
+        message = loaded.check_and_update_state()["conditional_parameter|test_parameter"]
+
+        assert "conditional_parameter|integer_parameter" in message
+        assert "conditional_parameter|boolean_parameter" not in message
