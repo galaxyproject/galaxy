@@ -5478,10 +5478,12 @@ class Dataset(Base, StorableObject, Serializable):
         session.flush()
         HDA = HistoryDatasetAssociation
         in_use = select(HDA.id).where(HDA.dataset_id == self.id, HDA.purged.is_not(true())).limit(1)
-        in_library = select(LibraryDatasetDatasetAssociation.id).where(
-            LibraryDatasetDatasetAssociation.dataset_id == self.id
+        in_library = (
+            select(LibraryDatasetDatasetAssociation.id)
+            .where(LibraryDatasetDatasetAssociation.dataset_id == self.id)
+            .limit(1)
         )
-        if session.scalars(in_use).first() is not None or session.scalars(in_library.limit(1)).first() is not None:
+        if session.scalars(in_use).first() is not None or session.scalars(in_library).first() is not None:
             return
         stmt = (
             select(MetadataFile)
