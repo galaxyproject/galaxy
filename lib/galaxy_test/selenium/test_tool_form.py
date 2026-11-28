@@ -650,6 +650,54 @@ class TestLoggedInToolForm(SeleniumTestCase, UsesUploadActivity):
         self._apply_rules_and_check(rules_test_data.EXAMPLE_FLATTEN_USING_INDICES)
         self.screenshot("tool_apply_rules_example_flatten_with_indices_final")
 
+    @selenium_test
+    @managed_history
+    def test_run_apply_rules_nest_from_menus(self):
+        history_id = self.current_history_id()
+        hdca = self.dataset_collection_populator.create_list_in_history(
+            history_id, contents=[("s1", "a\n"), ("s2", "b\n")], wait=True
+        ).json()["output_collections"][0]
+        self.home()
+        self._tool_open_apply_rules()
+        self.tool_set_value("input", f"{hdca['hid']}:", expected_type="data_collection")
+        self.tool_parameter_edit_rules()
+        rule_builder = self.components.rule_builder
+        rule_builder._.wait_for_visible()
+        self.rule_builder_add_column_basename("A")
+        # Non-default columns, so a selector that sets nothing fails the source check.
+        self.rule_builder_add_column_basename("B")
+        self.rule_builder_sort("B")
+        self.rule_builder_set_mapping("list-identifiers", ["A", "C"])
+        self.screenshot("tool_apply_rules_nest_from_menus")
+        source = self.rule_builder_show_and_get_source_as_json()
+        self.assert_rule_builder_source(
+            source,
+            [
+                {"type": "add_column_metadata", "value": "identifier0"},
+                {"type": "add_column_basename", "target_column": 0},
+                {"type": "add_column_basename", "target_column": 1},
+                {"type": "sort", "target_column": 1, "numeric": False},
+            ],
+            [("list_identifiers", [0, 2])],
+        )
+        rule_builder.main_button_ok.wait_for_and_click()
+        self.tool_form_execute()
+        nested_hid = self.history_wait_for_new_collection(hdca["hid"])["hid"]
+        self.history_panel_wait_for_hid_ok(nested_hid)
+        nested = self.dataset_populator.get_history_collection_details(history_id, hid=nested_hid)
+        assert nested["collection_type"] == "list:list"
+        assert [e["element_identifier"] for e in nested["elements"]] == ["s1", "s2"]
+        assert [[i["element_identifier"] for i in e["object"]["elements"]] for e in nested["elements"]] == [
+            ["s1"],
+            ["s2"],
+        ]
+
+        self.home()
+        self.tool_open("__SORTLIST__")
+        self.tool_set_value("input", f"{nested_hid}:", expected_type="data_collection")
+        hint = self.tool_form_wait_for_batch_info("input", "one job per list")
+        assert hint == "The supplied input will be mapped over this tool: one job per list."
+
     def _apply_rules_tutorial_table(self) -> str:
         rows = [
             ("treated1fb.txt", "treated_single_1"),
