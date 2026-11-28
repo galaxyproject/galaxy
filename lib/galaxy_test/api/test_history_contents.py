@@ -4,6 +4,7 @@ from typing import (
 )
 
 from galaxy.model.unittest_utils.store_fixtures import one_hda_model_store_dict
+from galaxy.schema.schema import MAX_ANNOTATION_SIZE
 from galaxy.util.wait import wait_on
 from galaxy_test.api._framework import ApiTestCase
 from galaxy_test.base.decorators import (
@@ -843,13 +844,67 @@ class TestHistoryContentsApi(ApiTestCase):
         show_response = self.__show(history_id, hdca)
         assert str(show_response.json()["name"]) == "newnameforpair"
 
+    def test_update_dataset_collection_annotation(self, history_id):
+        hdca = self._create_pair_collection(history_id)
+        assert self._collection_annotations(history_id, hdca) == {None}
+        update_response = self._update_collection_annotation(history_id, hdca, "Paired reads for sample A")
+        assert update_response.json()["annotation"] == "Paired reads for sample A"
+        assert self._collection_annotations(history_id, hdca) == {"Paired reads for sample A"}
+        # An annotation is only shown to the user who wrote it.
+        with self._different_user():
+            assert self._get(f"dataset_collections/{hdca['id']}").status_code == 403
+        self._put(f"histories/{history_id}", data=dict(published=True), json=True).raise_for_status()
+        with self._different_user():
+            assert self._get(f"dataset_collections/{hdca['id']}").json()["annotation"] is None
+
+    def test_clear_dataset_collection_annotation(self, history_id):
+        hdca = self._create_pair_collection(history_id)
+        # null clears the annotation as it does for a dataset, and so does the empty string the client sends.
+        for cleared in (None, ""):
+            self._update_collection_annotation(history_id, hdca, "Paired reads for sample A")
+            assert self._collection_annotations(history_id, hdca) == {"Paired reads for sample A"}
+            update_response = self._update_collection_annotation(history_id, hdca, cleared)
+            assert update_response.json()["annotation"] is None
+            assert self._collection_annotations(history_id, hdca) == {None}
+
+    def _update_collection_annotation(self, history_id: str, hdca, annotation: str | None):
+        update_response = self._put(
+            f"histories/{history_id}/contents/dataset_collections/{hdca['id']}",
+            data=dict(annotation=annotation),
+            json=True,
+        )
+        self._assert_status_code_is(update_response, 200)
+        return update_response
+
+    def _collection_annotations(self, history_id: str, hdca) -> set[str | None]:
+        """The collection's annotation as every endpoint that returns it reports it; they should agree."""
+        detailed = self._get(
+            f"histories/{history_id}/contents?v=dev&view=detailed&q=history_content_type-eq&qv=dataset_collection"
+        ).json()
+        return {
+            self.__show(history_id, hdca).json()["annotation"],
+            self._get(f"dataset_collections/{hdca['id']}").json()["annotation"],
+            # The view the client reads the annotation from.
+            self._get(f"dataset_collections/{hdca['id']}?view=collection").json()["annotation"],
+            *(item["annotation"] for item in detailed if item["id"] == hdca["id"]),
+        }
+
     def test_update_batch_dataset_collection(self, history_id):
         hdca = self._create_pair_collection(history_id)
-        body = {"items": [{"history_content_type": "dataset_collection", "id": hdca["id"]}], "name": "newnameforpair"}
+        body = {
+            "items": [{"history_content_type": "dataset_collection", "id": hdca["id"]}],
+            "name": "newnameforpair",
+            "annotation": "Paired reads for sample A",
+        }
         update_response = self._put(f"histories/{history_id}/contents", data=body, json=True)
         self._assert_status_code_is(update_response, 200)
         show_response = self.__show(history_id, hdca)
         assert str(show_response.json()["name"]) == "newnameforpair"
+        assert show_response.json()["annotation"] == "Paired reads for sample A"
+        # The batch payload takes any field, so the size limit is the model's here.
+        too_long = {**body, "annotation": "a" * (MAX_ANNOTATION_SIZE + 1)}
+        self._assert_status_code_is(self._put(f"histories/{history_id}/contents", data=too_long, json=True), 400)
+        assert self.__show(history_id, hdca).json()["annotation"] == "Paired reads for sample A"
 
     def _create_pair_collection(self, history_id: str):
         payload = self.dataset_collection_populator.create_pair_payload(history_id, type="dataset_collection")

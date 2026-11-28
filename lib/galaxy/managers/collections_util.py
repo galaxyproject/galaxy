@@ -8,6 +8,7 @@ from galaxy import (
     exceptions,
     model,
 )
+from galaxy.managers.annotatable import serialized_annotation
 from galaxy.model.dataset_collections.types.sample_sheet_util import validate_column_definitions
 from galaxy.util import string_as_bool
 
@@ -121,7 +122,7 @@ def get_collection_elements(collection, name=""):
 
 
 def dictify_dataset_collection_instance(
-    dataset_collection_instance, parent, security, url_builder, view="element", fuzzy_count=None
+    dataset_collection_instance, parent, security, url_builder, view="element", fuzzy_count=None, user=None
 ):
     hdca_view = "element" if view in ["element", "element-reference"] else "collection"
     dict_value = dataset_collection_instance.to_dict(view=hdca_view)
@@ -159,6 +160,10 @@ def dictify_dataset_collection_instance(
             dict_value["implicit_collection_jobs_id"] = icj.id
         else:
             dict_value["implicit_collection_jobs_id"] = None
+
+    if user is not None:
+        # Callers that show a single collection pass the requesting user to include that user's annotation.
+        dict_value["annotation"] = serialized_annotation(dataset_collection_instance, user)
 
     return dict_value
 

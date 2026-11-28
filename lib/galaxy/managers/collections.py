@@ -21,6 +21,7 @@ from galaxy.exceptions import (
     MessageException,
     RequestParameterInvalidException,
 )
+from galaxy.managers.base import ModelValidator
 from galaxy.managers.collections_util import validate_input_element_identifiers
 from galaxy.managers.context import (
     ProvidesAppContext,
@@ -571,11 +572,16 @@ class DatasetCollectionManager:
         changed = dataset_collection_instance.set_from_dict(new_data)
 
         # the rest (often involving the trans) - do here
-        if "annotation" in new_data.keys() and trans.get_user():
-            dataset_collection_instance.add_item_annotation(
-                trans.sa_session, trans.get_user(), dataset_collection_instance, new_data["annotation"]
-            )
-            changed["annotation"] = new_data["annotation"]
+        if "annotation" in new_data.keys() and (user := trans.get_user()):
+            # An empty annotation is no annotation, so no row is kept for it.
+            annotation = new_data["annotation"] or None
+            if annotation is None:
+                dataset_collection_instance.delete_item_annotation(trans.sa_session, user, dataset_collection_instance)
+            else:
+                dataset_collection_instance.add_item_annotation(
+                    trans.sa_session, user, dataset_collection_instance, annotation
+                )
+            changed["annotation"] = annotation
 
         # the api promises a list of changed fields, but tags are not marked as changed to avoid the
         # flush, so we must handle changed tag responses manually
@@ -600,6 +606,10 @@ class DatasetCollectionManager:
     def _validate_and_parse_update_payload(self, payload):
         validated_payload = {}
         for key, val in payload.items():
+            if key == "annotation":
+                # None is kept: it deletes the annotation, as it does for a dataset.
+                validated_payload[key] = ModelValidator.nullable_basestring(key, val)
+                continue
             if val is None:
                 continue
             if key in ("name"):

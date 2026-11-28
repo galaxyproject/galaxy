@@ -29,6 +29,12 @@ def _match_by_user(item, user) -> str | None:
     return None
 
 
+def serialized_annotation(item, user) -> str | None:
+    """`user`'s annotation of `item` as the API returns it, `None` when there is none."""
+    annotation = _match_by_user(item, user)
+    return annotation.strip() if annotation else None
+
+
 class AnnotatableManagerMixin:
     #: class of AnnotationAssociation (e.g. HistoryAnnotationAssociation)
     annotation_assoc: type
@@ -83,8 +89,7 @@ class AnnotatableSerializerMixin:
         """
         Get and serialize an `item`'s annotation.
         """
-        annotation = _match_by_user(item, user)
-        return annotation.strip() if annotation else None
+        return serialized_annotation(item, user)
 
 
 class AnnotatableDeserializerMixin:

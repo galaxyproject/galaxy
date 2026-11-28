@@ -3,7 +3,7 @@ import { faPen, faSave, faUndo } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BFormTextarea } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 
 import { vShort } from "@/components/plugins/short";
 import { useUserStore } from "@/stores/userStore";
@@ -60,6 +60,16 @@ const localProps = ref<EditableDetails>({
 });
 // Props lag behind a save that is still in flight, so this snapshot can be stale.
 const openedWith = ref<EditableDetails>({ ...localProps.value });
+
+// An annotation that arrives while editing is taken up, unless the user has already changed it here.
+watch(
+    () => props.annotation,
+    (annotation) => {
+        if (editing.value && localProps.value.annotation === openedWith.value.annotation) {
+            localProps.value.annotation = openedWith.value.annotation = annotation ?? null;
+        }
+    },
+);
 
 // GFormInput does not trim, so a blank or padded name is trimmed before it is saved
 const trimmedName = computed(() => localProps.value.name.trim());
