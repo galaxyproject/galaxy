@@ -37,7 +37,8 @@
 <script>
 import BootstrapVue from "bootstrap-vue";
 import { MAX_DESCRIPTION_LENGTH } from "components/Libraries/library-utils";
-import { sanitize } from "dompurify";
+import DOMPurify from 'dompurify';
+const sanitize = DOMPurify.sanitize;
 import linkifyHtml from "linkify-html";
 import Vue from "vue";
 

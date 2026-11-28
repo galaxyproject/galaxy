@@ -31,7 +31,6 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faChevronDown, faChevronUp } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { IconDefinition } from "font-awesome-6";
 
 library.add(faChevronUp);
 library.add(faChevronDown);
@@ -50,7 +49,7 @@ export default {
             default: null,
         },
         icon: {
-            type: IconDefinition,
+            type: Object,
             default: null,
         },
         collapsible: {
