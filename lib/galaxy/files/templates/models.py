@@ -52,6 +52,7 @@ FileSourceTemplateType = Literal[
     "dataverse",
     "cbioportal",
     "hal",
+    "bioairepo",
     "huggingface",
     "github",
     "iiif",
@@ -482,6 +483,24 @@ class HALFileSourceConfiguration(StrictModel):
     writable: bool = False
 
 
+class BioAIRepoFileSourceTemplateConfiguration(StrictModel):
+    type: Literal["bioairepo"]
+    api_url: str | TemplateExpansion = "https://www.ebi.ac.uk/biostudies/api/v1"
+    files_url: str | TemplateExpansion = "https://www.ebi.ac.uk/biostudies/files"
+    collection: str | TemplateExpansion = "BioAIRepo"
+    writable: bool | TemplateExpansion = False
+    template_start: str | None = None
+    template_end: str | None = None
+
+
+class BioAIRepoFileSourceConfiguration(StrictModel):
+    type: Literal["bioairepo"]
+    api_url: str = "https://www.ebi.ac.uk/biostudies/api/v1"
+    files_url: str = "https://www.ebi.ac.uk/biostudies/files"
+    collection: str = "BioAIRepo"
+    writable: bool = False
+
+
 class HuggingFaceFileSourceTemplateConfiguration(StrictModel):
     type: Literal["huggingface"]
     token: str | TemplateExpansion | None = None
@@ -710,6 +729,7 @@ FileSourceTemplateConfiguration = Annotated[
     | DataverseFileSourceTemplateConfiguration
     | CBioPortalFileSourceTemplateConfiguration
     | HALFileSourceTemplateConfiguration
+    | BioAIRepoFileSourceTemplateConfiguration
     | HuggingFaceFileSourceTemplateConfiguration
     | GithubFileSourceTemplateConfiguration
     | IIIFFileSourceTemplateConfiguration
@@ -746,6 +766,7 @@ FileSourceConfiguration = Annotated[
     | DataverseFileSourceConfiguration
     | CBioPortalFileSourceConfiguration
     | HALFileSourceConfiguration
+    | BioAIRepoFileSourceConfiguration
     | HuggingFaceFileSourceConfiguration
     | GithubFileSourceConfiguration
     | IIIFFileSourceConfiguration
@@ -842,6 +863,7 @@ TypesToConfigurationClasses: dict[FileSourceTemplateType, type[FileSourceConfigu
     "dataverse": DataverseFileSourceConfiguration,
     "cbioportal": CBioPortalFileSourceConfiguration,
     "hal": HALFileSourceConfiguration,
+    "bioairepo": BioAIRepoFileSourceConfiguration,
     "huggingface": HuggingFaceFileSourceConfiguration,
     "github": GithubFileSourceConfiguration,
     "iiif": IIIFFileSourceConfiguration,

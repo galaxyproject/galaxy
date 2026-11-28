@@ -13,6 +13,7 @@ describe("test url utilities", () => {
         expect(isUrl("xyz://")).toBeFalsy();
         expect(isUrl("ftp://")).toBeTruthy();
         expect(isUrl("http://")).toBeTruthy();
+        expect(isUrl("bioairepo://bioairepo/S-BAIR1/bioimage-io-logo.png")).toBeTruthy();
     });
 
     test("network url validation accepts well-formed hosts", () => {
@@ -39,6 +40,7 @@ describe("test url utilities", () => {
         expect(isValidUrl("gxuserfiles://mysource/x")).toBe(true);
         expect(isValidUrl("drs://example.org/abc")).toBe(true);
         expect(isValidUrl("zenodo://record/123")).toBe(true);
+        expect(isValidUrl("bioairepo://bioairepo/S-BAIR1/bioimage-io-logo.png")).toBe(true);
         expect(isValidUrl("invenio://record/123")).toBe(true);
         expect(isValidUrl("dataverse://doi/x")).toBe(true);
         expect(isValidUrl("base64://aGVsbG8=")).toBe(true);
