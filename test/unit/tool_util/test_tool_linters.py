@@ -545,6 +545,28 @@ INPUTS_SELECT_OPTION_DEFINITIONS = """
 </tool>
 """
 
+INPUTS_SELECT_DEPENDS_ON = """
+<tool id="id" name="name">
+    <inputs>
+        <param name="crop" type="select">
+            <options from_url="https://example.org/crops"/>
+        </param>
+        <section name="sec" title="Section">
+            <param name="year" type="integer" value="2020"/>
+        </section>
+        <param name="genotype_set" type="select">
+            <options from_url="https://example.org/crops/$crop/$sec.year" depends_on="crop,sec.year"/>
+        </param>
+        <param name="no_from_url" type="select">
+            <options from_data_table="xyz" depends_on="crop"/>
+        </param>
+        <param name="missing_ref" type="select">
+            <options from_url="https://example.org/crops/$cro" depends_on="cro"/>
+        </param>
+    </inputs>
+</tool>
+"""
+
 INPUTS_SELECT_FILTER = """
 <tool id="id" name="name">
     <inputs>
@@ -2356,6 +2378,16 @@ def test_inputs_select_option_definitions(lint_ctx):
     assert len(lint_ctx.error_messages) == 7
 
 
+def test_inputs_select_depends_on(lint_ctx):
+    tool_source = get_xml_tool_source(INPUTS_SELECT_DEPENDS_ON)
+    run_lint_module(lint_ctx, inputs, tool_source)
+    run_lint_module(lint_ctx, xsd, tool_source)
+    assert lint_ctx.error_messages == [
+        "Select parameter [no_from_url] 'depends_on' is only compatible with 'from_url'.",
+        "Select parameter [missing_ref] 'depends_on' refers to non existing parameter 'cro'",
+    ]
+
+
 def test_inputs_select_filter(lint_ctx):
     tool_source = get_xml_tool_source(INPUTS_SELECT_FILTER)
     run_lint_module(lint_ctx, inputs, tool_source)
@@ -3542,6 +3574,7 @@ def test_list_linters():
         "InputsSelectOptionsDef",
         "InputsSelectOptionsDefConditional",
         "InputsSelectOptionsDefinesOptions",
+        "InputsSelectOptionsDependsOn",
         "InputsSelectOptionsDeprecatedAttr",
         "InputsSelectOptionsFromDatasetAndDatatable",
         "InputsSelectOptionsMetaFileKey",
