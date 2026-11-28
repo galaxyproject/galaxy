@@ -13,9 +13,15 @@
 #if $index_regexp_keep
     echo index_regexp_keep $index_regexp_keep >> '$output'
 #end if
+#if $index_expression
+    echo index_expression $index_expression >> '$output' &&
+#end if
+#if $index_expression_keep
+    echo index_expression_keep $index_expression_keep >> '$output'
+#end if
     ]]></command>
     <inputs>
-        <!-- tests for static_value filter: remove hp18 from the options by 
+        <!-- tests for static_value filter: remove hg18 from the options by 
              a) removing it explicitly (due to keep="false") 
              b) keeping only the other option, i.e. hg19 -->
         <param name="index_static" type="select" optional="true" label="Using reference genome">
@@ -30,7 +36,7 @@
                 <validator type="no_options" message="No reference genome is available for the build associated with the selected input dataset" />
             </options>
         </param>
-        <!-- tests for regexp filter: remove hp18 from the options 
+        <!-- tests for regexp filter: remove hg18 from the options 
              essentially the same as for the static value filter, just using a simple regexp -->
         <param name="index_regexp" type="select" optional="true" label="Using reference genome">
             <options from_data_table="test_fasta_indexes">
@@ -41,6 +47,20 @@
         <param name="index_regexp_keep" type="select" optional="true" label="Using reference genome">
             <options from_data_table="test_fasta_indexes">
                 <filter type="regexp" column="dbkey" value="hg.8" keep="false" />
+                <validator type="no_options" message="No reference genome is available for the build associated with the selected input dataset" />
+            </options>
+        </param>
+        <!-- tests for expression filter: remove hg18 from the options 
+             essentially the same as for the static value filter, just using a simple regexp -->
+        <param name="index_expression" type="select" optional="true" label="Using reference genome">
+            <options from_data_table="test_fasta_indexes">
+                <filter type="expression" column="dbkey" expression="value[-1]=='8'" />
+                <validator type="no_options" message="No reference genome is available for the build associated with the selected input dataset" />
+            </options>
+        </param>
+        <param name="index_expression_keep" type="select" optional="true" label="Using reference genome">
+            <options from_data_table="test_fasta_indexes">
+                <filter type="expression" column="dbkey" expression="value[-1]=='8'" keep="false" />
                 <validator type="no_options" message="No reference genome is available for the build associated with the selected input dataset" />
             </options>
         </param>
@@ -57,12 +77,16 @@
             <param name="index_static_keep" value="hg19_value" />
             <param name="index_regexp" value="hg18_value" />
             <param name="index_regexp_keep" value="hg19_value" />
+            <param name="index_expression" value="hg18_value" />
+            <param name="index_expression_keep" value="hg19_value" />
             <output name="output">
                 <assert_contents>
-                    <has_text text="index_static hg18_value" />    
-                    <has_text text="index_static_keep hg19_value" />    
-                    <has_text text="index_regexp hg18_value" />    
-                    <has_text text="index_regexp_keep hg19_value" />    
+                    <has_text text="index_static hg18_value" />
+                    <has_text text="index_static_keep hg19_value" />
+                    <has_text text="index_regexp hg18_value" />
+                    <has_text text="index_regexp_keep hg19_value" />
+                    <has_text text="index_expression hg18_value" />
+                    <has_text text="index_expression_keep hg19_value" />
                 </assert_contents>
             </output>
         </test>
@@ -70,10 +94,12 @@
         <test>
             <param name="index_static_keep" value="mm10_value" />
             <param name="index_regexp_keep" value="mm10_value" />
+            <param name="index_expression_keep" value="mm10_value" />
             <output name="output">
                 <assert_contents>
-                    <has_text text="index_static_keep mm10_value" />    
-                    <has_text text="index_regexp_keep mm10_value" />    
+                    <has_text text="index_static_keep mm10_value" />
+                    <has_text text="index_regexp_keep mm10_value" />
+                    <has_text text="index_expression_keep mm10_value" />
                 </assert_contents>
             </output>
         </test>
@@ -89,6 +115,12 @@
         </test>
         <test expect_failure="true">
             <param name="index_regexp_keep" value="hg18_value" />
+        </test>
+        <test expect_failure="true">
+            <param name="index_expression" value="hg19_value" />
+        </test>
+        <test expect_failure="true">
+            <param name="index_expression_keep" value="hg18_value" />
         </test>
     </tests>
     <help>
