@@ -457,7 +457,7 @@ class TestNotebookWorkflowExtractionSummary(_ExtractionHelpersMixin, BasePagesAp
 
             # The collection the tool was mapped over is an input of the
             # producing subgraph and must be seeded too.
-            input_row = self._row_with_output_id(summary, input_hdca["id"])
+            input_row = self._row_with_output_id(summary, input_hdca["id"], "dataset_collection")
             assert input_row is not None, summary["jobs"]
             assert input_row["step_type"] == "input_collection", input_row
             assert input_row["seeded"] is True, input_row
@@ -484,17 +484,17 @@ class TestNotebookWorkflowExtractionSummary(_ExtractionHelpersMixin, BasePagesAp
 
             summary = self._extraction_summary(page["id"])
 
-            reduction_row = self._row_with_output_id(summary, reduction_output_id)
+            reduction_row = self._row_with_output_id(summary, reduction_output_id, "dataset")
             assert reduction_row is not None and reduction_row["seeded"] is True, summary["jobs"]
             assert reduction_row["tool_id"] == "multi_data_param", reduction_row
 
             # Reached by walking back through the reduction's collection input.
-            map_row = self._row_with_output_id(summary, output_hdca["id"])
+            map_row = self._row_with_output_id(summary, output_hdca["id"], "dataset_collection")
             assert map_row is not None and map_row["seeded"] is True, summary["jobs"]
             assert map_row["tool_id"] == "random_lines1", map_row
 
             # The originally uploaded collection input must be seeded.
-            input_row = self._row_with_output_id(summary, input_hdca["id"])
+            input_row = self._row_with_output_id(summary, input_hdca["id"], "dataset_collection")
             assert input_row is not None, summary["jobs"]
             assert input_row["step_type"] == "input_collection", input_row
             assert input_row["seeded"] is True, input_row
@@ -553,13 +553,13 @@ class TestNotebookWorkflowExtractionSummary(_ExtractionHelpersMixin, BasePagesAp
             assert all(r["seeded"] for r in tool_rows), summary["jobs"]
 
             # The consumer's output is the exposed workflow output...
-            consumer = self._row_with_output_id(summary, final_output_id)
+            consumer = self._row_with_output_id(summary, final_output_id, "dataset")
             assert consumer is not None and consumer["seeded"] is True, summary["jobs"]
             assert any(o["exposed"] for o in consumer["outputs"]), consumer["outputs"]
 
             # ...and walking back through the hidden intermediate reaches the
             # original upload, which is seeded as an input.
-            input_row = self._row_with_output_id(summary, d1["id"])
+            input_row = self._row_with_output_id(summary, d1["id"], "dataset")
             assert input_row is not None, summary["jobs"]
             assert input_row["step_type"] == "input_dataset" and input_row["seeded"] is True, input_row
 
@@ -576,7 +576,9 @@ class TestNotebookWorkflowExtractionSummary(_ExtractionHelpersMixin, BasePagesAp
                 inputs={"input1": {"src": "hda", "id": d1["id"]}},
                 history_id=history_id,
             )
-            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+            # The split tool only produces a dynamic collection, so the history can
+            # report ok before its job has finished populating the collection.
+            self.dataset_populator.wait_for_job(split["jobs"][0]["id"], assert_ok=True)
             split_collection = split["output_collections"][0]
             cat_list = self.dataset_populator.run_tool(
                 tool_id="cat_list",
@@ -589,16 +591,16 @@ class TestNotebookWorkflowExtractionSummary(_ExtractionHelpersMixin, BasePagesAp
 
             summary = self._extraction_summary(page["id"])
 
-            consumer = self._row_with_output_id(summary, final_output_id)
+            consumer = self._row_with_output_id(summary, final_output_id, "dataset")
             assert consumer is not None and consumer["seeded"] is True, summary["jobs"]
             assert consumer["tool_id"] == "cat_list", consumer
 
-            producer = self._row_with_output_id(summary, split_collection["id"])
+            producer = self._row_with_output_id(summary, split_collection["id"], "dataset_collection")
             assert producer is not None and producer["seeded"] is True, summary["jobs"]
             assert producer["tool_id"] == "collection_split_on_column", producer
             assert producer["implicit_collection_jobs_id"] is None, producer
 
-            input_row = self._row_with_output_id(summary, d1["id"])
+            input_row = self._row_with_output_id(summary, d1["id"], "dataset")
             assert input_row is not None, summary["jobs"]
             assert input_row["step_type"] == "input_dataset" and input_row["seeded"] is True, input_row
 
@@ -649,7 +651,7 @@ class TestNotebookWorkflowExtractionSummary(_ExtractionHelpersMixin, BasePagesAp
                 assert map_row["seeded"] is True, (variant, map_row)
                 assert map_row["implicit_collection_jobs_id"] == icj_id, (variant, map_row)
                 assert all(not o["exposed"] for o in map_row["outputs"]), (variant, map_row["outputs"])
-                input_row = self._row_with_output_id(summary, input_hdca["id"])
+                input_row = self._row_with_output_id(summary, input_hdca["id"], "dataset_collection")
                 assert input_row is not None and input_row["seeded"] is True, (variant, summary["jobs"])
 
     def test_job_directive_on_upload_seeds_input_with_warning(self):
@@ -662,7 +664,7 @@ class TestNotebookWorkflowExtractionSummary(_ExtractionHelpersMixin, BasePagesAp
             page = self.dataset_populator.new_notebook_referencing(history_id, job_ids=[upload_jobs[0]["id"]])
 
             summary = self._extraction_summary(page["id"])
-            input_row = self._row_with_output_id(summary, hda["id"])
+            input_row = self._row_with_output_id(summary, hda["id"], "dataset")
             assert input_row is not None, summary["jobs"]
             assert input_row["step_type"] == "input_dataset", input_row
             assert input_row["seeded"] is True, input_row
@@ -686,7 +688,7 @@ class TestNotebookWorkflowExtractionSummary(_ExtractionHelpersMixin, BasePagesAp
             summary = self._extraction_summary(page["id"])
 
             # Rows are keyed by the original (source) id even though the copy lives here.
-            row = self._row_with_output_id(summary, source_hdca["id"])
+            row = self._row_with_output_id(summary, source_hdca["id"], "dataset_collection")
             assert row is not None, summary["jobs"]
             assert row["step_type"] == "input_collection", row
             assert row["seeded"] is True, row
