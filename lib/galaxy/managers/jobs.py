@@ -1670,6 +1670,69 @@ def invocation_job_source_iter(sa_session, invocation_id):
             yield from invocation_job_source_iter(sa_session, row[3])
 
 
+def invocation_step_job_states(sa_session, invocation_id: int) -> list[dict[str, Any]]:
+    """Job state counts for each scheduled step of one invocation, in step order.
+
+    Mapped steps are counted with a ``GROUP BY``, so the result grows with the
+    number of steps, not jobs. Subworkflow steps carry their
+    ``subworkflow_invocation_id`` rather than their jobs.
+    """
+    statement = (
+        select(
+            WorkflowStep.order_index,
+            WorkflowStep.label,
+            WorkflowStep.type,
+            WorkflowStep.tool_id,
+            WorkflowInvocationStep.state,
+            WorkflowInvocationStep.job_id,
+            WorkflowInvocationStep.implicit_collection_jobs_id,
+            WorkflowInvocationStep.subworkflow_invocation_id,
+        )
+        .join(WorkflowStep, WorkflowStep.id == WorkflowInvocationStep.workflow_step_id)
+        .where(WorkflowInvocationStep.workflow_invocation_id == invocation_id)
+        .order_by(WorkflowStep.order_index)
+    )
+    rows = sa_session.execute(statement).all()
+    source_ids = []
+    source_types = []
+    for *_, job_id, implicit_collection_jobs_id, _subworkflow_invocation_id in rows:
+        if job_id:
+            source_ids.append(job_id)
+            source_types.append("Job")
+        elif implicit_collection_jobs_id:
+            source_ids.append(implicit_collection_jobs_id)
+            source_types.append("ImplicitCollectionJobs")
+    summaries = iter(fetch_job_states(sa_session, source_ids, source_types))
+
+    steps = []
+    for (
+        order_index,
+        label,
+        step_type,
+        tool_id,
+        state,
+        job_id,
+        implicit_collection_jobs_id,
+        subworkflow_invocation_id,
+    ) in rows:
+        summary = (next(summaries) if job_id or implicit_collection_jobs_id else None) or {}
+        steps.append(
+            {
+                "order_index": order_index,
+                "label": label,
+                "type": step_type,
+                "tool_id": tool_id,
+                "state": state,
+                "job_id": job_id,
+                "implicit_collection_jobs_id": implicit_collection_jobs_id,
+                "subworkflow_invocation_id": subworkflow_invocation_id,
+                "populated_state": summary.get("populated_state"),
+                "job_states": summary.get("states"),
+            }
+        )
+    return steps
+
+
 def _get_direct_job_metrics(sa_session: galaxy_scoped_session, invocation_id: int):
     """Get job metrics for direct jobs in this invocation (not subworkflows)."""
     single_job_stmnt = (

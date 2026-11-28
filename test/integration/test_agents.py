@@ -436,6 +436,8 @@ class TestMCPServerSmoke(IntegrationTestCase):
             "upload_file_from_url",
             "invoke_workflow",
             "get_job_status",
+            "list_jobs",
+            "get_invocation_step_jobs_summary",
             "list_user_tools",
             "create_user_tool",
             "delete_user_tool",
@@ -452,6 +454,195 @@ class TestMCPServerSmoke(IntegrationTestCase):
             "revert_page_revision",
         }
         assert expected.issubset(tool_names), f"Missing tools: {expected - tool_names}"
+
+    def _call_tool(self, mcp_server, name: str, arguments: dict):
+        async def _call():
+            async with Client(mcp_server) as client:
+                return await client.call_tool(name, arguments)
+
+        return self._run_async(_call())
+
+    def test_mcp_invocation_step_jobs_summary(self):
+        mcp_server = self._get_mcp_server()
+        api_key = self._get_api_key()
+        workflow_populator = WorkflowPopulator(self._get_interactor(api_key=api_key))
+        run = workflow_populator.run_workflow(
+            """
+class: GalaxyWorkflow
+inputs:
+  input_c: collection
+  input_d: data
+steps:
+  cat1:
+    tool_id: cat1
+    in:
+      input1: input_c
+  cat_single:
+    tool_id: cat1
+    in:
+      input1: input_d
+""",
+            test_data="""
+input_c:
+  collection_type: list
+  elements:
+    - identifier: first
+      content: A
+    - identifier: second
+      content: B
+input_d:
+  value: 1.bed
+  type: File
+""",
+            wait=True,
+            assert_ok=True,
+        )
+
+        result = self._call_tool(
+            mcp_server,
+            "get_invocation_step_jobs_summary",
+            {"api_key": api_key, "invocation_id": run.invocation_id},
+        )
+
+        assert result.data["invocation_id"] == run.invocation_id
+        assert result.data["invocation_state"] in ("scheduled", "completed")
+        input_step, _, cat1_step, cat_single_step = result.data["steps"]
+        assert input_step["label"] == "input_c"
+        assert input_step["job_states"] is None
+        assert cat1_step["order_index"] == 2
+        assert cat1_step["label"] == "cat1"
+        assert cat1_step["tool_id"] == "cat1"
+        assert cat1_step["job_states"] == {"ok": 2}
+        assert cat1_step["job_id"] is None
+        invocation = workflow_populator.get_invocation(run.invocation_id)
+        assert cat1_step["implicit_collection_jobs_id"] == invocation["steps"][2]["implicit_collection_jobs_id"]
+        assert cat_single_step["label"] == "cat_single"
+        assert cat_single_step["job_states"] == {"ok": 1}
+        assert cat_single_step["job_id"] == invocation["steps"][3]["job_id"]
+        assert cat_single_step["implicit_collection_jobs_id"] is None
+
+        _, other_api_key = self._setup_user_get_key("mcp_summary_other_user@test.com")
+        with pytest.raises(ToolError, match="History is not accessible to the current user"):
+            self._call_tool(
+                mcp_server,
+                "get_invocation_step_jobs_summary",
+                {"api_key": other_api_key, "invocation_id": run.invocation_id},
+            )
+
+    def test_mcp_failed_job_in_mapped_subworkflow_step(self):
+        mcp_server = self._get_mcp_server()
+        api_key = self._get_api_key()
+        workflow_populator = WorkflowPopulator(self._get_interactor(api_key=api_key))
+        run = workflow_populator.run_workflow(
+            """
+class: GalaxyWorkflow
+inputs:
+  input_c: collection
+steps:
+  nested:
+    run:
+      class: GalaxyWorkflow
+      inputs:
+        inner_input:
+          type: collection
+          collection_type: list
+      steps:
+        fail:
+          tool_id: fail_identifier
+          state:
+            failbool: true
+          in:
+            input1: inner_input
+    in:
+      inner_input: input_c
+""",
+            test_data="""
+input_c:
+  collection_type: list
+  elements:
+    - identifier: fail
+      content: A
+    - identifier: success
+      content: B
+""",
+            wait=True,
+            assert_ok=False,
+        )
+
+        outer = self._call_tool(
+            mcp_server,
+            "get_invocation_step_jobs_summary",
+            {"api_key": api_key, "invocation_id": run.invocation_id},
+        )
+        nested_step = outer.data["steps"][1]
+        assert nested_step["type"] == "subworkflow"
+        assert nested_step["job_states"] is None
+        subworkflow_invocation_id = nested_step["subworkflow_invocation_id"]
+
+        inner = self._call_tool(
+            mcp_server,
+            "get_invocation_step_jobs_summary",
+            {"api_key": api_key, "invocation_id": subworkflow_invocation_id},
+        )
+        fail_step = inner.data["steps"][1]
+        assert fail_step["tool_id"] == "fail_identifier"
+        assert fail_step["job_states"] == {"ok": 1, "error": 1}
+
+        failed = self._call_tool(
+            mcp_server,
+            "list_jobs",
+            {"api_key": api_key, "invocation_id": subworkflow_invocation_id, "states": ["error"]},
+        )
+        (failed_job,) = failed.data["jobs"]
+        assert failed_job["tool_id"] == "fail_identifier"
+        with pytest.raises(ToolError, match="errored"):
+            self._call_tool(
+                mcp_server,
+                "list_jobs",
+                {"api_key": api_key, "invocation_id": subworkflow_invocation_id, "states": ["errored"]},
+            )
+
+        status = self._call_tool(
+            mcp_server,
+            "get_job_status",
+            {"api_key": api_key, "job_id": failed_job["id"], "include_logs": True},
+        )
+        assert status.data["job"]["exit_code"] == 127
+        assert status.data["logs"]["truncated"] is False
+        (job_message,) = status.data["logs"]["job_messages"]
+        assert "Failing exit code." in job_message["desc"]
+
+    def test_mcp_list_jobs_without_filters_lists_only_own_jobs_for_admin(self):
+        mcp_server = self._get_mcp_server()
+        _, admin_api_key = self._setup_user_get_key("test@bx.psu.edu")
+        _, other_api_key = self._setup_user_get_key("mcp_list_jobs_other_user@test.com")
+        admin_populator = DatasetPopulator(self._get_interactor(api_key=admin_api_key))
+        admin_history_id = admin_populator.new_history()
+        admin_populator.new_dataset(admin_history_id, content="A", wait=True)
+        other_populator = DatasetPopulator(self._get_interactor(api_key=other_api_key))
+        other_history_id = other_populator.new_history()
+        other_populator.new_dataset(other_history_id, content="A", wait=True)
+        other_job_ids = {job["id"] for job in other_populator.history_jobs(other_history_id)}
+        assert other_job_ids
+
+        listed = self._call_tool(
+            mcp_server,
+            "list_jobs",
+            {"api_key": admin_api_key, "limit": 100},
+        )
+        listed_job_ids = {job["id"] for job in listed.data["jobs"]}
+        assert listed_job_ids
+        assert not listed_job_ids & other_job_ids
+        for job in listed.data["jobs"]:
+            assert "command_line" not in job
+            assert "traceback" not in job
+
+        with pytest.raises(ToolError, match="limit must be between 1 and 100"):
+            self._call_tool(
+                mcp_server,
+                "list_jobs",
+                {"api_key": admin_api_key, "limit": 0},
+            )
 
     def test_mcp_connect_with_valid_key(self):
         """connect() succeeds with a valid API key and returns user + server info."""

@@ -25,6 +25,7 @@ from galaxy.managers.jobs import (
     fetch_job_states,
     get_job_metrics_for_invocation,
     invocation_job_source_iter,
+    invocation_step_job_states,
     summarize_metrics,
 )
 from galaxy.managers.workflows import WorkflowsManager
@@ -202,6 +203,9 @@ class InvocationsService(ServiceBase, ConsumesModelStores):
             ids.append(job_source_id)
             types.append(job_source_type)
         return fetch_job_states(trans.sa_session, ids, types)
+
+    def show_invocation_step_job_states(self, trans: ProvidesAppContext, invocation_id: int) -> list[dict[str, Any]]:
+        return invocation_step_job_states(trans.sa_session, invocation_id)
 
     def show_invocation_jobs_summary(self, trans: ProvidesAppContext, invocation_id) -> dict[str, Any]:
         ids = [invocation_id]

@@ -31,6 +31,7 @@ from starlette.routing import Route
 from galaxy.agents.operations import AgentOperationsManager
 from galaxy.exceptions import AuthenticationFailed
 from galaxy.managers.users import UserManager
+from galaxy.schema.states import JobState
 from galaxy.structured_app import StructuredApp
 from galaxy.tool_util.deps.mulled.recommend import (
     biocontainer_tag_built,
@@ -427,7 +428,9 @@ def get_mcp_app(gx_app: StructuredApp):
             return ops_manager.run_tool(history_id, tool_id, inputs)
 
     @mcp.tool()
-    def get_job_status(job_id: str, ctx: MCPContext, api_key: ApiKey = None) -> dict[str, Any]:
+    def get_job_status(
+        job_id: str, ctx: MCPContext, api_key: ApiKey = None, include_logs: bool = False
+    ) -> dict[str, Any]:
         """Get the status and details of a Galaxy job.
 
         Use this after run_tool() or invoke_workflow() to check whether the
@@ -435,6 +438,10 @@ def get_mcp_app(gx_app: StructuredApp):
 
         Args:
             job_id: Galaxy job ID returned by run_tool() or job listings.
+            include_logs: Also return `logs` with stderr, stdout, info and
+                job_messages (why an exit code or output rule failed the job).
+                Long stderr, stdout and info are cut to their head and tail, and
+                `truncated` says so. Use it on failed jobs to find out why they failed.
 
         Returns:
             Dict with job state, tool ID, runtime info, and exit code (when finished).
@@ -445,7 +452,42 @@ def get_mcp_app(gx_app: StructuredApp):
         """
         with _mcp_error_handler("get_job_status"):
             ops_manager = get_operations_manager(api_key, ctx)
-            return ops_manager.get_job_status(job_id)
+            return ops_manager.get_job_status(job_id, include_logs)
+
+    @mcp.tool()
+    def list_jobs(
+        ctx: MCPContext,
+        api_key: ApiKey = None,
+        invocation_id: str | None = None,
+        history_id: str | None = None,
+        states: list[JobState] | None = None,
+        tool_id: str | None = None,
+        limit: int = 20,
+        offset: int = 0,
+    ) -> dict[str, Any]:
+        """List jobs, most recently updated first.
+
+        Without invocation_id or history_id, lists your own jobs.
+
+        Args:
+            invocation_id: Jobs of this workflow invocation's steps, including each
+                job of a step mapped over a collection. Jobs of subworkflow steps
+                are listed under the subworkflow's own invocation ID.
+            history_id: Jobs that ran in this history.
+            states: Only jobs in these states, e.g. ["error", "failed"].
+            tool_id: Only jobs of this tool.
+            limit: Max jobs returned, 1-100 (default 20).
+            offset: Skip this many jobs (default 0).
+
+        Returns:
+            Dict with `jobs` (id, tool_id, state, exit_code, history_id, ...) and `count`.
+
+        NEXT STEPS:
+        - Why a job failed: get_job_status(job_id, include_logs=True)
+        """
+        with _mcp_error_handler("list_jobs"):
+            ops_manager = get_operations_manager(api_key, ctx)
+            return ops_manager.list_jobs(invocation_id, history_id, states, tool_id, limit, offset)
 
     @mcp.tool()
     def create_history(name: str, ctx: MCPContext, api_key: ApiKey = None) -> dict[str, Any]:
@@ -774,12 +816,38 @@ def get_mcp_app(gx_app: StructuredApp):
             Dict with invocation state, per-step status, inputs, and outputs.
 
         NEXT STEPS:
+        - Job states per step: get_invocation_step_jobs_summary(invocation_id)
         - Cancel a running invocation: cancel_workflow_invocation(invocation_id)
         - View outputs in the history: get_history_contents(history_id)
         """
         with _mcp_error_handler("get_invocation_details"):
             ops_manager = get_operations_manager(api_key, ctx)
             return ops_manager.get_invocation_details(invocation_id)
+
+    @mcp.tool()
+    def get_invocation_step_jobs_summary(invocation_id: str, ctx: MCPContext, api_key: ApiKey = None) -> dict[str, Any]:
+        """Count job states per step of a workflow invocation, to find the steps that failed.
+
+        The response stays small however many jobs a step runs over a collection.
+
+        Args:
+            invocation_id: Galaxy workflow invocation ID.
+
+        Returns:
+            Dict with `invocation_state` and `steps`, one entry per scheduled step in
+            step order: order_index, label, type, tool_id, step state, `job_states`
+            (job counts by state, e.g. {"ok": 98, "error": 2}; null for steps without
+            jobs), `job_id` for a single-job step, `implicit_collection_jobs_id` for a
+            mapped step and `subworkflow_invocation_id` for a subworkflow step.
+
+        NEXT STEPS:
+        - Failed jobs of the invocation: list_jobs(invocation_id=..., states=["error", "failed"])
+        - Why a job failed: get_job_status(job_id, include_logs=True)
+        - Subworkflow step: get_invocation_step_jobs_summary(subworkflow_invocation_id)
+        """
+        with _mcp_error_handler("get_invocation_step_jobs_summary"):
+            ops_manager = get_operations_manager(api_key, ctx)
+            return ops_manager.get_invocation_step_jobs_summary(invocation_id)
 
     @mcp.tool()
     def cancel_workflow_invocation(invocation_id: str, ctx: MCPContext, api_key: ApiKey = None) -> dict[str, Any]:
