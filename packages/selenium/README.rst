@@ -205,49 +205,54 @@ The ``cli.py`` module provides infrastructure for building command-line automati
     - ``--selenium-remote``: Remote execution (Selenium only)
 
 **DriverWrapper**
-    Adapts argparse args to a NavigatesGalaxy instance:
+    Adapts argparse args to a ``GalaxySeleniumContext``:
 
     - Handles backend selection
     - Manages virtual display (for headless Selenium)
     - Provides Galaxy navigation utilities
+    - Writes ``screenshot()`` calls into an assigned story
     - Cleanup via ``finish()`` method
 
 .. rubric:: Example: dump_tour.py
 
-The ``scripts/dump_tour.py`` script demonstrates CLI tool development:
+The ``scripts/dump_tour.py`` script (``gx-dump-tour``) walks a tour and writes it
+up as a story - one screenshot per step with its target highlighted, followed by
+the step's text:
 
 .. code-block:: python
 
-    #!/usr/bin/env python
     import argparse
+
     from galaxy.selenium import cli
+    from galaxy.selenium.stories import Story, run_directory, write_story
+    from galaxy.selenium.stories.tours import StoryTourCallback
 
     def main(argv=None):
         args = _arg_parser().parse_args(argv)
         driver_wrapper = cli.DriverWrapper(args)
-
-        # Use driver_wrapper for automation
-        callback = DumpTourCallback(driver_wrapper, args.output)
-        driver_wrapper.run_tour(args.tour, tour_callback=callback)
+        try:
+            driver_wrapper.story = Story("My Tour", "", run_directory(args.output, "my_tour_"))
+            driver_wrapper.run_tour(args.tour, tour_callback=StoryTourCallback(driver_wrapper))
+            write_story(driver_wrapper.story)
+        finally:
+            driver_wrapper.finish()
 
     def _arg_parser():
         parser = argparse.ArgumentParser(description="Walk a Galaxy tour")
         parser.add_argument("tour", help="tour to walk")
-        parser.add_argument("-o", "--output", help="screenshot output dir")
+        parser.add_argument("-o", "--output", default="tour_dumps")
         parser = cli.add_selenium_arguments(parser)  # Add standard args
         return parser
 
-    class DumpTourCallback:
-        def handle_step(self, step, step_index: int):
-            self.driver_wrapper.save_screenshot(f"{output}/{step_index}.png")
-
-Usage::
+Each run writes ``story.md``, ``story.html`` (and ``story.pdf`` when weasyprint
+is available) into a new directory under ``--output``, and ``latest`` links the
+newest. Usage::
 
     # With Selenium backend
-    python dump_tour.py my_tour.yaml --backend selenium --selenium-headless
+    gx-dump-tour config/plugins/tours/core.history.yaml --backend selenium --selenium-headless
 
     # With Playwright backend
-    python dump_tour.py my_tour.yaml --backend playwright --galaxy_url http://localhost:8080
+    gx-dump-tour config/plugins/tours/core.history.yaml --backend playwright --galaxy_url http://localhost:8080
 
 
 .. rubric:: Building Your Own CLI Tool
