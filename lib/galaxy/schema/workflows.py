@@ -20,6 +20,7 @@ from galaxy.schema.fields import (
 )
 from galaxy.schema.schema import (
     AnnotationField,
+    BasedOnWork,
     CreatorOrganization,
     HistoryContentType,
     InputDataCollectionStep,
@@ -258,6 +259,11 @@ class StoredWorkflowDetailed(StoredWorkflowSummary):
     )
     doi: list[str] | None = Field(
         None, title="DOI", description="A list of Digital Object Identifiers associated with this workflow."
+    )
+    is_based_on: list[BasedOnWork] | None = Field(
+        None,
+        title="Is Based On",
+        description="Upstream works (e.g. a pipeline in another workflow language) this workflow was derived from.",
     )
     steps: dict[
         int,

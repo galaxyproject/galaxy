@@ -597,6 +597,20 @@ def validate_creators(ro_crate: ROCrate):
             assert "url" in creator
 
 
+def validate_based_on(ro_crate: ROCrate):
+    """Upstream works are linked via isBasedOn and credit their own creators, not the workflow's."""
+    based_on = ro_crate.mainEntity.get("isBasedOn")
+    assert based_on
+    assert based_on[0].id == "https://doi.org/10.5281/zenodo.12192442"
+    assert based_on[0].type == "SoftwareSourceCode"
+    assert based_on[0]["name"] == "nf-core/demo"
+    assert based_on[0]["version"] == "1.0.2"
+    assert [creator["name"] for creator in based_on[0]["creator"]] == ["Carol"]
+    assert "Carol" not in [creator["name"] for creator in ro_crate.mainEntity.get("creator")]
+    assert [work["version"] for work in based_on] == ["1.0.2", "1.0.1", "1.0.0"]
+    assert based_on[1].id == "https://github.com/nf-core/demo"
+
+
 def validate_steps(ro_crate: ROCrate):
     """
     Validate that workflow steps (HowToStep) are correctly added.
@@ -796,6 +810,7 @@ def test_export_invocation_to_ro_crate(tmp_path):
     with store.ROCrateModelExportStore(tmp_path, app=app) as export_store:
         export_store.export_workflow_invocation(workflow_invocation)
     validate_invocation_crate_directory(tmp_path)
+    validate_based_on(open_ro_crate(tmp_path))
 
 
 def test_export_simple_invocation_to_ro_crate(tmp_path):
@@ -1921,6 +1936,28 @@ def _setup_invocation(app):
     workflow.name = "Test Workflow"
     workflow.creator_metadata = [
         {"class": "Person", "name": "Alice", "identifier": "0000-0001-2345-6789", "email": "alice@example.com"},
+    ]
+    workflow.is_based_on = [
+        {
+            "class": "SoftwareSourceCode",
+            "name": "nf-core/demo",
+            "url": "https://github.com/nf-core/demo",
+            "version": "1.0.2",
+            "identifier": "https://doi.org/10.5281/zenodo.12192442",
+            "creator": [{"class": "Person", "name": "Carol", "identifier": "https://orcid.org/0000-0003-4567-8901"}],
+        },
+        {
+            "class": "SoftwareSourceCode",
+            "name": "nf-core/demo",
+            "url": "https://github.com/nf-core/demo",
+            "version": "1.0.1",
+        },
+        {
+            "class": "SoftwareSourceCode",
+            "name": "nf-core/demo",
+            "url": "https://github.com/nf-core/demo",
+            "version": "1.0.0",
+        },
     ]
 
     # Create and associate a data_input step
