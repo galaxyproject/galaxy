@@ -99,6 +99,13 @@ const onTags = useContentItemTagSaves(
     (item) => props.getItemKey(item),
     (item, tags) => emit("tag-change", item, tags),
 );
+// A drag that starts inside a draggable element moves the element instead of selecting text,
+// so the item stops being draggable while the pointer is over its peek.
+const pointerOnPeek = ref(false);
+
+const draggable = computed(() => {
+    return !(props.item.accessible === false || props.isSubItem || subItemsVisible.value || pointerOnPeek.value);
+});
 
 const itemIsRunningInteractiveTool = computed(() => {
     // If our dataset id is in the entrypOintStore it's a running it
@@ -281,6 +288,10 @@ function onDragEnd() {
     clearDrag();
 }
 
+function onPointerOver(event: PointerEvent) {
+    pointerOnPeek.value = event.target instanceof Element && event.target.closest(".dataset-peek") !== null;
+}
+
 function onEdit() {
     router.push(itemUrls.value.edit!);
 }
@@ -330,8 +341,10 @@ function unexpandedClick(event: Event) {
         :data-state="dataState"
         tabindex="0"
         role="button"
-        :draggable="props.item.accessible === false || props.isSubItem || subItemsVisible ? false : true"
+        :draggable="draggable"
         @dragstart="onDragStart"
+        @pointerover="onPointerOver"
+        @pointerleave="pointerOnPeek = false"
         @dragend="onDragEnd"
         @keydown="onKeyDown">
         <!-- eslint-disable-next-line vuejs-accessibility/click-events-have-key-events, vuejs-accessibility/no-static-element-interactions -->

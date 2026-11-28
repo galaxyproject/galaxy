@@ -68,7 +68,7 @@ function mountItem(content = { ...item, tags: [...item.tags] }) {
         },
         global: localVue,
         stubs: {
-            DatasetDetails: true,
+            DatasetDetails: { template: '<pre class="dataset-peek">chr1\t100</pre>' },
             vueTagsInput: false,
         },
         pinia: createTestingPinia({ createSpy: vi.fn, stubActions: false }),
@@ -449,5 +449,15 @@ describe("ContentItem", () => {
         const button = wrapper.get("button[title='Inputs/Outputs highlighted for this item']");
         await button.trigger("keypress", { key: "Enter" });
         expect(wrapper.emitted("toggleHighlights")).toBeUndefined();
+    });
+
+    it("lets the peek text be selected instead of dragging the item", async () => {
+        expect(wrapper.attributes("draggable")).toBe("true");
+
+        await wrapper.find(".dataset-peek").trigger("pointerover");
+        expect(wrapper.attributes("draggable")).toBe("false");
+
+        await wrapper.trigger("pointerleave");
+        expect(wrapper.attributes("draggable")).toBe("true");
     });
 });
