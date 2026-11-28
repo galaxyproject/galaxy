@@ -1,0 +1,12 @@
+<tool id="section_name_digit_suffix" name="section_name_digit_suffix" version="0.1.0">
+    <description>Top-level section named like a repeat instance (opts_1)</description>
+    <command>cat '$opts_1.input1' > '$out_file1'</command>
+    <inputs>
+        <section name="opts_1" title="Options">
+            <param name="input1" type="data" format="txt" label="Input" />
+        </section>
+    </inputs>
+    <outputs>
+        <data name="out_file1" format="txt" />
+    </outputs>
+</tool>
