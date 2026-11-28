@@ -1,5 +1,7 @@
+import asyncio
 import os
 import stat
+import threading
 import uuid
 from collections.abc import Mapping
 from logging import getLogger
@@ -9,6 +11,7 @@ from typing import (
     TYPE_CHECKING,
     Union,
 )
+from weakref import WeakKeyDictionary
 
 import anyio
 from fastapi import (
@@ -19,6 +22,8 @@ from fastapi import (
 )
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from sqlalchemy.pool import QueuePool
+from starlette.requests import ClientDisconnect
 from starlette.responses import (
     FileResponse,
     Response,
@@ -44,6 +49,8 @@ from galaxy.web.framework.base import (
 )
 
 if TYPE_CHECKING:
+    from sqlalchemy.engine import Engine
+    from sqlalchemy.pool import Pool
     from starlette.background import BackgroundTask
     from starlette.routing import BaseRoute
     from starlette.types import (
@@ -94,17 +101,220 @@ def _live_request_sessions() -> list:
     return sessions
 
 
-def _release_request_sessions(sessions: list) -> None:
+def _release_request_sessions(sessions: list, slot: Optional["RequestSessionSlot"] = None) -> None:
     """Close the captured request-scoped sessions, returning their pooled connections.
 
-    ``Session.close()`` is idempotent, so the later guarded close in
-    ``get_app_with_request_session``'s teardown is harmless.
+    Also gives up the request's session slot, so that a long-lived stream does
+    not count against :class:`RequestSessionLimiter` either.
+
+    ``Session.close()`` and ``RequestSessionSlot.release()`` are idempotent, so
+    the later guarded close in ``get_app_with_request_session``'s teardown is harmless.
     """
     for session in sessions:
         try:
             session.close()
         except Exception:
             log.warning("Failed to release request-scoped DB session before streaming", exc_info=True)
+    if slot is not None:
+        slot.release()
+
+
+def release_request_sessions() -> None:
+    """Return this request's pooled DB connection(s) before long non-DB work, e.g. reading a large request body."""
+    _release_request_sessions(_live_request_sessions(), _request_session_slot())
+
+
+#: Share of the connection pool that request-scoped API sessions leave to the
+#: other users of the pool in a web process: legacy WSGI controllers, the
+#: database heartbeat, control tasks and other background threads.
+RESERVED_POOL_FRACTION = 0.2
+MIN_RESERVED_POOL_CONNECTIONS = 2
+#: A request that waits this many seconds for a session slot is logged.
+SLOW_SLOT_WAIT = 30
+#: Status of the response to a request whose client went away while it waited for a slot, nginx's "client closed request".
+CLIENT_CLOSED_REQUEST = 499
+REQUEST_SESSION_SLOT_KEY = "galaxy_request_session_slot"
+
+
+def request_session_limit(pool: "Pool", thread_tokens: float) -> int | None:
+    """How many requests may hold a request-scoped session at once, ``None`` for no limit.
+
+    Never more than there are threadpool threads, so that every request that
+    holds a session can also get a thread to use it, and never more than the
+    pool can serve next to its other users.
+    """
+    if not isinstance(pool, QueuePool):
+        return None
+    # QueuePool has no public accessor for its max_overflow.
+    max_overflow = pool._max_overflow
+    if pool.size() <= 0 or max_overflow < 0:
+        # No upper bound on the number of connections.
+        return None
+    capacity = pool.size() + max_overflow
+    reserved = max(MIN_RESERVED_POOL_CONNECTIONS, int(capacity * RESERVED_POOL_FRACTION))
+    return max(1, int(min(thread_tokens, capacity - reserved)))
+
+
+def _has_body(request: Request) -> bool:
+    headers = request.headers
+    return "transfer-encoding" in headers or headers.get("content-length", "0") != "0"
+
+
+async def _client_disconnect(request: Request) -> None:
+    """Return once the client of ``request``, whose body has been read, goes away."""
+    try:
+        while (await request.receive())["type"] != "http.disconnect":
+            pass
+    except Exception:
+        # Nothing can be received from the client any more.
+        pass
+
+
+class RequestSessionSlot:
+    """One request's permission to hold a request-scoped database session."""
+
+    def __init__(self, limiter: "RequestSessionLimiter") -> None:
+        self._limiter = limiter
+        self._lock = threading.Lock()
+        self._held = True
+
+    def release(self) -> None:
+        """Give the slot to the next waiting request. Idempotent, and safe to call from a worker thread."""
+        with self._lock:
+            if not self._held:
+                return
+            self._held = False
+        self._limiter._release()
+
+
+class RequestSessionLimiter:
+    """Bounds how many requests of a web process hold a request-scoped database session.
+
+    WHY: a request checks a pooled connection out in its first dependency that
+    touches the database and keeps it until its teardown, but only borrows a
+    threadpool thread for one dependency or the endpoint body at a time. With
+    more requests in flight than the pool has connections, every connection
+    ends up held by a request that is queued for a thread, while the threads
+    are blocked in requests that wait for a connection. Nothing moves until the
+    pool timeout fires, the requests it fails are retried, and the process
+    stays in that state. Everything else that uses the pool times out with it,
+    e.g. the database heartbeat.
+
+    A request therefore waits here, on the event loop and holding neither a
+    thread nor a connection, until it may open a session.
+    """
+
+    def __init__(self, limit: int) -> None:
+        self.limit = limit
+        self._loop = asyncio.get_running_loop()
+        self._semaphore = asyncio.Semaphore(limit)
+
+    async def acquire(self, request: Optional[Request] = None) -> RequestSessionSlot:
+        """Wait for a slot.
+
+        A ``request`` without a body is dropped with :data:`CLIENT_CLOSED_REQUEST`
+        when its client goes away while it waits, so that the slot it would get
+        later serves a client that is still there. Watching a request with a body
+        would read the whole body into memory before its endpoint can stream it.
+        """
+        if not self._semaphore.locked():
+            await self._semaphore.acquire()
+            return RequestSessionSlot(self)
+        # Waiting has no timeout, so this is what shows that the requests holding the slots are stuck.
+        slow = self._loop.call_later(
+            SLOW_SLOT_WAIT,
+            log.warning,
+            "A request has waited %d seconds for a database session slot, all %d are held",
+            SLOW_SLOT_WAIT,
+            self.limit,
+        )
+        try:
+            if request is None or _has_body(request):
+                await self._semaphore.acquire()
+            elif not await self._acquire_unless_disconnected(request):
+                raise HTTPException(
+                    CLIENT_CLOSED_REQUEST, "The client closed the request while it waited for a database session slot."
+                )
+        finally:
+            slow.cancel()
+        return RequestSessionSlot(self)
+
+    async def _acquire_unless_disconnected(self, request: Request) -> bool:
+        """Acquire the semaphore, or return ``False`` when the client goes away first."""
+        try:
+            # Caches the empty body, so that the endpoint can still read it and only a disconnect is left to receive.
+            await request.body()
+        except ClientDisconnect:
+            return False
+        acquired = asyncio.ensure_future(self._semaphore.acquire())
+        disconnected = asyncio.ensure_future(_client_disconnect(request))
+        try:
+            await asyncio.wait((acquired, disconnected), return_when=asyncio.FIRST_COMPLETED)
+        except BaseException:
+            acquired.cancel()
+            if acquired.done() and not acquired.cancelled():
+                self._semaphore.release()
+            raise
+        finally:
+            disconnected.cancel()
+        if acquired.done():
+            return True
+        # A waiter that is cancelled after it was woken up hands the semaphore on.
+        acquired.cancel()
+        return False
+
+    def _release(self) -> None:
+        try:
+            on_loop = asyncio.get_running_loop() is self._loop
+        except RuntimeError:
+            on_loop = False
+        if on_loop:
+            self._semaphore.release()
+        elif not self._loop.is_closed():
+            # asyncio primitives are not thread-safe; hand the release to the loop.
+            self._loop.call_soon_threadsafe(self._semaphore.release)
+
+
+_request_session_limiters: "WeakKeyDictionary[Engine, RequestSessionLimiter | None]" = WeakKeyDictionary()
+
+
+def _request_session_limiter(engine: "Engine") -> RequestSessionLimiter | None:
+    """The limiter for the requests that the running event loop serves from ``engine``."""
+    try:
+        limiter = _request_session_limiters[engine]
+    except KeyError:
+        pass
+    else:
+        if limiter is None or limiter._loop is asyncio.get_running_loop():
+            return limiter
+    limit = request_session_limit(engine.pool, anyio.to_thread.current_default_thread_limiter().total_tokens)
+    limiter = _request_session_limiters[engine] = RequestSessionLimiter(limit) if limit is not None else None
+    if limiter is not None:
+        log.info("At most %d requests at a time hold a database session (%s)", limit, engine.pool.status())
+    return limiter
+
+
+def _request_session_slot() -> RequestSessionSlot | None:
+    """The session slot this request holds, if any."""
+    if not context.exists():
+        return None
+    return context.data.get(REQUEST_SESSION_SLOT_KEY)
+
+
+async def acquire_request_session_slot(
+    engine: "Engine", request: Optional[Request] = None
+) -> RequestSessionSlot | None:
+    """Wait until this request may hold a request-scoped session on ``engine``.
+
+    A request takes one slot however many of its dependencies ask for one.
+    Returns ``None`` when the engine's pool is unbounded.
+    """
+    slot = _request_session_slot()
+    if slot is None:
+        limiter = _request_session_limiter(engine)
+        if limiter is not None:
+            slot = context.data[REQUEST_SESSION_SLOT_KEY] = await limiter.acquire(request)
+    return slot
 
 
 class GalaxyFileResponse(FileResponse):
@@ -151,6 +361,7 @@ class GalaxyFileResponse(FileResponse):
         # request's asyncio task (so the request-id ContextVar resolves), to
         # release before streaming the body. See GalaxyStreamingResponse.
         self._sessions_to_release = _live_request_sessions()
+        self._session_slot = _request_session_slot()
 
     async def __call__(self, scope: "Scope", receive: "Receive", send: "Send") -> None:
         if self.stat_result is None:
@@ -189,7 +400,7 @@ class GalaxyFileResponse(FileResponse):
         # (or a header-only x-accel/x-sendfile/HEAD response). Release the pooled
         # connection(s) before we start sending so a slow/large download doesn't
         # pin them for the whole transfer.
-        _release_request_sessions(self._sessions_to_release)
+        _release_request_sessions(self._sessions_to_release, self._session_slot)
         await send(
             {
                 "type": "http.response.start",
@@ -268,9 +479,10 @@ class GalaxyStreamingResponse(StreamingResponse):
         # ContextVar resolves). We never call the scoped proxy, which would
         # lazily create a session if none exists.
         self._sessions_to_release = _live_request_sessions()
+        self._session_slot = _request_session_slot()
 
     async def stream_response(self, send: "Send") -> None:
-        _release_request_sessions(self._sessions_to_release)
+        _release_request_sessions(self._sessions_to_release, self._session_slot)
         await super().stream_response(send)
 
 

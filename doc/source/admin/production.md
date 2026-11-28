@@ -174,6 +174,8 @@ For those readers who've already been running Galaxy on a cluster, a bit of info
 
 If your server logs errors about the database connection pool size, you may need to increase the default minimum and maximum number of pool connections, 5 and 10.  These config file options are `database_engine_option_pool_size` and `database_engine_option_max_overflow`.
 
+Each Galaxy web process limits how many API requests use the database at the same time. The limit is four fifths of the connection pool (`database_engine_option_pool_size` plus `database_engine_option_max_overflow`), at most 40, so a pool above 50 connections does not raise it. The rest of the pool is kept for the legacy web pages and for background work such as the database heartbeat. Requests over the limit wait for their turn, and one that sends no data, like most GET requests, is dropped with status 499 if its client disconnects while it waits. Each process logs its limit when it serves its first request. The warning `A request has waited 30 seconds for a database session slot` means the requests holding the slots are slow or stuck, which a larger pool will not fix once the limit is at 40.
+
 Finally, if you are using Galaxy <= release_2014.06.02, we recommend that you instruct Galaxy to use one database connection per thread, to avoid connection overhead and overuse.  This can be enabled with `database_engine_option_strategy: threadlocal`.
 
 ### Make the proxy handle uploads and downloads

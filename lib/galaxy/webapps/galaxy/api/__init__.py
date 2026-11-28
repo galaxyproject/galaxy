@@ -7,6 +7,7 @@ from collections.abc import (
     AsyncGenerator,
     Callable,
 )
+from contextlib import aclosing
 from enum import Enum
 from string import Template
 from typing import (
@@ -90,6 +91,7 @@ from galaxy.tool_util.parameters import (
     ToolState,
 )
 from galaxy.web.framework.decorators import require_admin_message
+from galaxy.webapps.base.api import acquire_request_session_slot
 from galaxy.webapps.base.controller import BaseAPIController
 from galaxy.webapps.galaxy.api.cbv import cbv
 from galaxy.work.context import (
@@ -108,16 +110,23 @@ def get_app() -> StructuredApp:
     return cast(StructuredApp, galaxy_app.app)
 
 
-async def get_app_with_request_session() -> AsyncGenerator[StructuredApp, None]:
+async def get_app_with_request_session(request: Request) -> AsyncGenerator[StructuredApp, None]:
     app = get_app()
     request_id = request_context.data["X-Request-ID"]
+    # Wait for a session slot before anything can check a connection out, see RequestSessionLimiter.
+    slot = await acquire_request_session_slot(app.model.engine, request)
     app.model.set_request_id(request_id)
     app.install_model.set_request_id(request_id)
     try:
         yield app
     finally:
-        app.model.unset_request_id(request_id)
-        app.install_model.unset_request_id(request_id)
+        try:
+            app.model.unset_request_id(request_id)
+            app.install_model.unset_request_id(request_id)
+        finally:
+            # Nothing waits on a slot with a timeout, so a slot that is not given back is never recovered.
+            if slot is not None:
+                slot.release()
 
 
 DependsOnApp = cast(StructuredApp, Depends(get_app_with_request_session))
@@ -136,8 +145,11 @@ class GalaxyTypeDepends(Depends):
 
 def depends(dep_type: type[T], app=get_app_with_request_session) -> T:
     async def _do_resolve(request: Request):
-        async for _dep in app():
-            yield _dep.resolve(dep_type)
+        # An exception thrown in at the yield leaves the loop. aclosing runs the teardown of app()
+        # right then, not when the generator is garbage collected.
+        async with aclosing(app(request)) as app_generator:
+            async for _dep in app_generator:
+                yield _dep.resolve(dep_type)
 
     return cast(T, GalaxyTypeDepends(_do_resolve, dep_type))
 
