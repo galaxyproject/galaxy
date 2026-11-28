@@ -3740,6 +3740,7 @@ class ChatExchange(Base, RepresentById):
     user_id: Mapped[int] = mapped_column(ForeignKey("galaxy_user.id"), index=True, nullable=False)
     job_id: Mapped[int | None] = mapped_column(ForeignKey("job.id"), index=True, nullable=True)
     page_id: Mapped[int | None] = mapped_column(ForeignKey("page.id"), index=True, nullable=True)
+    document: Mapped[dict[str, Any] | None] = mapped_column(JSONType, nullable=True, deferred=True)
 
     user: Mapped["User"] = relationship(back_populates="chat_exchanges")
     messages: Mapped[list["ChatExchangeMessage"]] = relationship(back_populates="chat_exchange")

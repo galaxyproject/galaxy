@@ -19,6 +19,7 @@ export interface PaletteContext {
         enable_notification_system?: boolean;
         interactivetools_enable?: boolean;
         llm_api_configured?: boolean;
+        ai_chat_plugin?: string | null;
     };
     /** Whether no user is logged in */
     isAnonymous: boolean;

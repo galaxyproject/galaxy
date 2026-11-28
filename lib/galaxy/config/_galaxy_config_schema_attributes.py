@@ -447,6 +447,7 @@ class GalaxyAppConfigurationAttributes:
     ai_api_key: str | None
     ai_api_base_url: str | None
     ai_model: str
+    ai_chat_plugin: str | None
     inference_services: Any
     agent_model_capabilities_file: str
     gtn_database_path: str

@@ -6014,6 +6014,16 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~
+``ai_chat_plugin``
+~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Visualization plugin shown as Galaxy AI's chat. Unset by default.
+:Default: ``None``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~~~~~~~
 ``inference_services``
 ~~~~~~~~~~~~~~~~~~~~~~

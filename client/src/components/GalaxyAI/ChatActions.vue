@@ -94,12 +94,18 @@ function onDockTo(location: "right" | "bottom") {
                 Chats
             </span>
         </GButton>
-        <GButton data-description="new chat button" size="small" transparent title="Start New Chat" @click="startNew">
+        <GButton
+            v-if="!chatStore.chatPlugin"
+            data-description="new chat button"
+            size="small"
+            transparent
+            title="Start New Chat"
+            @click="startNew">
             <FontAwesomeIcon :icon="faPlus" fixed-width />
             <span class="btn-label">New</span>
         </GButton>
         <GButton
-            v-if="(props.source === 'center' || props.source === 'docked') && !props.collapsed"
+            v-if="!chatStore.chatPlugin && (props.source === 'center' || props.source === 'docked') && !props.collapsed"
             data-description="delete chat button"
             :disabled="!props.enableDelete"
             size="small"
@@ -132,7 +138,7 @@ function onDockTo(location: "right" | "bottom") {
             @click="onDockTo('bottom')">
             <FontAwesomeIcon :icon="faAngleDoubleDown" fixed-width />
         </GButton>
-        <GButton size="small" transparent title="Open in floating window" @click="popOut">
+        <GButton v-if="!chatStore.chatPlugin" size="small" transparent title="Open in floating window" @click="popOut">
             <FontAwesomeIcon :icon="faExternalLinkAlt" fixed-width />
         </GButton>
         <GButton

@@ -185,6 +185,7 @@ describe("actionsProvider", () => {
         expect(ids(makeCtx({ config: { llm_api_configured: true }, isAnonymous: true }))).not.toContain(
             "actions:galaxy-ai",
         );
+        expect(ids(makeCtx({ config: { ai_chat_plugin: "fixture" } }))).toContain("actions:galaxy-ai");
     });
 
     it("starts a GalaxyAI conversation and seeds one from the typed question", async () => {
