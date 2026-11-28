@@ -336,6 +336,9 @@ def setup_periodic_tasks(config, celery_app):
         schedule_task("cleanup_expired_notifications", config.expired_notifications_cleanup_interval)
         schedule_task("dispatch_pending_notifications", config.dispatch_notifications_interval)
 
+    if config.enable_oauth_device_flow:
+        schedule_task("cleanup_expired_oauth_device_logins", config.oauth_device_flow_cleanup_interval)
+
     if config.object_store_cache_monitor_driver in ["auto", "celery"]:
         schedule_task("clean_object_store_caches", config.object_store_cache_monitor_interval)
 
