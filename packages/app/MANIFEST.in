@@ -244,6 +244,7 @@ include src/galaxy/tools/bundled/stats/r_wrapper.sh
 include src/galaxy/tools/bundled/stats/aggregate_binned_scores_in_intervals.xml
 include src/galaxy/tools/bundled/stats/filtering.xml
 include src/galaxy/tools/bundled/stats/filtering_1_1_0.xml
+include src/galaxy/tools/bundled/stats/filtering_1_1_1.xml
 include src/galaxy/tools/bundled/stats/grouping.xml
 include src/galaxy/tools/bundled/stats/gsummary.xml.groups
 include src/galaxy/tools/filter_empty_collection_1.1.0.xml

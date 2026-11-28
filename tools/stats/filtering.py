@@ -211,7 +211,7 @@ def get_operands(filter_condition):
 
 def stop_err(msg):
     sys.stderr.write(msg)
-    sys.exit()
+    sys.exit(1)
 
 
 in_fname = sys.argv[1]
@@ -259,6 +259,11 @@ if not check_expression(cond_text):
 # Work out which columns are used in the filter (save using 1 based counting)
 used_cols = sorted({int(match.group()[1:]) for match in re.finditer(r"c(\d)+", cond_text)})
 largest_col_index = max(used_cols)
+if largest_col_index > in_columns:
+    stop_err(
+        "Column c%d does not exist: the input has %d column%s. Columns are numbered from c1."
+        % (largest_col_index, in_columns, "" if in_columns == 1 else "s")
+    )
 
 # Prepare the column variable names and wrappers for column data types. Only
 # cast columns used in the filter.
