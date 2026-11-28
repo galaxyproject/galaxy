@@ -3,7 +3,7 @@
 cat #for $f in $parameter# #if $f.is_collection# #for $inner in $f# '${inner}' #end for# #else# '$f' # #end if# #end for# >> '$output'
     ]]></command>
     <inputs>
-        <param name="parameter" type="data_collection" ext="data" />
+        <param name="parameter" type="data_collection" />
     </inputs>
     <outputs>
         <data name="output" format="data" />

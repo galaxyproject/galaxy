@@ -7,7 +7,7 @@ echo 'NO_DATA' >> '$output'
 #end if
     ]]></command>
     <inputs>
-        <param name="parameter" type="hidden_data" ext="data" optional="true" />
+        <param name="parameter" type="hidden_data" optional="true" />
     </inputs>
     <outputs>
         <data name="output" format="data" />
