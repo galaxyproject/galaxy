@@ -184,6 +184,68 @@ describe("getCombinedStepInputs", () => {
         expect(getCombinedStepInputs(step, stepStore)).toHaveLength(0);
     });
 
+    function renameAction(newname: string) {
+        return {
+            RenameDatasetActionout_file1: {
+                action_type: "RenameDatasetAction",
+                output_name: "out_file1",
+                action_arguments: { newname },
+            },
+        };
+    }
+
+    it("adds a text port for a step input a rename action references", () => {
+        const stepStore = useWorkflowStepStore("mock-workflow");
+        const step = stepStore.addStep(
+            createTestStep(1, {
+                inputs: [regularInput],
+                postJobActions: renameAction("$(inputs.sample_name)_$(inputs.input_dataset)_#{input_dataset}"),
+            }),
+        );
+
+        const combinedInputs = getCombinedStepInputs(step, stepStore);
+
+        // input_dataset is already a tool input, so only sample_name needs a port.
+        expect(combinedInputs.map((input) => input.name)).toEqual(["sample_name", "input_dataset"]);
+        expect(combinedInputs[0]).toMatchObject({
+            input_type: "parameter",
+            type: "text",
+            optional: true,
+            rename_reference: true,
+        });
+    });
+
+    it("updates rename reference ports when the rename action changes", () => {
+        const stepStore = useWorkflowStepStore("mock-workflow");
+        const step = stepStore.addStep(createTestStep(1, { postJobActions: renameAction("$(inputs.first)") }));
+
+        stepStore.updateStep({ ...step, post_job_actions: renameAction("$(inputs.second) and ${parameter}") });
+
+        expect(getCombinedStepInputs(stepStore.getStep(1)!, stepStore).map((input) => input.name)).toEqual(["second"]);
+    });
+
+    it("adds no rename port for a tool parameter set in the step", () => {
+        const stepStore = useWorkflowStepStore("mock-workflow");
+        const step = stepStore.addStep({
+            ...createTestStep(1, { postJobActions: renameAction("first_$(inputs.lineNum)_$(inputs.sample_name)") }),
+            tool_state: { lineNum: "1" },
+        });
+
+        expect(getCombinedStepInputs(step, stepStore).map((input) => input.name)).toEqual(["sample_name"]);
+    });
+
+    it("keeps the gate port when the when and a rename action reference the same name", () => {
+        const stepStore = useWorkflowStepStore("mock-workflow");
+        const step = stepStore.addStep(
+            createTestStep(1, { when: "$(inputs.flag)", postJobActions: renameAction("$(inputs.flag)") }),
+        );
+
+        const combinedInputs = getCombinedStepInputs(step, stepStore);
+
+        expect(combinedInputs).toHaveLength(1);
+        expect(combinedInputs[0]).toMatchObject({ name: "flag", type: "boolean" });
+    });
+
     it("handles step with no inputs gracefully", () => {
         const stepStore = useWorkflowStepStore("mock-workflow");
         const step = stepStore.addStep(workflowStepZero); // Step with empty inputs

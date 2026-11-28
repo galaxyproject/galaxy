@@ -1903,6 +1903,67 @@ steps:
         assert pjas["RenameDatasetActionoutput"]["action_arguments"]["newname"] == "my_picked_output"
 
     @selenium_test
+    def test_rename_from_connected_step_input(self):
+        history_id, inputs = self.workflow_run_setup_inputs("""
+sample_sheet:
+  type: File
+  content: "sampleA\\nsampleB\\n"
+reads:
+  type: File
+  content: "ACGT\\n"
+""")
+        self.open_in_workflow_editor("""
+class: GalaxyWorkflow
+inputs:
+  sample_sheet: data
+  reads: data
+steps:
+  get_sample_name:
+    tool_id: head
+    in:
+      input: sample_sheet
+    state:
+      lineNum: 1
+  sample_name_param:
+    tool_id: param_value_from_file
+    in:
+      input1: get_sample_name/out_file1
+    state:
+      param_type: text
+      remove_newlines: true
+  process:
+    tool_id: cat
+    in:
+      input1: reads
+""")
+        editor = self.components.workflow_editor
+        process_node = editor.node._(label="process")
+        process_node.input_terminal(name="sample_name").wait_for_absent()
+        process_node.wait_for_and_click()
+        editor.configure_output(output="out_file1").wait_for_and_click()
+        # Referencing a step input in the rename gives the step a port to connect it to.
+        editor.rename_output.wait_for_and_clear_and_send_keys("$(inputs.sample_name)_processed")
+        process_node.input_terminal(name="sample_name").wait_for_present()
+        self.workflow_editor_connect("sample_name_param#text_param", "process#sample_name")
+        self.workflow_editor_assert_connected("sample_name_param#text_param", "process#sample_name")
+        self.assert_workflow_has_changes_and_save()
+        workflow = self._download_current_workflow()
+        process_step = next(s for s in workflow["steps"].values() if s["label"] == "process")
+        assert "sample_name" in process_step["input_connections"], process_step["input_connections"]
+        newname = process_step["post_job_actions"]["RenameDatasetActionout_file1"]["action_arguments"]["newname"]
+        assert newname == "$(inputs.sample_name)_processed"
+        # The port and its connection come back when the workflow is opened again.
+        self.refresh()
+        self.workflow_editor_assert_connected("sample_name_param#text_param", "process#sample_name")
+        # The output is named after the value computed while the workflow runs.
+        self.workflow_editor_click_run()
+        self.workflow_run_specify_inputs(inputs)
+        self.workflow_run_submit()
+        self.history_panel_wait_for_hid_ok(5)
+        renamed = self.dataset_populator.get_history_dataset_details(history_id, hid=5)
+        assert renamed["name"] == "sampleA_processed", renamed["name"]
+
+    @selenium_test
     def test_pick_value_add_tags_pja(self):
         self.open_in_workflow_editor("""
 class: GalaxyWorkflow

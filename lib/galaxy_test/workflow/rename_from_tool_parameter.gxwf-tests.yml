@@ -1,0 +1,11 @@
+- doc: The rename uses the value of the tool parameter.
+  job:
+    reads:
+      class: File
+      contents: "ACGT\nTTTT\n"
+      filetype: txt
+  outputs:
+    final_output:
+      class: File
+      metadata:
+        name: "first_1"

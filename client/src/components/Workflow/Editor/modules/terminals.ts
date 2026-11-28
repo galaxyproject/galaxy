@@ -604,6 +604,28 @@ export class InputParameterTerminal extends BaseInputTerminal {
     }
 }
 
+/** The port of a `$(inputs.name)` rename reference: any single parameter value becomes part of the name. */
+export class InputRenameReferenceTerminal extends InputParameterTerminal {
+    attachable(other: BaseOutputTerminal) {
+        if (other.isCollection || other.mapOver.isCollection) {
+            return new ConnectionAcceptable(
+                false,
+                "A rename reference takes a single value, not a collection or a mapped-over output",
+            );
+        }
+        if (other.multiple) {
+            return new ConnectionAcceptable(false, "A rename reference takes a single value, not multiple values");
+        }
+        if (!(other instanceof OutputParameterTerminal)) {
+            return new ConnectionAcceptable(
+                false,
+                "Only parameters can be referenced in a rename; use #{input} for the name of a dataset input",
+            );
+        }
+        return new ConnectionAcceptable(true, null);
+    }
+}
+
 interface InputCollectionTerminalArgs extends InputTerminalArgs {
     collection_types: string[] | null;
 }
@@ -791,7 +813,8 @@ class BaseOutputTerminal extends Terminal {
     validInputTerminals() {
         const validInputTerminals: InputTerminals[] = [];
         Object.values(this.stores.stepStore.steps).map((step) => {
-            step.inputs?.forEach((input) => {
+            const inputs = step.inputs ? getCombinedStepInputs(step, this.stores.stepStore) : [];
+            inputs.forEach((input) => {
                 const inputTerminal = terminalFactory(step.id, input, this.datatypesMapper, this.stores);
                 if (inputTerminal.canAccept(this).canAccept) {
                     validInputTerminals.push(inputTerminal);
@@ -1045,7 +1068,10 @@ export function terminalFactory<T extends TerminalSourceAndInvalid>(
                     },
                 }) as TerminalOf<T>;
             } else if (terminalSource.input_type === "parameter") {
-                return new InputParameterTerminal({
+                const ParameterTerminal = terminalSource.rename_reference
+                    ? InputRenameReferenceTerminal
+                    : InputParameterTerminal;
+                return new ParameterTerminal({
                     ...terminalArgs,
                     type: terminalSource.type,
                     input: {

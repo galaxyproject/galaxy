@@ -10632,6 +10632,147 @@ input1:
             assert content["history_content_type"] == "dataset_collection", content
             assert name == "the_dataset_list suffix", name
 
+    @skip_without_tool("cat")
+    @skip_without_tool("param_value_from_file")
+    def test_run_rename_from_step_input_on_mapped_over_collection(self):
+        with self.dataset_populator.test_history() as history_id:
+            summary = self._run_workflow(
+                """
+class: GalaxyWorkflow
+inputs:
+  input1:
+    type: collection
+    collection_type: list
+  sample_sheet: data
+outputs:
+  renamed:
+    outputSource: first_cat/out_file1
+steps:
+  sample_name_param:
+    tool_id: param_value_from_file
+    in:
+      input1: sample_sheet
+    state:
+      param_type: text
+      remove_newlines: true
+  first_cat:
+    tool_id: cat
+    in:
+      input1: input1
+      sample_name: sample_name_param/text_param
+    out:
+      out_file1:
+        rename: "$(inputs.sample_name) suffix"
+""",
+                test_data="""
+input1:
+  collection_type: list
+  name: the_dataset_list
+  elements:
+    - identifier: el1
+      value: 1.fastq
+      type: File
+sample_sheet:
+  value: simple_line.txt
+  type: File
+""",
+                history_id=history_id,
+                wait=True,
+                assert_ok=True,
+            )
+            sample_name = "This is a line of text."
+            invocation = self.workflow_populator.get_invocation(summary.invocation_id)
+            collection = self.dataset_populator.get_history_collection_details(
+                history_id, content_id=invocation["output_collections"]["renamed"]["id"]
+            )
+            assert collection["name"] == f"{sample_name} suffix", collection["name"]
+            element = collection["elements"][0]["object"]
+            assert element["name"] == f"{sample_name} suffix", element["name"]
+            # The value went on a transient copy of the action: the stored one keeps its reference.
+            workflow = self.workflow_populator.download_workflow(summary.workflow_id)
+            first_cat = next(step for step in workflow["steps"].values() if step["label"] == "first_cat")
+            action_arguments = first_cat["post_job_actions"]["RenameDatasetActionout_file1"]["action_arguments"]
+            assert action_arguments == {"newname": "$(inputs.sample_name) suffix"}, action_arguments
+
+    @skip_without_tool("job_properties")
+    @skip_without_tool("cat1")
+    def test_run_rename_from_data_input_does_not_wait_for_upstream_job(self):
+        workflow_id = self._upload_yaml_workflow("""
+class: GalaxyWorkflow
+steps:
+  job_props:
+    tool_id: job_properties
+    state:
+      thebool: true
+      failbool: true
+  cat:
+    tool_id: cat1
+    in:
+      input1: job_props/out_file1
+    out:
+      out_file1:
+        rename: "$(inputs.input1) renamed"
+""")
+        with self.dataset_populator.test_history() as history_id:
+            invocation_response = self.workflow_populator.invoke_workflow(workflow_id, history_id=history_id)
+            invocation_id = invocation_response.json()["id"]
+            self.workflow_populator.wait_for_workflow(workflow_id, invocation_id, history_id, assert_ok=False)
+            invocation = self.workflow_populator.get_invocation(invocation_id)
+            # Like a plain data connection, the step is scheduled and its job waits on the failed input.
+            assert invocation["state"] in ("scheduled", "completed"), invocation
+            renamed = self.dataset_populator.get_history_dataset_details(history_id, hid=5, wait=True, assert_ok=False)
+            assert renamed["state"] == "paused", renamed
+            assert renamed["name"] == "Test Job Properties renamed", renamed["name"]
+
+    @skip_without_tool("cat")
+    @skip_without_tool("param_value_from_file")
+    def test_run_rename_from_step_input_fails_on_collection_of_values(self):
+        with self.dataset_populator.test_history() as history_id:
+            summary = self._run_workflow(
+                """
+class: GalaxyWorkflow
+inputs:
+  input1: data
+  sample_sheets:
+    type: collection
+    collection_type: list
+steps:
+  sample_name_param:
+    tool_id: param_value_from_file
+    in:
+      input1: sample_sheets
+    state:
+      param_type: text
+  first_cat:
+    tool_id: cat
+    in:
+      input1: input1
+      sample_name: sample_name_param/text_param
+    out:
+      out_file1:
+        rename: "$(inputs.sample_name) suffix"
+""",
+                test_data="""
+input1:
+  value: 1.fastq
+  type: File
+sample_sheets:
+  collection_type: list
+  elements:
+    - identifier: el1
+      value: simple_line.txt
+      type: File
+""",
+                history_id=history_id,
+                wait=True,
+                assert_ok=False,
+            )
+            invocation = self.workflow_populator.get_invocation(summary.invocation_id)
+            assert invocation["state"] == "failed", invocation["state"]
+            message = invocation["messages"][0]
+            assert message["reason"] == "workflow_parameter_invalid", message
+            assert "a collection of values is connected to 'sample_name'" in message["details"], message
+
     @skip_without_tool("collection_creates_pair")
     def test_run_rename_collection_output(self):
         with self.dataset_populator.test_history() as history_id:

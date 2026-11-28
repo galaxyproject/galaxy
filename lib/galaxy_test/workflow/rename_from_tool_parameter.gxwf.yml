@@ -1,0 +1,20 @@
+class: GalaxyWorkflow
+doc: |
+  $(inputs.name) in a rename resolves a tool parameter set in the step's state,
+  as a when expression does.
+inputs:
+  reads:
+    type: data
+outputs:
+  final_output:
+    outputSource: process/out_file1
+steps:
+  process:
+    tool_id: head
+    in:
+      input: reads
+    state:
+      lineNum: 1
+    out:
+      out_file1:
+        rename: "first_$(inputs.lineNum)"
