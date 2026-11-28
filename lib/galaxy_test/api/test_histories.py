@@ -29,6 +29,7 @@ from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
     DatasetPopulator,
     LibraryPopulator,
+    skip_without_tool,
 )
 from ._framework import ApiTestCase
 
@@ -38,6 +39,68 @@ class TestHistoriesApi(ApiTestCase, BaseHistories):
         super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
         self.dataset_collection_populator = DatasetCollectionPopulator(self.galaxy_interactor)
+
+    @skip_without_tool("cat_data_and_sleep")
+    def test_resume_paused_jobs(self):
+        history_id = self.dataset_populator.new_history()
+        input_id, paused_dataset_id = self._new_dataset_paused_on_deleted_input(history_id)
+        self._put(f"histories/{history_id}/contents/{input_id}", data={"deleted": False}, json=True).raise_for_status()
+
+        resume_response = self._put(f"histories/{history_id}/resume_paused_jobs")
+
+        self._assert_status_code_is(resume_response, 204)
+        self.dataset_populator.wait_for_history_jobs(history_id)
+        assert self._dataset_state(history_id, paused_dataset_id) == "ok"
+
+    @skip_without_tool("cat_data_and_sleep")
+    def test_paused_jobs_count_includes_jobs_with_hidden_outputs(self):
+        history_id = self.dataset_populator.new_history()
+        _, paused_dataset_id = self._new_dataset_paused_on_deleted_input(history_id)
+        self.dataset_populator.hide_dataset(paused_dataset_id)
+
+        # The view the history panel's updates use
+        history = self._get(f"histories/{history_id}", data={"view": "dev-detailed"}).json()
+
+        assert history["paused_jobs_count"] == 1
+
+    def test_other_users_cannot_resume_paused_jobs(self):
+        history_id = self.dataset_populator.new_history()
+
+        with self._different_user():
+            resume_response = self._put(f"histories/{history_id}/resume_paused_jobs")
+            self._assert_status_code_is(resume_response, 403)
+
+    def test_cannot_resume_paused_jobs_of_archived_history(self):
+        history_id = self.dataset_populator.new_history()
+        self.dataset_populator.archive_history(history_id).raise_for_status()
+
+        resume_response = self._put(f"histories/{history_id}/resume_paused_jobs")
+
+        self._assert_status_code_is(resume_response, 403)
+
+    def _new_dataset_paused_on_deleted_input(self, history_id: str) -> tuple[str, str]:
+        """Pause a job by deleting its input while it waits on another job; return the input and its output."""
+        input_1 = self.dataset_populator.new_dataset(history_id, content="1\n", wait=True)
+        input_2 = self.dataset_populator.new_dataset(history_id, content="2\n", wait=True)
+        running = self.dataset_populator.run_tool(
+            "cat_data_and_sleep", {"sleep_time": 5, "input1": {"src": "hda", "id": input_2["id"]}}, history_id
+        )
+        waiting = self.dataset_populator.run_tool(
+            "cat1",
+            {
+                "input1": {"src": "hda", "id": input_1["id"]},
+                "queries_0|input2": {"src": "hda", "id": running["outputs"][0]["id"]},
+            },
+            history_id,
+        )
+        self.dataset_populator.delete_dataset(history_id, input_1["id"])
+        self.dataset_populator.wait_for_history_jobs(history_id)
+        paused_dataset_id = waiting["outputs"][0]["id"]
+        assert self._dataset_state(history_id, paused_dataset_id) == "paused"
+        return input_1["id"], paused_dataset_id
+
+    def _dataset_state(self, history_id: str, dataset_id: str) -> str:
+        return self._get(f"histories/{history_id}/contents/{dataset_id}").json()["state"]
 
     def test_create_history(self):
         # Create a history.

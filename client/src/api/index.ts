@@ -32,6 +32,8 @@ export interface HistoryContentsStats {
     update_time: string;
     size: number;
     contents_active: components["schemas"]["HistoryActiveContentCounts"];
+    /** Jobs paused in the history, including those whose outputs are hidden. */
+    paused_jobs_count?: number;
 }
 
 /**
@@ -73,6 +75,7 @@ type HistoryDetailedCommon = Omit<
  */
 export interface HistoryDevDetailed extends HistoryDetailedCommon {
     contents_active: components["schemas"]["HistoryActiveContentCounts"];
+    paused_jobs_count?: number;
 }
 
 /**

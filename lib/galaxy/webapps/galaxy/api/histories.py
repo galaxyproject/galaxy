@@ -783,6 +783,21 @@ class FastAPIHistories:
         """
         return self.service.restore_archived_history(trans, history_id, force)
 
+    @router.put(
+        "/api/histories/{history_id}/resume_paused_jobs",
+        summary="Resume the paused jobs of a history.",
+        status_code=status.HTTP_204_NO_CONTENT,
+    )
+    def resume_paused_jobs(
+        self,
+        history_id: HistoryIDPathParam,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+    ) -> Response:
+        """Resumes the paused jobs of the history, for example the ones paused because the user was over their
+        quota, and the jobs waiting on their outputs. A job that still can't run is paused again."""
+        self.service.resume_paused_jobs(trans, history_id)
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
+
     @router.get(
         "/api/histories/{history_id}/sharing",
         summary="Get the current sharing status of the given item.",
