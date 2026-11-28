@@ -132,7 +132,7 @@ browser.expect_logged_in()
 Locators available via `Locators` class:
 
 - `Locators.toolbar_login`
-- `Locators.login_submit_button`
+- `Locators.login_input`, `Locators.login_password_input`, `Locators.login_submit_button`
 - `Locators.register_link`
 
 ## Test Driver

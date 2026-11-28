@@ -3,8 +3,10 @@ import { GButton, GForm, GFormInput, GFormLabel } from "@galaxyproject/galaxy-ui
 import { ref } from "vue"
 import ModalForm from "@/components/ModalForm.vue"
 import { ToolShedApi } from "@/schema"
-import { notifyOnCatch } from "@/util"
+import { notifyOnCatch, withRedirect } from "@/util"
 import router from "@/router"
+
+defineProps<{ returnTo?: string | null }>()
 
 const email = ref("")
 const password = ref("")
@@ -66,7 +68,9 @@ async function onRegister() {
             </GForm>
         </div>
         <div class="modal-form-section modal-form-section-footer">
-            <p class="modal-form-footer-text">Already registered? <router-link to="/login">Login.</router-link></p>
+            <p class="modal-form-footer-text">
+                Already registered? <router-link :to="withRedirect('/login', returnTo)">Login.</router-link>
+            </p>
         </div>
     </ModalForm>
 </template>

@@ -104,6 +104,32 @@ function isApiException(e: unknown): e is ApiMessageException {
     return e instanceof Object && "err_msg" in e
 }
 
+// Only paths on this site, so a crafted ?redirect= can't send someone off-site after logging in. Resolving
+// against our origin catches what prefix checks miss, like "/\t/evil.example" parsing as "//evil.example".
+// The resolved path must not start with "//" either: dot segments normalize "/..//evil.example" to
+// "//evil.example", which the browser reads as a link to another host.
+export function safeReturnPath(value: string | null | undefined): string | null {
+    if (!value?.startsWith("/")) {
+        return null
+    }
+    let url: URL
+    try {
+        url = new URL(value, window.location.origin)
+    } catch {
+        // Unparsable values like "//[" fall back too, rather than failing a login that already succeeded
+        return null
+    }
+    if (url.origin !== window.location.origin || url.pathname.startsWith("//")) {
+        return null
+    }
+    return url.pathname + url.search + url.hash
+}
+
+// Login and register links that carry the page to return to after logging in.
+export function withRedirect(path: "/login" | "/register", returnTo: string | null | undefined): string {
+    return returnTo ? `${path}?redirect=${encodeURIComponent(returnTo)}` : path
+}
+
 export function queryParamToString(param: LocationQueryValue | LocationQueryValue[]): string | null {
     return Array.isArray(param) ? param[0] : param
 }

@@ -3,7 +3,9 @@ import { faCircleQuestion, faRightFromBracket, faRightToBracket } from "@fortawe
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { GButton, GDropdown, GDropdownGroup, GDropdownItem } from "@galaxyproject/galaxy-ui"
 import { computed } from "vue"
+import { useRoute } from "vue-router"
 import { useAuthStore } from "@/stores"
+import { queryParamToString, withRedirect } from "@/util"
 
 defineProps({
     title: {
@@ -16,6 +18,25 @@ const authStore = useAuthStore()
 void authStore.setup()
 
 const admin = computed(() => authStore.user && authStore.user.is_admin)
+
+// Come back here after logging in, unless "here" is already an auth or post-auth page
+const NO_RETURN_PATHS = [
+    "/",
+    "/login_success",
+    "/logout_success",
+    "/registration_success",
+    "/user/forgot_password",
+    "/user/reset_password",
+    "/user/change_password_success",
+]
+const route = useRoute()
+const loginTo = computed(() => {
+    if (route.path === "/login" || route.path === "/register") {
+        // Keep the page the user is already logging in for
+        return withRedirect("/login", queryParamToString(route.query.redirect))
+    }
+    return withRedirect("/login", NO_RETURN_PATHS.includes(route.path) ? null : route.fullPath)
+})
 </script>
 <template>
     <nav class="shed-masthead" aria-label="Main navigation">
@@ -89,7 +110,7 @@ const admin = computed(() => authStore.user && authStore.user.is_admin)
             class="masthead-icon toolbar-login"
             icon-only
             transparent
-            to="/login"
+            :to="loginTo"
             title="Login"
             aria-label="Login"
         >

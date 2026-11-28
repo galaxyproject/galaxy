@@ -1,14 +1,13 @@
 import { defineStore } from "pinia"
-import { ensureCookie, errorMessageAsString, notifyOnCatch } from "@/util"
+import { ensureCookie, errorMessageAsString, notifyOnCatch, safeReturnPath } from "@/util"
 
-import { ToolShedApi } from "@/schema"
+import { ApiRequestError, ToolShedApi } from "@/schema"
 
 export const useAuthStore = defineStore({
     id: "auth",
     state: () => ({
         // initialize state from local storage to enable user to stay logged in
         user: JSON.parse(localStorage.getItem("user") || "null"),
-        returnUrl: null,
     }),
     actions: {
         async setup() {
@@ -19,9 +18,14 @@ export const useAuthStore = defineStore({
                 localStorage.setItem("user", user ? JSON.stringify(user) : "null")
             } catch (e) {
                 console.debug(`Failed to get current user: ${errorMessageAsString(e)}`)
+                // Only the server saying the session is gone clears the cached user, not a 5xx or a network error
+                if (e instanceof ApiRequestError && (e.status === 401 || e.status === 403)) {
+                    this.user = null
+                    localStorage.setItem("user", "null")
+                }
             }
         },
-        async login(username: string, password: string) {
+        async login(username: string, password: string, returnTo: string | null = null) {
             const token = ensureCookie("session_csrf_token")
             await ToolShedApi().PUT("/api_internal/login", {
                 body: {
@@ -32,7 +36,7 @@ export const useAuthStore = defineStore({
             })
             // We need to do this outside the router to get updated
             // cookies and hence csrf token.
-            window.location.href = "/login_success"
+            window.location.href = safeReturnPath(returnTo) ?? "/login_success"
         },
         async logout() {
             const token = ensureCookie("session_csrf_token")
