@@ -713,16 +713,21 @@ class TestHistoryContentsApi(ApiTestCase):
 
     def _check_pair_creation(self, history_id: str, endpoint, payload):
         pre_collection_count = self.__count_contents(history_id, type="dataset_collection")
-        pre_dataset_count = self.__count_contents(history_id, type="dataset")
-        pre_combined_count = self.__count_contents(history_id, type="dataset,dataset_collection")
+        pre_dataset_count = self.__count_contents(history_id, type="dataset", visible=True)
+        pre_combined_count = self.__count_contents(history_id, type="dataset,dataset_collection", visible=True)
+        pre_hidden_dataset_count = self.__count_contents(history_id, type="dataset", visible=False)
 
         dataset_collection_response = self._post(endpoint, payload, json=True)
 
         dataset_collection = self.__check_create_collection_response(dataset_collection_response)
+        # The fetch job creates the (hidden) element datasets asynchronously; wait for it so the
+        # counts below don't depend on whether the job has run yet.
+        self.dataset_collection_populator.wait_for_fetched_collection(dataset_collection_response)
 
         post_collection_count = self.__count_contents(history_id, type="dataset_collection")
-        post_dataset_count = self.__count_contents(history_id, type="dataset")
-        post_combined_count = self.__count_contents(history_id, type="dataset,dataset_collection")
+        post_dataset_count = self.__count_contents(history_id, type="dataset", visible=True)
+        post_combined_count = self.__count_contents(history_id, type="dataset,dataset_collection", visible=True)
+        post_hidden_dataset_count = self.__count_contents(history_id, type="dataset", visible=False)
 
         # Test filtering types with index.
         assert pre_collection_count == 0
@@ -730,6 +735,8 @@ class TestHistoryContentsApi(ApiTestCase):
         assert post_combined_count == pre_dataset_count + 1
         assert post_combined_count == pre_combined_count + 1
         assert pre_dataset_count == post_dataset_count
+        # The pair's forward and reverse datasets are hidden.
+        assert post_hidden_dataset_count == pre_hidden_dataset_count + 2
 
         # Test show dataset collection.
         collection_url = f"histories/{history_id}/contents/dataset_collections/{dataset_collection['id']}"
