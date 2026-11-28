@@ -148,7 +148,7 @@ export function useInvocationMessageStepData(
                 }
 
                 // Get invocation step from current invocation level
-                const invocationStep = currentInvocation.steps[orderIndex];
+                const invocationStep = currentInvocation.steps.find((step) => step.order_index === orderIndex);
 
                 // Build basic step info with descriptive label
                 const stepInfo: EnrichedStepInfo = {
@@ -207,7 +207,7 @@ export function useInvocationMessageStepData(
             if (finalStepOrderIndex?.value !== undefined) {
                 const finalStepIndex = finalStepOrderIndex.value;
                 const workflowStep = currentWorkflow.steps[finalStepIndex] as WorkflowStep | undefined;
-                const invocationStep = currentInvocation.steps[finalStepIndex];
+                const invocationStep = currentInvocation.steps.find((step) => step.order_index === finalStepIndex);
 
                 if (workflowStep) {
                     enrichedSteps.push({

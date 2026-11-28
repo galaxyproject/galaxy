@@ -52,13 +52,14 @@ const isNoPaddingPath = computed(() => {
  * conversation is created (`/galaxyai` to `/galaxyai/<id>`) or reset (`/galaxyai/new`) and follows
  * those changes through its `exchangeId` prop, so the live conversation stays in place. The tools
  * list follows its own query, so its search field and open pickers stay in place as the search
- * changes. All other routes get a fresh component per path and query.
+ * changes. Invocation query selections keep their live view. All other routes get a fresh
+ * component per path and query.
  */
 const routerViewKey = computed(() => {
     if (route.path.startsWith("/galaxyai")) {
         return "/galaxyai";
     }
-    return route.path === "/tools/list" ? route.path : route.fullPath;
+    return route.path === "/tools/list" || route.meta.reuseOnQueryChange ? route.path : route.fullPath;
 });
 
 const showCenter = ref(false);
