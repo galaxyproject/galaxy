@@ -73,21 +73,27 @@ class Filter:
         raise TypeError("Abstract Method")
 
     def _parse_column(self, column_spec: str) -> int | str:
-        """Index of ``column_spec``, or the spec itself while the column names come from a data table
+        """Index of ``column_spec``, or the spec itself while the columns come from a data table
         that isn't configured here; ``_column_index`` resolves it once the table is."""
         d_option = self.dynamic_option
-        try:
-            return d_option.column_spec_to_index(column_spec)
-        except ValueError:
-            if d_option.columns_from_table and d_option.tool_data_table is None:
-                return column_spec
-            raise
+        if d_option.columns_from_table and d_option.tool_data_table is None:
+            return column_spec
+        return d_option.column_spec_to_index(column_spec)
 
-    def _column_index(self, column: int | str) -> int:
-        """Index of a column returned by ``_parse_column``, called only when there are rows to filter."""
+    def _column_index(self, column: int | str) -> int | None:
+        """Index of a column returned by ``_parse_column``; ``None`` while its data table isn't configured,
+        in which case the filter leaves the options (only those added by ``add_value``) unchanged."""
         if isinstance(column, int):
             return column
+        if self.dynamic_option.tool_data_table is None:
+            return None
         return self.dynamic_option.column_spec_to_index(column)
+
+    def _column_indices(self, columns: list[int | str]) -> list[int] | None:
+        indices = [self._column_index(column) for column in columns]
+        if any(index is None for index in indices):
+            return None
+        return cast(list[int], indices)
 
 
 class StaticValueFilter(Filter):
@@ -114,9 +120,9 @@ class StaticValueFilter(Filter):
         self.keep = string_as_bool(elem.get("keep", "True"))
 
     def filter_options(self, options: Sequence[ParameterOption], trans: ProvidesHistoryContext, other_values):
-        if not options:
-            return []
         column = self._column_index(self.column)
+        if column is None:
+            return list(options)
         rval = []
         filter_value = self.value
         try:
@@ -153,9 +159,9 @@ class RegexpFilter(Filter):
         self.keep = string_as_bool(elem.get("keep", "True"))
 
     def filter_options(self, options: Sequence[ParameterOption], trans: ProvidesHistoryContext, other_values):
-        if not options:
-            return []
         column = self._column_index(self.column)
+        if column is None:
+            return list(options)
         rval = []
         filter_value = self.value
         try:
@@ -270,9 +276,9 @@ class DataMetaFilter(Filter):
             return copy.deepcopy(options)
 
         if self.column is not None:
-            if not options:
-                return []
             column = self._column_index(self.column)
+            if column is None:
+                return list(options)
             rval: list[ParameterOption] = []
             for fields in options:
                 if compare_meta_value(fields[column], meta_value):
@@ -350,9 +356,9 @@ class ParamValueFilter(Filter):
             ref_values.append(r)
         ref_values = [str(_) for _ in ref_values]
 
-        if not options:
-            return []
         column = self._column_index(self.column)
+        if column is None:
+            return list(options)
         rval = []
         for fields in options:
             if self.keep == (fields[column] in ref_values):
@@ -380,9 +386,9 @@ class UniqueValueFilter(Filter):
         return self.dynamic_option.dataset_ref_name
 
     def filter_options(self, options: Sequence[ParameterOption], trans: ProvidesHistoryContext, other_values):
-        if not options:
-            return []
         column = self._column_index(self.column)
+        if column is None:
+            return list(options)
         rval = []
         seen = set()
         for fields in options:
@@ -412,9 +418,9 @@ class MultipleSplitterFilter(Filter):
         self.columns = [self._parse_column(column) for column in columns.split(",")]
 
     def filter_options(self, options: Sequence[ParameterOption], trans: ProvidesHistoryContext, other_values):
-        if not options:
-            return []
-        columns = [self._column_index(column) for column in self.columns]
+        columns = self._column_indices(self.columns)
+        if columns is None:
+            return list(options)
         rval = []
         for fields in options:
             for column in columns:
@@ -450,9 +456,9 @@ class AttributeValueSplitterFilter(Filter):
         self.columns = [self._parse_column(column) for column in columns.split(",")]
 
     def filter_options(self, options, trans: ProvidesHistoryContext, other_values):
-        if not options:
-            return []
-        columns = [self._column_index(column) for column in self.columns]
+        columns = self._column_indices(self.columns)
+        if columns is None:
+            return list(options)
         attr_names = set()
         rval = []
         for fields in options:
@@ -592,9 +598,9 @@ class SortByColumnFilter(Filter):
         self.reverse = string_as_bool(elem.get("reverse_sort_order", "False"))
 
     def filter_options(self, options, trans: ProvidesHistoryContext, other_values):
-        if not options:
-            return []
         column = self._column_index(self.column)
+        if column is None:
+            return list(options)
         return sorted(options, key=lambda x: x[column], reverse=self.reverse)
 
 
@@ -630,9 +636,9 @@ class DataTableFilter(Filter):
         self.keep = string_as_bool(elem.get("keep", "True"))
 
     def filter_options(self, options, trans: ProvidesHistoryContext, other_values):
-        if not options:
-            return []
         column = self._column_index(self.column)
+        if column is None:
+            return list(options)
         # get column from data table, by index or column name
         entries = None
         try:
@@ -1112,14 +1118,11 @@ class DynamicOptions:
         where = f"in tool '{self.tool_param.tool.name}' (parameter '{self.tool_param.name}')"
         spec = f"Column specification {column_spec!r} {where}"
         available = sorted(self.columns) if self.columns else "none"
-        if not self.columns_from_table:
-            return f"{spec} is neither a defined <column> name (available: {available}) nor a valid integer index."
-        if self.tool_data_table is None:
+        if self.columns_from_table:
             return (
-                f"{spec} cannot be resolved: data table '{self.tool_data_table_name}' is not configured on this "
-                "server. Configure the table, or declare the columns with <column> elements."
+                f"{spec} is not a column of data table '{self.tool_data_table_name}'; available columns: {available}."
             )
-        return f"{spec} is not a column of data table '{self.tool_data_table_name}'; available columns: {available}."
+        return f"{spec} is neither a defined <column> name (available: {available}) nor a valid integer index."
 
 
 REQUEST_METHODS = Literal["GET", "POST"]

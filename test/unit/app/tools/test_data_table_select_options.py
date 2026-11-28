@@ -203,20 +203,22 @@ def test_unknown_table_column(table_select):
     )
 
 
-def test_unknown_column_on_a_table_that_is_not_installed_with_added_value(table_select):
-    param, trans = table_select("""<options from_data_table="refs_missing">
-        <filter type="add_value" value="none"/><filter type="sort_by" column="version"/>
-    </options>""")
-    with pytest.raises(ValueError, match="data table 'refs_missing' is not configured on this server"):
-        param.get_options(trans, {})
+@pytest.mark.parametrize("filter_xml", MISSING_TABLE_FILTERS)
+def test_filter_after_added_value_on_a_table_that_is_not_installed(table_select, filter_xml):
+    param, trans = table_select(
+        f'<options from_data_table="refs_missing"><filter type="add_value" value="none"/>{filter_xml}</options>'
+    )
+    assert [(option.name, option.value) for option in param.get_options(trans, {"other": "5.0"})] == [("none", "none")]
 
 
 def test_table_that_is_not_installed_logs_warning(table_select, caplog):
     with caplog.at_level(logging.WARNING, logger="galaxy.tools.parameters.dynamic_options"):
         table_select('<options from_data_table="refs_missing"/>')
     assert [record.getMessage() for record in caplog.records] == [
-        "Tool 'Reference tool' (parameter 'ref') uses data table 'refs_missing', which is not configured on this "
-        "server; its options stay empty until the table is configured."
+        (
+            "Tool 'Reference tool' (parameter 'ref') uses data table 'refs_missing', which is not configured on this "
+            "server; its options stay empty until the table is configured."
+        )
     ]
 
 
