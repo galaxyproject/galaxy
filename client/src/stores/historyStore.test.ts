@@ -3,6 +3,7 @@ import { http as mswHttp } from "msw";
 import { createPinia, setActivePinia } from "pinia";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import type { HistorySummary } from "@/api";
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 import { ApiError, MAX_RETRIES } from "@/utils/simple-error";
 
@@ -197,6 +198,55 @@ describe("historyStore — config-driven SSE vs polling", () => {
             const deltaAfterSecond = mockWatchHistory.mock.calls.length - pollsAfterFirst;
             expect(deltaAfterSecond).toBe(1);
         });
+    });
+});
+
+function historySummary(id: string, name: string): HistorySummary {
+    return { id, name, archived: false, deleted: false, purged: false, update_time: "2026-01-01" } as HistorySummary;
+}
+
+describe("historyStore — content stats", () => {
+    const CONTENT_STATS = { size: 10, contents_active: { active: 1 }, update_time: "2026-01-02" };
+
+    beforeEach(() => {
+        setActivePinia(createPinia());
+    });
+
+    it("does not re-add a deleted history when its content stats arrive late", async () => {
+        let releaseStats!: () => void;
+        const statsHeld = new Promise<void>((resolve) => {
+            releaseStats = resolve;
+        });
+        server.use(
+            mswHttp.get("/api/histories/count", () => HttpResponse.json(1)),
+            mswHttp.delete("/api/histories/hist-2", () => HttpResponse.json({ id: "hist-2" })),
+            mswHttp.get("/api/histories/hist-2", async () => {
+                await statsHeld;
+                return HttpResponse.json(CONTENT_STATS);
+            }),
+        );
+        const historyStore = useHistoryStore();
+        historyStore.setHistory(historySummary("hist-1", "B"));
+        historyStore.setHistory(historySummary("hist-2", "A"));
+        historyStore.setCurrentHistoryId("hist-1");
+
+        const statsUpdate = historyStore.updateContentStats("hist-2");
+        await historyStore.deleteHistory("hist-2");
+        releaseStats();
+        await statsUpdate;
+
+        expect(historyStore.getHistoryById("hist-2", false)).toBeNull();
+        expect(historyStore.histories.map((h) => h.id)).toEqual(["hist-1"]);
+    });
+
+    it("merges late content stats into a history that is still cached", async () => {
+        server.use(mswHttp.get("/api/histories/hist-2", () => HttpResponse.json(CONTENT_STATS)));
+        const historyStore = useHistoryStore();
+        historyStore.setHistory(historySummary("hist-2", "A"));
+
+        await historyStore.updateContentStats("hist-2");
+
+        expect(historyStore.getHistoryById("hist-2", false)).toMatchObject({ name: "A", size: 10 });
     });
 });
 
