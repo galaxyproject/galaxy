@@ -1185,6 +1185,8 @@ class JobContext(BaseJobContext):
     def add_library_dataset_to_folder(self, library_folder, ld):
         trans = self.work_context
         ldda = ld.library_dataset_dataset_association
+        # Discovered datasets record the job that created them, as in an extended metadata import.
+        ldda.dataset.job = self.job
         trans.sa_session.add(ldda)
 
         trans = self.work_context
@@ -1207,6 +1209,9 @@ class JobContext(BaseJobContext):
 
     def add_datasets_to_history(self, datasets, for_output_dataset=None):
         sa_session = self.sa_session
+        for dataset in datasets:
+            # Discovered datasets record the job that created them, as in an extended metadata import.
+            dataset.dataset.job = self.job
         assert self.job.history
         self.job.history.stage_addition(datasets)
         pending_histories = {self.job.history}

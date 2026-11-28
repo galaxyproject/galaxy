@@ -1,0 +1,14 @@
+<tool id="unnamed_output_unknown_ext" name="unnamed_output_unknown_ext" version="0.1.0" profile="26.1">
+    <command><![CDATA[
+echo 1 > unnamed.notadatatype &&
+cp '$provided_metadata' galaxy.json
+    ]]></command>
+    <configfiles>
+        <configfile name="provided_metadata">{"__unnamed_outputs": [
+{"destination": {"type": "hdas"}, "elements": [{"filename": "unnamed.notadatatype", "name": "unnamed", "ext": "notadatatype"}]}
+]}
+</configfile>
+    </configfiles>
+    <inputs />
+    <outputs />
+</tool>
