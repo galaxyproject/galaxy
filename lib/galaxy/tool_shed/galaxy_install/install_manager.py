@@ -16,6 +16,7 @@ from galaxy.tool_shed.galaxy_install.metadata.installed_repository_metadata_mana
     InstalledRepositoryMetadataManager,
 )
 from galaxy.tool_shed.galaxy_install.repository_dependencies import repository_dependency_manager
+from galaxy.tool_shed.galaxy_install.repository_operation_lock import with_repository_operation_lock
 from galaxy.tool_shed.galaxy_install.tools import (
     data_manager,
     tool_panel_manager,
@@ -331,6 +332,7 @@ class InstallRepositoryManager:
         query = self.install_model.context.query(self.install_model.ToolShedRepository).filter(or_(*clause_list))
         return encoded_kwd, query, tool_shed_repositories, encoded_repository_ids
 
+    @with_repository_operation_lock
     def install(
         self, tool_shed_url: str, name: str, owner: str, changeset_revision: str, install_options: dict[str, Any]
     ):

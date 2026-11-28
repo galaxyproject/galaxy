@@ -58,6 +58,7 @@ class GalaxyDataTestConfig(Bunch):
             self._remove_root = False
         self.root = root
         self.data_dir = os.path.join(root, "database")
+        os.makedirs(self.data_dir, exist_ok=True)
 
         self.security = IdEncodingHelper(id_secret=GALAXY_TEST_UNITTEST_SECRET)
         self.database_connection = kwd.get("database_connection", GALAXY_TEST_IN_MEMORY_DB_CONNECTION)

@@ -1,4 +1,7 @@
 import os
+import subprocess
+import sys
+import textwrap
 from unittest import mock
 from xml.etree.ElementTree import (
     Element,
@@ -18,10 +21,33 @@ from galaxy.util import (
     Element as GalaxyElement,
     parse_xml,
 )
+from galaxy.util.tool_shed import common_util
 from tool_shed.tools import tool_version_manager
 from ._util import TestToolShedApp
 
 DEFAULT_GUID = "123456"
+
+UNINSTALLED_GUID = "github.com/galaxyproject/example/test_tool/0.2"
+
+UNINSTALL_IN_OTHER_PROCESS = textwrap.dedent("""
+    import sys
+    from types import SimpleNamespace
+
+    from sqlalchemy import create_engine
+
+    from galaxy.tool_shed.galaxy_install.tools.tool_panel_manager import ToolPanelManager
+
+    conf_path, tool_path, data_dir, guid = sys.argv[1:]
+    app = SimpleNamespace(
+        install_model=SimpleNamespace(engine=create_engine("sqlite://")), config=SimpleNamespace(data_dir=data_dir)
+    )
+    print("ready", flush=True)
+    sys.stdin.readline()
+    ToolPanelManager(app).remove_from_shed_tool_config(
+        {"config_filename": conf_path, "tool_path": tool_path},
+        {"tools": [{"guid": guid, "tool_config": "tool.xml"}]},
+    )
+    """)
 
 
 class _RecordingLock:
@@ -246,6 +272,88 @@ class TestToolPanelManager(BaseToolBoxTestCase):
 
         assert events == [("populate", True, True), ("wait", False, None)]
         self._verify_tool_confs()
+
+    def test_uninstall_in_other_process_survives_concurrent_install(self):
+        new_elem = GalaxyElement("tool", attrib={"file": "new_tool.xml", "guid": DEFAULT_GUID})
+        id_elem = GalaxyElement("id")
+        id_elem.text = DEFAULT_GUID
+        new_elem.append(id_elem)
+        conf = self._race_uninstall_in_other_process(
+            lambda: self.tpm.add_to_shed_tool_config(self._shed_tool_conf_dict(), [new_elem])
+        )
+        assert UNINSTALLED_GUID not in conf
+        assert DEFAULT_GUID in conf
+
+    def test_uninstall_in_other_process_survives_concurrent_metadata_reset(self):
+        clone_url = "https://github.com/repos/galaxyproject/example"
+        with mock.patch.object(common_util, "generate_clone_url_for_installed_repository", return_value=clone_url):
+            metadata_manager = InstalledRepositoryMetadataManager(
+                self.app,
+                tpm=self.tpm,
+                repository=self._repo_install(changeset="1"),
+                repository_clone_url=clone_url,
+                shed_config_dict=self._shed_tool_conf_dict(),
+                relative_install_dir=self.test_directory,
+                repository_files_dir=self.test_directory,
+            )
+            with mock.patch.object(metadata_manager, "get_repository_tools_tups", return_value=[]):
+                conf = self._race_uninstall_in_other_process(metadata_manager.update_in_shed_tool_config)
+        assert UNINSTALLED_GUID not in conf
+        assert "github.com/galaxyproject/example/test_tool/0.1" in conf
+
+    def _race_uninstall_in_other_process(self, write_shed_tool_conf):
+        """Uninstall from a second process between this process's read and write of the shed tool conf.
+
+        Returns the shed tool conf contents once both writers are done.
+        """
+        self._init_tool()
+        self._setup_two_versions_in_config(section=False)
+        assert self.toolbox
+        conf_path = self._tool_conf_path()
+        write_unpatched = tool_panel_manager.ToolPanelManager.config_elems_to_xml_file
+        uninstaller = subprocess.Popen(
+            [
+                sys.executable,
+                "-c",
+                UNINSTALL_IN_OTHER_PROCESS,
+                conf_path,
+                self.test_directory,
+                self.app.config.data_dir,
+                UNINSTALLED_GUID,
+            ],
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            text=True,
+            env={**os.environ, "PYTHONPATH": os.pathsep.join(sys.path)},
+        )
+        try:
+            assert uninstaller.stdout
+            assert uninstaller.stdout.readline().strip() == "ready"
+
+            def uninstall_then_write(tpm, *args, **kwargs):
+                assert uninstaller.stdin
+                uninstaller.stdin.write("go\n")
+                uninstaller.stdin.close()
+                try:
+                    uninstaller.wait(timeout=2)
+                except subprocess.TimeoutExpired:
+                    # Blocked on the repository operation lock this process holds.
+                    pass
+                return write_unpatched(tpm, *args, **kwargs)
+
+            with mock.patch.object(
+                tool_panel_manager.ToolPanelManager, "config_elems_to_xml_file", uninstall_then_write
+            ):
+                write_shed_tool_conf()
+            assert uninstaller.wait(timeout=60) == 0
+        finally:
+            if uninstaller.poll() is None:
+                uninstaller.kill()
+        with open(conf_path) as fh:
+            return fh.read()
+
+    def _shed_tool_conf_dict(self):
+        return {"config_filename": self._tool_conf_path(), "tool_path": self.test_directory}
 
     def _setup_two_versions_remove_one(self, section, uninstall):
         self._init_tool()
