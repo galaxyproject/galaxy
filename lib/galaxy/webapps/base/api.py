@@ -217,7 +217,7 @@ class RequestSessionLimiter:
         #: Entered before a session slot is taken by the requests that hold it for long.
         self.long_requests = asyncio.Semaphore(max(1, int(limit * LONG_REQUEST_SHARE)))
 
-    async def acquire(self, request: Optional[Request] = None) -> RequestSessionSlot:
+    async def acquire(self, request: Request | None = None) -> RequestSessionSlot:
         """Wait for a slot.
 
         A ``request`` without a body is dropped with :data:`CLIENT_CLOSED_REQUEST`
@@ -309,9 +309,7 @@ def _request_session_slot() -> RequestSessionSlot | None:
     return context.data.get(REQUEST_SESSION_SLOT_KEY)
 
 
-async def acquire_request_session_slot(
-    engine: "Engine", request: Optional[Request] = None
-) -> RequestSessionSlot | None:
+async def acquire_request_session_slot(engine: "Engine", request: Request | None = None) -> RequestSessionSlot | None:
     """Wait until this request may hold a request-scoped session on ``engine``.
 
     A request takes one slot however many of its dependencies ask for one.

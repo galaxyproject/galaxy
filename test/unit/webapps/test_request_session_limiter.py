@@ -17,7 +17,6 @@ import threading
 import time
 from contextlib import asynccontextmanager
 from types import SimpleNamespace
-from typing import Optional
 
 import anyio.to_thread
 import pytest
@@ -165,7 +164,7 @@ def get_user(session=Depends(get_session)):
 USER = SimpleNamespace(id=1, username="someone")
 
 
-def galaxy_api(app, routers: list[APIRouter], services: Optional[dict[type, object]] = None) -> FastAPI:
+def galaxy_api(app, routers: list[APIRouter], services: dict[type, object] | None = None) -> FastAPI:
     """Serve Galaxy's own ``routers`` with stub ``services`` and a ``trans`` that queries the database."""
 
     def trans(session=Depends(get_session)):
@@ -487,8 +486,6 @@ async def test_queued_request_is_dropped_when_its_client_goes_away(gx_app, threa
     assert statuses == [499]
     assert served == ["thing"]
     assert response.status_code == 200
-
-
 
 
 async def test_structured_content_gives_its_slot_up_before_the_body(gx_app, thread_limit, security):
