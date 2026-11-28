@@ -348,7 +348,7 @@ class FetchTools:
         return state
 
     @router.get(
-        "/api/tools/{tool_id}/inputs",
+        "/api/tools/{tool_id:path}/inputs",
         summary="Get tool inputs.",
     )
     def tool_inputs(
@@ -397,8 +397,69 @@ class FetchTools:
     ) -> ToolLandingRequest:
         return self.landing_manager.get_tool_landing_request(trans, uuid)
 
+    # Tool shed GUIDs contain slashes, so tool_id uses the greedy path converter.
+    # The versioned routes come first: their unversioned siblings would otherwise
+    # match /api/tools/<id>/versions/<version>/... with the version in tool_id.
     @router.get(
-        "/api/tools/{tool_id}/parameter_request_schema",
+        "/api/tools/{tool_id:path}/versions/{tool_version}/interop",
+        operation_id="tools__versioned_interop",
+        summary="Return Galaxy's meta model description of the tool's metadata, inputs, and outputs.",
+    )
+    def parsed_tool_versioned(
+        self,
+        tool_id: str = ToolIDPathParam,
+        tool_version: str = ToolVersionPathParam,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+    ) -> ParsedTool:
+        return self._parsed_tool(trans, tool_id, tool_version)
+
+    @router.get(
+        "/api/tools/{tool_id:path}/versions/{tool_version}/parameter_request_schema",
+        operation_id="tools__versioned_parameter_request_schema",
+        summary="Return a JSON schema description of the tool's inputs for the tool request API.",
+    )
+    def tool_state_request_versioned(
+        self,
+        tool_id: str = ToolIDPathParam,
+        tool_version: str = ToolVersionPathParam,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+    ) -> Response:
+        tool_run_ref = ToolRunReference(tool_id=tool_id, tool_version=tool_version, tool_uuid=None)
+        inputs = self.service.inputs(trans, tool_run_ref)
+        return json_schema_response_for_tool_state_model(RequestToolState, inputs)
+
+    @router.get(
+        "/api/tools/{tool_id:path}/versions/{tool_version}/parameter_landing_request_schema",
+        operation_id="tools__versioned_parameter_landing_request_schema",
+        summary="Return a JSON schema description of the tool's inputs for the tool landing request API.",
+    )
+    def tool_state_landing_request_versioned(
+        self,
+        tool_id: str = ToolIDPathParam,
+        tool_version: str = ToolVersionPathParam,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+    ) -> Response:
+        tool_run_ref = ToolRunReference(tool_id=tool_id, tool_version=tool_version, tool_uuid=None)
+        inputs = self.service.inputs(trans, tool_run_ref)
+        return json_schema_response_for_tool_state_model(LandingRequestToolState, inputs)
+
+    @router.get(
+        "/api/tools/{tool_id:path}/versions/{tool_version}/parameter_test_case_xml_schema",
+        operation_id="tools__versioned_parameter_test_case_xml_schema",
+        summary="Return a JSON schema description of the tool's inputs for test case construction.",
+    )
+    def tool_state_test_case_xml_versioned(
+        self,
+        tool_id: str = ToolIDPathParam,
+        tool_version: str = ToolVersionPathParam,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+    ) -> Response:
+        tool_run_ref = ToolRunReference(tool_id=tool_id, tool_version=tool_version, tool_uuid=None)
+        inputs = self.service.inputs(trans, tool_run_ref)
+        return json_schema_response_for_tool_state_model(TestCaseToolState, inputs)
+
+    @router.get(
+        "/api/tools/{tool_id:path}/parameter_request_schema",
         operation_id="tools__parameter_request_schema",
         summary="Return a JSON schema description of the tool's inputs for the tool request API that will be added to Galaxy at some point",
         description="The tool request schema includes validation of map/reduce concepts that can be consumed by the tool execution API and not just the request for a single execution.",
@@ -417,7 +478,7 @@ class FetchTools:
         )
 
     @router.get(
-        "/api/tools/{tool_id}/parameter_landing_request_schema",
+        "/api/tools/{tool_id:path}/parameter_landing_request_schema",
         operation_id="tools__parameter_landing_request_schema",
         summary="Return a JSON schema description of the tool's inputs for the tool landing request API.",
     )
@@ -435,7 +496,7 @@ class FetchTools:
         )
 
     @router.get(
-        "/api/tools/{tool_id}/parameter_test_case_xml_schema",
+        "/api/tools/{tool_id:path}/parameter_test_case_xml_schema",
         operation_id="tools__parameter_test_case_xml_schema",
         summary="Return a JSON schema description of the tool's inputs for test case construction.",
     )
@@ -461,7 +522,7 @@ class FetchTools:
         return self.service.curated_tool_tags_by_id(trans)
 
     @router.get(
-        "/api/tools/{tool_id}/interop",
+        "/api/tools/{tool_id:path}/interop",
         operation_id="tools__interop",
         summary="Return Galaxy's meta model description of the tool's metadata, inputs, and outputs.",
     )
@@ -472,64 +533,6 @@ class FetchTools:
         trans: ProvidesHistoryContext = DependsOnTrans,
     ) -> ParsedTool:
         return self._parsed_tool(trans, tool_id, tool_version)
-
-    @router.get(
-        "/api/tools/{tool_id}/versions/{tool_version}/interop",
-        operation_id="tools__versioned_interop",
-        summary="Return Galaxy's meta model description of the tool's metadata, inputs, and outputs.",
-    )
-    def parsed_tool_versioned(
-        self,
-        tool_id: str = ToolIDPathParam,
-        tool_version: str = ToolVersionPathParam,
-        trans: ProvidesHistoryContext = DependsOnTrans,
-    ) -> ParsedTool:
-        return self._parsed_tool(trans, tool_id, tool_version)
-
-    @router.get(
-        "/api/tools/{tool_id}/versions/{tool_version}/parameter_request_schema",
-        operation_id="tools__versioned_parameter_request_schema",
-        summary="Return a JSON schema description of the tool's inputs for the tool request API.",
-    )
-    def tool_state_request_versioned(
-        self,
-        tool_id: str = ToolIDPathParam,
-        tool_version: str = ToolVersionPathParam,
-        trans: ProvidesHistoryContext = DependsOnTrans,
-    ) -> Response:
-        tool_run_ref = ToolRunReference(tool_id=tool_id, tool_version=tool_version, tool_uuid=None)
-        inputs = self.service.inputs(trans, tool_run_ref)
-        return json_schema_response_for_tool_state_model(RequestToolState, inputs)
-
-    @router.get(
-        "/api/tools/{tool_id}/versions/{tool_version}/parameter_landing_request_schema",
-        operation_id="tools__versioned_parameter_landing_request_schema",
-        summary="Return a JSON schema description of the tool's inputs for the tool landing request API.",
-    )
-    def tool_state_landing_request_versioned(
-        self,
-        tool_id: str = ToolIDPathParam,
-        tool_version: str = ToolVersionPathParam,
-        trans: ProvidesHistoryContext = DependsOnTrans,
-    ) -> Response:
-        tool_run_ref = ToolRunReference(tool_id=tool_id, tool_version=tool_version, tool_uuid=None)
-        inputs = self.service.inputs(trans, tool_run_ref)
-        return json_schema_response_for_tool_state_model(LandingRequestToolState, inputs)
-
-    @router.get(
-        "/api/tools/{tool_id}/versions/{tool_version}/parameter_test_case_xml_schema",
-        operation_id="tools__versioned_parameter_test_case_xml_schema",
-        summary="Return a JSON schema description of the tool's inputs for test case construction.",
-    )
-    def tool_state_test_case_xml_versioned(
-        self,
-        tool_id: str = ToolIDPathParam,
-        tool_version: str = ToolVersionPathParam,
-        trans: ProvidesHistoryContext = DependsOnTrans,
-    ) -> Response:
-        tool_run_ref = ToolRunReference(tool_id=tool_id, tool_version=tool_version, tool_uuid=None)
-        inputs = self.service.inputs(trans, tool_run_ref)
-        return json_schema_response_for_tool_state_model(TestCaseToolState, inputs)
 
     def _parsed_tool(
         self,
