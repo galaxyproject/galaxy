@@ -2,6 +2,7 @@ import logging
 import os
 import re
 import urllib.parse
+from typing import Any
 
 import yaml
 
@@ -40,6 +41,8 @@ TRS_REQUEST_TIMEOUT = (10, 30)
 TRS_URL_REGEX = (
     r"(?P<trs_base_url>https?:\/\/.+)\/ga4gh\/trs\/v2\/tools\/(?P<tool_id>.+)\/versions\/(?P<version_id>[^\/]+).*"
 )
+TRS_VERSION_NUMBER_REGEX = re.compile(r"(\d+)(?:\.(\d+))?(?:\.(\d+))?", re.ASCII)
+TRS_RELEASE_NAME_REGEX = re.compile(r"v?\d+(?:\.\d+){0,2}", re.ASCII)
 
 
 def parse_search_kwds(search_query):
@@ -73,6 +76,61 @@ def parse_trs_url(url: str) -> dict[str, str] | None:
     return None
 
 
+def parse_trs_version(name: str) -> tuple[int, int, int] | None:
+    """Numeric parts of a TRS version name like ``v1.2.3``, or None for a name without a number, e.g. a branch.
+
+    Matches the client's ``parseTrsVersion``, so the server and the client order versions the same way.
+    """
+    if match := TRS_VERSION_NUMBER_REGEX.search(name):
+        major, minor, patch = match.groups()
+        return int(major), int(minor or 0), int(patch or 0)
+    return None
+
+
+def trs_version_id(version: dict[str, Any]) -> str:
+    """The id that addresses a TRS ToolVersion in a TRS version URL.
+
+    Dockstore version ids repeat the tool id (``#workflow/...:v0.1``), its URLs use the version name.
+    """
+    version_id: str = version["id"]
+    name: str | None = version.get("name")
+    if name and f":{name}" in version_id:
+        return name
+    return version_id
+
+
+def sort_trs_versions(versions: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Numbered versions first, newest first, then the others (e.g. branches) by name, descending."""
+    numbered = [v for v in versions if parse_trs_version(v.get("name") or "")]
+    others = [v for v in versions if not parse_trs_version(v.get("name") or "")]
+    numbered.sort(key=lambda v: parse_trs_version(v["name"]) or (0, 0, 0), reverse=True)
+    others.sort(key=lambda v: (v.get("name") or "").casefold(), reverse=True)
+    return numbered + others
+
+
+def _parse_trs_release(name: str) -> tuple[int, int, int] | None:
+    return parse_trs_version(name) if TRS_RELEASE_NAME_REGEX.fullmatch(name) else None
+
+
+def trs_upgrade_version_id(sorted_versions: list[dict[str, Any]], current_trs_version_id: str) -> str | None:
+    """The newest release in ``sort_trs_versions`` output, if it is newer than the current release.
+
+    Releases are named like ``v1.2.3``. A branch or pre-release is never chosen, and a workflow imported from one stays on it.
+    """
+    current_name = next(
+        (v.get("name") or "" for v in sorted_versions if trs_version_id(v) == current_trs_version_id),
+        current_trs_version_id,
+    )
+    current = _parse_trs_release(current_name)
+    if current is None:
+        return None
+    for version in sorted_versions:
+        newest = _parse_trs_release(version.get("name") or "")
+        if newest is not None:
+            return trs_version_id(version) if newest > current else None
+    return None
+
+
 class TrsProxy:
     def __init__(self, config: Configuration):
         config_file = config.trs_servers_config_file
@@ -89,7 +147,10 @@ class TrsProxy:
         return self._server_list
 
     def get_server(self, trs_server):
-        trs_url = self._server_dict[trs_server]["api_url"]
+        try:
+            trs_url = self._server_dict[trs_server]["api_url"]
+        except KeyError:
+            raise RequestParameterInvalidException(f"Unknown TRS server '{trs_server}'.")
         return TrsServer(trs_url)
 
     def server_from_url(self, trs_url):
@@ -138,6 +199,12 @@ class TrsServer:
     def get_versions(self, tool_id, **kwd):
         trs_api_url = f"{self._get_tool_api_endpoint(tool_id, **kwd)}/versions"
         return self._get(trs_api_url)
+
+    def get_sorted_versions(self, tool_id, **kwd) -> list[dict[str, Any]]:
+        versions = self.get_versions(tool_id, **kwd)
+        if not isinstance(versions, list) or not all(isinstance(v, dict) and v.get("id") for v in versions):
+            raise UpstreamProxyError(f"TRS server {self._trs_url} sent an invalid version list for {tool_id}.")
+        return sort_trs_versions(versions)
 
     def get_version(self, tool_id, version_id, **kwd):
         return self._get(self._get_version_api_endpoint(tool_id, version_id, **kwd))

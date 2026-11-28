@@ -25,6 +25,10 @@ from galaxy.workflow import trs_proxy
 from galaxy.workflow.trs_proxy import (
     GA4GH_GALAXY_DESCRIPTOR,
     parse_search_kwds,
+    parse_trs_version,
+    sort_trs_versions,
+    trs_upgrade_version_id,
+    trs_version_id,
     TrsProxy,
 )
 
@@ -349,3 +353,42 @@ def test_skip_if_workflowhub_down_skips_unresponsive_server_reported_to_client(t
     with _mock_get(trs_error):
         with pytest.raises(SkipTest, match=reason):
             import_workflow()
+
+
+DOCKSTORE_TOOL_ID = "#workflow/github.com/iwc-workflows/example/main"
+
+
+def _dockstore_version(name):
+    return {"id": f"{DOCKSTORE_TOOL_ID}:{name}", "name": name}
+
+
+def test_parse_trs_version():
+    assert parse_trs_version("v1.2.3") == (1, 2, 3)
+    assert parse_trs_version("v0.10") == (0, 10, 0)
+    assert parse_trs_version("2") == (2, 0, 0)
+    assert parse_trs_version("main") is None
+
+
+def test_trs_version_id():
+    assert trs_version_id(_dockstore_version("v0.1")) == "v0.1"
+    assert trs_version_id({"id": "5", "name": "Version 5"}) == "5"
+
+
+def test_sort_trs_versions():
+    versions = [_dockstore_version(name) for name in ["v0.2", "develop", "v0.10", "Main", "v0.9.1"]]
+    assert [v["name"] for v in sort_trs_versions(versions)] == ["v0.10", "v0.9.1", "v0.2", "Main", "develop"]
+
+
+def test_trs_upgrade_version_id():
+    versions = sort_trs_versions([_dockstore_version(name) for name in ["v0.1", "v0.2", "main"]])
+    assert trs_upgrade_version_id(versions, "v0.1") == "v0.2"
+    assert trs_upgrade_version_id(versions, "v0.2") is None
+    # a version newer than the server lists, e.g. one the server has since removed
+    assert trs_upgrade_version_id(versions, "v0.3") is None
+    assert trs_upgrade_version_id(versions, "main") is None
+    assert trs_upgrade_version_id(sort_trs_versions([_dockstore_version("main")]), "main") is None
+    with_prereleases = sort_trs_versions(
+        [_dockstore_version(name) for name in ["v1.1", "v2.0.0-rc1", "fix-issue-2025"]]
+    )
+    assert trs_upgrade_version_id(with_prereleases, "v1.0") == "v1.1"
+    assert trs_upgrade_version_id(with_prereleases, "v2.0.0-rc1") is None
