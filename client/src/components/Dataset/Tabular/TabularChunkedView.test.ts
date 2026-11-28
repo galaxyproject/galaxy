@@ -1,7 +1,7 @@
 import { getLocalVue } from "@tests/vitest/helpers";
-import { shallowMount } from "@vue/test-utils";
+import { mount } from "@vue/test-utils";
 import axios from "axios";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import TabularChunkedView from "./TabularChunkedView.vue";
 
@@ -24,28 +24,55 @@ class VisibleIntersectionObserver {
     disconnect() {}
 }
 
-function mountChunkedView(fileExt: string, ckData?: string) {
+// Mounted views keep loading chunks after a test ends; unmount them so they can't take the next test's responses.
+const mounted: { unmount: () => void }[] = [];
+
+function mountChunkedView(
+    fileExt: string,
+    {
+        ckData,
+        metadataColumnNames,
+        chunkColumnNames,
+    }: { ckData?: string; metadataColumnNames?: string[]; chunkColumnNames?: (string | null)[] } = {},
+) {
     if (ckData !== undefined) {
         vi.mocked(axios.get).mockResolvedValueOnce({
-            data: { ck_data: ckData, offset: ckData.length, data_line_offset: 0 },
+            data: { ck_data: ckData, offset: ckData.length, data_line_offset: 0, column_names: chunkColumnNames },
         });
     }
-    return shallowMount(TabularChunkedView as object, {
+    const wrapper = mount(TabularChunkedView as object, {
         localVue,
         propsData: {
             options: {
                 id: "dataset-id",
                 file_ext: fileExt,
                 metadata_columns: 2,
+                metadata_column_names: metadataColumnNames,
             },
         },
     });
+    mounted.push(wrapper);
+    return wrapper;
 }
 
 async function renderedItems(fileExt: string, ckData: string) {
-    const wrapper = mountChunkedView(fileExt, ckData);
+    const wrapper = mountChunkedView(fileExt, { ckData });
     await vi.waitFor(() => expect(wrapper.findComponent({ name: "GTable" }).props("items")).not.toHaveLength(0));
     return wrapper.findComponent({ name: "GTable" }).props("items");
+}
+
+async function renderedView(fileExt: string, options: Parameters<typeof mountChunkedView>[1] = {}) {
+    const wrapper = mountChunkedView(fileExt, { ckData: "chr1\t100\n", ...options });
+    await vi.waitFor(() => expect(wrapper.findAll("tbody td")).not.toHaveLength(0));
+    return wrapper;
+}
+
+function columnIndex(wrapper: ReturnType<typeof mountChunkedView>) {
+    return wrapper.findAll("thead th").map((th) => ({
+        number: th.find(".column-number").text(),
+        name: th.find(".column-name").exists() ? th.find(".column-name").text() : null,
+        title: th.find(".column-index").attributes("title"),
+    }));
 }
 
 describe("TabularChunkedView", () => {
@@ -54,16 +81,36 @@ describe("TabularChunkedView", () => {
         vi.mocked(axios.get).mockReset().mockResolvedValue(EOF_CHUNK);
     });
 
-    it("hides the table header for generic tabular datasets", () => {
-        const wrapper = mountChunkedView("tabular");
-
-        expect(wrapper.findComponent({ name: "GTable" }).props("hideHeader")).toBe(true);
+    afterEach(() => {
+        mounted.splice(0).forEach((wrapper) => wrapper.unmount());
     });
 
-    it("keeps the table header for CSV datasets", () => {
-        const wrapper = mountChunkedView("csv");
+    it.each(["tabular", "csv"])("numbers the columns of %s datasets", async (fileExt) => {
+        const wrapper = await renderedView(fileExt);
 
-        expect(wrapper.findComponent({ name: "GTable" }).props("hideHeader")).toBe(false);
+        expect(columnIndex(wrapper)).toEqual([
+            { number: "1", name: null, title: "Column 1. Galaxy metadata, not part of the file." },
+            { number: "2", name: null, title: "Column 2. Galaxy metadata, not part of the file." },
+        ]);
+        expect(wrapper.findAll("tbody td").map((td) => td.text())).toEqual(["chr1", "100"]);
+    });
+
+    it("names the columns from metadata column names", async () => {
+        const wrapper = await renderedView("tabular", { metadataColumnNames: ["GeneID", "Base mean"] });
+
+        expect(columnIndex(wrapper)).toEqual([
+            { number: "1", name: "GeneID", title: "Column 1: GeneID. Galaxy metadata, not part of the file." },
+            { number: "2", name: "Base mean", title: "Column 2: Base mean. Galaxy metadata, not part of the file." },
+        ]);
+    });
+
+    it("names the columns from the column names the server sends with the chunk", async () => {
+        const wrapper = await renderedView("bed", { chunkColumnNames: ["Chrom", null] });
+
+        expect(columnIndex(wrapper).map(({ number, name }) => [number, name])).toEqual([
+            ["1", "Chrom"],
+            ["2", null],
+        ]);
     });
 
     it("loads chunks until the end of the dataset while the view is not filled", async () => {

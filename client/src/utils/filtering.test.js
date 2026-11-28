@@ -209,6 +209,10 @@ describe("filtering", () => {
             "hid<299 create_time<11-09-1981",
         );
         expect(HistoryFilters.setFilterValue("hid<299", "a_created_time_gt", "11-09-1981")).toEqual("hid<299");
+        // setting the same value again removes it, whatever the case of the value
+        expect(HistoryFilters.setFilterValue("tag:test", "tag", "test")).toEqual("");
+        expect(HistoryFilters.setFilterValue("", "tag", "GFF3")).toEqual("tag:GFF3");
+        expect(HistoryFilters.setFilterValue("tag:GFF3", "tag", "GFF3")).toEqual("");
     });
     test("validate filtering of a history item", () => {
         const item = {
