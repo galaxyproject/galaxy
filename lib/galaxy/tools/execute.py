@@ -374,7 +374,15 @@ def _execute(
 
             skip = slice_params.pop("__when_value__", None) is False
             # Slices skipped by the tracker make the loop position differ from job_index.
-            execute_single_job(execution_slice, completed_jobs.get(execution_slice.job_index), skip=skip)
+            try:
+                execute_single_job(execution_slice, completed_jobs.get(execution_slice.job_index), skip=skip)
+            except ToolInputsNotReadyException:
+                # Earlier slices of a workflow step already built their jobs. Queue them and
+                # schedule the remaining slices in a later iteration, as for a capped iteration.
+                if invocation_step is None or not execution_tracker.successful_jobs:
+                    raise
+                has_remaining_jobs = True
+                break
             history = execution_slice.history or history
             jobs_executed += 1
 
@@ -925,7 +933,9 @@ class WorkflowStepExecutionTracker(ExecutionTracker):
             return
 
         history = history or self.tool.get_default_history_by_trans(self.trans)
-        if self.invocation_step.is_new:
+        # A step delayed after precreating its output collections stays new, so reuse
+        # the collections of that attempt instead of adding another set to the history.
+        if self.invocation_step.is_new and not self.invocation_step.output_dataset_collections:
             self.precreate_output_collections(history, params, tool_request)
             for output_name, implicit_collection in self.implicit_collections.items():
                 self.invocation_step.add_output(output_name, implicit_collection)
