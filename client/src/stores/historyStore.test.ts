@@ -440,6 +440,8 @@ describe("historyStore — filling the own-history cache beside the paginated li
 
         expect(attempts).toBe(2);
         expect(store.histories.map((history) => history.id)).toEqual(["h1", "h2"]);
+    });
+});
 
 function historySummary(id: string, name: string): HistorySummary {
     return { id, name, archived: false, deleted: false, purged: false, update_time: "2026-01-01" } as HistorySummary;
@@ -458,9 +460,9 @@ describe("historyStore — content stats", () => {
             releaseStats = resolve;
         });
         server.use(
-            mswHttp.get("/api/histories/count", () => HttpResponse.json(1)),
-            mswHttp.delete("/api/histories/hist-2", () => HttpResponse.json({ id: "hist-2" })),
-            mswHttp.get("/api/histories/hist-2", async () => {
+            rawHttp.get("/api/histories/count", () => HttpResponse.json(1)),
+            rawHttp.delete("/api/histories/hist-2", () => HttpResponse.json({ id: "hist-2" })),
+            rawHttp.get("/api/histories/hist-2", async () => {
                 await statsHeld;
                 return HttpResponse.json(CONTENT_STATS);
             }),
@@ -480,7 +482,7 @@ describe("historyStore — content stats", () => {
     });
 
     it("merges late content stats into a history that is still cached", async () => {
-        server.use(mswHttp.get("/api/histories/hist-2", () => HttpResponse.json(CONTENT_STATS)));
+        server.use(rawHttp.get("/api/histories/hist-2", () => HttpResponse.json(CONTENT_STATS)));
         const historyStore = useHistoryStore();
         historyStore.setHistory(historySummary("hist-2", "A"));
 

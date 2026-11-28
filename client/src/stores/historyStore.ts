@@ -978,9 +978,7 @@ export const useHistoryStore = defineStore("historyStore", () => {
         // an incomplete history to the listing.
         const storedHistory = storedHistories.value[historyId];
         if (storedHistory) {
-            Object.entries(contentStats).forEach(([key, value]) => {
-                set(storedHistory, key, value);
-            });
+            Object.assign(storedHistory, contentStats);
         }
         return contentStats;
     }

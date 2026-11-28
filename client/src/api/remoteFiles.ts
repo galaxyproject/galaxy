@@ -70,6 +70,8 @@ export interface BrowseRemoteFilesResult {
  */
 export async function browseRemoteFiles(
     uri: string,
+    // Recursive requests are disabled on usegalaxy.org, see `recursive: false` below.
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     isRecursive = false,
     isWriteIntent = false,
     limit?: number,
