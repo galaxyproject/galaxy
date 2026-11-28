@@ -1,0 +1,108 @@
+# Caches saved on refs/pull/N/merge are only usable by PR N, so once it closes they just take repository cache quota.
+name: Delete closed pull request caches
+on:
+  schedule:
+    - cron: '41 */6 * * *'  # Run every 6 hours.
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: List what would be deleted without deleting it
+        type: boolean
+        default: false
+permissions: {}
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+jobs:
+  delete-caches:
+    name: Delete caches of closed pull requests
+    if: github.repository_owner == 'galaxyproject'
+    permissions:
+      actions: write  # list and delete Actions cache entries
+      pull-requests: read  # look up the state of each pull request
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete caches of closed pull request merge refs
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          DRY_RUN: ${{ inputs.dry_run && '1' || '0' }}
+        run: |
+          [[ "${GH_REPO}" =~ ^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$ ]] || { echo "::error::Unexpected repository name"; exit 1; }
+          # Collect every entry before deleting so deletes do not shift the pages being listed
+          if ! listing=$(gh api --paginate -X GET "repos/${GH_REPO}/actions/caches" -f per_page=100 --jq '.actions_caches[] | "\(.id) \(.size_in_bytes) \(.ref)"'); then
+            echo "::error::Could not list caches"
+            exit 1
+          fi
+          declare -A pr_entries=() seen_ids=()
+          while read -r id size ref; do
+            if [[ -z "${id}" ]]; then
+              continue
+            fi
+            if [[ ! "${id}" =~ ^[0-9]+$ || ! "${size}" =~ ^[0-9]+$ ]]; then
+              echo "::warning::Skipping a cache entry with an unexpected id or size"
+              continue
+            fi
+            # Pages can shift while listing, so the same entry may appear twice
+            if [[ -n "${seen_ids[${id}]:-}" ]]; then
+              continue
+            fi
+            seen_ids[${id}]=1
+            if [[ "${ref}" =~ ^refs/pull/([0-9]+)/merge$ ]]; then
+              pr_entries[${BASH_REMATCH[1]}]+="${id}:${size} "
+            fi
+          done <<< "${listing}"
+
+          removed_prs=0
+          removed_entries=0
+          removed_bytes=0
+          failed_deletes=0
+          already_gone=0
+          for pr in $(printf '%s\n' "${!pr_entries[@]}" | sort -n); do
+            if ! state=$(gh api "repos/${GH_REPO}/pulls/${pr}" --jq .state); then
+              echo "::warning::Could not look up pull request #${pr}, keeping its caches"
+              continue
+            fi
+            if [[ ! "${state}" =~ ^(open|closed)$ ]]; then
+              echo "::warning::Unexpected state for pull request #${pr}, keeping its caches"
+              continue
+            fi
+            if [[ "${state}" != closed ]]; then
+              continue
+            fi
+            pr_removed=0
+            for entry in ${pr_entries[${pr}]}; do
+              id="${entry%%:*}"
+              size="${entry##*:}"
+              if [[ "${DRY_RUN}" == 1 ]]; then
+                echo "Would delete cache ${id} of #${pr} (${size} bytes)"
+              elif delete_error=$(gh api -X DELETE "repos/${GH_REPO}/actions/caches/${id}" --silent 2>&1); then
+                echo "Deleted cache ${id} of #${pr} (${size} bytes)"
+              elif [[ "${delete_error}" == *"(HTTP 404)"* ]]; then
+                # Evicted or expired since the listing
+                echo "Cache ${id} of #${pr} was already gone"
+                already_gone=$((already_gone + 1))
+                continue
+              else
+                echo "::warning::Could not delete cache ${id} of #${pr}"
+                failed_deletes=$((failed_deletes + 1))
+                continue
+              fi
+              removed_entries=$((removed_entries + 1))
+              removed_bytes=$((removed_bytes + size))
+              pr_removed=1
+            done
+            removed_prs=$((removed_prs + pr_removed))
+          done
+
+          mib=$(awk -v bytes="${removed_bytes}" 'BEGIN { printf "%.1f", bytes / 1048576 }')
+          verb="Removed"
+          if [[ "${DRY_RUN}" == 1 ]]; then
+            verb="Dry run, would remove"
+          fi
+          summary="${verb} ${removed_entries} cache entries of ${removed_prs} closed pull requests (${mib} MiB); ${already_gone} already gone, ${failed_deletes} deletes failed."
+          echo "${summary}"
+          if [[ -n "${GITHUB_STEP_SUMMARY:-}" ]]; then
+            echo "${summary}" >> "${GITHUB_STEP_SUMMARY}"
+          fi
