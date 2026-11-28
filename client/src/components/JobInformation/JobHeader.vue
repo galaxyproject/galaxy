@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { faWrench } from "@fortawesome/free-solid-svg-icons";
+import { faExclamationTriangle, faWrench } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed } from "vue";
 
 import type { JobBaseModel, ShowFullJobResponse } from "@/api/jobs";
 import { useJobDetails } from "@/composables/jobDetails";
 import { useToolStore } from "@/stores/toolStore";
+import { errorMessageAsString } from "@/utils/simple-error";
 
 import Heading from "@/components/Common/Heading.vue";
 import SuccessIconOverlay from "@/components/Common/SuccessIndicator/SuccessIconOverlay.vue";
@@ -25,7 +27,7 @@ const props = defineProps<{
 const toolStore = useToolStore();
 
 const fetchJobId = computed(() => (props.job === undefined ? props.jobId : undefined));
-const { job: fetchedJob } = useJobDetails(fetchJobId, { full: false });
+const { job: fetchedJob, error } = useJobDetails(fetchJobId, { full: false });
 const job = computed(() => (props.job !== undefined ? props.job : fetchedJob.value));
 </script>
 
@@ -39,13 +41,18 @@ const job = computed(() => (props.job !== undefined ? props.job : fetchedJob.val
                 inline
                 size="md">
                 <SuccessIconOverlay v-if="props.animateSuccess" :covered-icon="faWrench" />
-                <LoadingSpan v-if="!job" message="" />
-                <span v-else>{{ toolStore.getToolNameById(job.tool_id, "Job Details") }}</span>
+                <span v-if="job">{{ toolStore.getToolNameById(job.tool_id, "Job Details") }}</span>
+                <span v-else-if="error">Job Details</span>
+                <LoadingSpan v-else message="" />
             </Heading>
-            <div class="job-header-end">
-                <JobState class="job-information-state-badge" :job-id="props.jobId" :job="job" />
+            <div class="job-header-end" :class="{ 'has-error': error && !job }">
+                <span v-if="error && !job" class="job-header-error text-danger">
+                    <FontAwesomeIcon :icon="faExclamationTriangle" fixed-width />
+                    {{ errorMessageAsString(error, "Failed to load job") }}
+                </span>
+                <JobState v-else class="job-information-state-badge" :job-id="props.jobId" :job="job" />
                 <slot name="pagination" />
-                <RerunJobButton :job-id="props.jobId" :job="job" outline />
+                <RerunJobButton v-if="!error || job" :job-id="props.jobId" :job="job" outline />
             </div>
         </div>
         <hr v-if="!props.noHr" />
@@ -71,5 +78,16 @@ const job = computed(() => (props.job !== undefined ? props.job : fetchedJob.val
     flex-wrap: wrap;
     flex-shrink: 0;
     margin-left: auto;
+
+    &.has-error {
+        flex-shrink: 1;
+        min-width: 0;
+    }
+}
+
+.job-header-error {
+    font-size: 0.875rem;
+    min-width: 0;
+    overflow-wrap: anywhere;
 }
 </style>
