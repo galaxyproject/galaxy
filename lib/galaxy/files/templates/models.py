@@ -66,6 +66,7 @@ FileSourceTemplateType = Literal[
     "gitlab",
     "arc",
     "nomad",
+    "dspace",
 ]
 
 FileSourceTemplateAlertVariant = Literal[
@@ -350,8 +351,9 @@ class WebdavFileSourceTemplateConfiguration(WebdavConfigMixin, StrictModel):
     type: Literal["webdav"]
     base_url: str | TemplateExpansion
     root: str | TemplateExpansion
-    login: str | TemplateExpansion
-    password: str | TemplateExpansion
+    login: str | TemplateExpansion | None = None
+    password: str | TemplateExpansion | None = None
+    token: str | TemplateExpansion | None = None
     writable: bool | TemplateExpansion = False
     template_start: str | None = None
     template_end: str | None = None
@@ -361,8 +363,9 @@ class WebdavFileSourceConfiguration(WebdavConfigMixin, StrictModel):
     type: Literal["webdav"]
     base_url: str
     root: str
-    login: str
-    password: str
+    login: str | None = None
+    password: str | None = None
+    token: str | None = None
     writable: bool = False
 
 
@@ -691,6 +694,20 @@ class NomadFileSourceConfiguration(StrictModel):
     token: str | None = None
 
 
+class DSpaceFileSourceTemplateConfiguration(StrictModel):
+    type: Literal["dspace"]
+    api_url: str | TemplateExpansion
+    token: str | TemplateExpansion | None = None
+    template_start: str | None = None
+    template_end: str | None = None
+
+
+class DSpaceFileSourceConfiguration(StrictModel):
+    type: Literal["dspace"]
+    api_url: str
+    token: str | None = None
+
+
 FileSourceTemplateConfiguration = Annotated[
     PosixFileSourceTemplateConfiguration
     | S3FSFileSourceTemplateConfiguration
@@ -723,7 +740,8 @@ FileSourceTemplateConfiguration = Annotated[
     | CommonCrawlFileSourceTemplateConfiguration
     | GitLabFileSourceTemplateConfiguration
     | ARCFileSourceTemplateConfiguration
-    | NomadFileSourceTemplateConfiguration,
+    | NomadFileSourceTemplateConfiguration
+    | DSpaceFileSourceTemplateConfiguration,
     Field(discriminator="type"),
 ]
 
@@ -759,7 +777,8 @@ FileSourceConfiguration = Annotated[
     | CommonCrawlFileSourceConfiguration
     | GitLabFileSourceConfiguration
     | ARCFileSourceConfiguration
-    | NomadFileSourceConfiguration,
+    | NomadFileSourceConfiguration
+    | DSpaceFileSourceConfiguration,
     Field(discriminator="type"),
 ]
 
@@ -856,6 +875,7 @@ TypesToConfigurationClasses: dict[FileSourceTemplateType, type[FileSourceConfigu
     "gitlab": GitLabFileSourceConfiguration,
     "arc": ARCFileSourceConfiguration,
     "nomad": NomadFileSourceConfiguration,
+    "dspace": DSpaceFileSourceConfiguration,
 }
 
 
