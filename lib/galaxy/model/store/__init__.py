@@ -2223,6 +2223,8 @@ class DirectoryModelExportStore(ModelExportStore):
                              will not be serialized.
         :param serialize_jobs: Include job data in model export. Not needed for set_metadata script.
         :param include_datasets_mapping: Write a human-readable ``datasets_mapping.tsv`` for user-facing exports.
+        :param ignore_errors: Skip serialization errors from missing provenance, and export history datasets in
+                              state ok whose file is missing from the object store as discarded, instead of failing.
         """
         if not os.path.exists(export_directory):
             os.makedirs(export_directory)
@@ -2254,6 +2256,7 @@ class DirectoryModelExportStore(ModelExportStore):
         )
         self.export_files = export_files
         self.include_datasets_mapping = include_datasets_mapping
+        self.discarded_missing_dataset_ids: set[int] = set()
         self.included_datasets: dict[model.DatasetInstance, tuple[model.DatasetInstance, bool]] = {}
         self.dataset_implicit_conversions: dict[model.DatasetInstance, model.ImplicitlyConvertedDatasetAssociation] = {}
         self.included_collections: dict[
@@ -2688,8 +2691,15 @@ class DirectoryModelExportStore(ModelExportStore):
         assert dataset.dataset is not None
         state = dataset.dataset.state
         if state in [model.Dataset.states.OK] and not dataset.get_file_name():
+            object_store_id = dataset.dataset.object_store_id or "None"
+            if self.serialization_options.ignore_errors:
+                log.warning(
+                    f"Dataset [{dataset.id}] does not exist on object store [{object_store_id}], exporting it as discarded."
+                )
+                self.discarded_missing_dataset_ids.add(dataset.dataset.id)
+                return
             log.error(
-                f"Dataset [{dataset.id}] does not exists on on object store [{dataset.dataset.object_store_id or 'None'}], while trying to export."
+                f"Dataset [{dataset.id}] does not exists on on object store [{object_store_id}], while trying to export."
             )
             raise Exception(
                 f"Cannot export history dataset [{getattr(dataset, 'hid', '')}: {dataset.name}] with id {self.exported_key(dataset)}"
@@ -2702,6 +2712,9 @@ class DirectoryModelExportStore(ModelExportStore):
         serialized_provenance: list[tuple[model.DatasetInstance, JsonDictT]] = []
         for dataset, include_files in self.included_datasets.values():
             serialized = cast(model.Serializable, dataset).serialize(self.security, self.serialization_options)
+            assert dataset.dataset is not None
+            if dataset.dataset.id in self.discarded_missing_dataset_ids:
+                serialized["state"] = model.Dataset.states.DISCARDED
             if include_files:
                 serialized_datasets.append((dataset, serialized))
             else:
