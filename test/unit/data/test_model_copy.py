@@ -453,6 +453,93 @@ def test_output_flushed_before_joining_its_history_gets_no_version():
         assert session.scalar(versions) == 1
 
 
+def test_purge_metadata_files_waits_for_the_last_hda_of_the_dataset():
+    with _setup_mapping_and_user() as (test_config, object_store, model, history):
+        session = model.context
+        source = _create_hda(
+            model, object_store, history, test_config.write("moo", "source"), include_metadata_file=True
+        )
+        copy = source.copy(flush=False)
+        history.add_dataset(copy)
+        session.commit()
+        indexes = [source.metadata.bam_index, copy.metadata.bam_index]
+        paths = [index.get_file_name() for index in indexes]
+        assert paths[0] != paths[1]
+
+        copy.purged = True
+        source.dataset.purge_metadata_files()
+        session.commit()
+        assert all(os.path.exists(path) for path in paths)
+        assert not any(index.purged for index in indexes)
+
+        source.purged = True
+        source.dataset.purge_metadata_files()
+        session.commit()
+        assert not any(os.path.exists(path) for path in paths)
+        assert all(index.deleted and index.purged for index in indexes)
+
+
+def test_purge_metadata_files_keeps_the_files_of_a_job_cache_hit_reading_them():
+    with _setup_mapping_and_user() as (test_config, object_store, model, history):
+        session = model.context
+        source = _create_hda(
+            model, object_store, history, test_config.write("moo", "source"), include_metadata_file=True
+        )
+        # Job cache hits used to share their source output's metadata instead of copying its files.
+        cached = HistoryDatasetAssociation(extension="bam", dataset=source.dataset, sa_session=session)
+        cached._metadata = source._metadata
+        history.add_dataset(cached)
+        session.commit()
+        index_path = cached.metadata.bam_index.get_file_name()
+
+        source.purged = True
+        source.dataset.purge_metadata_files()
+        session.commit()
+
+        assert not source.metadata.bam_index.purged
+        assert os.path.exists(index_path)
+
+
+def test_purge_metadata_files_keeps_a_file_shared_by_uuid_until_its_last_row_is_purged():
+    with _setup_mapping_and_user(store_by="uuid") as (test_config, object_store, model, history):
+        session = model.context
+        first = _create_hda(model, object_store, history, test_config.write("moo", "first"), include_metadata_file=True)
+        second = _create_hda(model, object_store, history, test_config.write("moo", "second"))
+        first_index = first.metadata.bam_index
+        # Importing a model store can insert a row with the uuid of another dataset's metadata file.
+        second_index = MetadataFile(dataset=second, name="bam_index", uuid=first_index.uuid)
+        session.add(second_index)
+        session.commit()
+        index_path = first_index.get_file_name()
+        assert second_index.get_file_name() == index_path
+
+        first.purged = True
+        first.dataset.purge_metadata_files()
+        session.commit()
+        assert first_index.purged
+        assert os.path.exists(index_path)
+
+        second.purged = True
+        second.dataset.purge_metadata_files()
+        session.commit()
+        assert second_index.purged
+        assert not os.path.exists(index_path)
+
+
+def test_purge_metadata_files_marks_a_missing_file_purged():
+    with _setup_mapping_and_user() as (test_config, object_store, model, history):
+        session = model.context
+        hda = _create_hda(model, object_store, history, test_config.write("moo", "hda"), include_metadata_file=True)
+        index = hda.metadata.bam_index
+        os.remove(index.get_file_name())
+
+        hda.purged = True
+        hda.dataset.purge_metadata_files()
+        session.commit()
+
+        assert index.deleted and index.purged
+
+
 @contextlib.contextmanager
 def _setup_mapping_and_user(config_str=DISK_TEST_CONFIG, store_by="id"):
     with TestConfig(config_str, store_by=store_by) as (test_config, object_store):

@@ -104,11 +104,14 @@ class DatasetManager(
         self.error_unless_dataset_purge_allowed()
         for dataset_id in request.dataset_ids:
             dataset: Dataset | None = self.session().get(Dataset, dataset_id)
-            if dataset and dataset.user_can_purge:
-                try:
+            if dataset is None:
+                continue
+            try:
+                if dataset.user_can_purge:
                     dataset.full_delete(user)
-                except Exception:
-                    log.exception(f"Unable to purge dataset ({dataset.id})")
+                dataset.purge_metadata_files(user)
+            except Exception:
+                log.exception(f"Unable to purge dataset ({dataset.id})")
         self.session().commit()
 
     # TODO: this may be more conv. somewhere else

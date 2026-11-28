@@ -2641,12 +2641,14 @@ class MinimalJobWrapper(HasResourceParameters):
         # custom post process setup
 
         # Once datasets are collected, set the total dataset size (includes extra files)
+        purged_datasets = []
         for dataset_assoc in job.output_datasets:
             dataset = dataset_assoc.dataset.dataset
             dataset.set_total_size()
             if dataset.purged:
                 # Purge, in case job wrote directly to object store
                 dataset.full_delete()
+                purged_datasets.append(dataset)
 
         # Calculate dataset hash - only if the job completed successfully,
         # otherwise dataset files may be missing/invalid (e.g. failed fetch from 404 URL).
@@ -2732,6 +2734,15 @@ class MinimalJobWrapper(HasResourceParameters):
         except Exception:
             log.exception(f"Updating update_time of invocation steps failed for job {self.job_id}")
             self.sa_session.rollback()
+        # With extended metadata the job sets the metadata of outputs purged while it ran, which can add
+        # metadata files. Removing them flushes the session, so it runs once the finished job is committed.
+        for dataset in purged_datasets:
+            try:
+                dataset.purge_metadata_files()
+                self.sa_session.commit()
+            except Exception:
+                log.exception(f"Purging metadata files of dataset {dataset.id} failed for job {self.job_id}")
+                self.sa_session.rollback()
         if job.state == job.states.ERROR:
             self._report_error()
         elif task_wrapper:

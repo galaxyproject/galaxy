@@ -5463,9 +5463,37 @@ class Dataset(Base, StorableObject, Serializable):
                     self.object_store.delete(self, entire_dir=True, extra_dir=rel_path, dir_only=True)
                 except galaxy.exceptions.ObjectNotFound:
                     pass
-        # TODO: purge metadata files
+        # Metadata files belong to the dataset's HDAs, purge_metadata_files() removes them.
         self.deleted = True
         self.purged = True
+
+    def purge_metadata_files(self, user=None) -> None:
+        """Remove the metadata files of this dataset's HDAs once no HDA or LDDA uses the dataset any more.
+
+        An HDA's metadata can name the metadata files of another HDA of the same dataset: job cache hits made
+        before each output got its own copies share the source output's. So no file is removed while any HDA of
+        the dataset isn't purged, or while a library uses it.
+        """
+        session = required_object_session(self)
+        session.flush()
+        HDA = HistoryDatasetAssociation
+        in_use = select(HDA.id).where(HDA.dataset_id == self.id, HDA.purged.is_not(true())).limit(1)
+        in_library = (
+            select(LibraryDatasetDatasetAssociation.id)
+            .where(LibraryDatasetDatasetAssociation.dataset_id == self.id)
+            .limit(1)
+        )
+        if session.scalars(in_use).first() is not None or session.scalars(in_library).first() is not None:
+            return
+        stmt = (
+            select(MetadataFile)
+            .join(HDA, MetadataFile.hda_id == HDA.id)
+            .where(HDA.dataset_id == self.id, MetadataFile.purged.is_not(true()))
+            .order_by(MetadataFile.id)
+        )
+        auth = ObjectStoreAuth(user=user) if user else None
+        for metadata_file in session.scalars(stmt).all():
+            metadata_file.purge(auth=auth)
 
     def get_access_roles(self, security_agent):
         return self._roles_for_action(security_agent.permitted_actions.DATASET_ACCESS.action)
@@ -11799,6 +11827,50 @@ class MetadataFile(Base, StorableObject, Serializable):
             self.flush()  # type: ignore[unreachable]
         identifier = getattr(self, store_by)
         return object_store, f"metadata_{identifier}.dat"
+
+    def purge(self, auth: ObjectStoreAuth | None = None) -> None:
+        """Remove this metadata file from the object store and mark it purged.
+
+        A missing file still marks the row purged. If the file can't be removed the row is left as it was, so a
+        later purge retries it.
+        """
+        previous_flags = (self.deleted, self.purged)
+        self.deleted = True
+        self.purged = True
+        session = required_object_session(self)
+        # Flush now so that a row sharing this file, purged after this one, sees this one purged.
+        session.flush([self])
+        object_store, alt_name = self._object_store_and_alt_name()
+        if alt_name == f"metadata_{self.uuid}.dat":
+            # The file is named by uuid, and importing a model store can give several rows the same uuid.
+            # Rows in other object stores are counted too, to keep the file rather than risk a shared one.
+            stmt = (
+                select(MetadataFile.id)
+                .where(
+                    MetadataFile.uuid == self.uuid,
+                    MetadataFile.id != self.id,
+                    MetadataFile.purged.is_not(true()),
+                )
+                .limit(1)
+            )
+            if session.scalars(stmt).first() is not None:
+                log.debug("Keeping file of purged metadata file %s, another metadata file uses it", self.id)
+                return
+        try:
+            removed = object_store.delete(
+                self, extra_dir="_metadata_files", extra_dir_at_root=True, alt_name=alt_name, auth=auth
+            )
+            # Some object stores report a missing file as False rather than raising ObjectNotFound.
+            if not removed and object_store.exists(
+                self, extra_dir="_metadata_files", extra_dir_at_root=True, alt_name=alt_name
+            ):
+                log.error("Unable to remove the file of metadata file %s", self.id)
+                self.deleted, self.purged = previous_flags
+        except galaxy.exceptions.ObjectNotFound:
+            log.debug("File of metadata file %s is already gone", self.id)
+        except Exception:
+            log.exception("Unable to remove the file of metadata file %s", self.id)
+            self.deleted, self.purged = previous_flags
 
     def get_file_name(self, sync_cache: bool = True, auth: ObjectStoreAuth | None = None) -> str:
         # Ensure the directory structure and the metadata file object exist
