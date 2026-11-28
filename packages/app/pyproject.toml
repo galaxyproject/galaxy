@@ -50,7 +50,8 @@ dependencies = [
     "packaging",
     "paramiko!=2.9.0,!=2.9.1",
     "pebble!=5.2.1,!=5.2.2",
-    "pulsar-galaxy-lib>=0.16.0",
+    # Temporary galaxyproject/pulsar#593 source pin; replace with a Pulsar release before merging.
+    "pulsar-galaxy-lib @ git+https://github.com/mvdbeek/pulsar@1e5acbbd45135c51cc2371236415823c0c7ef535",
     "pydantic>=2.7.4",
     "pydantic-ai>=1.99.0",
     "pysam>=0.21",

@@ -2,6 +2,9 @@
 
 set -ex
 
+# Build the temporary Pulsar source dependency as the Galaxy library, also with pip.
+export PULSAR_GALAXY_LIB=1
+
 PACKAGE_LIST_FILE=packages_by_dep_dag.txt
 FOR_PULSAR=0
 SKIP_PACKAGES=(

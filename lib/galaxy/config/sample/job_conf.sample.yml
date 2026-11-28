@@ -1148,6 +1148,8 @@ execution:
     #   - "node_failure" (True if and only if the job runner indicates a node the job was running on failed)
     #   - "preempted" (True if and only if the job runner indicates the job was preempted by another job)
     #   - "job_output_not_returned_from_cluster" (True if and only if the job runner indicates the job's outputs were not returned from the cluster)
+    #   - "input_staging_failed" (True if and only if Pulsar indicates the job's inputs could not be transferred; the tool did not run)
+    #   - "output_staging_failed" (True if and only if Pulsar indicates the job's outputs could not be transferred; resubmitting runs the tool again)
     #   - "unknown_error" (True for job or job runner problems that aren't otherwise classified)
     #   - "runner_state" (the reason reported by the job runner as a string, e.g. ``runner_state == 'node_failure'``)
     #   - "attempt" (the re-submission attempt number this is)

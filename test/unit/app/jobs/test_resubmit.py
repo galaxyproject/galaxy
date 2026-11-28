@@ -22,6 +22,8 @@ HANDLED_RUNNER_STATES = [
     (JobState.runner_states.UNKNOWN_ERROR, "unknown_error"),
     (JobState.runner_states.NODE_FAILURE, "node_failure"),
     (JobState.runner_states.PREEMPTED, "preempted"),
+    (JobState.runner_states.INPUT_STAGING_FAILED, "input_staging_failed"),
+    (JobState.runner_states.OUTPUT_STAGING_FAILED, "output_staging_failed"),
 ]
 
 
