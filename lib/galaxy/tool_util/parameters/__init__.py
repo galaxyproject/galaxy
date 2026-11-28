@@ -67,6 +67,7 @@ from .factory import (
 )
 from .json import to_json_schema_string
 from .model_validation import (
+    clean_pydantic_error,
     validate_against_model,
     validate_internal_job,
     validate_internal_landing_request,
@@ -150,6 +151,7 @@ __all__ = (
     "RepeatParameterModel",
     "RawStateDict",
     "ValidationFunctionT",
+    "clean_pydantic_error",
     "validate_against_model",
     "validate_internal_job",
     "validate_internal_landing_request",

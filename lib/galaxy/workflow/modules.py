@@ -78,6 +78,7 @@ from galaxy.schema.invocation import (
 )
 from galaxy.tool_util.cwl.util import set_basename_and_derived_properties
 from galaxy.tool_util.parameters import (
+    clean_pydantic_error,
     fill_static_defaults,
     from_workflow_execution_state,
     JobInternalToolState,
@@ -2593,7 +2594,8 @@ def _capture_workflow_tool_request_state(
     sees input refs):
       - skipped conditional step -> no ToolRequest minted (no request to record)
       - converter guard or meta-model rejection -> minted with
-        ``request_state="validation_failed"`` and the structural payload, quiet
+        ``request_state="validation_failed"`` and the structural payload;
+        INFO log says not validated, with the reason (execution unaffected)
       - anything else -> minted with ``request_state="validation_failed"``,
         log.warning (capture-code defect, surfaced rather than swallowed)
     """
@@ -2604,6 +2606,7 @@ def _capture_workflow_tool_request_state(
     validated_template: RequestInternalDereferencedToolState | None = None
     validated_combinations: list[JobInternalToolState] | None = None
     request_state = WorkflowToolRequestState.NOT_VALIDATED
+    validation_error: str | None = None
     try:
         parameter_bundle = ToolParameterBundleModel(parameters=parameters)
         mapped_inputs = _mapped_inputs_from_collection_info(collection_info)
@@ -2643,10 +2646,11 @@ def _capture_workflow_tool_request_state(
         # Conditional step whose `when` resolved falsy: nothing to capture.
         return None, None, None
     except (RequestInternalToWorkflowStateError, exceptions.RequestParameterInvalidException) as e:
+        validation_error = unicodify(e)
         log.debug(
             "Workflow tool request state invalid for tool %s: %s",
             getattr(tool, "id", "?"),
-            unicodify(e),
+            validation_error,
         )
         request_state = WorkflowToolRequestState.VALIDATION_FAILED
         validated_combinations = None
@@ -2697,21 +2701,38 @@ def _capture_workflow_tool_request_state(
             exc_info=True,
         )
         return None, None, None
-    _log_workflow_tool_request_state(trans, tool, step, collection_info, request_state)
+    _log_workflow_tool_request_state(trans, tool, step, collection_info, request_state, validation_error)
     return validated_template, validated_combinations, tool_request
 
 
 def _log_workflow_tool_request_state(
-    trans: "ProvidesAppContext", tool, step, collection_info, request_state: WorkflowToolRequestState
+    trans: "ProvidesAppContext",
+    tool,
+    step,
+    collection_info,
+    request_state: WorkflowToolRequestState,
+    validation_error: str | None = None,
 ) -> None:
     mapped_over = bool(getattr(collection_info, "collections", None))
-    log.info(
-        "workflow tool request state: tool_id=%s step=%s mapped_over=%s state=%s",
-        getattr(tool, "id", "?"),
-        getattr(step, "order_index", "?"),
-        mapped_over,
-        request_state.value,
-    )
+    step_index = getattr(step, "order_index", "?")
+    tool_id = getattr(tool, "id", "?")
+    if request_state == WorkflowToolRequestState.VALIDATED:
+        log.info(
+            "tool request capture for step %s (%s): validated, mapped_over=%s",
+            step_index,
+            tool_id,
+            mapped_over,
+        )
+    else:
+        # The capture is execution-neutral: say so, so this is not read as the
+        # step itself failing, and include the reason (otherwise DEBUG only).
+        log.info(
+            "tool request capture for step %s (%s): not validated, execution unaffected, mapped_over=%s: %s",
+            step_index,
+            tool_id,
+            mapped_over,
+            clean_pydantic_error(validation_error or "", separator="; ") or "no reason given",
+        )
     execution_timer_factory = getattr(trans.app, "execution_timer_factory", None)
     statsd_client = getattr(execution_timer_factory, "galaxy_statsd_client", None)
     if statsd_client is not None:

@@ -1,7 +1,6 @@
 """This module contains a linting functions for tool tests."""
 
 from collections.abc import Iterator
-from io import StringIO
 from typing import (
     TYPE_CHECKING,
 )
@@ -9,7 +8,10 @@ from typing import (
 from packaging.version import Version
 
 from galaxy.tool_util.lint import Linter
-from galaxy.tool_util.parameters import validate_test_cases_for_tool_source
+from galaxy.tool_util.parameters import (
+    clean_pydantic_error,
+    validate_test_cases_for_tool_source,
+)
 from galaxy.tool_util.parameters.factory import input_models_for_tool_source
 from galaxy.tool_util.verify.parse import tag_structure_to_that_structure
 from galaxy.tool_util_models.assertions import (
@@ -168,7 +170,7 @@ class TestsAssertionValidation(Linter):
                 try:
                     assert_list_model.model_validate(processed_assertions)
                 except Exception as e:
-                    error_str = _cleanup_pydantic_error(e)
+                    error_str = clean_pydantic_error(e)
                     lint_ctx.warn(
                         f"Test {test_idx}: failed to validate assertions. Validation errors are [{error_str}]",
                         linter=cls.name(),
@@ -192,24 +194,11 @@ class TestsCaseValidation(Linter):
         for test_idx, validation_result in enumerate(validation_results, start=1):
             error = validation_result.validation_error
             if error:
-                error_str = _cleanup_pydantic_error(error)
+                error_str = clean_pydantic_error(error)
                 lint_log(
                     f"Test {test_idx}: failed to validate test parameters against inputs - tests won't run on a modern Galaxy tool profile version. Validation errors are [{error_str}]",
                     linter=cls.name(),
                 )
-
-
-def _cleanup_pydantic_error(error) -> str:
-    full_validation_error = f"{error}"
-    new_error = StringIO("")
-    for line in full_validation_error.splitlines():
-        # this repeated over and over isn't useful in the context of how we're building the dynamic models,
-        # tool authors should not be looking up pydantic docs on models they cannot even really inspect
-        if line.strip().startswith("For further information visit https://errors.pydantic"):
-            continue
-        else:
-            new_error.write(f"{line}\n")
-    return new_error.getvalue().strip()
 
 
 def _collect_multiple_select_names(parameters: list["ToolParameterT"]) -> set[str]:

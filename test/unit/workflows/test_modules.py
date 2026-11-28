@@ -1,4 +1,5 @@
 import json
+import logging
 from typing import (
     Any,
     NamedTuple,
@@ -1176,6 +1177,63 @@ def test_capture_propagates_failure_flushing_unrelated_pending_objects():
 
     with pytest.raises(IntegrityError):
         modules._capture_workflow_tool_request_state(trans, _PersistableFakeTool(), None, None, history, resolve, [])
+
+
+def _capture_int_tool_step(value, caplog):
+    tool = _PersistableFakeTool()
+    tool.id = "gx_int"
+    tool.tool_source = parameter_tool_source("gx_int")
+    tool.parameters = input_models_for_tool_source(tool.tool_source).parameters
+    trans = MockTrans()
+    history = model.History(name="target")
+    trans.sa_session.add(history)
+
+    def resolve(iteration_elements):
+        return bunch.Bunch(inputs={"parameter": value}), None, None
+
+    with caplog.at_level(logging.INFO, logger=modules.log.name):
+        _, _, request = modules._capture_workflow_tool_request_state(
+            trans, tool, bunch.Bunch(order_index=7), None, history, resolve, []
+        )
+    messages = [r.getMessage() for r in caplog.records if r.name == modules.log.name and r.levelno == logging.INFO]
+    return request, messages
+
+
+def test_capture_validated_logs_validated_at_info(caplog):
+    request, messages = _capture_int_tool_step(5, caplog)
+
+    assert request.request_state == "validated"
+    assert messages == ["tool request capture for step 7 (gx_int): validated, mapped_over=False"]
+
+
+def test_capture_validation_failed_info_log_is_not_a_step_verdict(caplog):
+    """The capture is execution-neutral: its INFO line must not read as the step failing."""
+    request, messages = _capture_int_tool_step("not-a-number", caplog)
+
+    assert request.request_state == "validation_failed"
+    assert len(messages) == 1
+    message = messages[0]
+    assert message.startswith(
+        "tool request capture for step 7 (gx_int): not validated, execution unaffected, mapped_over=False: "
+    )
+    assert "validation_failed" not in message
+    # The reason is included, collapsed to a single line.
+    assert "Input should be a valid integer" in message
+    assert "\n" not in message
+    assert "errors.pydantic.dev" not in message
+
+
+def test_capture_log_without_reason(caplog):
+    tool = bunch.Bunch(id="gx_int")
+    with caplog.at_level(logging.INFO, logger=modules.log.name):
+        modules._log_workflow_tool_request_state(
+            MockTrans(), tool, bunch.Bunch(order_index=7), None, modules.WorkflowToolRequestState.VALIDATION_FAILED, ""
+        )
+    messages = [r.getMessage() for r in caplog.records if r.name == modules.log.name and r.levelno == logging.INFO]
+    assert messages == [
+        "tool request capture for step 7 (gx_int): not validated, execution unaffected, mapped_over=False: "
+        "no reason given"
+    ]
 
 
 def test_to_decoded_json_lowers_connected_value_in_repeat():
