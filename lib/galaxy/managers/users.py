@@ -290,15 +290,15 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             raise exceptions.ConfigDoesNotAllowException(
                 "The configuration of this Galaxy instance does not allow admins to delete users."
             )
-        super().delete(user, flush=flush)
+        super().delete(user, flush=False)
         self._stop_all_jobs_from_user(user)
+        if flush:
+            self.session().commit()
 
     def _stop_all_jobs_from_user(self, user):
         active_jobs = self._get_all_active_jobs_from_user(user)
-        session = self.session()
         for job in active_jobs:
             job.mark_deleted(self.app.config.track_jobs_in_database)
-        session.commit()
 
     def _get_all_active_jobs_from_user(self, user: User) -> list[Job]:
         """Get all jobs that are not ready yet and belong to the given user."""
@@ -317,18 +317,18 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         super().undelete(user, flush=flush)
 
     def purge(self, user, flush=True):
-        """Purge the given user. They must have the deleted flag already."""
+        """Purge the given user, also deleting them if they are not deleted yet."""
         if not self.app.config.allow_user_deletion:
             raise exceptions.ConfigDoesNotAllowException(
                 "The configuration of this Galaxy instance does not allow admins to delete or purge users."
             )
-        if not user.deleted:
-            raise exceptions.MessageException(f"User '{user.email}' has not been deleted, so they cannot be purged.")
         private_role = self.app.security_agent.get_private_user_role(user)
         if private_role is None:
             raise exceptions.InconsistentDatabase(
-                f"User {user.email} private role is missing while attempting to purge deleted user."
+                f"User {user.email} private role is missing while attempting to purge user."
             )
+        # A user who is not deleted yet is deleted by super().purge() below, which also
+        # stops their active jobs, and the whole purge is saved in one commit.
         # Delete History
         for active_history in user.active_histories:
             self.session().refresh(active_history)

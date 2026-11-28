@@ -53698,7 +53698,7 @@ export interface operations {
     delete_user_api_users__user_id__delete: {
         parameters: {
             query?: {
-                /** @description Whether to definitely remove this user. Only deleted users can be purged. */
+                /** @description Whether to definitely remove this user. A user who is not deleted yet is deleted first. */
                 purge?: boolean;
             };
             header?: {

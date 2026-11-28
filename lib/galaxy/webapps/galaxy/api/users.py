@@ -749,7 +749,7 @@ class FastAPIUsers:
             bool,
             Query(
                 title="Purge user",
-                description="Whether to definitely remove this user. Only deleted users can be purged.",
+                description="Whether to definitely remove this user. A user who is not deleted yet is deleted first.",
             ),
         ] = False,
         payload: UserDeletionPayload | None = None,
