@@ -8,6 +8,7 @@ import { useRoute } from "vue-router";
 
 import { type InvocationStep, isWorkflowInvocationElementView } from "@/api/invocations";
 import { usePersistentToggle } from "@/composables/persistentToggle";
+import { useResourceWatcher } from "@/composables/resourceWatcher";
 import { useInvocationStore } from "@/stores/invocationStore";
 import { useWorkflowStore } from "@/stores/workflowStore";
 import { errorMessageAsString } from "@/utils/simple-error";
@@ -39,6 +40,8 @@ import WorkflowInvocationShare from "./WorkflowInvocationShare.vue";
 import GAlert from "@/components/BaseComponents/GAlert.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
+/** How many times to fetch a scheduled invocation after its jobs finish, waiting for the server to mark it `completed` */
+const COMPLETION_CHECKS = 4;
 /** Below this tab height, the overview scrolls instead of fitting the graph and step details to the tab */
 const OVERVIEW_FIT_MIN_HEIGHT = 600;
 
@@ -71,6 +74,18 @@ const invocationLoaded = ref(false);
 const errorMessage = ref<string | null>(null);
 const cancellingInvocation = ref(false);
 const isPolling = ref(false);
+/**
+ * Whether this view saw the invocation still running (non-terminal).
+ *
+ * Used to determine if a final polling should continue after the invocation's jobs have finished,
+ * to mark the invocation as `completed` once the server updates its state as such.
+ */
+let sawRunning = false;
+/** Completion checks left before giving up on the server marking the invocation `completed` */
+let completionChecksLeft = 0;
+const completionWatcher = useResourceWatcher(checkCompleted);
+/** Set on unmount, so a poll whose fetch was in flight doesn't schedule another */
+let unmounted = false;
 
 const tabContent = ref<HTMLElement | null>(null);
 const { height: tabContentHeight } = useElementSize(tabContent);
@@ -232,6 +247,12 @@ const jobStatesStr = computed(() => {
 watch(
     () => props.invocationId,
     async (id) => {
+        // Drop the previous invocation's polling, so it isn't run against this one too
+        clearTimeout(stepStatesInterval.value);
+        clearTimeout(jobStatesInterval.value);
+        completionWatcher.stopWatchingResource();
+        sawRunning = false;
+
         // Prevent the page from reloading when you switch tabs. We set the boolean as soon as we know that
         // the invocation exists in the store, and with this, when we change tabs there isn't a refresh every time.
         const storedInvocation = invocationStore.getInvocationById(id);
@@ -243,6 +264,9 @@ watch(
 
         try {
             await invocationStore.fetchInvocationById({ id });
+            if (unmounted) {
+                return;
+            }
             invocationLoaded.value = true;
             // Only start polling if there is a valid invocation
             if (invocation.value) {
@@ -254,6 +278,16 @@ watch(
         }
     },
     { immediate: true },
+);
+
+// Whichever poll sees it last, start the completion checks once the invocation is scheduled and its jobs are done
+watch(
+    () => invocationState.value === "scheduled" && jobStatesTerminal.value,
+    (awaitingCompletion) => {
+        if (awaitingCompletion) {
+            startCompletionChecks();
+        }
+    },
 );
 
 watch(
@@ -280,25 +314,57 @@ watch(
 );
 
 onUnmounted(() => {
+    unmounted = true;
     clearTimeout(stepStatesInterval.value);
     clearTimeout(jobStatesInterval.value);
+    completionWatcher.dispose();
 });
 
 async function pollStepStatesUntilTerminal() {
     if (!invocationSchedulingTerminal.value) {
+        sawRunning = true;
         await invocationStore.fetchInvocationById({ id: props.invocationId });
+        if (unmounted) {
+            return;
+        }
         stepStatesInterval.value = setTimeout(pollStepStatesUntilTerminal, 3000);
     }
 }
+/** Polls jobs until they and scheduling are done, since scheduling can still add jobs */
 async function pollJobStatesUntilTerminal() {
-    if (!jobStatesTerminal.value && invocation.value) {
+    if (!invocationAndJobTerminal.value && invocation.value) {
         isPolling.value = true;
         await invocationStore.fetchInvocationJobsSummaryForId({ id: props.invocationId });
+        if (unmounted) {
+            return;
+        }
         await invocationStore.fetchInvocationStepJobsSummaryForId({ id: props.invocationId });
+        if (unmounted) {
+            return;
+        }
+        if (!jobStatesTerminal.value) {
+            sawRunning = true;
+        }
         jobStatesInterval.value = setTimeout(pollJobStatesUntilTerminal, 3000);
     } else {
         isPolling.value = false;
     }
+}
+/** The server marks a scheduled invocation `completed` a few seconds after its jobs finish, so check a few times. */
+function startCompletionChecks() {
+    // Only check if we've seen the invocation running since this view was mounted
+    if (sawRunning && invocationState.value === "scheduled") {
+        completionChecksLeft = COMPLETION_CHECKS;
+        completionWatcher.startWatchingResource();
+    }
+}
+async function checkCompleted() {
+    if (invocationState.value !== "scheduled" || completionChecksLeft <= 0) {
+        completionWatcher.stopWatchingResource();
+        return;
+    }
+    completionChecksLeft--;
+    await invocationStore.fetchInvocationById({ id: props.invocationId });
 }
 function onError(e: any) {
     console.error(e);
