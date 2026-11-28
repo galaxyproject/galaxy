@@ -1,3 +1,7 @@
+import os
+import tempfile
+
+from galaxy import model
 from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
     DatasetPopulator,
@@ -189,6 +193,40 @@ class TestLibraryContentsApi(ApiTestCase):
         invalid_item_id = "invalid_id"
         response_invalid = self._delete(f"/api/libraries/{library_id}/contents/{invalid_item_id}")
         self._assert_status_code_is(response_invalid, 400)
+
+    def test_purge_library_item_purges_metadata_files(self):
+        library, library_dataset = self.library_populator.new_library_dataset_in_private_library("metadata_files")
+        app = self.driver_or_skip_test_if_remote().app
+        assert app is not None
+        session = app.model.session
+        session.rollback()
+        library_dataset_model = session.get(model.LibraryDataset, app.security.decode_id(library_dataset["id"]))
+        assert library_dataset_model is not None
+        metadata_file = model.MetadataFile(
+            dataset=library_dataset_model.library_dataset_dataset_association, name="bai"
+        )
+        session.add(metadata_file)
+        session.commit()
+        metadata_file_id = metadata_file.id
+        with tempfile.NamedTemporaryFile() as source:
+            source.write(b"BAI\x01")
+            source.flush()
+            metadata_file.update_from_file(source.name)
+        path = metadata_file.get_file_name()
+        session.commit()
+        assert os.path.exists(path)
+
+        response = self._delete(
+            f"/api/libraries/{library['id']}/contents/{library_dataset['id']}", data={"purge": True}, json=True
+        )
+        self._assert_status_code_is(response, 200)
+
+        session.rollback()
+        purged_metadata_file = session.get(model.MetadataFile, metadata_file_id)
+        assert purged_metadata_file is not None
+        assert purged_metadata_file.deleted is True
+        assert purged_metadata_file.purged is True
+        assert not os.path.exists(path)
 
     def _create_library_content(self, type):
         folder_id = self.library["root_folder_id"]
