@@ -13,8 +13,13 @@ import jwt
 import pytest
 from cryptography.hazmat.primitives.asymmetric import rsa
 from social_core.backends.google_openidconnect import GoogleOpenIdConnect
-from social_core.exceptions import AuthException
+from social_core.exceptions import (
+    AuthAssociationError,
+    AuthException,
+    AuthResponseError,
+)
 from sqlalchemy import event
+from sqlalchemy.exc import IntegrityError
 from webob import Request
 
 from galaxy import model
@@ -28,6 +33,7 @@ from galaxy.authnz.keycloak import KeycloakOpenIdConnect
 from galaxy.authnz.managers import AuthnzManager
 from galaxy.authnz.psa_authnz import (
     _confirmation_identity,
+    PSAAuthnz,
     Storage,
     Strategy,
 )
@@ -247,20 +253,20 @@ def test_new_identity_goes_to_destination(trans, provider):
     assert redirect == "/galaxy/workflows/list"
 
 
-@pytest.mark.parametrize("use_unique_user_id", [False, True])
-def test_google_confirmation_preserves_backend_identity(trans, provider, monkeypatch, use_unique_user_id):
+def configure_google(trans: Any, provider: SimpleNamespace, monkeypatch: pytest.MonkeyPatch) -> AuthnzManager:
     manager = trans.app.authnz_manager
-    manager.oidc_config["GOOGLE_OPENIDCONNECT_USE_UNIQUE_USER_ID"] = use_unique_user_id
     manager.oidc_backends_config["google"] = {
         **manager.oidc_backends_config["keycloak"],
         "redirect_uri": "https://galaxy.example/authnz/google/callback",
     }
     manager.oidc_backends_implementation["google"] = "psa"
     provider.claims["iss"] = "accounts.google.com"
+    # social-auth-core requires Google to confirm that the email is verified.
+    provider.userinfo["email_verified"] = True
     monkeypatch.setattr(GoogleOpenIdConnect, "oidc_config", KeycloakOpenIdConnect.oidc_config)
     monkeypatch.setattr(GoogleOpenIdConnect, "get_jwks_keys", KeycloakOpenIdConnect.get_jwks_keys)
 
-    def request(backend, url, *args, **kwargs):
+    def request(backend: GoogleOpenIdConnect, url: str, *args: Any, **kwargs: Any) -> Any:
         provider_urls = {
             "https://accounts.google.com/o/oauth2/token": "https://idp.example/token",
             "https://openidconnect.googleapis.com/v1/userinfo": "https://idp.example/userinfo",
@@ -268,7 +274,14 @@ def test_google_confirmation_preserves_backend_identity(trans, provider, monkeyp
         return KeycloakOpenIdConnect.request(backend, provider_urls.get(url, url), *args, **kwargs)
 
     monkeypatch.setattr(GoogleOpenIdConnect, "request", request)
+    return manager
+
+
+def google_login(
+    trans: Any, provider: SimpleNamespace, manager: AuthnzManager
+) -> tuple[PSAAuthnz, Any, model.User | None]:
     _, _, backend = manager._get_authnz_backend("google")
+    assert backend is not None
     query = parse_qs(urlsplit(backend.authenticate(trans).url).query)
     provider.nonce = query["nonce"][0]
     state = query["state"][0]
@@ -276,7 +289,18 @@ def test_google_confirmation_preserves_backend_identity(trans, provider, monkeyp
         "https://galaxy.example/authnz/google/callback?" + urlencode({"state": state, "code": "local-code"})
     )
     _, _, backend = manager._get_authnz_backend("google")
+    assert backend is not None
     redirect, user = backend.callback(state, "local-code", trans, "/")
+    return backend, redirect, user
+
+
+@pytest.mark.parametrize("use_unique_user_id", [False, True])
+def test_google_confirmation_preserves_backend_identity(
+    trans: Any, provider: SimpleNamespace, monkeypatch: pytest.MonkeyPatch, use_unique_user_id: bool
+) -> None:
+    manager = configure_google(trans, provider, monkeypatch)
+    manager.oidc_config["GOOGLE_OPENIDCONNECT_USE_UNIQUE_USER_ID"] = use_unique_user_id
+    backend, redirect, user = google_login(trans, provider, manager)
     assert user is None
     assert counts(trans) == (0, 0, 0)
     identifier = parse_qs(urlsplit(redirect).query)["confirmation_id"][0]
@@ -284,19 +308,109 @@ def test_google_confirmation_preserves_backend_identity(trans, provider, monkeyp
     assert user.email == "verified@example.com"
     association = trans.sa_session.query(model.UserAuthnzToken).one()
     assert association.provider == "google-openidconnect"
-    assert association.uid == ("verified-subject" if use_unique_user_id else "verified@example.com")
+    # social-auth-core >= 6 identifies Google accounts by their subject, regardless of USE_UNIQUE_USER_ID.
+    assert association.uid == "verified-subject"
+    assert association.id_key == "sub"
+    assert association.user is not None
     assert association.user.email == "verified@example.com"
 
 
-def test_authentication_state_omits_social_core_next(trans, provider):
+@pytest.mark.parametrize(
+    "uid,id_key",
+    [
+        # Before social-auth-core 6, Google associations were identified by email...
+        ("verified@example.com", "email"),
+        # ... or by subject when GOOGLE_OPENIDCONNECT_USE_UNIQUE_USER_ID was set.
+        ("verified-subject", "sub"),
+    ],
+)
+def test_google_association_from_before_social_auth_core_6_is_migrated(
+    trans: Any, provider: SimpleNamespace, monkeypatch: pytest.MonkeyPatch, uid: str, id_key: str
+) -> None:
+    existing = trans.app.user_manager.create(email="verified@example.com", username="existing")
+    trans.sa_session.add(model.UserAuthnzToken(user=existing, provider="google-openidconnect", uid=uid, id_key=id_key))
+    trans.sa_session.commit()
+    manager = configure_google(trans, provider, monkeypatch)
+    _, _, user = google_login(trans, provider, manager)
+    assert user is existing
+    association = trans.sa_session.query(model.UserAuthnzToken).one()
+    assert association.user is existing
+    assert association.uid == "verified-subject"
+    assert association.id_key == "sub"
+
+
+@pytest.mark.parametrize("id_key", ["sub", ""])
+def test_association_from_before_social_auth_core_6_needs_id_key(
+    trans: Any, provider: SimpleNamespace, id_key: str
+) -> None:
+    existing = trans.app.user_manager.create(email="verified@example.com", username="existing")
+    trans.sa_session.add(
+        model.UserAuthnzToken(user=existing, provider="keycloak", uid="verified-subject", id_key=id_key)
+    )
+    trans.sa_session.commit()
+    query = start(trans, provider)
+    if id_key:
+        _, user = callback(trans, query)
+        assert user is existing
+    else:
+        # Without the id_key backfilled by the database migration, social-auth-core
+        # cannot tell which claim the stored uid came from and refuses to match it.
+        with pytest.raises(AuthAssociationError) as exc_info:
+            callback(trans, query)
+        assert exc_info.value.code == "identifier_migration_conflict"
+    assert trans.sa_session.query(model.UserAuthnzToken).one().user is existing
+
+
+def test_nonce_from_another_session_is_rejected(trans: Any, provider: SimpleNamespace) -> None:
+    # GHSA-h2r5-x5m7-3935: the OIDC nonce must be bound to the flow of the session that started it.
+    trans.app.authnz_manager.oidc_backends_config["keycloak"]["require_create_confirmation"] = False
+    victim_session = trans.galaxy_session
+    attacker_session = model.GalaxySession(is_valid=True)
+    trans.sa_session.add(attacker_session)
+    trans.sa_session.commit()
+    trans.galaxy_session = attacker_session
+    attacker_query = start(trans, provider)
+    trans.galaxy_session = victim_session
+    victim_query = start(trans, provider)
+    provider.nonce = attacker_query["nonce"][0]
+    with pytest.raises(AuthResponseError) as exc_info:
+        callback(trans, victim_query)
+    assert exc_info.value.code == "nonce_mismatch"
+    assert counts(trans) == (0, 0, 0)
+
+
+def test_failed_association_creation_leaves_session_usable(trans: Any) -> None:
+    # social-auth-core looks up the existing association after an IntegrityError
+    psa_authnz.on_the_fly_config(trans.sa_session)
+    user = trans.app.user_manager.create(email="verified@example.com", username="existing")
+    existing = model.UserAuthnzToken.create_social_auth(user, "verified-subject", "keycloak", id_key="sub")
+    with pytest.raises(IntegrityError):
+        model.UserAuthnzToken.create_social_auth(user, "verified-subject", "keycloak", id_key="sub")
+    assert model.UserAuthnzToken.get_social_auth("keycloak", "verified-subject", "sub") is existing
+
+
+def test_nonce_is_used_and_consumed_once(trans: Any) -> None:
+    psa_authnz.on_the_fly_config(trans.sa_session)
+    assert model.PSANonce.use("scope", 1000, "salt") is True
+    assert model.PSANonce.use("scope", 1000, "salt") is False
+    assert model.PSANonce.get("scope", "salt") is not None
+    assert model.PSANonce.consume("scope", 1001, "salt") is False
+    assert model.PSANonce.consume("scope", 1000, "salt") is True
+    assert model.PSANonce.consume("scope", 1000, "salt") is False
+    assert model.PSANonce.get("scope", "salt") is None
+
+
+def test_authentication_state_omits_social_core_next(trans: Any, provider: SimpleNamespace) -> None:
     trans.request = Request.blank(
         "https://galaxy.example/authnz/keycloak/login", POST={"next": "/workflows/login/start"}
     )
     query = start(trans, provider)
     record = trans.sa_session.query(model.PSAPartial).filter_by(next_step=-1).one()
+    assert record.data is not None
     session = json.loads(record.data)["payload"]
     assert "next" not in session
-    assert session["keycloak_state"] == query["state"][0]
+    state = query["state"][0]
+    assert session[f"keycloak_oauth2_state_{state}"]["state"] == state
     assert session["pkce_code_verifier"]
 
 

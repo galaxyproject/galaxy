@@ -1,9 +1,6 @@
 """Reusable helpers for migrating Custos authentication tokens into PSA format."""
 
 from datetime import datetime
-from typing import (
-    cast,
-)
 
 import jwt
 from sqlalchemy import (
@@ -15,10 +12,11 @@ from sqlalchemy import (
     String,
     Table,
     Text,
+    VARCHAR,
 )
 from sqlalchemy.engine import Connection
 
-from galaxy.model import UserAuthnzToken
+from galaxy.model.custom_types import JSONType
 
 CUSTOS_TABLE = "custos_authnz_token"
 PSA_TABLE = "oidc_user_authnz_tokens"
@@ -62,9 +60,22 @@ def get_custos_table(connection: Connection) -> Table:
 
 def get_psa_table(connection: Connection) -> Table:
     """
-    Get the oidc_user_authnz_tokens table directly from the UserAuthnzToken model.
+    Get the oidc_user_authnz_tokens table as of this data fix's migration.
+
+    Don't use the ``UserAuthnzToken`` model table, whose columns may not match
+    the database schema at this revision.
     """
-    return cast(Table, UserAuthnzToken.table)
+    return Table(
+        PSA_TABLE,
+        MetaData(),
+        Column("id", Integer, primary_key=True),
+        Column("user_id", Integer),
+        Column("uid", VARCHAR(255)),
+        Column("provider", VARCHAR(32)),
+        Column("extra_data", JSONType),
+        Column("lifetime", Integer),
+        Column("assoc_type", VARCHAR(64)),
+    )
 
 
 def migrate_custos_tokens_to_psa(

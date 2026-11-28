@@ -57,12 +57,14 @@ from uuid import (
 import sqlalchemy
 from boltons.iterutils import remap
 from pydantic import BaseModel
+from social_core.identifiers import identifier_matches
 from social_core.storage import (
     AssociationMixin,
     CodeMixin,
     NonceMixin,
     PartialMixin,
     UserMixin,
+    UserProtocol,
 )
 from sqlalchemy import (
     alias,
@@ -12140,6 +12142,13 @@ class PSACode(Base, CodeMixin, RepresentById):
         return cls.sa_session.scalars(stmt).first()
 
 
+def _psa_session(session: Session | None) -> Session:
+    """Return the session set by ``galaxy.authnz.psa_authnz.on_the_fly_config()``."""
+    if session is None:
+        raise RuntimeError("social-auth storage used before on_the_fly_config()")
+    return session
+
+
 class PSANonce(Base, NonceMixin, RepresentById):
     __tablename__ = "psa_nonce"
 
@@ -12149,7 +12158,7 @@ class PSANonce(Base, NonceMixin, RepresentById):
     salt: Mapped[str | None] = mapped_column(VARCHAR(40))  # type: ignore[assignment]
 
     # This static property is set at: galaxy.authnz.psa_authnz.PSAAuthnz
-    sa_session = None
+    sa_session: ClassVar[Session | None] = None
 
     def __init__(self, server_url, timestamp, salt):
         self.server_url = server_url
@@ -12161,19 +12170,53 @@ class PSANonce(Base, NonceMixin, RepresentById):
         self.sa_session.commit()
 
     @classmethod
-    def use(cls, server_url, timestamp, salt):
+    def use(cls, server_url: str, timestamp: int, salt: str) -> bool:
         """
-        Create a Nonce instance
+        Store a nonce and return whether it was newly created
         (Required by social_core.storage.NonceMixin interface)
         """
-        try:
-            stmt = select(PSANonce).where(server_url=server_url, timestamp=timestamp, salt=salt).limit(1)
-            return cls.sa_session.scalars(stmt).first()
-        except IndexError:
-            instance = cls(server_url=server_url, timestamp=timestamp, salt=salt)
-            cls.sa_session.add(instance)
-            cls.sa_session.commit()
-            return instance
+        session = _psa_session(cls.sa_session)
+        stmt = select(PSANonce).filter_by(server_url=server_url, timestamp=timestamp, salt=salt).limit(1)
+        if session.scalars(stmt).first() is not None:
+            return False
+        session.add(cls(server_url=server_url, timestamp=timestamp, salt=salt))
+        session.commit()
+        return True
+
+    @classmethod
+    def get(cls, server_url: str, salt: str) -> "PSANonce | None":
+        """
+        (Required by social_core.storage.NonceMixin interface)
+        """
+        stmt = select(PSANonce).filter_by(server_url=server_url, salt=salt).limit(1)
+        return _psa_session(cls.sa_session).scalars(stmt).first()
+
+    @classmethod
+    def delete(cls, nonce: "PSANonce") -> None:
+        """
+        (Required by social_core.storage.NonceMixin interface)
+        """
+        session = _psa_session(cls.sa_session)
+        session.delete(nonce)
+        session.commit()
+
+    @classmethod
+    def consume(cls, server_url: str, timestamp: int, salt: str) -> bool:
+        """
+        Atomically remove exactly one nonce matching all fields, returning whether it existed
+        (Required by social_core.storage.NonceMixin interface)
+        """
+        stmt = (
+            delete(PSANonce)
+            .where(PSANonce.server_url == server_url, PSANonce.timestamp == timestamp, PSANonce.salt == salt)
+            .execution_options(synchronize_session=False)
+        )
+        session = _psa_session(cls.sa_session)
+        result = session.execute(stmt)
+        # A single ORM-enabled DELETE with WHERE criteria returns the DBAPI cursor result
+        assert isinstance(result, CursorResult)
+        session.commit()
+        return result.rowcount == 1
 
 
 class PSAPartial(Base, PartialMixin, RepresentById):
@@ -12226,6 +12269,7 @@ class UserAuthnzToken(Base, UserMixin, RepresentById):
     user_id: Mapped[int | None] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
     uid: Mapped[str | None] = mapped_column(VARCHAR(255))  # type: ignore[assignment]
     provider: Mapped[str | None] = mapped_column(VARCHAR(32))  # type: ignore[assignment]
+    id_key: Mapped[str] = mapped_column(VARCHAR(255), default="", server_default="")
     extra_data: Mapped[dict[str, Any] | None] = mapped_column(  # type: ignore[assignment, unused-ignore]
         MutableJSONType
     )
@@ -12238,11 +12282,23 @@ class UserAuthnzToken(Base, UserMixin, RepresentById):
     # This static property is set at: galaxy.authnz.psa_authnz.PSAAuthnz
     sa_session: ClassVar[Session | None] = None
 
-    def __init__(self, provider, uid, extra_data=None, lifetime=None, assoc_type=None, user=None):
+    def __init__(
+        self,
+        provider: str,
+        uid: str,
+        extra_data: dict[str, Any] | None = None,
+        lifetime: int | None = None,
+        assoc_type: str | None = None,
+        *,
+        user: "User | UserProtocol",
+        id_key: str = "",
+    ) -> None:
         self.provider = provider
         self.uid = uid
+        self.id_key = id_key
         self.user_id = user.id
-        self.extra_data = extra_data
+        # social-auth-core expects extra_data to be a dict
+        self.extra_data = extra_data if extra_data is not None else {}
         self.lifetime = lifetime
         self.assoc_type = assoc_type
 
@@ -12342,14 +12398,34 @@ class UserAuthnzToken(Base, UserMixin, RepresentById):
         return cls.sa_session.scalars(stmt).all()
 
     @classmethod
-    def get_social_auth(cls, provider, uid):
+    def get_social_auth(cls, provider: str, uid: str, id_key: str | None = None) -> "UserAuthnzToken | None":
         """
-        Return UserSocialAuth for given provider and uid
+        Return UserSocialAuth for given provider and uid, and id_key unless it is None
         (Required by social_core.storage.UserMixin interface)
         """
         uid = str(uid)
-        stmt = select(cls).filter_by(provider=provider, uid=uid).limit(1)
-        return cls.sa_session.scalars(stmt).first()
+        stmt = select(cls).filter_by(provider=provider, uid=uid)
+        if id_key is not None:
+            stmt = stmt.filter_by(id_key=id_key)
+        return _psa_session(cls.sa_session).scalars(stmt.limit(1)).first()
+
+    @classmethod
+    def get_social_auth_by_extra_data(
+        cls, provider: str, key: str, value: str, id_key: str = ""
+    ) -> "UserAuthnzToken | None":
+        """
+        Return the unambiguous UserSocialAuth whose extra_data[key] matches value
+        (Required by social_core.storage.UserMixin interface)
+        """
+        stmt = select(cls).filter_by(provider=provider, id_key=id_key)
+        matches = [
+            social
+            for social in _psa_session(cls.sa_session).scalars(stmt)
+            if social.extra_data and key in social.extra_data and str(social.extra_data[key]) == str(value)
+        ]
+        if len(matches) > 1:
+            raise ValueError("Multiple social-auth associations matched extra data")
+        return matches[0] if matches else None
 
     @classmethod
     def get_social_auth_for_user(cls, user, provider=None, id=None):
@@ -12365,16 +12441,56 @@ class UserAuthnzToken(Base, UserMixin, RepresentById):
         return cls.sa_session.scalars(stmt).all()
 
     @classmethod
-    def create_social_auth(cls, user, uid, provider):
+    def create_social_auth(cls, user: UserProtocol, uid: str, provider: str, id_key: str = "") -> "UserAuthnzToken":
         """
         Create a UserSocialAuth instance for given user
         (Required by social_core.storage.UserMixin interface)
         """
         uid = str(uid)
-        instance = cls(user=user, uid=uid, provider=provider)
-        cls.sa_session.add(instance)
-        cls.sa_session.commit()
+        instance = cls(user=user, uid=uid, provider=provider, id_key=id_key)
+        session = _psa_session(cls.sa_session)
+        session.add(instance)
+        try:
+            session.commit()
+        except Exception:
+            # Leave the session usable, e.g. for social-auth-core to look up the
+            # existing association after an IntegrityError
+            session.rollback()
+            raise
         return instance
+
+    @classmethod
+    def migrate_social_auth(
+        cls, social: "UserAuthnzToken", uid: str, id_key: str, *, evidence_key: str | None = None
+    ) -> "UserAuthnzToken":
+        """
+        Atomically replace the uid and id_key of an association, revalidating evidence under lock
+        (Required by social_core.storage.UserMixin interface)
+        """
+        uid = str(uid)
+        session = _psa_session(cls.sa_session)
+        if evidence_key is None and identifier_matches((social.extra_data or {}).get(id_key), uid):
+            evidence_key = id_key
+        expected_uid, expected_id_key = social.uid, social.id_key
+        try:
+            # populate_existing reloads the (identity-mapped) instance from the locked row
+            locked = session.scalars(
+                select(cls).filter_by(id=social.id).with_for_update().execution_options(populate_existing=True)
+            ).one()
+            if locked.uid != expected_uid or locked.id_key != expected_id_key:
+                raise ValueError("Social-auth association changed during identifier migration")
+            if evidence_key is not None and not identifier_matches((locked.extra_data or {}).get(evidence_key), uid):
+                raise ValueError("Social-auth identifier evidence changed during migration")
+            conflict = select(cls.id).filter_by(provider=locked.provider, uid=uid).where(cls.id != locked.id)
+            if session.scalars(conflict.limit(1)).first() is not None:
+                raise ValueError("Social-auth identifier migration conflict")
+            locked.uid = uid
+            locked.id_key = id_key
+            session.commit()
+        except Exception:
+            session.rollback()
+            raise
+        return locked
 
 
 class Page(Base, HasTags, RepresentById, UsesCreateAndUpdateTime):
