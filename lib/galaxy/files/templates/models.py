@@ -66,6 +66,7 @@ FileSourceTemplateType = Literal[
     "gitlab",
     "arc",
     "nomad",
+    "dspace",
 ]
 
 FileSourceTemplateAlertVariant = Literal[
@@ -691,6 +692,20 @@ class NomadFileSourceConfiguration(StrictModel):
     token: str | None = None
 
 
+class DSpaceFileSourceTemplateConfiguration(StrictModel):
+    type: Literal["dspace"]
+    api_url: str | TemplateExpansion
+    token: str | TemplateExpansion | None = None
+    template_start: str | None = None
+    template_end: str | None = None
+
+
+class DSpaceFileSourceConfiguration(StrictModel):
+    type: Literal["dspace"]
+    api_url: str
+    token: str | None = None
+
+
 FileSourceTemplateConfiguration = Annotated[
     PosixFileSourceTemplateConfiguration
     | S3FSFileSourceTemplateConfiguration
@@ -723,7 +738,8 @@ FileSourceTemplateConfiguration = Annotated[
     | CommonCrawlFileSourceTemplateConfiguration
     | GitLabFileSourceTemplateConfiguration
     | ARCFileSourceTemplateConfiguration
-    | NomadFileSourceTemplateConfiguration,
+    | NomadFileSourceTemplateConfiguration
+    | DSpaceFileSourceTemplateConfiguration,
     Field(discriminator="type"),
 ]
 
@@ -759,7 +775,8 @@ FileSourceConfiguration = Annotated[
     | CommonCrawlFileSourceConfiguration
     | GitLabFileSourceConfiguration
     | ARCFileSourceConfiguration
-    | NomadFileSourceConfiguration,
+    | NomadFileSourceConfiguration
+    | DSpaceFileSourceConfiguration,
     Field(discriminator="type"),
 ]
 
@@ -856,6 +873,7 @@ TypesToConfigurationClasses: dict[FileSourceTemplateType, type[FileSourceConfigu
     "gitlab": GitLabFileSourceConfiguration,
     "arc": ARCFileSourceConfiguration,
     "nomad": NomadFileSourceConfiguration,
+    "dspace": DSpaceFileSourceConfiguration,
 }
 
 
