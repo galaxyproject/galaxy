@@ -44,7 +44,7 @@ def table_select(tmp_path):
     app = MockApp()
     app.tool_data_tables = ToolDataTableManager(tmp_path, str(config))
     trans = WorkRequestContext(app=app)
-    tool = cast("Tool", Bunch(app=app, profile=26.1))
+    tool = cast("Tool", Bunch(app=app, profile=26.1, name="Reference tool"))
 
     def build(options_xml='<options from_data_table="refs"/>', multiple=False):
         param = SelectToolParameter(
@@ -140,28 +140,84 @@ def test_data_meta_filter_on_a_table_that_is_not_installed_still_loads(table_sel
     assert param.get_options(trans, {}) == []
 
 
-def test_named_column_filter_with_unconfigured_table_fails_with_actionable_error(table_select):
-    xml = '<options from_data_table="refs_missing"><filter type="static_value" column="name" value="x"/></options>'
+MISSING_TABLE_FILTERS = [
+    '<filter type="static_value" column="version" value="5.0"/>',
+    '<filter type="regexp" column="version" value="5"/>',
+    '<filter type="param_value" ref="other" column="version"/>',
+    '<filter type="unique_value" column="version"/>',
+    '<filter type="multiple_splitter" column="version"/>',
+    '<filter type="attribute_value_splitter" column="name"/>',
+    '<filter type="sort_by" column="version"/>',
+    '<filter type="sort_by" column="2"/>',
+    '<filter type="data_table" column="version" table_name="refs" data_table_column="version"/>',
+]
+
+
+@pytest.mark.parametrize("filter_xml", MISSING_TABLE_FILTERS)
+def test_filter_on_a_table_that_is_not_installed_still_loads(table_select, filter_xml):
+    param, trans = table_select(f'<options from_data_table="refs_missing">{filter_xml}</options>')
+    assert param.get_options(trans, {"other": "5.0"}) == []
+
+
+@pytest.mark.parametrize("filter_xml", MISSING_TABLE_FILTERS)
+def test_filter_on_a_table_installed_after_loading(table_select, tmp_path, filter_xml):
+    param, trans = table_select(f'<options from_data_table="refs_late">{filter_xml}</options>')
+    config = tmp_path / "late.xml"
+    config.write_text(f"""<tables><table name="refs_late">
+        <columns>value, name, version, path</columns><file path="{tmp_path / "refs.loc"}" />
+    </table></tables>""")
+    trans.app.tool_data_tables.add_new_entries_from_config_file(str(config), str(tmp_path), None)
+    assert param.get_options(trans, {"other": "5.0"})
+
+
+def test_data_meta_filter_on_a_table_that_is_not_installed_with_a_dataset(table_select):
+    param, trans = table_select("""<options from_data_table="not_installed">
+            <filter type="data_meta" ref="reads" key="dbkey" column="name"/>
+        </options>""")
+    reads = mock.Mock(spec=HistoryDatasetAssociation)
+    reads.metadata.element_is_set.return_value = True
+    reads.metadata.get.return_value = "hg38"
+    assert param.get_options(trans, {"reads": reads}) == []
+
+
+def test_unknown_declared_column_on_a_table_that_is_not_installed(table_select):
+    with pytest.raises(ValueError) as e:
+        table_select("""<options from_data_table="refs_missing">
+            <column name="value" index="0"/><column name="name" index="1"/>
+            <filter type="static_value" column="version" value="5.0"/>
+        </options>""")
+    assert str(e.value) == (
+        "Column specification 'version' in tool 'Reference tool' (parameter 'ref') is neither a defined <column> "
+        "name (available: ['name', 'value']) nor a valid integer index."
+    )
+
+
+def test_unknown_table_column(table_select):
+    with pytest.raises(ValueError) as e:
+        table_select(
+            '<options from_data_table="refs"><filter type="static_value" column="nosuch" value="x"/></options>'
+        )
+    assert str(e.value) == (
+        "Column specification 'nosuch' in tool 'Reference tool' (parameter 'ref') is not a column of data table "
+        "'refs'; available columns: ['name', 'path', 'value', 'version']."
+    )
+
+
+def test_unknown_column_on_a_table_that_is_not_installed_with_added_value(table_select):
+    param, trans = table_select("""<options from_data_table="refs_missing">
+        <filter type="add_value" value="none"/><filter type="sort_by" column="version"/>
+    </options>""")
     with pytest.raises(ValueError, match="data table 'refs_missing' is not configured on this server"):
-        table_select(xml)
+        param.get_options(trans, {})
 
 
-def test_numeric_column_filter_with_unconfigured_table_loads(table_select):
-    xml = '<options from_data_table="refs_missing"><filter type="static_value" column="1" value="x"/></options>'
-    param, trans = table_select(xml)
-    assert param.to_dict(trans)["options"] == []
-
-
-def test_named_column_filter_with_unknown_table_column_lists_available_columns(table_select):
-    xml = '<options from_data_table="refs"><filter type="static_value" column="nosuchcolumn" value="x"/></options>'
-    with pytest.raises(ValueError, match="is not a column of data table 'refs'; available columns"):
-        table_select(xml)
-
-
-def test_unconfigured_data_table_logs_warning_at_parse_time(table_select, caplog):
+def test_table_that_is_not_installed_logs_warning(table_select, caplog):
     with caplog.at_level(logging.WARNING, logger="galaxy.tools.parameters.dynamic_options"):
         table_select('<options from_data_table="refs_missing"/>')
-    assert any(record.levelno == logging.WARNING and "refs_missing" in record.message for record in caplog.records)
+    assert [record.getMessage() for record in caplog.records] == [
+        "Tool 'Reference tool' (parameter 'ref') uses data table 'refs_missing', which is not configured on this "
+        "server; its options stay empty until the table is configured."
+    ]
 
 
 def test_non_table_dropdown_keeps_duplicate_values(table_select):

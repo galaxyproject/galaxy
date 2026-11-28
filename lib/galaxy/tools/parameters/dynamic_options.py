@@ -72,6 +72,23 @@ class Filter:
         """Returns a list of options after the filter is applied"""
         raise TypeError("Abstract Method")
 
+    def _parse_column(self, column_spec: str) -> int | str:
+        """Index of ``column_spec``, or the spec itself while the column names come from a data table
+        that isn't configured here; ``_column_index`` resolves it once the table is."""
+        d_option = self.dynamic_option
+        try:
+            return d_option.column_spec_to_index(column_spec)
+        except ValueError:
+            if d_option.columns_from_table and d_option.tool_data_table is None:
+                return column_spec
+            raise
+
+    def _column_index(self, column: int | str) -> int:
+        """Index of a column returned by ``_parse_column``, called only when there are rows to filter."""
+        if isinstance(column, int):
+            return column
+        return self.dynamic_option.column_spec_to_index(column)
+
 
 class StaticValueFilter(Filter):
     """
@@ -93,10 +110,13 @@ class StaticValueFilter(Filter):
         assert self.value is not None, "Required 'value' attribute missing from filter"
         column = elem.get("column", None)
         assert column is not None, "Required 'column' attribute missing from filter, when loading from file"
-        self.column = d_option.column_spec_to_index(column)
+        self.column = self._parse_column(column)
         self.keep = string_as_bool(elem.get("keep", "True"))
 
     def filter_options(self, options: Sequence[ParameterOption], trans: ProvidesHistoryContext, other_values):
+        if not options:
+            return []
+        column = self._column_index(self.column)
         rval = []
         filter_value = self.value
         try:
@@ -104,7 +124,7 @@ class StaticValueFilter(Filter):
         except Exception:
             pass
         for fields in options:
-            if self.keep == (filter_value == fields[self.column]):
+            if self.keep == (filter_value == fields[column]):
                 rval.append(fields)
         return rval
 
@@ -129,10 +149,13 @@ class RegexpFilter(Filter):
         assert self.value is not None, "Required 'value' attribute missing from filter"
         column = elem.get("column", None)
         assert column is not None, "Required 'column' attribute missing from filter, when loading from file"
-        self.column = d_option.column_spec_to_index(column)
+        self.column = self._parse_column(column)
         self.keep = string_as_bool(elem.get("keep", "True"))
 
     def filter_options(self, options: Sequence[ParameterOption], trans: ProvidesHistoryContext, other_values):
+        if not options:
+            return []
+        column = self._column_index(self.column)
         rval = []
         filter_value = self.value
         try:
@@ -141,7 +164,7 @@ class RegexpFilter(Filter):
             pass
         filter_pattern = re.compile(filter_value)
         for fields in options:
-            if self.keep == (filter_pattern.match(fields[self.column]) is not None):
+            if self.keep == (filter_pattern.match(fields[column]) is not None):
                 rval.append(fields)
         return rval
 
@@ -180,9 +203,8 @@ class DataMetaFilter(Filter):
             assert (
                 self.dynamic_option.file_fields is None and self.dynamic_option.dataset_ref_name is None
             ), "Required 'column' attribute missing from filter, when loading from file"
-        elif not d_option.tool_data_table_name or d_option.tool_data_table is not None:
-            # A named column of a table that isn't configured here yet is resolved when filtering.
-            self.column = d_option.column_spec_to_index(self.column)
+        else:
+            self.column = self._parse_column(self.column)
         self.multiple = string_as_bool(elem.get("multiple", "False"))
         self.separator = elem.get("separator", ",")
 
@@ -248,7 +270,9 @@ class DataMetaFilter(Filter):
             return copy.deepcopy(options)
 
         if self.column is not None:
-            column = self.dynamic_option.column_spec_to_index(self.column)
+            if not options:
+                return []
+            column = self._column_index(self.column)
             rval: list[ParameterOption] = []
             for fields in options:
                 if compare_meta_value(fields[column], meta_value):
@@ -288,7 +312,7 @@ class ParamValueFilter(Filter):
         assert self.ref_name is not None, "Required 'ref' attribute missing from filter"
         column = elem.get("column", None)
         assert column is not None, "Required 'column' attribute missing from filter"
-        self.column = d_option.column_spec_to_index(column)
+        self.column = self._parse_column(column)
         self.keep = string_as_bool(elem.get("keep", "True"))
         self.ref_attribute = elem.get("ref_attribute", None)
         if self.ref_attribute:
@@ -326,9 +350,12 @@ class ParamValueFilter(Filter):
             ref_values.append(r)
         ref_values = [str(_) for _ in ref_values]
 
+        if not options:
+            return []
+        column = self._column_index(self.column)
         rval = []
         for fields in options:
-            if self.keep == (fields[self.column] in ref_values):
+            if self.keep == (fields[column] in ref_values):
                 rval.append(fields)
         return rval
 
@@ -347,18 +374,21 @@ class UniqueValueFilter(Filter):
         Filter.__init__(self, d_option, elem)
         column = elem.get("column", None)
         assert column is not None, "Required 'column' attribute missing from filter"
-        self.column = d_option.column_spec_to_index(column)
+        self.column = self._parse_column(column)
 
     def get_dependency_name(self):
         return self.dynamic_option.dataset_ref_name
 
     def filter_options(self, options: Sequence[ParameterOption], trans: ProvidesHistoryContext, other_values):
+        if not options:
+            return []
+        column = self._column_index(self.column)
         rval = []
         seen = set()
         for fields in options:
-            if fields[self.column] not in seen:
+            if fields[column] not in seen:
                 rval.append(fields)
-                seen.add(fields[self.column])
+                seen.add(fields[column])
         return rval
 
 
@@ -379,12 +409,15 @@ class MultipleSplitterFilter(Filter):
         self.separator = elem.get("separator", ",")
         columns = elem.get("column", None)
         assert columns is not None, "Required 'column' attribute missing from filter"
-        self.columns = [d_option.column_spec_to_index(column) for column in columns.split(",")]
+        self.columns = [self._parse_column(column) for column in columns.split(",")]
 
     def filter_options(self, options: Sequence[ParameterOption], trans: ProvidesHistoryContext, other_values):
+        if not options:
+            return []
+        columns = [self._column_index(column) for column in self.columns]
         rval = []
         for fields in options:
-            for column in self.columns:
+            for column in columns:
                 field = fields[column]
                 if isinstance(field, str):
                     for split_field in field.split(self.separator):
@@ -414,13 +447,16 @@ class AttributeValueSplitterFilter(Filter):
         self.name_val_separator = elem.get("name_val_separator", None)
         columns = elem.get("column", None)
         assert columns is not None, "Required 'column' attribute missing from filter"
-        self.columns = [d_option.column_spec_to_index(column) for column in columns.split(",")]
+        self.columns = [self._parse_column(column) for column in columns.split(",")]
 
     def filter_options(self, options, trans: ProvidesHistoryContext, other_values):
+        if not options:
+            return []
+        columns = [self._column_index(column) for column in self.columns]
         attr_names = set()
         rval = []
         for fields in options:
-            for column in self.columns:
+            for column in columns:
                 for pair in fields[column].split(self.pair_separator):
                     ary = pair.split(self.name_val_separator)
                     if len(ary) == 2:
@@ -552,11 +588,14 @@ class SortByColumnFilter(Filter):
         Filter.__init__(self, d_option, elem)
         column = elem.get("column", None)
         assert column is not None, "Required 'column' attribute missing from filter"
-        self.column = d_option.column_spec_to_index(column)
+        self.column = self._parse_column(column)
         self.reverse = string_as_bool(elem.get("reverse_sort_order", "False"))
 
     def filter_options(self, options, trans: ProvidesHistoryContext, other_values):
-        return sorted(options, key=lambda x: x[self.column], reverse=self.reverse)
+        if not options:
+            return []
+        column = self._column_index(self.column)
+        return sorted(options, key=lambda x: x[column], reverse=self.reverse)
 
 
 class DataTableFilter(Filter):
@@ -585,12 +624,15 @@ class DataTableFilter(Filter):
         assert self.table_name is not None, "Required 'table_name' attribute missing from filter"
         column = elem.get("column", None)
         assert column is not None, "Required 'column' attribute missing from filter"
-        self.column = d_option.column_spec_to_index(column)
+        self.column = self._parse_column(column)
         self.data_table_column = elem.get("data_table_column", None)
         assert self.data_table_column is not None, "Required 'data_table_column' attribute missing from filter"
         self.keep = string_as_bool(elem.get("keep", "True"))
 
     def filter_options(self, options, trans: ProvidesHistoryContext, other_values):
+        if not options:
+            return []
+        column = self._column_index(self.column)
         # get column from data table, by index or column name
         entries = None
         try:
@@ -609,7 +651,7 @@ class DataTableFilter(Filter):
 
         rval = []
         for o in options:
-            if self.keep == (o[self.column] in entries):
+            if self.keep == (o[column] in entries):
                 rval.append(o)
         return rval
 
@@ -670,16 +712,16 @@ class DynamicOptions:
         self._tool_data_table = None
         self.elem = elem
         self.column_elem = elem.find("column")
-        # Need to touch tool data table once to populate self.columns
-        table = self.tool_data_table
-        if self.tool_data_table_name and table is None and getattr(self.tool_param, "tool", None) is not None:
+        # Reading the data table populates self.columns
+        if self.tool_data_table_name and self.tool_data_table is None:
+            if self.column_elem is not None:
+                # Declared columns don't depend on the table
+                self.parse_column_definitions(elem)
             log.warning(
-                "Tool '%s' (parameter '%s') references data table '%s', which is not configured on this "
-                "server; the dynamic options of this parameter will be empty until the table is configured. "
-                "Check tool_data_table_conf.xml / shed_tool_data_table_conf.xml and make sure the "
-                "corresponding data manager has been installed and run.",
-                getattr(self.tool_param.tool, "name", None),
-                getattr(self.tool_param, "name", None),
+                "Tool '%s' (parameter '%s') uses data table '%s', which is not configured on this server; "
+                "its options stay empty until the table is configured.",
+                self.tool_param.tool.name,
+                self.tool_param.name,
                 self.tool_data_table_name,
             )
 
@@ -741,9 +783,12 @@ class DynamicOptions:
         return None
 
     @property
+    def columns_from_table(self) -> bool:
+        return bool(self.tool_data_table_name) and self.column_elem is None
+
+    @property
     def missing_tool_data_table_name(self):
         if not self.tool_data_table:
-            log.warning(f"Data table named '{self.tool_data_table_name}' is required by tool but not configured")
             return self.tool_data_table_name
         return None
 
@@ -1064,29 +1109,17 @@ class DynamicOptions:
             raise ValueError(self._invalid_column_spec_message(column_spec)) from None
 
     def _invalid_column_spec_message(self, column_spec) -> str:
-        """Build an actionable error message for a column spec that is neither a known
-        column name nor a valid integer index."""
-        tool = getattr(self.tool_param, "tool", None)
-        tool_name = getattr(tool, "name", None) if tool is not None else None
-        param_name = getattr(self.tool_param, "name", None)
-        where = f" in tool '{tool_name}' (parameter '{param_name}')" if tool_name else ""
+        where = f"in tool '{self.tool_param.tool.name}' (parameter '{self.tool_param.name}')"
+        spec = f"Column specification {column_spec!r} {where}"
         available = sorted(self.columns) if self.columns else "none"
-        if self.tool_data_table_name:
-            if self.tool_data_table is None:
-                return (
-                    f"Column specification {column_spec!r}{where} cannot be resolved: data table "
-                    f"'{self.tool_data_table_name}' is not configured on this server. Configure the table "
-                    f"(tool_data_table_conf.xml / install and run the corresponding data manager) or use "
-                    f"a numeric column index."
-                )
+        if not self.columns_from_table:
+            return f"{spec} is neither a defined <column> name (available: {available}) nor a valid integer index."
+        if self.tool_data_table is None:
             return (
-                f"Column specification {column_spec!r}{where} is not a column of data table "
-                f"'{self.tool_data_table_name}'; available columns: {available}."
+                f"{spec} cannot be resolved: data table '{self.tool_data_table_name}' is not configured on this "
+                "server. Configure the table, or declare the columns with <column> elements."
             )
-        return (
-            f"Column specification {column_spec!r}{where} is neither a defined <column> name "
-            f"(available: {available}) nor a valid integer index."
-        )
+        return f"{spec} is not a column of data table '{self.tool_data_table_name}'; available columns: {available}."
 
 
 REQUEST_METHODS = Literal["GET", "POST"]
