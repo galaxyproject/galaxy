@@ -4202,6 +4202,16 @@ mapping:
           Alternative to markdown_export_epilogue that applies just to invocation report
           exports.
 
+      markdown_export_pdf_timeout:
+        type: int
+        default: 30
+        desc: |
+          Maximum time in seconds that a Celery worker spends rendering a Markdown
+          PDF prepared for download, such as a page PDF. The worker renders the PDF
+          in a separate process and terminates that process when the limit is
+          reached, releasing its memory, and the download fails with an error.
+          Set to 0 for no limit.
+
       job_resource_params_file:
         type: str
         default: job_resource_params_conf.xml

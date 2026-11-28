@@ -30,6 +30,7 @@ from typing import (
 )
 
 import markdown
+import pebble
 
 try:
     import weasyprint
@@ -38,6 +39,7 @@ except Exception:
 
 from galaxy.config import GalaxyAppConfiguration
 from galaxy.exceptions import (
+    InternalServerError,
     MalformedContents,
     ObjectNotFound,
     ServerNotConfiguredForRequest,
@@ -1122,11 +1124,15 @@ def to_html(basic_markdown: str) -> str:
     return html
 
 
-def to_pdf_raw(basic_markdown: str, css_paths: list[str] | None = None) -> bytes:
-    """Convert RAW markdown with specified CSS paths into bytes of a PDF."""
+def to_pdf_raw(basic_markdown: str, css_paths: list[str] | None = None, temp_parent: str | None = None) -> bytes:
+    """Convert RAW markdown with specified CSS paths into bytes of a PDF.
+
+    The intermediate HTML is written to a temporary directory under ``temp_parent``
+    (default: the system temporary directory).
+    """
     css_paths = css_paths or []
     as_html = to_html(basic_markdown)
-    directory = tempfile.mkdtemp("gxmarkdown")
+    directory = tempfile.mkdtemp("gxmarkdown", dir=temp_parent)
     index = os.path.join(directory, "index.html")
     try:
         output_file = open(index, "w", encoding="utf-8", errors="xmlcharrefreplace")
@@ -1164,19 +1170,51 @@ def internal_galaxy_markdown_to_pdf(
 
 
 def generate_branded_pdf(
-    request: GeneratePdfDownload, config: GalaxyAppConfiguration, short_term_storage_monitor: ShortTermStorageMonitor
+    request: GeneratePdfDownload,
+    config: GalaxyAppConfiguration,
+    short_term_storage_monitor: ShortTermStorageMonitor,
+    render_pool: pebble.ProcessPool | None = None,
 ):
+    """Render the request's PDF into its short term storage target.
+
+    With a ``render_pool`` the render runs in a pool process that is terminated after
+    ``config.markdown_export_pdf_timeout`` seconds; without one it runs in this process
+    with no time limit.
+    """
     with storage_context(request.short_term_storage_request_id, short_term_storage_monitor) as target:
-        raw_contents = to_branded_pdf(
-            request.basic_markdown,
-            request.document_type,
-            config,
+        branded_markdown, css_paths = branded_markdown_and_css_paths(
+            request.basic_markdown, request.document_type, config
         )
-        with open(target.path, "wb") as f:
-            f.write(raw_contents)
+        if render_pool is None:
+            write_pdf(branded_markdown, css_paths, target.path)
+        else:
+            _write_pdf_in_pool(
+                render_pool, config.markdown_export_pdf_timeout, branded_markdown, css_paths, target.path
+            )
 
 
-def to_branded_pdf(basic_markdown: str, document_type: PdfDocumentType, config: GalaxyAppConfiguration) -> bytes:
+def _write_pdf_in_pool(
+    render_pool: pebble.ProcessPool, timeout: int, branded_markdown: str, css_paths: list[str], path: str
+) -> None:
+    future = render_pool.submit(write_pdf, timeout or None, branded_markdown, css_paths, path)
+    try:
+        future.result()
+    except TimeoutError:
+        raise InternalServerError(f"Rendering the PDF did not finish within the configured limit of {timeout} seconds.")
+    except pebble.ProcessExpired as e:
+        raise InternalServerError(f"The process rendering the PDF exited unexpectedly ({e}).")
+
+
+def write_pdf(branded_markdown: str, css_paths: list[str], path: str) -> None:
+    # A render terminated on timeout skips to_pdf_raw's cleanup; its intermediate files sit next
+    # to the short term storage target and are removed with the request directory.
+    with open(path, "wb") as f:
+        f.write(to_pdf_raw(branded_markdown, css_paths=css_paths, temp_parent=os.path.dirname(path)))
+
+
+def branded_markdown_and_css_paths(
+    basic_markdown: str, document_type: PdfDocumentType, config: GalaxyAppConfiguration
+) -> tuple[str, list[str]]:
     document_type_prologue = getattr(config, f"markdown_export_prologue_{document_type}s", "") or ""
     document_type_epilogue = getattr(config, f"markdown_export_epilogue_{document_type}s", "") or ""
     general_prologue = config.markdown_export_prologue or ""
@@ -1191,6 +1229,11 @@ def to_branded_pdf(basic_markdown: str, document_type: PdfDocumentType, config: 
         css_paths.append(general_css_path)
     if document_type_css_path and os.path.exists(document_type_css_path):
         css_paths.append(document_type_css_path)
+    return branded_markdown, css_paths
+
+
+def to_branded_pdf(basic_markdown: str, document_type: PdfDocumentType, config: GalaxyAppConfiguration) -> bytes:
+    branded_markdown, css_paths = branded_markdown_and_css_paths(basic_markdown, document_type, config)
     return to_pdf_raw(branded_markdown, css_paths=css_paths)
 
 
