@@ -4,11 +4,16 @@ import pytest
 
 from galaxy.datatypes.tabular import ConnectivityTable
 from galaxy.util import galaxy_directory
+from .util import MockMetadata
+
+COLUMN_NAMES = '["base_index", "base", "neighbor_left", "neighbor_right", "partner", "natural_numbering"]'
 
 
 @pytest.fixture
 def dataset():
     class MockDataset:
+        metadata = MockMetadata(spec=ConnectivityTable.metadata_spec, columns=6, column_names=[])
+
         def get_file_name(self, sync_cache=True, auth=None):
             return os.path.join(galaxy_directory(), "test-data/1.ct")
 
@@ -36,7 +41,8 @@ def test_get_chunk(dataset, make_trans):
     chunk = dt.get_chunk(trans, dataset)
     assert (
         chunk
-        == '{"ck_data": "363\\ttmRNA\\n1\\tG\\t0\\t2\\t359\\t1\\n2\\tG\\t1\\t3\\t358\\t2\\n", "offset": 38, "data_line_offset": 0}'
+        == '{"ck_data": "363\\ttmRNA\\n1\\tG\\t0\\t2\\t359\\t1\\n2\\tG\\t1\\t3\\t358\\t2\\n", "offset": 38, "data_line_offset": 0, '
+        f'"column_names": {COLUMN_NAMES}}}'
     )
 
 
@@ -47,4 +53,7 @@ def test_get_chunk_with_offset(dataset, make_trans):
 
     # reads chunk_size chars from offset 5 (line 1) to the end of line 2
     chunk = dt.get_chunk(trans, dataset, 5)
-    assert chunk == '{"ck_data": "mRNA\\n1\\tG\\t0\\t2\\t359\\t1", "offset": 24, "data_line_offset": 0}'
+    assert (
+        chunk == '{"ck_data": "mRNA\\n1\\tG\\t0\\t2\\t359\\t1", "offset": 24, "data_line_offset": 0, '
+        f'"column_names": {COLUMN_NAMES}}}'
+    )
