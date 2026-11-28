@@ -10,6 +10,7 @@ import { loadWorkflows, undeleteWorkflow, unshareWorkflowWithMe, type WorkflowSu
 import { getWorkflowFilters, helpHtml } from "@/components/Workflow/List/workflowFilters";
 import { deleteWorkflow, updateWorkflow } from "@/components/Workflow/workflows.services";
 import { useConfirmDialog } from "@/composables/confirmDialog";
+import { useFilterTextValidation } from "@/composables/filterTextValidation";
 import { useSelectedItems } from "@/composables/selectedItems/selectedItems";
 import { Toast } from "@/composables/toast";
 import { useUserStore } from "@/stores/userStore";
@@ -102,13 +103,7 @@ const bookmarkButtonTitle = computed(() =>
 );
 
 const workflowFilters = computed(() => getWorkflowFilters(props.activeList, userStore.isAnonymous));
-const rawFilters = computed(() =>
-    Object.fromEntries(workflowFilters.value.getFiltersForText(filterText.value, true, false)),
-);
-const validFilters = computed(() => workflowFilters.value.getValidFilters(rawFilters.value, true).validFilters);
-const invalidFilters = computed(() => workflowFilters.value.getValidFilters(rawFilters.value, true).invalidFilters);
-const isSurroundedByQuotes = computed(() => /^["'].*["']$/.test(filterText.value));
-const hasInvalidFilters = computed(() => !isSurroundedByQuotes.value && Object.keys(invalidFilters.value).length > 0);
+const { invalidFilters, hasInvalidFilters, validatedFilterText } = useFilterTextValidation(workflowFilters, filterText);
 const indeterminateSelected = computed(() => selectedWorkflowIds.value.length > 0 && !allSelected.value);
 const allSelected = computed(
     () => selectedWorkflowIds.value.length !== 0 && selectedWorkflowIds.value.length === workflowsLoaded.value.length,
@@ -245,18 +240,6 @@ async function onPageChange(page: number) {
     await load(true);
     // the card list keeps its scroll position across pages otherwise
     workflowCardList.value?.scrollToTop();
-}
-
-function validatedFilterText() {
-    if (isSurroundedByQuotes.value) {
-        // the `filterText` is surrounded by quotes, remove them
-        return filterText.value.slice(1, -1);
-    } else if (Object.keys(rawFilters.value).length === 0) {
-        // there are no filters derived from the `filterText`
-        return filterText.value;
-    }
-    // there are valid filters derived from the `filterText`
-    return workflowFilters.value.getFilterText(validFilters.value, true, filterText.value);
 }
 
 function onSelectWorkflow(w: WorkflowSummary) {
