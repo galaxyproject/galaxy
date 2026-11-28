@@ -145,7 +145,7 @@ export const useHistoryStore = defineStore("historyStore", () => {
         set(storedFilterTexts.value, historyId, filterText);
     }
 
-    function setHistory(history: AnyHistory | HistoryContentsStats) {
+    function setHistory(history: AnyHistory) {
         if (storedHistories.value[history.id] !== undefined) {
             // Merge the incoming history with existing one to keep additional information
             Object.entries(history).forEach(([key, value]) => {
@@ -616,7 +616,16 @@ export const useHistoryStore = defineStore("historyStore", () => {
         }
 
         const contentStats = { id: historyId, ...data } as HistoryContentsStats;
-        setHistory(contentStats);
+        // The stats lack the name and other summary fields, so they may only be merged
+        // into a cached history. The history can leave the cache while the request is
+        // in flight (e.g. it was deleted), and storing the stats alone would then add
+        // an incomplete history to the listing.
+        const storedHistory = storedHistories.value[historyId];
+        if (storedHistory) {
+            Object.entries(contentStats).forEach(([key, value]) => {
+                set(storedHistory, key, value);
+            });
+        }
         return contentStats;
     }
 
