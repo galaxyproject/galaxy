@@ -100,6 +100,34 @@ class TestScriptsPgCleanupIntegration(RunsCachedBamJob, BaseScriptsIntegrationTe
         assert history_response.status_code == 200
         assert history_response.json()["purged"] is True, history_response.json()
 
+    def test_purge_deleted_users_gdpr(self):
+        self._skip_unless_postgres()
+
+        email = "pgcleanup-gdpr@example.org"
+        user = self._setup_user(email)
+        db_user = self._db_get(model.User, user["id"])
+        db_user.preferences["extra_user_preferences"] = '{"section|field": "personal value"}'
+        db_user.display_name = "Personal Name"
+        private_role = self._app.security_agent.get_private_user_role(db_user)
+        assert private_role is not None
+        private_role.name = email
+        private_role.description = f"Private Role for {email}"
+        self._app.model.session.commit()
+        private_role_id = private_role.id
+        delete_response = self._delete(f"users/{user['id']}", admin=True)
+        assert delete_response.status_code == 200
+        self._pgcleanup_check_output(["--older-than", "0", "--sequence", "purge_deleted_users_gdpr"])
+        purged_user = self._db_get(model.User, user["id"])
+        assert purged_user.purged
+        assert purged_user.email != email and "@" not in purged_user.email
+        assert purged_user.username != user["username"]
+        assert "extra_user_preferences" not in purged_user.preferences
+        assert purged_user.display_name is None
+        purged_private_role = self._app.model.session.get(model.Role, private_role_id)
+        assert purged_private_role is not None
+        assert purged_private_role.name == purged_user.email
+        assert purged_private_role.description == f"Private Role for {purged_user.email}"
+
     def test_purge_old_hdas(self):
         self._skip_unless_postgres()
 

@@ -726,23 +726,44 @@ class PurgeDeletedUsersGDPR(PurgesHDAs, RemovesMetadataFiles, Action):
     """
     - Perform all steps in the PurgeDeletedUsers/purge_deleted_users action
     - Obfuscate User.email and User.username for all users purged in this step.
+    - Clear User.display_name for all users purged in this step.
+    - Obfuscate the email in the name and description of the private Role of all users purged in
+      this step (private roles created before 24.2 are named after the user's email).
     - Delete all OIDC user authnz tokens (external identity associations) whose user_ids are purged
       in this step.
-
-    NOTE: Your database must have the pgcrypto extension installed e.g. with:
-      CREATE EXTENSION IF NOT EXISTS pgcrypto;
+    - Delete the extra user preferences of all users purged in this step. Values kept in the vault
+      are not removed; purging the user through the API does that.
     """
 
     _action_sql = """
-        WITH purged_user_ids
+        WITH users_to_purge
+          AS MATERIALIZED (
+                   SELECT id,
+                          email,
+                          encode(sha256(convert_to(email || gen_random_uuid()::text, 'UTF8')), 'hex') AS email_hash,
+                          encode(sha256(convert_to(username || gen_random_uuid()::text, 'UTF8')), 'hex') AS username_hash
+                     FROM galaxy_user
+                    WHERE deleted{force_retry_sql}
+                          AND update_time < (NOW() AT TIME ZONE 'utc' - (:days * interval '1 day'))),
+             purged_user_ids
           AS (     UPDATE galaxy_user
                       SET purged = true,
                           disk_usage = 0,
-                          email = encode(digest(email || '{epoch_time}', 'sha1'), 'hex'),
-                          username = encode(digest(username || '{epoch_time}', 'sha1'), 'hex'){update_time_sql}
-                    WHERE deleted{force_retry_sql}
-                          AND update_time < (NOW() AT TIME ZONE 'utc' - (:days * interval '1 day'))
-                RETURNING id),
+                          email = users_to_purge.email_hash,
+                          username = users_to_purge.username_hash,
+                          display_name = NULL{update_time_sql}
+                     FROM users_to_purge
+                    WHERE galaxy_user.id = users_to_purge.id
+                RETURNING galaxy_user.id AS id),
+             redacted_private_role_ids
+          AS (     UPDATE role
+                      SET name = replace(role.name, users_to_purge.email, users_to_purge.email_hash),
+                          description = replace(role.description, users_to_purge.email, users_to_purge.email_hash)
+                     FROM users_to_purge, user_role_association
+                    WHERE user_role_association.user_id = users_to_purge.id
+                          AND user_role_association.role_id = role.id
+                          AND role.type = 'private'
+                RETURNING role.id AS id),
              deleted_uga_ids
           AS (DELETE FROM user_group_association
                     USING purged_user_ids
@@ -771,6 +792,13 @@ class PurgeDeletedUsersGDPR(PurgesHDAs, RemovesMetadataFiles, Action):
                     WHERE oidc_user_authnz_tokens.user_id = purged_user_ids.id
                 RETURNING oidc_user_authnz_tokens.user_id AS user_id,
                           oidc_user_authnz_tokens.id AS id),
+             deleted_extra_preference_ids
+          AS (DELETE FROM user_preference
+                    USING purged_user_ids
+                    WHERE user_preference.user_id = purged_user_ids.id
+                          AND user_preference.name = 'extra_user_preferences'
+                RETURNING user_preference.user_id AS user_id,
+                          user_preference.id AS id),
              user_events
           AS (INSERT INTO cleanup_event_user_association
                           (create_time, cleanup_event_id, user_id)
@@ -815,7 +843,8 @@ class PurgeDeletedUsersGDPR(PurgesHDAs, RemovesMetadataFiles, Action):
              deleted_uga_ids.id AS deleted_uga_id,
              deleted_ura_ids.id AS deleted_ura_id,
              deleted_ua_ids.id AS deleted_ua_id,
-             deleted_oidc_ids.id AS deleted_oidc_id
+             deleted_oidc_ids.id AS deleted_oidc_id,
+             deleted_extra_preference_ids.id AS deleted_extra_preference_id
         FROM purged_user_ids
              LEFT OUTER JOIN purged_history_ids
                              ON purged_user_ids.id = purged_history_ids.user_id
@@ -833,6 +862,8 @@ class PurgeDeletedUsersGDPR(PurgesHDAs, RemovesMetadataFiles, Action):
                              ON purged_user_ids.id = deleted_ua_ids.user_id
              LEFT OUTER JOIN deleted_oidc_ids
                              ON purged_user_ids.id = deleted_oidc_ids.user_id
+             LEFT OUTER JOIN deleted_extra_preference_ids
+                             ON purged_user_ids.id = deleted_extra_preference_ids.user_id
     ORDER BY purged_user_ids.id
     """
     causals = (
@@ -844,6 +875,7 @@ class PurgeDeletedUsersGDPR(PurgesHDAs, RemovesMetadataFiles, Action):
         ("purged_user_id", "deleted_ura_id"),
         ("purged_user_id", "deleted_ua_id"),
         ("purged_user_id", "deleted_oidc_id"),
+        ("purged_user_id", "deleted_extra_preference_id"),
     )
 
     @classmethod
