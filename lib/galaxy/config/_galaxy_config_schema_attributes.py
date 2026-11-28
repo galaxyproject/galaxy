@@ -497,3 +497,4 @@ class GalaxyAppConfigurationAttributes:
     user_defined_tool_denied_containers: list[str]
     enable_beta_tool_formats: bool
     require_container_for_user_defined_tools: bool
+    allow_user_defined_tools_for_all_users: bool
