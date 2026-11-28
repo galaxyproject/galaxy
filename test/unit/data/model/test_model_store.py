@@ -3,8 +3,10 @@
 import json
 import os
 import pathlib
+import re
 import shutil
 import sys
+import time
 from tempfile import (
     mkdtemp,
     NamedTemporaryFile,
@@ -725,6 +727,15 @@ def validate_invocation_collection_crate_directory(crate_directory):
         assert dataset in root["hasPart"]
 
 
+# roc-validator fetches the crate's remote JSON-LD context (https://w3id.org/ro/crate/1.1/context)
+# and reports a failed request as validation issues: the requests exception message and/or
+# "Unable to retrieve the JSON-LD context ...".
+ROC_VALIDATOR_NETWORK_ISSUE = re.compile(
+    r"Unable to retrieve (the )?JSON-LD|Connection aborted|Connection reset|Max retries exceeded|timed out"
+)
+ROC_VALIDATOR_ATTEMPTS = 3
+
+
 def validate_with_roc_validator(crate_directory, profile):
     # roc-validator changed the ValidationSettings argument data_path to rocrate_uri in
     # v5.0.0+, but also dropped support for Python 3.9
@@ -744,10 +755,16 @@ def validate_with_roc_validator(crate_directory, profile):
             http_cache_timeout=0,  # do not use cache
         )
 
-    result = services.validate(settings)
-
-    issues = result.get_issues()
-    assert len(issues) == 0, f"RO-Crate is invalid: {[issue.message for issue in issues]}"
+    # Retry when every issue is a network error, skip if they persist, and fail on any real issue.
+    for attempt in range(1, ROC_VALIDATOR_ATTEMPTS + 1):
+        messages = [issue.message or "" for issue in services.validate(settings).get_issues()]
+        if not messages or not all(ROC_VALIDATOR_NETWORK_ISSUE.search(message) for message in messages):
+            break
+        if attempt < ROC_VALIDATOR_ATTEMPTS:
+            time.sleep(attempt)
+    else:
+        pytest.skip(f"roc-validator could not fetch remote JSON-LD resources: {messages}")
+    assert not messages, f"RO-Crate is invalid: {messages}"
 
 
 def test_export_history_with_missing_hid(tmp_path):
