@@ -14,6 +14,7 @@ from galaxy.config import GalaxyAppConfiguration
 from galaxy.exceptions import ObjectNotFound
 from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.schema.drs import DrsObject
+from galaxy.webapps.base.api import release_request_sessions
 from galaxy.webapps.galaxy.services.datasets import DatasetsService
 from galaxy.webapps.galaxy.services.ga4gh import build_service_info
 from . import (
@@ -81,4 +82,6 @@ class DrsApi:
             trans, decoded_object_id, hda_ldda=hda_ldda, filename=None, raw=True
         )
         data_io = cast(IOBase, display_data)
+        # Sending the file does not use the database, and a slow client must not keep a session for it.
+        release_request_sessions()
         return FileResponse(getattr(data_io, "name", "unnamed_file"), headers=headers)

@@ -174,6 +174,8 @@ For those readers who've already been running Galaxy on a cluster, a bit of info
 
 If your server logs errors about the database connection pool size, you may need to increase the default minimum and maximum number of pool connections, 5 and 10.  These config file options are `database_engine_option_pool_size` and `database_engine_option_max_overflow`.
 
+A web process lets at most as many API requests hold a database session at a time as it has threads to run them (40), and no more than four fifths of the connection pool, which leaves the rest of the pool to the legacy controllers and to background threads such as the database heartbeat. Further requests wait for their turn without holding a thread or a connection. The limit is logged when the first request is served, and so is a request that waits more than 30 seconds for its turn. Requests to the AI chat and agent API, which keep their session while they wait for the language model, hold at most a quarter of these sessions at a time.
+
 Finally, if you are using Galaxy <= release_2014.06.02, we recommend that you instruct Galaxy to use one database connection per thread, to avoid connection overhead and overuse.  This can be enabled with `database_engine_option_strategy: threadlocal`.
 
 ### Make the proxy handle uploads and downloads

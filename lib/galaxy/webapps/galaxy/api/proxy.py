@@ -26,7 +26,11 @@ from galaxy.exceptions import (
 )
 from galaxy.files.uris import validate_uri_access
 from galaxy.managers.context import ProvidesUserContext
-from galaxy.webapps.base.api import GalaxyStreamingResponse
+from galaxy.util.config_parsers import IpAllowedListEntryT
+from galaxy.webapps.base.api import (
+    GalaxyStreamingResponse,
+    release_request_sessions,
+)
 from . import (
     DependsOnTrans,
     Router,
@@ -76,7 +80,15 @@ class FastAPIProxy:
         if trans.anonymous:
             raise UserRequiredException("Anonymous users are not allowed to access this endpoint")
 
-        await anyio.to_thread.run_sync(partial(self._validate_url_and_access, url, trans))
+        user_is_admin = trans.user_is_admin
+        allowlist_ips = trans.app.config.fetch_url_allowlist_ips
+
+        def validate_url_and_release_session():
+            self._validate_url_and_access(url, user_is_admin, allowlist_ips)
+            # Waiting for the upstream, which can take minutes over the redirects, does not need the database.
+            release_request_sessions()
+
+        await anyio.to_thread.run_sync(validate_url_and_release_session)
 
         headers: dict[str, str] = {}
         if "range" in request.headers:
@@ -90,7 +102,9 @@ class FastAPIProxy:
         response = None
         streaming = False
         try:
-            response = await self._handle_redirects_validation(request, url, trans, headers, client)
+            response = await self._handle_redirects_validation(
+                request, url, user_is_admin, allowlist_ips, headers, client
+            )
 
             if request.method == "GET":
                 # Return a streaming response for GET requests
@@ -155,7 +169,8 @@ class FastAPIProxy:
         self,
         request: Request,
         url: str,
-        trans: ProvidesUserContext,
+        user_is_admin: bool,
+        allowlist_ips: list[IpAllowedListEntryT],
         headers: dict[str, str],
         client: httpx.AsyncClient,
     ) -> httpx.Response:
@@ -182,7 +197,9 @@ class FastAPIProxy:
                 # Handle relative URLs by resolving them against the current URL
                 redirect_url = urljoin(current_url, redirect_location)
 
-                await anyio.to_thread.run_sync(partial(self._validate_url_and_access, redirect_url, trans))
+                await anyio.to_thread.run_sync(
+                    partial(self._validate_url_and_access, redirect_url, user_is_admin, allowlist_ips)
+                )
 
                 # Close current response and follow the validated redirect
                 await response.aclose()
@@ -194,11 +211,11 @@ class FastAPIProxy:
         assert response is not None, "Response should not be None after redirect loop"
         return response
 
-    def _validate_url_and_access(self, url: str, trans: ProvidesUserContext):
+    def _validate_url_and_access(self, url: str, user_is_admin: bool, allowlist_ips: list[IpAllowedListEntryT]):
         if not is_valid_url(url):
             raise RequestParameterInvalidException("Invalid URL format.")
 
-        validate_uri_access(url, trans.user_is_admin, trans.app.config.fetch_url_allowlist_ips)
+        validate_uri_access(url, user_is_admin, allowlist_ips)
 
     def _is_redirect_response(self, response: httpx.Response) -> bool:
         return response.status_code in (301, 302, 303, 307, 308) and "location" in response.headers
