@@ -106,6 +106,17 @@ describe("ToolsListCard", () => {
         expect(help.text()).not.toContain("**Important**");
     });
 
+    it("serves relative help images from the tool's help images", async () => {
+        const { wrapper } = mountCard({
+            propsData: { help: "![a](a.png)", helpFormat: "markdown", version: "1.0.0" },
+        });
+
+        await wrapper.find('[data-description="tools list toggle tool help"]').trigger("click");
+
+        const src = wrapper.find('[data-description="tools list tool help"] img').attributes("src");
+        expect(src).toBe("/api/tools/__FILTER_FAILED_DATASETS__/help_image?path=a.png&tool_version=1.0.0");
+    });
+
     it("names the icon-only button that opens the version popover", () => {
         const { wrapper } = mountCard({ propsData: { version: "1.0.0" } });
 

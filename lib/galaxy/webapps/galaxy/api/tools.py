@@ -1,9 +1,5 @@
 import logging
 import os
-from datetime import (
-    datetime,
-    UTC,
-)
 from json import (
     dumps,
     loads,
@@ -81,12 +77,9 @@ from galaxy.tools.fetch.workbooks import (
     ParsedFetchWorkbook,
     ParseFetchWorkbook,
 )
+from galaxy.tools.help_images import HELP_IMAGE_SECURITY_HEADERS
 from galaxy.tools.job_parameters import TARGET_DATATYPE
 from galaxy.tools.parameters.pagination import OptionsPaginationT
-from galaxy.util.hash_util import (
-    HashFunctionNameEnum,
-    memory_bound_hexdigest,
-)
 from galaxy.util.zipstream import ZipstreamWrapper
 from galaxy.web import (
     expose_api,
@@ -94,6 +87,7 @@ from galaxy.web import (
     expose_api_anonymous_and_sessionless,
     expose_api_raw_anonymous_and_sessionless,
 )
+from galaxy.webapps.base.api import cached_file_response
 from galaxy.webapps.base.controller import UsesVisualizationMixin
 from galaxy.webapps.base.webapp import GalaxyWebTransaction
 from galaxy.webapps.galaxy.api.common import (
@@ -122,7 +116,13 @@ log = logging.getLogger(__name__)
 # Tool search bypasses the fulltext for the following list of terms
 SEARCH_RESERVED_TERMS_FAVORITES = ["#favs", "#favorites", "#favourites"]
 
-ICON_CACHE_MAX_AGE = 86400  # 1 day
+# The icon URL is not versioned, so the icon may change under the same URL.
+ICON_HEADERS = {"Cache-Control": "public, max-age=86400"}  # 1 day
+HELP_IMAGE_HEADERS = {
+    # Private: the tool may be access controlled.
+    "Cache-Control": "private, max-age=3600",
+    **HELP_IMAGE_SECURITY_HEADERS,
+}
 
 
 class FormDataApiRoute(APIContentTypeRoute):
@@ -135,19 +135,6 @@ class JsonApiRoute(APIContentTypeRoute):
 
 class PNGIconResponse(FileResponse):
     media_type = "image/png"
-
-
-def _etag_matches(if_none_match: str, file_hash: str) -> bool:
-    """Weak comparison of an If-None-Match header against an opaque tag."""
-    for candidate in if_none_match.split(","):
-        candidate = candidate.strip()
-        if candidate == "*":
-            return True
-        if candidate.startswith("W/"):
-            candidate = candidate[2:]
-        if candidate.strip('"') == file_hash:
-            return True
-    return False
 
 
 FetchWorkbookTypeQueryParam: FetchWorkbookType = Query(
@@ -278,35 +265,32 @@ class FetchTools:
         client-side caching. The icon image is expected to be in PNG format.
         """
         tool_icon_path = self.service.get_tool_icon_path(trans=trans, tool_id=tool_id)
-        if tool_icon_path is None:
-            raise exceptions.ObjectNotFound(f"Tool icon file not found or not provided by the tool: {tool_id}")
+        return cached_file_response(request, tool_icon_path, PNGIconResponse.media_type, ICON_HEADERS)
 
-        # Get file modification time
-        file_stat = os.stat(tool_icon_path)
-        last_modified = datetime.fromtimestamp(file_stat.st_mtime, tz=UTC).strftime("%a, %d %b %Y %H:%M:%S GMT")
-
-        # Generate ETag based on file content
-        file_hash = memory_bound_hexdigest(hash_func_name=HashFunctionNameEnum.md5, path=tool_icon_path)
-        etag = f'"{file_hash}"'
-        cache_headers = {
-            # The icon URL is not versioned, so the icon may change under the same URL.
-            "Cache-Control": f"public, max-age={ICON_CACHE_MAX_AGE}",
-            "ETag": etag,
-            "Last-Modified": last_modified,
-        }
-
-        # If-None-Match takes precedence over If-Modified-Since (RFC 9110, section 13.2.2)
-        if_none_match = request.headers.get("If-None-Match")
-        if if_none_match is not None:
-            if _etag_matches(if_none_match, file_hash):
-                return Response(status_code=304, headers=cache_headers)
-        elif request.headers.get("If-Modified-Since") == last_modified:
-            return Response(status_code=304, headers=cache_headers)
-
-        # Serve the file with caching headers
-        response = PNGIconResponse(tool_icon_path)
-        response.headers.update(cache_headers)
-        return response
+    @router.get(
+        "/api/tools/{tool_id:path}/help_image",
+        summary="Get an image referenced by a tool's help",
+        response_class=FileResponse,
+        responses={
+            200: {"content": {"image/*": {}}, "description": "The image file"},
+            304: {"description": "The image has not been modified since the last request"},
+            404: {"description": "The tool or the image wasn't found, or the file isn't a servable image"},
+        },
+    )
+    def get_help_image(
+        self,
+        request: Request,
+        tool_id: str,
+        path: str = Query(
+            ...,
+            description="Path relative to the tool's directory. A path outside `static/images/` is looked up there first.",
+        ),
+        tool_version: str | None = Query(default=None, description="The tool version."),
+        trans: ProvidesHistoryContext = DependsOnTrans,
+    ):
+        """Return an image shipped with a tool that its help references by a relative path."""
+        image_path, media_type = self.service.get_tool_help_image(trans, tool_id, path, tool_version)
+        return cached_file_response(request, image_path, media_type, HELP_IMAGE_HEADERS)
 
     @router.post("/api/file_landings", public=True, allow_cors=True)
     def create_file_landing(

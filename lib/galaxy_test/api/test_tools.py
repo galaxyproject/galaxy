@@ -57,6 +57,8 @@ MINIMAL_TOOL_NO_ID = {
     "outputs": {"output1": {"format": "txt", "type": "data", "from_work_dir": "output.txt"}},
 }
 
+HELP_IMAGE_CSP = "default-src 'none'; img-src data:; font-src data:; style-src 'unsafe-inline'; sandbox"
+
 
 class TestToolsApi(ApiTestCase, TestsTools):
     dataset_populator: DatasetPopulator
@@ -158,6 +160,19 @@ class TestToolsApi(ApiTestCase, TestsTools):
         assert tool["help_format"] == "markdown"
         assert "**This is bold text**" in tool["help"]
 
+    @skip_without_tool("help_images_rst")
+    def test_build_tool_help_rst_relative_image_srcs_unchanged(self, history_id):
+        tool = self.dataset_populator.build_tool_state("help_images_rst", history_id)
+        assert tool["help_format"] == "restructuredtext"
+        assert 'src="help_image.png"' in tool["help"]
+        assert 'src="static/images/help_image.png"' in tool["help"]
+
+    @skip_without_tool("help_images_rst")
+    def test_build_tool_help_rst_strips_path_to_images(self, history_id):
+        tool = self.dataset_populator.build_tool_state("help_images_rst", history_id)
+        assert "PATH_TO_IMAGES" not in tool["help"]
+        assert tool["help"].count('src="help_image.png"') == 2
+
     @skip_without_tool("test_sam_to_bam_conversions")
     def test_requirements(self):
         requirements_response = self._get("tools/test_sam_to_bam_conversions/requirements", admin=True)
@@ -240,18 +255,106 @@ class TestToolsApi(ApiTestCase, TestsTools):
         assert output["inherit_format"] is True
 
     def test_tool_icon_endpoint_with_simple_id(self):
-        response = self._get("tools/simple_tool_id/icon")
+        response = self._get_tool_icon("simple_tool_id")
         self._assert_status_code_is(response, 404)
+
+    @skip_without_tool("help_images_markdown")
+    def test_tool_icon_revalidated_by_etag(self):
+        response = self._get_tool_icon("help_images_markdown")
+        self._assert_status_code_is(response, 200)
+        assert response.headers["Content-Type"] == "image/png"
+        revalidated = self._get_tool_icon("help_images_markdown", headers={"If-None-Match": response.headers["ETag"]})
+        self._assert_status_code_is(revalidated, 304)
+
+    @skip_without_tool("icon_outside_tool_dir")
+    def test_tool_icon_outside_tool_dir_not_found(self):
+        response = self._get_tool_icon("icon_outside_tool_dir")
+        self._assert_status_code_is(response, 404)
+
+    @skip_without_tool("help_images_require_login")
+    def test_tool_icon_require_login(self):
+        response = self._get_tool_icon("help_images_require_login")
+        self._assert_status_code_is(response, 200)
+        assert response.headers["Content-Type"] == "image/png"
+        self._assert_status_code_is(self._get_tool_icon("help_images_require_login", anon=True), 401)
 
     def test_tool_icon_endpoint_with_toolshed_id(self):
         # Test complex toolshed tool ID with slashes
         toolshed_tool_id = "toolshed.g2.bx.psu.edu/repos/devteam/fastqc/fastqc/0.74+galaxy0"
-        response = self._get(f"tools/{toolshed_tool_id}/icon")
+        response = self._get_tool_icon(toolshed_tool_id)
         # We expect either 200 (if tool is installed and has icon) or 404 (if
         # not found), but this tests the routing either way.
         assert response.status_code in [200, 404]
         if response.status_code == 200:
             assert response.headers["Content-Type"] == "image/png"
+
+    @skip_without_tool("help_images_markdown")
+    def test_tool_help_image(self):
+        help_images_dir = os.path.join(galaxy_root_path, "test", "functional", "tools", "help_images")
+        static_image = os.path.join(help_images_dir, "static", "images", "help_image.png")
+        beside_image = os.path.join(help_images_dir, "beside_tool.png")
+        for path, expected_file in [
+            ("static/images/help_image.png", static_image),
+            ("help_image.png", static_image),
+            ("beside_tool.png", beside_image),
+        ]:
+            response = self._get_tool_help_image("help_images_markdown", path, tool_version="1.0.0")
+            self._assert_status_code_is(response, 200)
+            assert response.headers["Content-Type"] == "image/png"
+            with open(expected_file, "rb") as fh:
+                assert response.content == fh.read()
+            assert response.headers.get("Content-Security-Policy") == HELP_IMAGE_CSP
+            assert response.headers.get("X-Content-Type-Options") == "nosniff"
+        response = self._get_tool_help_image("help_images_markdown", "help_image.svg", tool_version="1.0.0")
+        self._assert_status_code_is(response, 200)
+        assert response.headers["Content-Type"].startswith("image/svg+xml")
+        assert response.headers.get("Content-Security-Policy") == HELP_IMAGE_CSP
+        for path in ["missing.png", "help_images_markdown.xml", "../../../../test-data/im3_a.png"]:
+            response = self._get_tool_help_image("help_images_markdown", path)
+            self._assert_status_code_is(response, 404)
+        response = self._get_tool_help_image("not_a_tool", "help_image.png")
+        self._assert_status_code_is(response, 404)
+
+    @skip_without_tool("help_images_require_login")
+    def test_tool_help_image_require_login(self):
+        response = self._get_tool_help_image("help_images_require_login", "help_image.png")
+        self._assert_status_code_is(response, 200)
+        assert response.headers["Content-Type"] == "image/png"
+        response = self._get_tool_help_image("help_images_require_login", "help_image.png", anon=True)
+        self._assert_status_code_is(response, 401)
+
+    @skip_without_tool("help_images_markdown")
+    def test_tool_help_image_caching(self):
+        response = self._get_tool_help_image("help_images_markdown", "help_image.png", tool_version="1.0.0")
+        self._assert_status_code_is(response, 200)
+        cache_control = [d.strip() for d in response.headers["Cache-Control"].split(",")]
+        assert "private" in cache_control
+        assert "public" not in cache_control
+        assert "immutable" not in cache_control
+        assert any(d.startswith("max-age=") for d in cache_control)
+        for headers in [
+            {"If-None-Match": response.headers["ETag"]},
+            {"If-Modified-Since": response.headers["Last-Modified"]},
+        ]:
+            revalidated = self._get_tool_help_image(
+                "help_images_markdown", "help_image.png", tool_version="1.0.0", headers=headers
+            )
+            self._assert_status_code_is(revalidated, 304)
+            assert not revalidated.content
+            assert revalidated.headers.get("ETag") == response.headers["ETag"]
+            assert revalidated.headers.get("Cache-Control") == response.headers["Cache-Control"]
+            assert revalidated.headers.get("Content-Security-Policy") == HELP_IMAGE_CSP
+        # If-None-Match takes precedence over If-Modified-Since.
+        stale = {"If-None-Match": '"stale"', "If-Modified-Since": response.headers["Last-Modified"]}
+        refetched = self._get_tool_help_image(
+            "help_images_markdown", "help_image.png", tool_version="1.0.0", headers=stale
+        )
+        self._assert_status_code_is(refetched, 200)
+        assert refetched.content == response.content
+        wildcard = self._get_tool_help_image(
+            "help_images_markdown", "help_image.png", tool_version="1.0.0", headers={"If-None-Match": "*"}
+        )
+        self._assert_status_code_is(wildcard, 304)
 
     @skip_without_tool("test_data_source")
     def test_data_source_build_request(self):
@@ -888,6 +991,15 @@ class TestToolsApi(ApiTestCase, TestsTools):
 
     def _show_tool(self, tool_id, **params):
         return self._get(f"tools/{tool_id}", data=params)
+
+    def _get_tool_icon(self, tool_id, headers=None, anon=False):
+        return self._get(f"tools/{tool_id}/icon", headers=headers, anon=anon)
+
+    def _get_tool_help_image(self, tool_id, path, tool_version=None, headers=None, anon=False):
+        params = {"path": path}
+        if tool_version:
+            params["tool_version"] = tool_version
+        return self._get(f"tools/{tool_id}/help_image", data=params, headers=headers, anon=anon)
 
     def _show_valid_tool(self, tool_id, tool_version=None):
         data = dict(io_details=True)

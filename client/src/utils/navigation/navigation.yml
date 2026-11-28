@@ -1056,6 +1056,7 @@ tool_form:
     drilldown_option: '.drilldown-option'
     drilldown_expand: '.fa-caret-down'
     tool_version_button: ".tool-versions"
+    help_image: '[data-description="tool form help"] img'
 
   labels:
     generate_tour: 'Generate Tour'

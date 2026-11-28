@@ -6,20 +6,14 @@ from galaxy.exceptions import (
     ObjectNotFound,
     RequestParameterInvalidException,
 )
-from galaxy.util.path import (
-    join,
-    safe_contains,
+from galaxy.tools.help_images import (
+    find_tool_asset,
+    HELP_IMAGE_SECURITY_HEADERS,
 )
 from galaxy.webapps.base.controller import BaseUIController
 from galaxy.webapps.base.webapp import GalaxyWebTransaction
 
 log = logging.getLogger(__name__)
-
-
-def _asset_exists_and_is_safe(repo_path, asset_path):
-    if not safe_contains(repo_path, asset_path):
-        raise RequestParameterInvalidException()
-    return os.path.exists(asset_path)
 
 
 class ShedToolStatic(BaseUIController):
@@ -41,25 +35,14 @@ class ShedToolStatic(BaseUIController):
         if tool is None:
             raise ObjectNotFound(f"Could not find tool with guid '{guid}'.")
         tool = trans.app.toolbox.materialize_tool(tool, reason="packaging")
-        repo_path = os.path.abspath(tool._repository_dir)
-        found_path = None
-
-        if "static/images" not in image_file:
-            asset_path = os.path.abspath(join(repo_path, "static", "images", image_file))
-            if _asset_exists_and_is_safe(repo_path, asset_path):
-                found_path = asset_path
-
-        if not found_path:
-            asset_path = os.path.abspath(join(repo_path, image_file))
-            if _asset_exists_and_is_safe(repo_path, asset_path):
-                found_path = asset_path
-
+        found_path = find_tool_asset(tool._repository_dir, image_file)
         if found_path:
             ext = os.path.splitext(image_file)[-1].lstrip(".")
             if ext:
                 mime = trans.app.datatypes_registry.get_mimetype_by_extension(ext)
                 if mime:
                     trans.response.set_content_type(mime)
+            trans.response.headers.update(HELP_IMAGE_SECURITY_HEADERS)
             return open(found_path, "rb")
         else:
             raise RequestParameterInvalidException()

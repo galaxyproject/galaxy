@@ -263,7 +263,11 @@ const {
                 </GLink>
 
                 <div v-if="showHelp" data-description="tools list tool help" class="mt-2">
-                    <ToolHelp :content="props.help ?? ''" :format="props.helpFormat" />
+                    <ToolHelp
+                        :content="props.help ?? ''"
+                        :format="props.helpFormat"
+                        :tool-id="props.id"
+                        :tool-version="props.version" />
                 </div>
             </div>
         </template>

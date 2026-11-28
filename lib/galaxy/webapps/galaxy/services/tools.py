@@ -1,5 +1,4 @@
 import logging
-import os
 import shutil
 import tempfile
 from json import dumps
@@ -69,9 +68,13 @@ from galaxy.tool_util_models.parameters import (
 from galaxy.tools import Tool
 from galaxy.tools._types import InputFormatT
 from galaxy.tools.cached_toolbox import CachedToolBox
+from galaxy.tools.help_images import (
+    find_help_image,
+    find_tool_file,
+    help_image_media_type,
+)
 from galaxy.tools.job_parameters import DATA_MANAGER_MODE
 from galaxy.tools.search import ToolBoxSearch
-from galaxy.util.path import safe_contains
 from galaxy.util.tool_version import remove_version_from_guid
 from galaxy.webapps.galaxy.services._fetch_util import validate_and_normalize_targets
 from galaxy.webapps.galaxy.services.base import ServiceBase
@@ -615,21 +618,27 @@ class ToolsService(ServiceBase):
                     detected_versions.append(tool.version)
         return detected_versions
 
-    def get_tool_icon_path(self, trans: ProvidesUserContext, tool_id, tool_version=None) -> str | None:
-        tool = self._get_tool(trans, tool_id, tool_version)
+    def get_tool_icon_path(self, trans: ProvidesUserContext, tool_id, tool_version=None) -> str:
+        tool = self._get_tool(trans, tool_id, tool_version, user=trans.user)
         if tool.icon:
             materialized_tool = trans.app.toolbox.materialize_tool(tool, reason="detail")
-            icon_file_path = tool.icon
-            if icon_file_path and materialized_tool.tool_dir:
-                # Prevent any path traversal attacks. The icon_src must be in the tool's directory.
-                if not safe_contains(materialized_tool.tool_dir, icon_file_path):
-                    raise Exception(
-                        f"Invalid icon path for tool '{tool_id}'. Path must be within the tool's directory."
-                    )
-                file_path = os.path.join(materialized_tool.tool_dir, icon_file_path)
-                if os.path.exists(file_path):
-                    return file_path
-        return None
+            if materialized_tool.tool_dir and (icon_path := find_tool_file(materialized_tool.tool_dir, tool.icon)):
+                return icon_path
+        raise exceptions.ObjectNotFound(f"Tool icon file not found or not provided by the tool: {tool_id}")
+
+    def get_tool_help_image(
+        self, trans: ProvidesUserContext, tool_id: str, image_path: str, tool_version: str | None = None
+    ) -> tuple[str, str]:
+        """Return the file and media type of an image the tool's help references by a relative path."""
+        media_type = help_image_media_type(image_path)
+        if media_type:
+            tool = self._get_materialized_tool(
+                trans, tool_id, tool_version, user=trans.user, materialization_reason="detail"
+            )
+            # A Tool Shed tool's images may sit at the root of its repository rather than beside the tool.
+            if found_path := find_help_image((tool.tool_dir, tool._repository_dir), image_path):
+                return found_path, media_type
+        raise exceptions.ObjectNotFound(f"Help image '{image_path}' not found for tool '{tool_id}'.")
 
     # === Batch Endpoint Methods (use cached toolbox index when available) ===
 

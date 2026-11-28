@@ -1,4 +1,6 @@
 <script setup>
+import { computed, toRef } from "vue";
+
 import { useFormattedToolHelp } from "@/composables/formattedToolHelp";
 
 const props = defineProps({
@@ -6,9 +8,18 @@ const props = defineProps({
         type: String,
         required: true,
     },
+    toolId: {
+        type: String,
+        default: undefined,
+    },
+    toolVersion: {
+        type: String,
+        default: undefined,
+    },
 });
 
-const { formattedContent } = useFormattedToolHelp(props.content);
+const tool = computed(() => ({ id: props.toolId, version: props.toolVersion }));
+const { formattedContent } = useFormattedToolHelp(toRef(props, "content"), { tool });
 </script>
 
 <template>

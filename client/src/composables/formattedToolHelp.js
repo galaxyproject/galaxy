@@ -39,7 +39,36 @@ function increaseHeadingLevel(node, level, increaseBy) {
     });
 }
 
-export function useFormattedToolHelp(helpContent, headingLevelIncrease = 2) {
+// Scheme, path-absolute, query or fragment: not relative to the tool.
+const NOT_TOOL_RELATIVE = /^([a-z][a-z0-9+.-]*:|[/#?])/i;
+
+function isToolRelativePath(src) {
+    return !!src && !NOT_TOOL_RELATIVE.test(src);
+}
+
+function decodePath(src) {
+    const path = src.split(/[?#]/)[0];
+    try {
+        return decodeURIComponent(path);
+    } catch {
+        return path;
+    }
+}
+
+function toolHelpImageUrl(tool, src) {
+    const params = new URLSearchParams({ path: decodePath(src) });
+    if (tool.version) {
+        params.set("tool_version", tool.version);
+    }
+    return `${getAppRoot()}api/tools/${encodeURIComponent(tool.id)}/help_image?${params}`;
+}
+
+/**
+ * @param helpContent help HTML
+ * @param {{ tool?: import("vue").MaybeRef<{ id?: string, version?: string }>, headingLevelIncrease?: number }} [options]
+ *     `tool` serves images with relative paths from that tool's directory
+ */
+export function useFormattedToolHelp(helpContent, { tool, headingLevelIncrease = 2 } = {}) {
     const formattedContent = computed(() => {
         // DOMParser gives an inert document, so nothing in the help loads before it is sanitized
         const node = new DOMParser().parseFromString(unref(helpContent), "text/html").body;
@@ -51,10 +80,14 @@ export function useFormattedToolHelp(helpContent, headingLevelIncrease = 2) {
             }
         });
 
+        const toolValue = unref(tool);
         const images = node.getElementsByTagName("img");
         Array.from(images).forEach((image) => {
+            const src = image.getAttribute("src");
             if (image.src.includes("admin_toolshed")) {
                 image.src = getAppRoot() + image.src;
+            } else if (toolValue?.id && isToolRelativePath(src)) {
+                image.src = toolHelpImageUrl(toolValue, src);
             }
         });
 
