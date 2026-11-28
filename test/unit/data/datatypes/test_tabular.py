@@ -1,4 +1,5 @@
 import csv
+import json
 import tempfile
 from typing import (
     Any,
@@ -7,14 +8,46 @@ from typing import (
 
 import pytest
 
+from galaxy.datatypes.interval import (
+    Bed,
+    Interval,
+)
 from galaxy.datatypes.tabular import (
+    column_index_header_cell,
     CSV,
     MAX_DATA_LINES,
+    Pileup,
     Tabular,
     TSV,
 )
 from galaxy.exceptions import RequestParameterInvalidException
-from .util import MockDataset
+from .util import (
+    MockDataset,
+    MockMetadata,
+)
+
+
+def _write_delimited(path, datatype, rows):
+    with path.open("w", encoding="utf-8", newline="") as handle:
+        csv.writer(handle, dialect=datatype.dialect).writerows(rows)
+
+
+@pytest.mark.parametrize("datatype", [CSV(), TSV()], ids=["csv", "tsv"])
+def test_delimited_display_peek_keeps_header_line_in_rows(tmp_path, datatype):
+    # The column index shows the names, and the header line is still shown as a line of the file.
+    source = tmp_path / f"input.{datatype.file_ext}"
+    _write_delimited(source, datatype, [["name", "value"], ["first", "1"]])
+    dataset = MockDataset(id=1)
+    dataset.set_file_name(str(source))
+    datatype.set_meta(dataset)
+    cast(Any, dataset.metadata).spec = {}
+    cast(Any, dataset).peek = source.read_text()
+
+    html = datatype.display_peek(dataset)
+
+    assert column_index_header_cell("1", "name") in html
+    assert "<td>name</td>" in html
+    assert "<td>first</td>" in html
 
 
 @pytest.mark.parametrize("datatype", [CSV(), TSV()], ids=["csv", "tsv"])
@@ -169,19 +202,99 @@ def test_tabular_column_types_override():
         assert not hasattr(dataset.metadata, "column_names")
 
 
-def test_tabular_display_peek_does_not_render_table_header():
+def test_tabular_display_peek_header_numbers_columns():
     dataset = MockDataset(id=1)
     dataset_for_peek = cast(Any, dataset)
     metadata = cast(Any, dataset.metadata)
     dataset_for_peek.peek = "question_id\tcurator_name\nensembl-grab-q1\tLG\n"
     metadata.columns = 2
     metadata.delimiter = "\t"
+    metadata.column_names = None
+    metadata.spec = MockMetadata()
 
     html = Tabular().display_peek(dataset)  # type: ignore [arg-type]
 
-    assert "<th>" not in html
+    assert f"<tr>{column_index_header_cell('1')}{column_index_header_cell('2')}</tr>" in html
     assert "<td>question_id</td>" in html
-    assert "<td>curator_name</td>" in html
+
+
+def test_tabular_display_peek_header_includes_metadata_column_names():
+    dataset = MockDataset(id=1)
+    dataset_for_peek = cast(Any, dataset)
+    metadata = cast(Any, dataset.metadata)
+    dataset_for_peek.peek = "FBgn0026562\t43868.5\nFBgn0039155\t735.9\n"
+    metadata.columns = 2
+    metadata.delimiter = "\t"
+    metadata.column_names = ["GeneID", "Base mean"]
+    metadata.spec = MockMetadata()
+
+    html = Tabular().display_peek(dataset)  # type: ignore [arg-type]
+
+    assert column_index_header_cell("1", "GeneID") + column_index_header_cell("2", "Base mean") in html
+    assert "<td>FBgn0026562</td>" in html
+
+
+def _dataset_with_metadata(tmp_path, datatype, text):
+    source = tmp_path / f"input.{datatype.file_ext}"
+    source.write_text(text)
+    dataset = MockDataset(id=1)
+    dataset.set_file_name(str(source))
+    metadata = cast(Any, dataset.metadata)
+    metadata.spec = datatype.metadata_spec
+    metadata.column_names = datatype.metadata_spec.column_names.no_value
+    datatype.set_meta(dataset)
+    cast(Any, dataset).peek = text
+    return dataset
+
+
+@pytest.mark.parametrize(
+    "datatype, text, metadata_values, column_names",
+    [
+        (Bed(), "chr1\t100\t200\tfeature\t0\t+\n", {}, ["Chrom", "Start", "End", "Name", "Score", "Strand"]),
+        (
+            Pileup(),
+            "chr1\t100\tA\t3\t.,.\tIII\n",
+            {"chromCol": 1, "startCol": 2, "endCol": 2, "baseCol": 3},
+            ["Chrom", "Start", "Base", None, None, None],
+        ),
+    ],
+)
+def test_preview_chunk_and_peek_name_the_same_columns(tmp_path, datatype, text, metadata_values, column_names):
+    dataset = _dataset_with_metadata(tmp_path, datatype, text)
+    metadata = cast(Any, dataset.metadata)
+    for name, value in metadata_values.items():
+        setattr(metadata, name, value)
+
+    chunk = json.loads(datatype.get_chunk(cast(Any, None), dataset, 0, 1024))
+    html = datatype.display_peek(dataset)
+
+    assert chunk["column_names"] == column_names
+    peek_cells = "".join(column_index_header_cell(str(i + 1), name) for i, name in enumerate(column_names))
+    assert f"<tr>{peek_cells}</tr>" in html
+
+
+def test_interval_preview_chunk_names_column_parameters(tmp_path):
+    interval = Interval()
+    dataset = _dataset_with_metadata(tmp_path, interval, "feature\tchr1\t100\t200\t+\n")
+    metadata = cast(Any, dataset.metadata)
+    metadata.chromCol, metadata.startCol, metadata.endCol, metadata.strandCol = 2, 3, 4, 5
+
+    chunk = json.loads(interval.get_chunk(cast(Any, None), dataset, 0, 1024))
+
+    assert chunk["column_names"] == [None, "Chrom", "Start", "End", "Strand"]
+
+
+def test_column_index_header_cell_escapes_name():
+    assert column_index_header_cell("1") == (
+        '<th class="column-index-header" title="Column 1. Galaxy metadata, not part of the file.">'
+        '<span class="column-index">'
+        '<span class="column-number">1</span></span></th>'
+    )
+    assert column_index_header_cell("2", 'log2(FC) "<b>') == (
+        '<th class="column-index-header" title="Column 2: log2(FC) &#34;&lt;b&gt;. Galaxy metadata, not part of the file.">'
+        '<span class="column-index"><span class="column-number">2</span>'
+        ' <span class="column-name">log2(FC) &#34;&lt;b&gt;</span></span></th>'
+    )
 
 
 @pytest.mark.parametrize(

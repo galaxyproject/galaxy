@@ -94,6 +94,13 @@ class Interval(Tabular):
     line_class = "region"
     track_type = "FeatureTrack"
     data_sources = {"data": "tabix", "index": "bigwig"}
+    column_parameter_alias = {
+        "chromCol": "Chrom",
+        "startCol": "Start",
+        "endCol": "End",
+        "strandCol": "Strand",
+        "nameCol": "Name",
+    }
 
     MetadataElement(name="chromCol", default=1, desc="Chrom column", param=metadata.ColumnParameter)
     MetadataElement(name="startCol", default=2, desc="Start column", param=metadata.ColumnParameter)
@@ -296,19 +303,6 @@ class Interval(Tabular):
             except IndexError:
                 raise InvalidFileFormatError("Dataset row has fewer columns than its metadata declares.")
             return compression_utils.get_fileobj(fh.name, mode="rb")
-
-    def display_peek(self, dataset: DatasetProtocol) -> str:
-        """Returns formated html of peek"""
-        return self.make_html_table(
-            dataset,
-            column_parameter_alias={
-                "chromCol": "Chrom",
-                "startCol": "Start",
-                "endCol": "End",
-                "strandCol": "Strand",
-                "nameCol": "Name",
-            },
-        )
 
     def ucsc_links(self, dataset: DatasetProtocol, type: str, app, base_url: str) -> list:
         """

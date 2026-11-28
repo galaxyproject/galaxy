@@ -891,10 +891,11 @@ export default class Filtering<T> {
             if (Array.isArray(oldVal)) {
                 const updatedArr = [...oldVal] as T[];
                 (valuesToAdd as T[]).forEach((value) => {
-                    if (!oldVal.includes(value)) {
+                    const existing = oldVal.find((v) => this.isSameValue(v, value));
+                    if (existing === undefined) {
                         updatedArr.push(value);
                     } else {
-                        updatedArr.splice(updatedArr.indexOf(value), 1);
+                        updatedArr.splice(updatedArr.indexOf(existing), 1);
                     }
                 });
                 valuesToAdd = updatedArr.length !== 0 ? updatedArr : oldVal;
@@ -902,12 +903,28 @@ export default class Filtering<T> {
             convVal = valuesToAdd as T;
         }
         const settings = { [newFilter]: convVal };
-        if (isEqual(oldVal, convVal) || oldVal == convVal) {
+        if (this.isSameValue(oldVal, convVal)) {
             updatedText = this.applyFiltersToText(settings, filterText, true);
         } else {
             updatedText = this.applyFiltersToText(settings, filterText);
         }
         return updatedText;
+    }
+
+    /** Whether a value parsed from the filter text matches a new value for the same filter.
+     * Unquoted string values are lowercased when the filter text is parsed, so `GFF3` must
+     * match a parsed `gff3`.
+     */
+    private isSameValue(parsedVal: T | undefined, newVal: T | undefined): boolean {
+        if (isEqual(parsedVal, newVal) || parsedVal == newVal) {
+            return true;
+        }
+        return (
+            this.quoteStrings &&
+            typeof parsedVal === "string" &&
+            typeof newVal === "string" &&
+            parsedVal === toLowerNoQuotes(newVal)
+        );
     }
 
     /** Test if an item passes all filters.
