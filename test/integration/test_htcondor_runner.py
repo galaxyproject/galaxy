@@ -134,6 +134,11 @@ def _two_cluster_job_conf(
     All tools default to cluster A.  ``checksum`` is explicitly routed to
     cluster B so ``test_htcondor_docker_job_cluster_b`` can verify that each
     cluster receives its own jobs independently.
+
+    ``embed_metadata_in_job: false`` runs metadata on the Galaxy host after the
+    job: htcondor/mini has no Python or Galaxy virtualenv to run the embedded
+    ``metadata/set.py``. With the directory strategy Galaxy hides that failure
+    by retrying metadata internally; with extended metadata the job fails.
     """
     return textwrap.dedent(f"""
         runners:
@@ -150,10 +155,12 @@ def _two_cluster_job_conf(
               runner: htcondor
               htcondor_collector: "{collector_addr_a}"
               htcondor_config: "{host_config_path_a}"
+              embed_metadata_in_job: false
             htcondor_cluster_b:
               runner: htcondor
               htcondor_collector: "{collector_addr_b}"
               htcondor_config: "{host_config_path_b}"
+              embed_metadata_in_job: false
             local_environment:
               runner: local
         tools:
