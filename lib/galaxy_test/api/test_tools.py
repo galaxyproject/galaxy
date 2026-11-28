@@ -1213,6 +1213,19 @@ class TestToolsApi(ApiTestCase, TestsTools):
                 self._assert_dataset_permission_denied_response(response)
 
     @skip_without_tool("__UNZIP_COLLECTION__")
+    def test_unzip_collection_rejects_a_list_of_pairs(self):
+        with self.dataset_populator.test_history(require_new=False) as history_id:
+            list_paired_id = self.dataset_collection_populator.create_list_of_pairs_in_history(
+                history_id, wait=True
+            ).json()["outputs"][0]["id"]
+            inputs = {
+                "input": {"src": "hdca", "id": list_paired_id},
+            }
+            response = self._run("__UNZIP_COLLECTION__", history_id, inputs, assert_ok=False)
+            assert_status_code_is(response, 400)
+            assert_error_message_contains(response, "takes a collection of type 'paired', got 'list:paired'")
+
+    @skip_without_tool("__UNZIP_COLLECTION__")
     def test_collection_operation_collection_input_permissions(self):
         with self.dataset_populator.test_history(require_new=False) as history_id:
             create_response = self.dataset_collection_populator.create_pair_in_history(
