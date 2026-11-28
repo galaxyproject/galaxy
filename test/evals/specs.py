@@ -179,9 +179,9 @@ def build_routing_clarification_followup_nofix(
     include_galaxy_required: bool = False,
     usage_buffer: list[dict[str, int]] | None = None,
 ) -> BuiltDataset:
-    """A/B control: route the same answers WITHOUT the seam (history withheld). The elliptical
-    answers have no referent, so this should score well below the fixed variant -- that gap is
-    the seam's value."""
+    """A/B control: route the same answers without marking the last turn as a clarification,
+    so the router doesn't keep the subject turn behind it. Only the ``subject`` scenarios differ
+    from the fixed variant; their gap is the value of carrying the subject."""
     return _build_routing_clarification_followup(deps, False, only, usage_buffer)
 
 
