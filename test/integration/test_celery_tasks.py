@@ -14,6 +14,7 @@ from galaxy.schema import PdfDocumentType
 from galaxy.schema.schema import CreatePagePayload
 from galaxy.schema.tasks import GeneratePdfDownload
 from galaxy.short_term_storage import ShortTermStorageAllocator
+from galaxy_test.base import api_asserts
 from galaxy_test.base.populators import (
     DatasetPopulator,
     wait_on,
@@ -126,3 +127,33 @@ class TestCeleryTasksIntegration(IntegrationTestCase):
     def _latest_hda(self):
         stmt = select(HistoryDatasetAssociation).order_by(HistoryDatasetAssociation.table.c.id.desc()).limit(1)
         return self._app.model.session.scalars(stmt).first()
+
+
+class TestPdfDownloadTimeoutIntegration(IntegrationTestCase):
+    dataset_populator: DatasetPopulator
+
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
+        config["markdown_export_pdf_timeout"] = 1
+
+    def setUp(self):
+        super().setUp()
+        self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
+
+    def test_pdf_download_fails_when_render_exceeds_timeout(self):
+        short_term_storage_allocator = self._app[ShortTermStorageAllocator]  # type: ignore[type-abstract]
+        request_id = short_term_storage_allocator.new_target("big.pdf", "application/pdf").request_id
+        large_table = "| a | b | c |\n|---|---|---|\n" + "".join(
+            f"| {i} | cell {i} | {'x' * 20} |\n" for i in range(5000)
+        )
+        pdf_download_request = GeneratePdfDownload(
+            basic_markdown=large_table,
+            document_type=PdfDocumentType.page,
+            short_term_storage_request_id=request_id,
+        )
+        prepare_pdf_download.delay(request=pdf_download_request)
+        self.dataset_populator.wait_for_download_ready(request_id)
+        response = self.dataset_populator._get(f"short_term_storage/{request_id}")
+        api_asserts.assert_status_code_is(response, 500)
+        assert "did not finish within the configured limit of 1 seconds" in response.json()["err_msg"]
