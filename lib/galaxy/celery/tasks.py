@@ -584,7 +584,9 @@ def prepare_pdf_download(
     task_user_id: int | None = None,
 ):
     """Create a short term storage file tracked and available for download of target PDF for Galaxy Markdown."""
-    generate_branded_pdf(request, config, short_term_storage_monitor)
+    # worker_init creates the fork pool, so it is missing when tasks run outside a worker (task_always_eager).
+    render_pool = getattr(celery_app, "fork_pool", None)
+    generate_branded_pdf(request, config, short_term_storage_monitor, render_pool=render_pool)
 
 
 @galaxy_task(action="generate and stage a history model store for download")

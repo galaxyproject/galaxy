@@ -419,6 +419,7 @@ class GalaxyAppConfigurationAttributes:
     markdown_export_prologue_invocation_reports: str
     markdown_export_epilogue_pages: str
     markdown_export_epilogue_invocation_reports: str
+    markdown_export_pdf_timeout: int
     job_resource_params_file: str
     workflow_resource_params_file: str
     workflow_resource_params_mapper: str | None

@@ -5610,6 +5610,20 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``markdown_export_pdf_timeout``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Maximum time in seconds that a Celery worker spends rendering a
+    Markdown PDF prepared for download, such as a page PDF. The worker
+    renders the PDF in a separate process and terminates that process
+    when the limit is reached, releasing its memory, and the download
+    fails with an error. Set to 0 for no limit.
+:Default: ``30``
+:Type: int
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``job_resource_params_file``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
