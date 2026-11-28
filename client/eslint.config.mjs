@@ -217,7 +217,7 @@ const typeImportRules = {
 };
 
 export default defineConfig(
-    globalIgnores(["dist/**", "src/libs/**", "src/nls/**", "src/legacy/**", "packages/api-client/**"]),
+    globalIgnores(["dist/**", "src/nls/**", "src/legacy/**", "packages/api-client/**"]),
     {
         files: ["**/*.{js,mjs,cjs,ts,tsx,vue}"],
         extends: [

@@ -1,15 +1,4 @@
 include src/galaxy/webapps/base/static/incompatible-browser.html
-include src/galaxy/webapps/base/static/toolshed/scripts/mvc/groups/group-model.js
-include src/galaxy/webapps/base/static/toolshed/scripts/mvc/groups/group-listrow-view.js
-include src/galaxy/webapps/base/static/toolshed/scripts/mvc/groups/group-list-view.js
-include src/galaxy/webapps/base/static/toolshed/scripts/mvc/groups/group-detail-view.js
-include src/galaxy/webapps/base/static/toolshed/scripts/toolshed.groups.js
-include src/galaxy/webapps/base/static/toolshed/maps/test-file.js.map
-include src/galaxy/webapps/base/static/toolshed/maps/mvc/groups/group-detail-view.js.map
-include src/galaxy/webapps/base/static/toolshed/maps/mvc/groups/group-listrow-view.js.map
-include src/galaxy/webapps/base/static/toolshed/maps/mvc/groups/group-model.js.map
-include src/galaxy/webapps/base/static/toolshed/maps/mvc/groups/group-list-view.js.map
-include src/galaxy/webapps/base/static/toolshed/maps/toolshed.groups.js.map
 include src/galaxy/webapps/base/static/robots.txt
 include src/galaxy/webapps/base/static/formatHelp.html
 include src/galaxy/webapps/base/static/favicon.ico
