@@ -351,6 +351,7 @@ class LibraryDatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin,
 
         :returns:   dict containing information about the dataset
         :rtype:     dictionary
+        :raises ItemDeletionException:  if ``undelete`` is requested for a purged library dataset
         """
         undelete = util.string_as_bool(kwd.get("undelete", False))
         library_dataset = self.ld_manager.get(trans, managers_base.decode_id(self.app, encoded_dataset_id))
@@ -362,6 +363,12 @@ class LibraryDatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin,
             )
 
         if undelete:
+            # Purging is irreversible, so refuse the undelete (as for purged history items).
+            ldda = library_dataset.library_dataset_dataset_association
+            if library_dataset.purged or (ldda and ldda.purged):
+                raise exceptions.ItemDeletionException(
+                    "This item has been permanently deleted and cannot be recovered."
+                )
             library_dataset.deleted = False
         else:
             library_dataset.deleted = True
