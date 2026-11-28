@@ -397,6 +397,15 @@ class YamlDataParameter(_YamlParamBase):
         bool,
         Field(description="Set true to accept several datasets (a list) for this input instead of one."),
     ] = False
+    secondary_files: Annotated[
+        bool,
+        Field(
+            description=(
+                "Set true to list the dataset's index, such as a BAM's `.bai`, under `secondaryFiles` and make it "
+                "available to the job. It is not placed next to the dataset, so link or copy it where the tool looks."
+            )
+        ),
+    ] = False
     # NOTE: `min`/`max` (the min/max number of selected datasets) are intentionally
     # NOT exposed here. They only have meaning for a `multiple` input and the runtime
     # rejects them on a single one; in practice authors (and LLMs) reach for `min: 1`
@@ -450,6 +459,15 @@ reverse='$(inputs.reads.elements.reverse.path)'""",
         list[str],
         Field(description="Requires every selectable collection element to use one of these datatype extensions."),
     ] = ["data"]
+    secondary_files: Annotated[
+        bool,
+        Field(
+            description=(
+                "Set true to list each element's index, such as a BAM's `.bai`, under `secondaryFiles` and make it "
+                "available to the job. It is not placed next to the element, so link or copy it where the tool looks."
+            )
+        ),
+    ] = False
 
     @field_validator("format", mode="before")
     @classmethod
