@@ -143,6 +143,7 @@ def _compute_environment(file_actions):
         action_mapper=FileActionMapper(config=FILE_ACTION_CONFIGS[file_actions]),
     )
     compute_environment.path_rewrites_input_extra = {}
+    compute_environment.object_store_staging = None
     return compute_environment
 
 
