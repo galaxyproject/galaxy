@@ -21,6 +21,7 @@ class BaseParameterTestCase(TestCase, UsesApp):
         self.setup_app()
         self.mock_tool = bunch.Bunch(
             app=self.app,
+            name="Test tool",
             tool_type="default",
             valid_input_states=model.Dataset.valid_input_states,
             profile=23.0,
