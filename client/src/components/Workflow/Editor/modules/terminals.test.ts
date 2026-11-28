@@ -17,6 +17,7 @@ import {
     useWorkflowStepStore,
 } from "@/stores/workflowStepStore";
 
+import { createTestStep } from "../test_fixtures";
 import advancedStepsJson from "../test-data/parameter_steps.json";
 import simpleStepsJson from "../test-data/simple_steps.json";
 import {
@@ -39,6 +40,165 @@ import {
 
 const advancedSteps = advancedStepsJson as Steps;
 const simpleSteps = simpleStepsJson as Steps;
+
+describe("optional elements in mapped collections", () => {
+    beforeEach(() => setActivePinia(createPinia()));
+
+    function setup({
+        mapOver = "list",
+        outputCollection = "",
+        inputCollection = "list",
+        conditional = true,
+        optional = false,
+        connected = true,
+        extension = "txt",
+    } = {}) {
+        const stores = useStores();
+        const input = {
+            name: "input",
+            label: "Input",
+            input_type: "dataset" as const,
+            extensions: ["txt"],
+            optional: false,
+            multiple: false,
+        };
+        if (mapOver) {
+            stores.stepStore.addStep(
+                createTestStep(0, {
+                    outputs: [
+                        {
+                            name: "output",
+                            collection: true,
+                            collection_type: mapOver,
+                            collection_type_source: null,
+                            extensions: ["txt"],
+                            optional: false,
+                        },
+                    ],
+                }),
+            );
+        }
+        const output = { name: "output", extensions: [extension], optional };
+        const producer = stores.stepStore.addStep(
+            createTestStep(1, {
+                inputs: mapOver ? [input] : [],
+                outputs: [
+                    outputCollection
+                        ? {
+                              ...output,
+                              collection: true,
+                              collection_type: outputCollection,
+                              collection_type_source: null,
+                          }
+                        : output,
+                ],
+                inputConnections: mapOver ? { input: { id: 0, output_name: "output" } } : {},
+                when: conditional ? "$(inputs.run)" : undefined,
+            }),
+        );
+        const consumer = stores.stepStore.addStep(
+            createTestStep(2, {
+                inputs: [
+                    {
+                        ...input,
+                        input_type: "dataset_collection",
+                        collection_types: [inputCollection],
+                        fields: [],
+                        column_definitions: [],
+                    },
+                ],
+                inputConnections: connected ? { input: { id: 1, output_name: "output" } } : {},
+            }),
+        );
+        if (mapOver) {
+            terminalFactory(producer.id, producer.inputs[0]!, testDatatypesMapper, stores);
+        }
+        const out = terminalFactory(producer.id, producer.outputs[0]!, testDatatypesMapper, stores);
+        const into = terminalFactory(
+            consumer.id,
+            consumer.inputs[0]!,
+            testDatatypesMapper,
+            stores,
+        ) as InputCollectionTerminal;
+        return { stores, out, into };
+    }
+
+    it("accepts conditional mapped datasets on import and reconnect", () => {
+        const { stores, into, out } = setup();
+        expect(out.optional).toBe(true);
+        expect(out.mapOver.collectionType).toBe("list");
+        expect(into.getInvalidConnectedTerminals()).toEqual([]);
+        expect(out.getInvalidConnectedTerminals()).toEqual([]);
+        expect(stores.connectionStore.invalidConnections).toEqual({});
+        into.disconnect(out);
+        const rebuilt = rebuildTerminal(into);
+        expect(rebuilt.canAccept(out).canAccept).toBe(true);
+        rebuilt.connect(out);
+        expect(rebuildTerminal(rebuilt).getInvalidConnectedTerminals()).toEqual([]);
+    });
+
+    it("allows null elements when only the outer nested list is mapped over", () => {
+        const { into, out } = setup({ mapOver: "list:list" });
+        expect(into.mapOver.collectionType).toBe("list");
+        expect(into.attachable(out).canAccept).toBe(true);
+        expect(into.getInvalidConnectedTerminals()).toEqual([]);
+    });
+
+    it("also accepts mapped outputs explicitly declared optional", () => {
+        const { into, out } = setup({ conditional: false, optional: true });
+        expect(into.attachable(out).canAccept).toBe(true);
+    });
+
+    it.each([true, false])("rejects unmapped optional collections (conditional=%s)", (conditional) => {
+        const { into, out } = setup({ mapOver: "", outputCollection: "list", conditional, optional: !conditional });
+        expect(into.attachable(out).reason).toBe("Cannot connect an optional output to a non-optional input");
+    });
+
+    it.each([true, false])(
+        "rejects an optional subcollection when its enclosing list is mapped away (connected=%s)",
+        (connected) => {
+            const { into, out } = setup({ outputCollection: "list", connected });
+            const acceptance = connected ? into.attachable(out) : into.canAccept(out);
+            expect(acceptance.reason).toBe("Cannot connect an optional output to a non-optional input");
+        },
+    );
+
+    it("accepts the enclosing collection of optional subcollections as a whole", () => {
+        const { into, out } = setup({ outputCollection: "list", inputCollection: "list:list" });
+        expect(into.attachable(out).canAccept).toBe(true);
+    });
+
+    it("still validates mapped element datatypes", () => {
+        const { into, out } = setup({ extension: "bam" });
+        expect(into.attachable(out).canAccept).toBe(false);
+    });
+
+    it("still rejects incompatible collection types", () => {
+        const { into, out } = setup({ mapOver: "paired" });
+        expect(into.attachable(out).canAccept).toBe(false);
+    });
+
+    it("still rejects optional mapped datasets at required dataset inputs", () => {
+        const { stores, out } = setup();
+        const step = stores.stepStore.addStep(
+            createTestStep(3, {
+                inputs: [
+                    {
+                        name: "input",
+                        label: "Input",
+                        input_type: "dataset",
+                        extensions: ["txt"],
+                        optional: false,
+                        multiple: false,
+                    },
+                ],
+                inputConnections: { input: { id: 1, output_name: "output" } },
+            }),
+        );
+        const into = terminalFactory(step.id, step.inputs[0]!, testDatatypesMapper, stores) as InputTerminal;
+        expect(into.attachable(out).reason).toBe("Cannot connect an optional output to a non-optional input");
+    });
+});
 
 function useStores(id = "mock-workflow") {
     const connectionStore = useConnectionStore(id);
