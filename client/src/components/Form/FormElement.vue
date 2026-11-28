@@ -439,6 +439,7 @@ const extendedCollectionType = computed<ExtendedCollectionType>(() => {
                     :color="attrs.color"
                     :multiple="attrs.multiple"
                     :cls="attrs.cls"
+                    :autocomplete="attrs.autocomplete"
                     :datalist="attrs.datalist"
                     :type="props.type" />
                 <FormSelectOrText

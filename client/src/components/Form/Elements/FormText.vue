@@ -21,6 +21,7 @@
                 :state="showState ? (!currentValue ? (optional ? null : false) : true) : null"
                 :style="style"
                 :type="acceptedTypes"
+                :autocomplete="autocomplete"
                 :list="datalist?.length ? `${id}-datalist` : undefined"
                 @focus="onFocus"
                 @blur="onBlur" />
@@ -81,6 +82,11 @@ export default {
         },
         cls: {
             // Refers to an optional custom css class name
+            type: String,
+            default: null,
+        },
+        autocomplete: {
+            // Browser autofill hint of the <input>, e.g. "new-password" to keep password managers out
             type: String,
             default: null,
         },

@@ -199,23 +199,15 @@ class TestExtraUserPreferences(integration_util.IntegrationTestCase, integration
             self._assert_status_code_is(response, 200)
             form = self._get(legacy_url).json()
 
-            sections = {section["name"]: section for section in form["inputs"] if section.get("type") == "section"}
-            vault_inputs = {input["name"]: input for input in sections["vaulttestsection"]["inputs"]}
-            assert vault_inputs["client_id"]["value"] == "legacy_client_id"
-            assert vault_inputs["client_secret"]["value"] == "__SECRET_PLACEHOLDER__"
-            # unset secrets get no placeholder, so the form shows them as empty
-            for unset in ("access_token", "refresh_token"):
-                assert "value" not in vault_inputs[unset]
-            for sensitive in ("client_secret", "access_token", "refresh_token"):
-                assert vault_inputs[sensitive]["type"] == "password"
-            non_vault_inputs = {input["name"]: input for input in sections["non_vault_test_section"]["inputs"]}
-            assert non_vault_inputs["pass"]["value"] == "__SECRET_PLACEHOLDER__"
-            typed_inputs = {input["name"]: input for input in sections["typed_section"]["inputs"]}
-            # neither an unset secret nor a default from the definition is served
-            assert "value" not in typed_inputs["optional_token"]
-            assert "value" not in typed_inputs["plain_password"]
+            # the form no longer lists the extra preferences; the typed endpoint serves them
+            assert not [section for section in form["inputs"] if section.get("type") == "section"]
+            assert "__SECRET_PLACEHOLDER__" not in json.dumps(form)
+            values = self._get_prefs()
+            assert values["vaulttestsection"]["client_id"] == "legacy_client_id"
+            assert values["vaulttestsection"]["client_secret"] == {"is_set": True}
+            assert values["non_vault_test_section"]["pass"] == {"is_set": True}
 
-            # the form sends the placeholder back for secrets the user did not edit
+            # an old form sends the placeholder back for secrets the user did not edit
             response = self._put(
                 legacy_url,
                 data={

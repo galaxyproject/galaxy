@@ -1,3 +1,4 @@
+# Users edit these values under User > Preferences > Extra Configurations.
 preferences:
     # the key you can refer to
     apollo_url_01:

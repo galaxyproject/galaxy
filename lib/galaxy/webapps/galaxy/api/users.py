@@ -878,7 +878,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
         .. deprecated::
             Use ``GET /api/users/{user_id}`` for email, username and display name,
             and ``GET /api/users/{user_id}/extra_preferences`` for the
-            administrator-defined extra preferences.
+            administrator-defined extra preferences, which this form no longer lists.
 
         :param id: the encoded id of the user
         :type  id: str
@@ -976,9 +976,6 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
             inputs.append(address_repeat)
             user_info["addresses"] = [address.to_dict(trans) for address in user.addresses]
 
-        # Build input sections for extra user preferences
-        for item in self.extra_preferences_manager.legacy_form_inputs(user):
-            inputs.append(item)
         user_info["inputs"] = inputs
         return user_info
 

@@ -88,6 +88,7 @@ import TourList from "@/components/Tour/TourList.vue";
 import CredentialsManagement from "@/components/User/Credentials/CredentialsManagement.vue";
 import CustomBuilds from "@/components/User/CustomBuilds.vue";
 import HistoryStorageOverview from "@/components/User/DiskUsage/Visualizations/HistoryStorageOverview.vue";
+import UserExtraPreferences from "@/components/User/ExtraPreferences/UserExtraPreferences.vue";
 import NotificationsPreferences from "@/components/User/Notifications/NotificationsPreferences.vue";
 import UserDatasetPermissions from "@/components/User/UserDatasetPermissions.vue";
 import UserOidcProfile from "@/components/User/UserOidcProfile.vue";
@@ -672,6 +673,11 @@ export function getRouter(Galaxy) {
                     {
                         path: "user/credentials",
                         component: CredentialsManagement,
+                        redirect: redirectAnon(),
+                    },
+                    {
+                        path: "user/extra_preferences",
+                        component: UserExtraPreferences,
                         redirect: redirectAnon(),
                     },
                     {

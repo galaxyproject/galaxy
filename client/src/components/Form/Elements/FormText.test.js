@@ -26,6 +26,13 @@ describe("FormText", () => {
         expect(elOtherType.exists()).toBe(true);
     });
 
+    it("should pass the autocomplete hint to the input only when given", async () => {
+        const wrapper = await mountFormText({ type: "password" });
+        expect(wrapper.find("input").attributes("autocomplete")).toBeUndefined();
+        await wrapper.setProps({ autocomplete: "new-password" });
+        expect(wrapper.find("input").attributes("autocomplete")).toBe("new-password");
+    });
+
     it("should render the appropriate component", async () => {
         const wrapper = await mountFormText({ area: true });
         const el = wrapper.find("textarea");

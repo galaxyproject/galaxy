@@ -14,6 +14,7 @@ import {
     faPerson,
     faRadiation,
     faSignOut,
+    faSliders,
     faUsers,
 } from "font-awesome-6";
 import { computed, onMounted, ref } from "vue";
@@ -223,6 +224,14 @@ onMounted(async () => {
                     :title="localize('Manage Your Tools Credentials')"
                     :description="localize('Manage your tools credentials groups for accessing external services.')"
                     to="/user/credentials" />
+
+                <UserPreferencesElement
+                    v-if="isConfigLoaded && config.has_user_preferences_extra"
+                    id="edit-preferences-extra"
+                    :icon="faSliders"
+                    :title="localize('Extra Configurations')"
+                    :description="localize('Manage the settings and credentials your Galaxy administrators ask for.')"
+                    to="/user/extra_preferences" />
 
                 <UserPreferencesElement
                     id="edit-preferences-notifications"
