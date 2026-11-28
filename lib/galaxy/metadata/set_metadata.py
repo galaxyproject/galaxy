@@ -373,6 +373,7 @@ def set_metadata_portable(
 
     unnamed_id_to_path = {}
     unnamed_is_deferred = {}
+    unnamed_is_linked = {}
     for unnamed_output_dict in job_context.tool_provided_metadata.get_unnamed_outputs():
         destination = unnamed_output_dict["destination"]
         elements = unnamed_output_dict["elements"]
@@ -386,6 +387,7 @@ def set_metadata_portable(
                 filename = element.get("filename")
                 if filename and object_id:
                     unnamed_id_to_path[object_id] = os.path.join(job_context.job_working_directory, filename)
+                    unnamed_is_linked[object_id] = bool(element.get("link_data_only"))
 
     for output_name, output_dict in outputs.items():
         dataset_instance_id = output_dict["id"]
@@ -435,7 +437,7 @@ def set_metadata_portable(
                         raise Exception(f"Output file '{external_filename}' not found")
 
                 # override filename if we're dealing with outputs to working directory and dataset is not linked to
-                link_data_only = metadata_params.get("link_data_only")
+                link_data_only = metadata_params.get("link_data_only") or unnamed_is_linked.get(dataset_instance_id)
                 if not link_data_only:
                     # Only set external filename if we're dealing with files in job working directory.
                     # Fixes link_data_only uploads
