@@ -28,7 +28,12 @@ describe("user-defined tool authoring help", () => {
             "Common questions",
         ]);
         expect(authoringHelpGroups.every((group) => group.sections.length > 0)).toBe(true);
-        expect(authoringHelpGroups[0]?.sections.map((section) => section.id)).toEqual(["quick-start"]);
+        expect(authoringHelpGroups[0]?.sections.map((section) => section.id)).toEqual([
+            "quick-start",
+            "when-to-use",
+            "managing-tools",
+            "examples",
+        ]);
     });
 
     it("renders the schema quick-start example", () => {
