@@ -8,6 +8,8 @@ from urllib.parse import urlparse
 
 from pydantic import BaseModel
 
+from galaxy.util import url_without_userinfo
+
 
 class FillIdentifiers(BaseModel):
     fill_inner_list_identifiers: bool = False
@@ -63,6 +65,7 @@ def guess_filename_from_url(url: str) -> str:
     :param url: The URL to extract the filename from.
     :return: The guessed filename.
     """
-    parsed_url = urlparse(url)
+    # A URL nested in the path may carry userinfo of its own.
+    parsed_url = urlparse(url_without_userinfo(url))
     filename = os.path.basename(parsed_url.path)
     return filename or ""

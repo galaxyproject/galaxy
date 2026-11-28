@@ -18,6 +18,18 @@ def test_dereference():
     assert hda.ext == "bed"
 
 
+def test_dereference_default_name_leaves_out_userinfo():
+    app, sa_session, user, history = setup_fixture_context_with_history()
+    for url, name in [
+        ("https://user:secret@example.org", "example.org"),
+        ("https://user:secret@example.org/1.bed", "1.bed"),
+        ("https://example.org/a?next=ftp://user:secret@inner", "inner"),
+    ]:
+        uri_request = DataRequestUri(url=url, ext="bed")
+        hda = dereference_to_model(sa_session, user, history, uri_request)
+        assert hda.name == name
+
+
 def test_dereference_dbkey():
     app, sa_session, user, history = setup_fixture_context_with_history()
     uri_request = DataRequestUri(url=TEST_URI, ext="bed", dbkey="hg19")

@@ -28,6 +28,7 @@ from galaxy.util import (
     inflector,
     relpath,
     sanitize_for_filename,
+    url_without_userinfo,
 )
 from galaxy.util.bunch import Bunch
 from galaxy.util.dictifiable import UsesDictVisibleKeys
@@ -464,7 +465,8 @@ class UploadDataset(Group):
                                 upload_path = line[len("file://") :]
                                 dataset_name = os.path.basename(upload_path)
                             else:
-                                dataset_name = line
+                                # The name is stored before the fetch and shown to everyone who can see the dataset.
+                                dataset_name = url_without_userinfo(line)
 
                             if override_name:
                                 dataset_name = override_name

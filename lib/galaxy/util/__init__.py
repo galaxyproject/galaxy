@@ -52,6 +52,7 @@ from typing import (
 )
 from urllib.parse import (
     quote,
+    unquote,
     urlencode,
     urlparse,
     urlsplit,
@@ -853,6 +854,364 @@ def mask_password_from_url(url):
             )
             url = urlunsplit(split)
     return url
+
+
+# A run of two or more slashes starts every authority, also of a scheme-relative URL.
+_URL_AUTHORITY_START_RE = re.compile(r"//+")
+# A "/" ends every authority and starts the next one, and no known userinfo holds a "/",
+# so each character is visited once. In text, whitespace ends a URL too.
+_URL_AUTHORITY_END_RE = re.compile(r"[/\s]")
+# urlsplit() drops these characters anywhere in a URL, so text may hold a userinfo without them.
+_URLSPLIT_REMOVED_CHARACTERS = str.maketrans("", "", "\t\r\n")
+_USERINFO_TRIE_END = ""
+# Not a single character, so it never collides with a child of a trie node.
+_REDACTED_TRIE_END = "redacted"
+# Each urlsplit() error of a known URL costs a scan of the text, so past this many no text is returned.
+_MAX_URL_PARSER_ERRORS = 100
+URL_PARSER_ERROR = "Invalid URL (could not be parsed)"
+URL_PARSER_ERRORS_WITHHELD = "Error message withheld because it contained too many URLs that could not be parsed."
+# Replaces an authority whose userinfo is ambiguous, see _authority_userinfo_end(). A host that parses
+# (unlike a bracketed one, read as IPv6) and never resolves (RFC 6761 .invalid), like the client's.
+URL_AUTHORITY_REDACTED = "redacted.invalid"
+# How strip_url_userinfo() outputs each character of a text: kept, removed, or in a run replaced by
+# URL_PARSER_ERROR or URL_AUTHORITY_REDACTED.
+_KEEP = 0
+_USERINFO = 1
+_PARSER_ERROR = 2
+_REDACTED = 3
+_MARK_RUN_RE = re.compile(b"\x00+|\x01+|\x02+|\x03+")
+_KEEP_TO_USERINFO = bytes.maketrans(bytes([_KEEP]), bytes([_USERINFO]))
+# urllib ends the netloc it quotes in errors at the first "/", "?" or "#".
+_URLLIB_NETLOC_END_RE = re.compile(r"[/?#]")
+_QUERY_OR_FRAGMENT_START_RE = re.compile(r"[?#]")
+
+
+def _authority_userinfo_end(text: str, authority_start: int, authority_end: int) -> tuple[int, bool]:
+    """
+    Index of the ``@`` ending the userinfo of the authority ``text[authority_start:authority_end]`` (-1 if none),
+    and whether that userinfo is ambiguous.
+
+    It is ambiguous if an ``@`` follows a ``?`` or ``#`` in it: ``u:12?34@host`` may be a host ``u`` with port ``12``
+    and query ``34@host``, or a userinfo ``u:12?34`` holding a ``?``, and ``example.org?email=alice@other.org`` has
+    the same shape. No reading is safe for both, so the caller replaces the whole authority. Otherwise the userinfo
+    ends at the last ``@`` before any ``?`` or ``#``, so an unencoded ``@`` in a password is removed too.
+    """
+    query_or_fragment = _QUERY_OR_FRAGMENT_START_RE.search(text, authority_start, authority_end)
+    if query_or_fragment is None:
+        return text.rfind("@", authority_start, authority_end), False
+    if text.find("@", query_or_fragment.start(), authority_end) != -1:
+        return -1, True
+    return text.rfind("@", authority_start, query_or_fragment.start()), False
+
+
+def _known_url_authority(url: str, start: int = 0) -> tuple[int, int, int, bool]:
+    """
+    Start and end of the first authority from ``start`` of a single ``url``, the index of the ``@`` ending its
+    userinfo (-1 if none) and whether that userinfo is ambiguous (see ``_authority_userinfo_end()``); start -1 if
+    there is none. An authority starts after any run of two or more slashes, as in ``ftp://``, in a scheme-relative
+    ``//user@host`` or in ``ftp:///user@host``, and ends at the next ``/``, as a known URL is a single token whose
+    malformed userinfo may hold unencoded whitespace.
+    """
+    separator = _URL_AUTHORITY_START_RE.search(url, start)
+    if separator is None:
+        return -1, -1, -1, False
+    authority_start = separator.end()
+    authority_end = url.find("/", authority_start)
+    if authority_end == -1:
+        authority_end = len(url)
+    return authority_start, authority_end, *_authority_userinfo_end(url, authority_start, authority_end)
+
+
+def url_without_userinfo(url: str) -> str:
+    """
+    Remove the userinfo (``user:password@``) of a single ``url`` and of every URL nested in it, such as in its
+    query, even if it holds unencoded whitespace. An authority whose userinfo is ambiguous, as an ``@`` follows a
+    ``?`` or ``#`` before the next ``/``, is replaced by ``URL_AUTHORITY_REDACTED``.
+
+    >>> url_without_userinfo('https://user:sec ret@example.org/a.bed')
+    'https://example.org/a.bed'
+    >>> url_without_userinfo('https://user:secret@example.org')
+    'https://example.org'
+    >>> url_without_userinfo('https://example.org/a?next=ftp://user:secret@inner/b')
+    'https://example.org/a?next=ftp://inner/b'
+    >>> url_without_userinfo('https://u:12?34@example.org/a.bed')
+    'https://redacted.invalid/a.bed'
+    """
+    parts = []
+    pos = 0
+    while True:
+        authority_start, authority_end, userinfo_end, ambiguous = _known_url_authority(url, pos)
+        if authority_start == -1:
+            break
+        parts.append(url[pos:authority_start])
+        if ambiguous:
+            parts.append(URL_AUTHORITY_REDACTED)
+            pos = authority_end
+        else:
+            pos = userinfo_end + 1 if userinfo_end != -1 else authority_start
+    parts.append(url[pos:])
+    return "".join(parts)
+
+
+def _known_url_userinfos(url: str) -> Iterator[tuple[str, bool]]:
+    """
+    Userinfo of a single ``url`` and of every URL nested in it, such as in its query, or the whole authority where
+    the userinfo is ambiguous, with whether it is.
+    """
+    start = 0
+    while True:
+        authority_start, authority_end, userinfo_end, ambiguous = _known_url_authority(url, start)
+        if authority_start == -1:
+            return
+        if ambiguous:
+            yield url[authority_start:authority_end], True
+        elif userinfo_end != -1:
+            yield url[authority_start:userinfo_end], False
+        # Each authority ends at the "/" that starts the next "://", so the spans do not overlap.
+        start = authority_start
+
+
+def _userinfo_trie(urls: Iterable[str]) -> dict[str, Any]:
+    trie: dict[str, Any] = {}
+    for url in urls:
+        for userinfo, ambiguous in _known_url_userinfos(url):
+            for variant in {userinfo, userinfo.translate(_URLSPLIT_REMOVED_CHARACTERS)}:
+                node = trie
+                for char in variant:
+                    node = node.setdefault(char, {})
+                node[_REDACTED_TRIE_END if ambiguous else _USERINFO_TRIE_END] = {}
+    return trie
+
+
+def _known_userinfo_end(text: str, start: int, trie: dict[str, Any]) -> tuple[int, int]:
+    """
+    Index of the ``@`` ending the longest userinfo of ``trie`` at ``start`` of ``text`` (-1 if none), and the end of
+    the longest ambiguous authority of ``trie`` there (-1 if none).
+    """
+    userinfo_end = -1
+    redacted_end = -1
+    node = trie
+    for pos in range(start, len(text)):
+        char = text[pos]
+        if char == "@" and _USERINFO_TRIE_END in node:
+            userinfo_end = pos
+        child = node.get(char)
+        if child is None:
+            break
+        node = child
+        if _REDACTED_TRIE_END in node:
+            redacted_end = pos + 1
+    return userinfo_end, redacted_end
+
+
+def _mark_url_parser_errors(text: str, urls: Iterable[str], marks: bytearray) -> bool:
+    """
+    Mark each occurrence in ``text`` of a ``urlsplit()`` error of ``urls`` that quotes a userinfo as ``_PARSER_ERROR``.
+
+    Occurrences are found in the original ``text``, overlapping ones included. Returns ``False`` if more than
+    ``_MAX_URL_PARSER_ERRORS`` such errors may be in ``text``, or if the occurrences of one error cover more than
+    twice the length of ``text``.
+    """
+    messages: dict[str, None] = {}
+    for url in urls:
+        for variant in (url, url.strip()):
+            try:
+                urlsplit(variant)
+            except ValueError as e:
+                message = str(e)
+                if not message or len(message) > len(text) or message in messages:
+                    continue
+                try:
+                    urlsplit(url_without_userinfo(variant))
+                except ValueError as stripped_error:
+                    if str(stripped_error) == message:
+                        # The error does not quote the userinfo.
+                        continue
+                messages[message] = None
+                if len(messages) > _MAX_URL_PARSER_ERRORS:
+                    return False
+    for message in messages:
+        length = len(message)
+        marked_length = 0
+        pos = text.find(message)
+        while pos != -1:
+            # Only an error made of repeats of one block overlaps itself this much; bound the rescans it costs.
+            marked_length += length
+            if marked_length > 2 * len(text):
+                return False
+            marks[pos : pos + length] = bytes([_PARSER_ERROR]) * length
+            pos = text.find(message, pos + 1)
+    return True
+
+
+def _known_password_host_sequences(urls: Iterable[str]) -> dict[str, int]:
+    """
+    Map each ``password@host`` sequence of ``urls`` to the length of its ``password@`` part.
+
+    The password is the userinfo after its first or after its last ``:``, as urllib quotes the netloc after its
+    last ``:`` as an invalid port. The host ends where the authority of a known URL ends, or at ``?`` or ``#`` as
+    urllib ends it, and the netloc is also taken percent-decoded, as urllib decodes it.
+    """
+    sequences: dict[str, int] = {}
+    for url in urls:
+        for variant in {url, url.translate(_URLSPLIT_REMOVED_CHARACTERS)}:
+            authority_start, known_authority_end, _, _ = _known_url_authority(variant)
+            if authority_start == -1:
+                continue
+            urllib_netloc_end = _URLLIB_NETLOC_END_RE.search(variant, authority_start)
+            for authority_end in {
+                known_authority_end,
+                urllib_netloc_end.start() if urllib_netloc_end else len(variant),
+            }:
+                authority = variant[authority_start:authority_end]
+                for netloc in {authority, unquote(authority)}:
+                    userinfo, at, host = netloc.rpartition("@")
+                    if not at or not host:
+                        continue
+                    for colon in {userinfo.find(":"), userinfo.rfind(":")}:
+                        password = userinfo[colon + 1 :]
+                        if colon == -1 or not password:
+                            continue
+                        sequence = f"{password}@{host}"
+                        sequences[sequence] = max(sequences.get(sequence, 0), len(password) + 1)
+    return sequences
+
+
+def _mark_known_password_hosts(text: str, urls: Iterable[str], marks: bytearray) -> None:
+    """
+    Mark the ``password@`` part of each occurrence in ``text`` of a ``password@host`` sequence of ``urls`` as
+    ``_USERINFO``, wherever it is, e.g. in an invalid port error of urllib that quotes it without the ``://``.
+
+    The sequences are matched in a single pass (Aho-Corasick), so the text is scanned once however many are known.
+    """
+    sequences = _known_password_host_sequences(urls)
+    if not sequences:
+        return
+    children: list[dict[str, int]] = [{}]
+    # Per node: length of the longest sequence ending there, and the length of its "password@" part.
+    longest: list[tuple[int, int]] = [(0, 0)]
+    for sequence, marked_length in sequences.items():
+        node = 0
+        for char in sequence:
+            child = children[node].get(char)
+            if child is None:
+                child = len(children)
+                children[node][char] = child
+                children.append({})
+                longest.append((0, 0))
+            node = child
+        longest[node] = (len(sequence), marked_length)
+    fail = [0] * len(children)
+    queue = collections.deque(children[0].values())
+    while queue:
+        node = queue.popleft()
+        for char, child in children[node].items():
+            state = fail[node]
+            while state and char not in children[state]:
+                state = fail[state]
+            fail[child] = children[state].get(char, 0)
+            if longest[child][0] == 0:
+                longest[child] = longest[fail[child]]
+            queue.append(child)
+    # Marks reaching furthest from each start, merged in one sweep so overlapping matches cost no rescans.
+    reach: dict[int, int] = {}
+    state = 0
+    for pos, char in enumerate(text):
+        while state and char not in children[state]:
+            state = fail[state]
+        state = children[state].get(char, 0)
+        length, marked_length = longest[state]
+        if length:
+            start = pos + 1 - length
+            reach[start] = max(reach.get(start, 0), start + marked_length)
+    runs: list[list[int]] = []
+    mark_end = -1
+    for start in sorted(reach):
+        if start > mark_end:
+            runs.append([start, reach[start]])
+        else:
+            runs[-1][1] = max(runs[-1][1], reach[start])
+        mark_end = runs[-1][1]
+    for start, end in runs:
+        # A parser error run is replaced whole, so only kept characters are marked.
+        marks[start:end] = marks[start:end].translate(_KEEP_TO_USERINFO)
+
+
+def strip_url_userinfo(text: str, known_urls: Iterable[str] = ()) -> str:
+    """
+    Remove the userinfo (``user:password@``) of every URL in ``text``, scheme-relative ``//user@host`` included.
+
+    The userinfo of each URL in ``known_urls``, and of every URL nested in it (e.g. in its query), is removed
+    wherever it follows a ``//``, which also covers userinfo the scan of ``text`` cannot delimit, such as
+    unencoded whitespace, in every form of that URL (e.g. trimmed); a known authority whose userinfo is ambiguous
+    (see ``_authority_userinfo_end()``) is replaced by ``URL_AUTHORITY_REDACTED`` there. Each run of text covered
+    by ``urlsplit()`` errors of known URLs, which quote their netloc without the ``://``, is replaced by
+    ``URL_PARSER_ERROR``, which quotes nothing of the URLs. Both are found in the original ``text``, so neither can
+    hide the other. The ``password@`` part of each known URL's ``password@host`` sequence is removed wherever it
+    is, as urllib quotes it without the ``://`` in invalid port errors. Returns ``URL_PARSER_ERRORS_WITHHELD`` if
+    too many such errors may be in ``text``.
+
+    >>> strip_url_userinfo('Failed to fetch https://user:secret@example.org/a.bed')
+    'Failed to fetch https://example.org/a.bed'
+    >>> strip_url_userinfo('ftp://user:p@ss@example.org/a.bed')
+    'ftp://example.org/a.bed'
+    >>> strip_url_userinfo('Invalid uri [ftp://user:sec ret@example.org/a]', [' ftp://user:sec ret@example.org/a '])
+    'Invalid uri [ftp://example.org/a]'
+    >>> strip_url_userinfo('Invalid url https://example.org/a?next=ftp://u:sec ret@h/b', ['https://example.org/a?next=ftp://u:sec ret@h/b'])
+    'Invalid url https://example.org/a?next=ftp://h/b'
+    >>> strip_url_userinfo("nonnumeric port: 'secret@example.org'", ['https://user:secret@example.org/a.bed'])
+    "nonnumeric port: 'example.org'"
+    >>> strip_url_userinfo('https://example.org/a.bed')
+    'https://example.org/a.bed'
+    """
+    known_urls = tuple(known_urls)
+    marks = bytearray(len(text))
+    if not _mark_url_parser_errors(text, known_urls, marks):
+        return URL_PARSER_ERRORS_WITHHELD
+    _mark_known_password_hosts(text, known_urls, marks)
+    known_userinfo = _userinfo_trie(known_urls)
+    pos = 0
+    while (separator := _URL_AUTHORITY_START_RE.search(text, pos)) is not None:
+        authority_start = separator.end()
+        authority_end_match = _URL_AUTHORITY_END_RE.search(text, authority_start)
+        authority_end = authority_end_match.start() if authority_end_match else len(text)
+        text_userinfo_end, ambiguous = _authority_userinfo_end(text, authority_start, authority_end)
+        known_userinfo_end, redacted_end = _known_userinfo_end(text, authority_start, known_userinfo)
+        userinfo_end = max(text_userinfo_end, known_userinfo_end)
+        if ambiguous:
+            redacted_end = max(redacted_end, authority_end)
+        # A userinfo is removed, and an ambiguous authority replaced, even where it holds a parser error.
+        if userinfo_end != -1:
+            marks[authority_start : userinfo_end + 1] = bytes([_USERINFO]) * (userinfo_end + 1 - authority_start)
+        if redacted_end != -1:
+            marks[authority_start:redacted_end] = bytes([_REDACTED]) * (redacted_end - authority_start)
+        pos = max(authority_start, userinfo_end + 1, redacted_end)
+    parts = []
+    for run in _MARK_RUN_RE.finditer(marks):
+        mark = marks[run.start()]
+        if mark == _KEEP:
+            parts.append(text[run.start() : run.end()])
+        elif mark == _PARSER_ERROR:
+            parts.append(URL_PARSER_ERROR)
+        elif mark == _REDACTED:
+            parts.append(URL_AUTHORITY_REDACTED)
+    return "".join(parts)
+
+
+def name_from_url(url: str) -> str:
+    """
+    Last path segment of ``url`` (its host if it has no path), as a default dataset name without userinfo.
+
+    >>> name_from_url('https://example.org/data/a.bed')
+    'a.bed'
+    >>> name_from_url('https://user:secret@example.org')
+    'example.org'
+    >>> name_from_url('https://example.org/a?next=ftp://user:secret@ftp.example.org')
+    'ftp.example.org'
+    >>> name_from_url('https://u:12?34@example.org')
+    'redacted.invalid'
+    """
+    return url_without_userinfo(url).split("/")[-1]
 
 
 def ready_name_for_url(raw_name):

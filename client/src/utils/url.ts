@@ -150,13 +150,75 @@ export function isValidUrl(url: string): boolean {
     return validateUrl(url).isValid;
 }
 
+// Replaces an authority whose userinfo is ambiguous, see userinfoLengthOf(). A host that `new URL()` accepts
+// (unlike a bracketed one, read as IPv6) and that never resolves (RFC 6761 .invalid), like the server's.
+export const URL_AUTHORITY_REDACTED = "redacted.invalid";
+
+/**
+ * Length of the userinfo of `authority` before its "@" (-1 if none), or null if that userinfo is ambiguous.
+ * It is ambiguous if an "@" follows a "?" or "#": `u:12?34@host` may be a host `u` with port 12 and query `34@host`,
+ * or a userinfo `u:12?34` holding a "?", and `example.org?email=alice@other.org` has the same shape. No reading is
+ * safe for both, so the caller replaces the whole authority. Otherwise the userinfo ends at the last "@" before any
+ * "?" or "#", so an unencoded "@" in a password is removed too.
+ */
+function userinfoLengthOf(authority: string): number | null {
+    const queryOrFragment = authority.search(/[?#]/);
+    if (queryOrFragment === -1) {
+        return authority.lastIndexOf("@");
+    }
+    if (authority.indexOf("@", queryOrFragment) !== -1) {
+        return null;
+    }
+    return authority.slice(0, queryOrFragment).lastIndexOf("@");
+}
+
+/**
+ * Removes the userinfo (`user:password@`) of a URL and of every URL nested in it (e.g. in its query),
+ * so it is safe to show or use as a name.
+ * Each authority starts after any run of two or more slashes (also a scheme-relative `//user@host`)
+ * and ends at the next "/". An authority whose userinfo is ambiguous, as an "@" follows a "?" or "#" in it,
+ * is replaced by URL_AUTHORITY_REDACTED.
+ *
+ * @example
+ * ```typescript
+ * urlWithoutUserinfo("https://user:secret@example.org/a.bed") // returns "https://example.org/a.bed"
+ * urlWithoutUserinfo("https://example.org/a?next=ftp://user:secret@h") // returns "https://example.org/a?next=ftp://h"
+ * urlWithoutUserinfo("https://example.org/a?next=//user:secret@h") // returns "https://example.org/a?next=//h"
+ * urlWithoutUserinfo("https://u:12?34@example.org/a.bed") // returns "https://redacted.invalid/a.bed"
+ * ```
+ */
+export function urlWithoutUserinfo(url: string): string {
+    let result = "";
+    let pos = 0;
+    let separator = url.indexOf("//");
+    while (separator !== -1) {
+        let authorityStart = separator + 2;
+        while (url[authorityStart] === "/") {
+            authorityStart++;
+        }
+        const slash = url.indexOf("/", authorityStart);
+        const authorityEnd = slash === -1 ? url.length : slash;
+        // Search the authority only, so each character is visited a bounded number of times.
+        const userinfoLength = userinfoLengthOf(url.slice(authorityStart, authorityEnd));
+        result += url.slice(pos, authorityStart);
+        if (userinfoLength === null) {
+            result += URL_AUTHORITY_REDACTED;
+            pos = authorityEnd;
+        } else {
+            pos = userinfoLength === -1 ? authorityStart : authorityStart + userinfoLength + 1;
+        }
+        separator = url.indexOf("//", pos);
+    }
+    return result + url.slice(pos);
+}
+
 /**
  * Extracts a meaningful filename from a URL.
  * Attempts to get the last path segment and decode it.
- * Falls back to the full URL if extraction fails.
+ * Falls back to the full URL without its userinfo if extraction fails.
  *
  * @param url - The URL to extract the name from
- * @returns The extracted filename or the full URL as fallback
+ * @returns The extracted filename or the full URL without userinfo as fallback
  *
  * @example
  * ```typescript
@@ -168,18 +230,19 @@ export function isValidUrl(url: string): boolean {
 export function extractNameFromUrl(url: string): string {
     try {
         const urlObj = new URL(url);
-        const pathname = urlObj.pathname;
+        // The path may hold a nested URL with userinfo of its own.
+        const pathname = urlWithoutUserinfo(urlObj.pathname);
         const segments = pathname.split("/").filter((s) => s.length > 0);
 
         if (segments.length > 0) {
             const lastSegment = segments[segments.length - 1];
             if (lastSegment) {
-                // Decode URI component to handle encoded characters
-                return decodeURIComponent(lastSegment);
+                // Decode URI component to handle encoded characters; it may decode to a URL with userinfo
+                return urlWithoutUserinfo(decodeURIComponent(lastSegment));
             }
         }
     } catch {
         // If URL parsing fails, fall through to return the full URL
     }
-    return url;
+    return urlWithoutUserinfo(url);
 }

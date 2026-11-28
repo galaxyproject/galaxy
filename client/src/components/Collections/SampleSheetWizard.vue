@@ -12,7 +12,12 @@ import {
 import type { FetchDataPayload, HdcaUploadTarget } from "@/api/tools";
 import { stripExtension } from "@/components/Collections/common/stripExtension";
 import { useWorkbookDropHandling } from "@/components/Collections/common/useWorkbooks";
-import { downloadWorkbook, parseWorkbook, withAutoListIdentifiers } from "@/components/Collections/sheet/workbooks";
+import {
+    downloadWorkbook,
+    guessUriFilename,
+    parseWorkbook,
+    withAutoListIdentifiers,
+} from "@/components/Collections/sheet/workbooks";
 import type {
     AnyParsedSampleSheetWorkbook,
     InitialElements,
@@ -272,17 +277,6 @@ const pastedDataLooksPrePaired = computed(() => {
         return false;
     }
 });
-
-function guessUriFilename(uri: string): string {
-    const parts = uri.split("/");
-    const last_part = parts[parts.length - 1] ?? uri;
-    if (last_part.indexOf("?") !== -1) {
-        // remove the query string
-        return last_part.split("?")[0] as string;
-    } else {
-        return last_part;
-    }
-}
 
 function adaptUriToAutoPair(uri: string): { name: string; uri: string } {
     return { name: guessUriFilename(uri), uri };

@@ -1,5 +1,4 @@
 import logging
-import os.path
 from collections.abc import Sequence
 from typing import (
     Optional,
@@ -43,6 +42,7 @@ from galaxy.tool_util_models.parameters import (
     FileRequestUri,
 )
 from galaxy.tool_util_models.sample_sheet import SampleSheetRow
+from galaxy.util import name_from_url
 
 log = logging.getLogger(__name__)
 
@@ -58,7 +58,7 @@ def dereference_to_model(
     if isinstance(data_request_uri, CollectionElementDataRequestUri):
         name = data_request_uri.identifier
     else:
-        name = data_request_uri.name or os.path.basename(data_request_uri.url)
+        name = data_request_uri.name or name_from_url(data_request_uri.url)
     dbkey = data_request_uri.dbkey or "?"
     hda = HistoryDatasetAssociation(
         name=name,

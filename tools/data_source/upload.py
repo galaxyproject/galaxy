@@ -26,6 +26,7 @@ from galaxy.util import (
     bunch,
     is_url,
     safe_makedirs,
+    strip_url_userinfo,
     unicodify,
 )
 from galaxy.util.compression_utils import CompressedFile
@@ -128,7 +129,9 @@ def add_file(dataset, registry, output_path: str) -> Dict[str, str]:
         try:
             dataset.path = sniff.stream_url_to_file(dataset.path, file_sources=get_file_sources())
         except Exception as e:
-            raise UploadProblemException("Unable to fetch %s\n%s" % (dataset.path, unicodify(e)))
+            raise UploadProblemException(
+                strip_url_userinfo(f"Unable to fetch {dataset.path}\n{unicodify(e)}", [dataset.path])
+            )
 
     # See if we have an empty file
     if not os.path.exists(dataset.path):
@@ -203,7 +206,9 @@ def add_composite_file(dataset, registry, output_path, files_path):
             try:
                 temp_name = sniff.stream_url_to_file(path_or_url, file_sources=file_sources)
             except Exception as e:
-                raise UploadProblemException("Unable to fetch %s\n%s" % (path_or_url, unicodify(e)))
+                raise UploadProblemException(
+                    strip_url_userinfo(f"Unable to fetch {path_or_url}\n{unicodify(e)}", [path_or_url])
+                )
 
             return temp_name, isa_url
 

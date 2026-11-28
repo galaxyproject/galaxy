@@ -30,9 +30,11 @@ from galaxy.files.uris import (
 )
 from galaxy.util import (
     in_directory,
+    name_from_url,
     safe_contains,
     safe_makedirs,
     safe_relpath,
+    strip_url_userinfo,
 )
 from galaxy.util.bunch import Bunch
 from galaxy.util.compression_utils import CompressedFile
@@ -94,7 +96,11 @@ def _fetch_target(upload_config: "UploadConfig", target: dict[str, Any]):
     destination = target.get("destination", None)
     assert destination, "No destination defined."
 
+    expanding_item: Optional[dict[str, Any]] = None
+
     def expand_elements_from(target_or_item):
+        nonlocal expanding_item
+        expanding_item = target_or_item
         items = None
         if elements_from := target_or_item.get("elements_from", None):
             if elements_from == "archive":
@@ -120,7 +126,10 @@ def _fetch_target(upload_config: "UploadConfig", target: dict[str, Any]):
     try:
         _for_each_src(expand_elements_from, target)
     except Exception as e:
-        expansion_error = f"Error expanding elements/items for upload destination. {str(e)}"
+        # Only the failing item's URLs: its siblings are not in the message, and a batch may hold many.
+        expansion_error = _strip_url_userinfo(
+            f"Error expanding elements/items for upload destination. {str(e)}", expanding_item
+        )
 
     if expansion_error is None:
         items = target.get("elements", None)
@@ -452,10 +461,13 @@ def _fetch_target(upload_config: "UploadConfig", target: dict[str, Any]):
         return _copy_and_validate_simple_attributes(item, rval)
 
     def _resolve_item_capture_error(item):
+        # Resolving a composite item removes its components from it, so their URLs are collected first.
+        requested_urls = _requested_urls(item)
         try:
             return _resolve_item(item)
         except Exception as e:
-            rval = {"error_message": str(e)}
+            # The message ends up in the dataset info, which everyone who can see the dataset can read.
+            rval = {"error_message": strip_url_userinfo(str(e), requested_urls)}
             rval = _copy_and_validate_simple_attributes(item, rval)
             failed_elements.append(rval)
             return rval
@@ -534,7 +546,7 @@ def _has_src_to_name(item) -> Optional[str]:
     if src == "url":
         url = item.get("url")
         if name is None:
-            name = url.split("/")[-1]
+            name = name_from_url(url)
     elif src == "path":
         path = item["path"]
         if name is None:
@@ -565,7 +577,7 @@ def _has_src_to_path(
                     rel_path = rel_path[1:]
                 path = os.path.abspath(os.path.join(file_source.root, rel_path))
                 if name is None:
-                    name = url.split("/")[-1]
+                    name = name_from_url(url)
                 is_link = True
                 return name, path, is_link
 
@@ -583,7 +595,7 @@ def _has_src_to_path(
                 file_source_opts=file_source_options,
             )
         except Exception as e:
-            raise Exception(f"Failed to fetch url {url}. {str(e)}")
+            raise Exception(_strip_url_userinfo(f"Failed to fetch url {url}. {str(e)}", item))
 
         if not is_dataset:
             # Actual target dataset will validate and put results in dict
@@ -593,7 +605,7 @@ def _has_src_to_path(
                 if hash_value:
                     _handle_hash_validation(hash_function, hash_value, path)
         if name is None:
-            name = url.split("/")[-1]
+            name = name_from_url(url)
     elif src == "pasted":
         path = stream_to_file(StringIO(item["paste_content"]), dir=upload_config.working_directory)
         if name is None:
@@ -719,6 +731,24 @@ def _link_data_only(has_config_dict) -> tuple[bool, bool]:
         link_data_only = False
         link_data_only_explicit = False
     return link_data_only, link_data_only_explicit
+
+
+def _requested_urls(obj) -> list[str]:
+    """URLs requested in ``obj``."""
+    urls: list[str] = []
+
+    def collect_url(item):
+        url = item.get("url")
+        if item.get("src") == "url" and isinstance(url, str):
+            urls.append(url)
+
+    _for_each_src(collect_url, obj)
+    return urls
+
+
+def _strip_url_userinfo(message: str, obj) -> str:
+    """Remove the userinfo of the URLs requested in ``obj`` and of any other URL from ``message``."""
+    return strip_url_userinfo(message, _requested_urls(obj))
 
 
 def _for_each_src(f, obj):
